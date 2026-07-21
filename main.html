@@ -2,21 +2,284 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мое приложение</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Читалка</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-family: sans-serif;
-            text-align: center;
-            padding: 20px;
+        :root {
+            --bg: var(--tg-theme-bg-color, #fff);
+            --text: var(--tg-theme-text-color, #000);
+            --hint: var(--tg-theme-hint-color, #999);
+            --link: var(--tg-theme-link-color, #2481cc);
+            --button: var(--tg-theme-button-color, #2481cc);
+            --button-text: var(--tg-theme-button-text-color, #fff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 70px; }
+        
+        /* Навигация */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--secondary-bg); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--hint); z-index: 100; }
+        .nav-item { text-align: center; color: var(--hint); font-size: 12px; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--link); font-weight: bold; }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 2px; }
+
+        /* Контейнеры */
+        .view { display: none; padding: 15px; animation: fadeIn 0.3s; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Карточки новостей */
+        .card { background: var(--secondary-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .card img { width: 100%; border-radius: 8px; margin-bottom: 10px; object-fit: cover; max-height: 200px; }
+        .card h3 { margin-bottom: 8px; font-size: 18px; }
+        .card p { font-size: 14px; line-height: 1.5; color: var(--text); }
+
+        /* Список книг */
+        .book-item { background: var(--secondary-bg); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .book-info h4 { margin-bottom: 5px; }
+        .book-info span { font-size: 12px; color: var(--hint); }
+        .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; background: var(--button); color: var(--button-text); display: none; }
+        .status-badge.read { display: inline-block; }
+
+        /* Читалка */
+        #reader-view { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 200; padding: 20px; overflow-y: auto; display: none; }
+        #reader-view.active { display: block; }
+        .reader-content { font-size: 18px; line-height: 1.6; margin-top: 20px; white-space: pre-wrap; }
+        .reader-actions { display: flex; gap: 10px; margin-top: 30px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: var(--button); color: var(--button-text); font-size: 16px; cursor: pointer; }
+        .btn-outline { background: transparent; border: 1px solid var(--button); color: var(--button); }
+
+        /* Админ панель */
+        .admin-login { text-align: center; margin-top: 50px; }
+        .admin-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); }
+        .hidden { display: none !important; }
+        
+        h2 { margin-bottom: 15px; font-size: 22px; }
     </style>
 </head>
 <body>
-    <h1>Привет из HTML!</h1>
-    <p>Это мое первое Telegram Web App</p>
+
+    <!-- ЛЕНТА НОВОСТЕЙ -->
+    <div id="view-feed" class="view active">
+        <h2>📰 Новости</h2>
+        <div id="feed-container"></div>
+    </div>
+
+    <!-- БИБЛИОТЕКА -->
+    <div id="view-books" class="view">
+        <h2>📚 Мои книги</h2>
+        <div id="books-container"></div>
+    </div>
+
+    <!-- ПРОФИЛЬ / АДМИН -->
+    <div id="view-profile" class="view">
+        <h2>👤 Профиль</h2>
+        <div class="card">
+            <p>Прочитано глав: <b id="stats-read">0</b></p>
+            <p>Закладок: <b id="stats-bookmarks">0</b></p>
+        </div>
+        <button class="btn" onclick="showAdminLogin()" style="margin-top: 20px; background: var(--hint);">🔑 Вход для автора</button>
+        
+        <div id="admin-panel" class="hidden" style="margin-top: 20px;">
+            <h3>⚙️ Админ-панель</h3>
+            <p style="font-size: 12px; color: var(--hint); margin-bottom: 10px;">*В демо-режиме данные сохраняются только в твоем браузере. Для реального сайта нужна база данных (Firebase/Python).</p>
+            
+            <input type="text" id="new-post-title" class="admin-input" placeholder="Заголовок новости">
+            <input type="text" id="new-post-img" class="admin-input" placeholder="Ссылка на картинку (URL)">
+            <textarea id="new-post-text" class="admin-input" rows="3" placeholder="Текст новости"></textarea>
+            <button class="btn" onclick="addPost()">Опубликовать новость</button>
+            
+            <hr style="margin: 20px 0; border-color: var(--hint);">
+            
+            <input type="text" id="new-book-title" class="admin-input" placeholder="Название книги">
+            <input type="text" id="new-book-author" class="admin-input" placeholder="Автор">
+            <textarea id="new-book-text" class="admin-input" rows="5" placeholder="Текст главы 1"></textarea>
+            <button class="btn" onclick="addBook()">Добавить книгу</button>
+        </div>
+    </div>
+
+    <!-- ЧИТАЛКА (Отдельный экран) -->
+    <div id="reader-view">
+        <h2 id="reader-title">Название книги</h2>
+        <div id="reader-text" class="reader-content"></div>
+        <div class="reader-actions">
+            <button class="btn btn-outline" onclick="toggleBookmark()">🔖 Закладка</button>
+            <button class="btn" onclick="markAsRead()">✅ Прочитано</button>
+        </div>
+        <button class="btn btn-outline" onclick="closeReader()" style="margin-top: 10px; width: 100%;">← Назад к списку</button>
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('feed', this)">
+            <span class="nav-icon">🏠</span> Лента
+        </div>
+        <div class="nav-item" onclick="switchView('books', this)">
+            <span class="nav-icon">📚</span> Книги
+        </div>
+        <div class="nav-item" onclick="switchView('profile', this)">
+            <span class="nav-icon">👤</span> Профиль
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // === БАЗА ДАННЫХ (В реальном проекте это будет Firebase или твой сервер) ===
+        // Мы используем localStorage, чтобы данные сохранялись в браузере пользователя
+        const defaultPosts = [
+            { id: 1, title: "Добро пожаловать!", text: "Это первая новость твоей читалки. Здесь ты можешь публиковать анонсы новых глав.", image: "https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500&auto=format&fit=crop&q=60" }
+        ];
+        const defaultBooks = [
+            { id: 1, title: "Тайна старого замка", author: "Иван Иванов", text: "Это первая глава книги. Здесь происходит завязка сюжета. Герой входит в темный коридор..." }
+        ];
+
+        // Загрузка данных из памяти или использование стандартных
+        let posts = JSON.parse(localStorage.getItem('myApp_posts')) || defaultPosts;
+        let books = JSON.parse(localStorage.getItem('myApp_books')) || defaultBooks;
+        let readBooks = JSON.parse(localStorage.getItem('myApp_read')) || [];
+        let bookmarkedBooks = JSON.parse(localStorage.getItem('myApp_bookmarks')) || [];
+
+        let currentBookId = null;
+
+        // === ОТРИСОВКА ИНТЕРФЕЙСА ===
+        function renderFeed() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = posts.map(post => `
+                <div class="card">
+                    ${post.image ? `<img src="${post.image}" alt="news">` : ''}
+                    <h3>${post.title}</h3>
+                    <p>${post.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderBooks() {
+            const container = document.getElementById('books-container');
+            container.innerHTML = books.map(book => {
+                const isRead = readBooks.includes(book.id);
+                return `
+                <div class="book-item" onclick="openBook(${book.id})">
+                    <div class="book-info">
+                        <h4>${book.title}</h4>
+                        <span>${book.author}</span>
+                    </div>
+                    <span class="status-badge ${isRead ? 'read' : ''}">Прочитано</span>
+                </div>
+            `}).join('');
+            
+            // Обновляем статистику
+            document.getElementById('stats-read').innerText = readBooks.length;
+            document.getElementById('stats-bookmarks').innerText = bookmarkedBooks.length;
+        }
+
+        // === НАВИГАЦИЯ ===
+        function switchView(viewName, navElement) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(navElement) navElement.classList.add('active');
+
+            if(viewName === 'feed') renderFeed();
+            if(viewName === 'books') renderBooks();
+        }
+
+        // === ЧИТАЛКА ===
+        function openBook(id) {
+            currentBookId = id;
+            const book = books.find(b => b.id === id);
+            document.getElementById('reader-title').innerText = book.title;
+            document.getElementById('reader-text').innerText = book.text;
+            document.getElementById('reader-view').classList.add('active');
+            
+            // Показываем кнопку "Назад" от Telegram
+            tg.BackButton.show();
+            tg.BackButton.onClick(closeReader);
+        }
+
+        function closeReader() {
+            document.getElementById('reader-view').classList.remove('active');
+            tg.BackButton.hide();
+            renderBooks(); // Обновить статусы
+        }
+
+        function markAsRead() {
+            if (!readBooks.includes(currentBookId)) {
+                readBooks.push(currentBookId);
+                localStorage.setItem('myApp_read', JSON.stringify(readBooks));
+                tg.showAlert("Книга отмечена как прочитанная! ✅");
+                renderBooks();
+            }
+        }
+
+        function toggleBookmark() {
+            if (bookmarkedBooks.includes(currentBookId)) {
+                bookmarkedBooks = bookmarkedBooks.filter(id => id !== currentBookId);
+                tg.showAlert("Закладка удалена");
+            } else {
+                bookmarkedBooks.push(currentBookId);
+                tg.showAlert("Добавлено в закладки! 🔖");
+            }
+            localStorage.setItem('myApp_bookmarks', JSON.stringify(bookmarkedBooks));
+        }
+
+        // === АДМИН ПАНЕЛЬ ===
+        function showAdminLogin() {
+            const password = prompt("Введите пароль администратора:");
+            if (password === "admin123") {
+                document.getElementById('admin-panel').classList.remove('hidden');
+                tg.showAlert("Добро пожаловать, Автор! 👑");
+            } else {
+                tg.showAlert("Неверный пароль!");
+            }
+        }
+
+        function addPost() {
+            const title = document.getElementById('new-post-title').value;
+            const img = document.getElementById('new-post-img').value;
+            const text = document.getElementById('new-post-text').value;
+
+            if (!title || !text) return tg.showAlert("Заполни заголовок и текст!");
+
+            posts.unshift({ id: Date.now(), title, image: img, text });
+            localStorage.setItem('myApp_posts', JSON.stringify(posts));
+            
+            // Очистка полей
+            document.getElementById('new-post-title').value = '';
+            document.getElementById('new-post-img').value = '';
+            document.getElementById('new-post-text').value = '';
+            
+            tg.showAlert("Новость опубликована! (Видна только тебе в этом браузере)");
+            renderFeed();
+        }
+
+        function addBook() {
+            const title = document.getElementById('new-book-title').value;
+            const author = document.getElementById('new-book-author').value;
+            const text = document.getElementById('new-book-text').value;
+
+            if (!title || !text) return tg.showAlert("Заполни название и текст!");
+
+            books.push({ id: Date.now(), title, author: author || "Неизвестен", text });
+            localStorage.setItem('myApp_books', JSON.stringify(books));
+            
+            document.getElementById('new-book-title').value = '';
+            document.getElementById('new-book-author').value = '';
+            document.getElementById('new-book-text').value = '';
+            
+            tg.showAlert("Книга добавлена! (Видна только тебе в этом браузере)");
+            renderBooks();
+        }
+
+        // Первичная отрисовка
+        renderFeed();
+        renderBooks();
+    </script>
 </body>
 </html>
