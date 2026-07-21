@@ -6,134 +6,122 @@
     <title>Reader App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* === УНИКАЛЬНЫЙ PREMIUM СТИЛЬ === */
-        :root {
-            --bg-primary: var(--tg-theme-bg-color, #0f0f0f);
-            --bg-secondary: var(--tg-theme-secondary-bg-color, #1c1c1e);
-            --text-primary: var(--tg-theme-text-color, #ffffff);
-            --text-secondary: var(--tg-theme-hint-color, #8e8e93);
-            --accent: var(--tg-theme-button-color, #0a84ff);
-            --accent-text: var(--tg-theme-button-text-color, #ffffff);
-            --border: rgba(255, 255, 255, 0.08);
-            --success: #30d158;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif; 
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding-bottom: 90px;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #0f0f0f;
+            color: #ffffff;
+            padding-bottom: 100px;
         }
-
-        /* Анимации */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
 
         .header { padding: 20px 0 30px; }
-        .header h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
-        .header p { color: var(--text-secondary); font-size: 15px; }
+        .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .header p { color: #8e8e93; font-size: 15px; }
 
-        /* Карточки */
         .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
+            background: #1c1c1e;
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 16px;
-            animation: fadeIn 0.4s ease-out forwards;
-            transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .card:active { transform: scale(0.98); border-color: var(--accent); }
 
         .card-image {
             width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 12px;
-            background: #2c2c2e;
         }
 
-        .card-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
-        .card-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
-        .card-text { font-size: 15px; line-height: 1.5; color: var(--text-primary); opacity: 0.9; }
+        .card-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+        .card-subtitle { font-size: 13px; color: #8e8e93; margin-bottom: 10px; }
+        .card-text { font-size: 15px; line-height: 1.5; }
 
-        /* Бейджи */
         .badge {
-            display: inline-flex; align-items: center; gap: 4px;
+            display: inline-block;
             padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
             margin-top: 10px; margin-right: 6px;
         }
-        .badge-read { background: rgba(48, 209, 88, 0.15); color: var(--success); }
-        .badge-bookmark { background: rgba(10, 132, 255, 0.15); color: var(--accent); }
+        .badge-read { background: rgba(48, 209, 88, 0.2); color: #30d158; }
+        .badge-bookmark { background: rgba(10, 132, 255, 0.2); color: #0a84ff; }
 
-        /* Кнопки */
         .btn {
             width: 100%; padding: 16px; border: none; border-radius: 14px;
-            background: var(--accent); color: var(--accent-text);
+            background: #0a84ff; color: #fff;
             font-size: 16px; font-weight: 600; cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
             margin-top: 12px;
         }
-        .btn:active { opacity: 0.8; transform: scale(0.98); }
-        .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary { background: #1c1c1e; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
 
-        /* Поля ввода */
         .input {
-            width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
-            background: var(--bg-primary); color: var(--text-primary); font-size: 15px;
-            margin-bottom: 12px; font-family: inherit; transition: border-color 0.2s;
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            background: #0f0f0f; color: #fff; font-size: 15px; margin-bottom: 12px;
         }
-        .input:focus { outline: none; border-color: var(--accent); }
         textarea.input { min-height: 100px; resize: vertical; }
 
-        /* Нижняя навигация (ИСПРАВЛЕННАЯ) */
+        /* === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(28, 28, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
-            display: flex; justify-content: space-around; padding: 12px 0 24px; z-index: 100;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: rgba(28, 28, 30, 0.98) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-top: 1px solid rgba(255,255,255,0.1) !important;
+            display: flex !important;
+            justify-content: space-around !important;
+            padding: 12px 0 24px !important;
+            z-index: 9999 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3) !important;
         }
-        .nav-btn {
-            background: none; border: none; color: var(--text-secondary);
-            font-size: 11px; font-weight: 500; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            transition: color 0.2s;
-        }
-        .nav-btn .icon { font-size: 22px; transition: transform 0.2s; }
-        .nav-btn.active { color: var(--accent); }
-        .nav-btn.active .icon { transform: translateY(-2px); }
 
-        /* Экран читалки */
+        .nav-btn {
+            background: none !important;
+            border: none !important;
+            color: #8e8e93 !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 4px !important;
+            padding: 8px 20px !important;
+            flex: 1 !important;
+        }
+
+        .nav-btn .icon { font-size: 22px !important; }
+        .nav-btn.active { color: #0a84ff !important; }
+
+        /* СЕКЦИИ */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ЧИТАЛКА */
         .reader-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bg-primary); z-index: 200;
+            background: #0f0f0f; z-index: 1000;
             display: none; flex-direction: column;
         }
-        .reader-overlay.active { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reader-overlay.active { display: flex; }
         
         .reader-header {
-            padding: 16px 20px; border-bottom: 1px solid var(--border);
+            padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex; align-items: center; gap: 12px;
         }
         .reader-content {
             flex: 1; overflow-y: auto; padding: 24px 20px 40px;
-            font-size: 18px; line-height: 1.7; color: var(--text-primary);
-            white-space: pre-wrap;
+            font-size: 18px; line-height: 1.7; white-space: pre-wrap;
         }
         .reader-actions {
-            padding: 16px 20px; border-top: 1px solid var(--border);
-            display: flex; gap: 12px; background: var(--bg-secondary);
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 12px; background: #1c1c1e;
         }
 
-        /* Утилиты */
         .hidden { display: none !important; }
-        .section { display: none; }
-        .section.active { display: block; animation: fadeIn 0.3s ease-out; }
-        .loader { text-align: center; padding: 40px; color: var(--text-secondary); }
-        .divider { height: 1px; background: var(--border); margin: 24px 0; }
+        .loader { text-align: center; padding: 40px; color: #8e8e93; }
+        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 24px 0; }
     </style>
 </head>
 <body>
@@ -143,7 +131,7 @@
         <div class="container">
             <div class="header">
                 <h1>Новости</h1>
-                <p>Последние обновления и анонсы</p>
+                <p>Последние обновления</p>
             </div>
             <div id="feed-container"><div class="loader">Загрузка...</div></div>
         </div>
@@ -154,7 +142,7 @@
         <div class="container">
             <div class="header">
                 <h1>Библиотека</h1>
-                <p>Твоя коллекция для чтения</p>
+                <p>Твоя коллекция</p>
             </div>
             <div id="books-container"><div class="loader">Загрузка...</div></div>
         </div>
@@ -165,18 +153,18 @@
         <div class="container">
             <div class="header">
                 <h1>Профиль</h1>
-                <p>Статистика и настройки</p>
+                <p>Статистика</p>
             </div>
             
             <div class="card" style="display: flex; justify-content: space-around; text-align: center; padding: 24px;">
                 <div>
-                    <div style="font-size: 28px; font-weight: 700; color: var(--success);" id="stats-read">0</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Прочитано</div>
+                    <div style="font-size: 28px; font-weight: 700; color: #30d158;" id="stats-read">0</div>
+                    <div style="font-size: 13px; color: #8e8e93; margin-top: 4px;">Прочитано</div>
                 </div>
-                <div style="width: 1px; background: var(--border);"></div>
+                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
                 <div>
-                    <div style="font-size: 28px; font-weight: 700; color: var(--accent);" id="stats-bookmarks">0</div>
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Закладки</div>
+                    <div style="font-size: 28px; font-weight: 700; color: #0a84ff;" id="stats-bookmarks">0</div>
+                    <div style="font-size: 13px; color: #8e8e93; margin-top: 4px;">Закладки</div>
                 </div>
             </div>
 
@@ -184,56 +172,56 @@
             
             <div id="admin-panel" class="hidden">
                 <div class="divider"></div>
-                <h3 style="margin-bottom: 16px; font-size: 20px;">Добавить новость</h3>
+                <h3 style="margin-bottom: 16px;">Добавить новость</h3>
                 <input type="text" id="post-title" class="input" placeholder="Заголовок">
-                <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку (необязательно)">
-                <textarea id="post-text" class="input" placeholder="Текст новости..."></textarea>
+                <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
+                <textarea id="post-text" class="input" placeholder="Текст..."></textarea>
                 <button class="btn" id="btn-add-post">Опубликовать</button>
 
                 <div class="divider"></div>
-                <h3 style="margin-bottom: 16px; font-size: 20px;">Добавить книгу</h3>
-                <input type="text" id="book-title" class="input" placeholder="Название книги">
+                <h3 style="margin-bottom: 16px;">Добавить книгу</h3>
+                <input type="text" id="book-title" class="input" placeholder="Название">
                 <input type="text" id="book-author" class="input" placeholder="Автор">
-                <input type="text" id="book-cover" class="input" placeholder="Ссылка на обложку (необязательно)">
-                <textarea id="book-text" class="input" placeholder="Текст главы..."></textarea>
-                <button class="btn" id="btn-add-book">Добавить в библиотеку</button>
+                <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
+                <textarea id="book-text" class="input" placeholder="Текст..."></textarea>
+                <button class="btn" id="btn-add-book">Добавить</button>
             </div>
         </div>
     </div>
 
-    <!-- ЭКРАН ЧИТАЛКИ -->
+    <!-- ЧИТАЛКА -->
     <div id="reader-overlay" class="reader-overlay">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; margin: 0;" id="close-reader-btn">← Назад</button>
-            <div style="flex: 1; overflow: hidden;">
-                <div id="reader-title" style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-                <div id="reader-author" style="font-size: 13px; color: var(--text-secondary);"></div>
+            <div style="flex: 1;">
+                <div id="reader-title" style="font-weight: 600;"></div>
+                <div id="reader-author" style="font-size: 13px; color: #8e8e93;"></div>
             </div>
         </div>
         <div id="reader-text" class="reader-content"></div>
         <div class="reader-actions">
-            <button class="btn btn-secondary" id="btn-bookmark" style="margin: 0;">🔖 Закладка</button>
-            <button class="btn" id="btn-read" style="margin: 0;">✅ Прочитано</button>
-        </div
+            <button class="btn btn-secondary" id="btn-bookmark" style="margin: 0; flex: 1;">🔖 Закладка</button>
+            <button class="btn" id="btn-read" style="margin: 0; flex: 1;">✅ Прочитано</button>
+        </div>
     </div>
 
-    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <!-- === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" data-target="section-feed">
-            <span class="icon"></span>
+        <button class="nav-btn active" onclick="switchTab('feed')">
+            <span class="icon">🏠</span>
             <span>Лента</span>
         </button>
-        <button class="nav-btn" data-target="section-books">
+        <button class="nav-btn" onclick="switchTab('books')">
             <span class="icon">📚</span>
             <span>Книги</span>
         </button>
-        <button class="nav-btn" data-target="section-profile">
+        <button class="nav-btn" onclick="switchTab('profile')">
             <span class="icon">👤</span>
             <span>Профиль</span>
-        </button
+        </button>
     </nav>
 
-    <!-- FIREBASE И ЛОГИКА -->
+    <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
@@ -245,66 +233,82 @@
             projectId: "book-2b50d",
             storageBucket: "book-2b50d.firebasestorage.app",
             messagingSenderId: "461145405797",
-            appId: "1:461145405797:web:ca65bb4b7f457d6b25098c",
-            measurementId: "G-C6MS8VDR0L"
+            appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            console.log('✅ Firebase подключен');
+        } catch (e) {
+            console.error('❌ Firebase ошибка:', e);
+        }
+
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.ready();
 
-        // Состояние приложения
+        // Данные
         let postsData = [];
         let booksData = [];
-        let readBooks = JSON.parse(localStorage.getItem('sr_read')) || [];
-        let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks')) || [];
+        let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
+        let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
         let currentBookId = null;
 
-        // === 1. ИСПРАВЛЕННАЯ НАВИГАЦИЯ (РАБОТАЕТ 100%) ===
-        const navButtons = document.querySelectorAll('.nav-btn');
-        const sections = document.querySelectorAll('.section');
-
-        navButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Убираем активный класс у всех
-                navButtons.forEach(b => b.classList.remove('active'));
-                sections.forEach(s => s.classList.remove('active'));
-                
-                // Добавляем активный класс нажатой кнопке и соответствующей секции
-                btn.classList.add('active');
-                const targetId = btn.getAttribute('data-target');
-                document.getElementById(targetId).classList.add('active');
-                
-                // Вибрация при переключении (приятный тактильный отклик в Telegram)
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        // === ГЛОБАЛЬНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (РАБОТАЕТ ВСЕГДА) ===
+        window.switchTab = function(tabName) {
+            // Скрываем все секции
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            // Показываем нужную
+            document.getElementById('section-' + tabName).classList.add('active');
+            
+            // Обновляем кнопки
+            document.querySelectorAll('.nav-btn').forEach((btn, index) => {
+                btn.classList.remove('active');
+                if ((tabName === 'feed' && index === 0) || 
+                    (tabName === 'books' && index === 1) || 
+                    (tabName === 'profile' && index === 2)) {
+                    btn.classList.add('active');
+                }
             });
-        });
+            
+            // Вибрация
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        };
 
-        // === 2. FIREBASE: СЛУШАЕМ ДАННЫЕ ===
-        onValue(ref(db, 'posts'), (snapshot) => {
-            const data = snapshot.val();
-            postsData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
-            renderFeed();
-        });
+        // === FIREBASE ===
+        if (db) {
+            onValue(ref(db, 'posts'), (snapshot) => {
+                const data = snapshot.val();
+                postsData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
+                renderFeed();
+            }, (error) => {
+                console.error('Ошибка чтения posts:', error);
+                document.getElementById('feed-container').innerHTML = '<div class="card">Ошибка загрузки. Проверьте правила Firebase.</div>';
+            });
 
-        onValue(ref(db, 'books'), (snapshot) => {
-            const data = snapshot.val();
-            booksData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
-            renderBooks();
-        });
+            onValue(ref(db, 'books'), (snapshot) => {
+                const data = snapshot.val();
+                booksData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
+                renderBooks();
+            }, (error) => {
+                console.error('Ошибка чтения books:', error);
+                document.getElementById('books-container').innerHTML = '<div class="card">Ошибка загрузки.</div>';
+            });
+        } else {
+            document.getElementById('feed-container').innerHTML = '<div class="card">Firebase не подключен</div>';
+            document.getElementById('books-container').innerHTML = '<div class="card">Firebase не подключен</div>';
+        }
 
-        // === 3. ОТРИСОВКА ===
         function renderFeed() {
             const container = document.getElementById('feed-container');
-            if (postsData.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:var(--text-secondary)">Пока нет новостей</div>';
+            if (!postsData.length) {
+                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:#8e8e93">Пока нет новостей</div>';
                 return;
             }
-            container.innerHTML = postsData.map((post, i) => `
-                <div class="card" style="animation-delay: ${i * 0.05}s">
-                    ${post.image ? `<img src="${post.image}" class="card-image" alt="">` : ''}
+            container.innerHTML = postsData.map(post => `
+                <div class="card">
+                    ${post.image ? `<img src="${post.image}" class="card-image">` : ''}
                     <div class="card-title">${post.title}</div>
                     <div class="card-text">${post.text}</div>
                 </div>
@@ -313,67 +317,60 @@
 
         function renderBooks() {
             const container = document.getElementById('books-container');
-            if (booksData.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:var(--text-secondary)">Библиотека пуста</div>';
+            if (!booksData.length) {
+                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:#8e8e93">Библиотека пуста</div>';
                 return;
             }
-            container.innerHTML = booksData.map((book, i) => {
+            container.innerHTML = booksData.map(book => {
                 const isRead = readBooks.includes(book.id);
                 const isBookmarked = bookmarkedBooks.includes(book.id);
                 return `
-                <div class="card book-item" style="animation-delay: ${i * 0.05}s; cursor: pointer;" data-id="${book.id}">
-                    ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" alt="">` : ''}
+                <div class="card" onclick="openBook('${book.id}')" style="cursor:pointer;">
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="card-image">` : ''}
                     <div class="card-title">${book.title}</div>
                     <div class="card-subtitle">${book.author}</div>
-                    <div>
-                        ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''}
-                        ${isBookmarked ? '<span class="badge badge-bookmark">🔖 В закладках</span>' : ''}
-                    </div>
+                    ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''}
+                    ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
                 </div>
             `}).join('');
-
-            // Навешиваем обработчики на книги
-            document.querySelectorAll('.book-item').forEach(item => {
-                item.addEventListener('click', () => openBook(item.getAttribute('data-id')));
-            });
-
-            document.getElementById('stats-read').innerText = readBooks.length;
-            document.getElementById('stats-bookmarks').innerText = bookmarkedBooks.length;
+            
+            document.getElementById('stats-read').textContent = readBooks.length;
+            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
         }
 
-        // === 4. ЧИТАЛКА ===
-        function openBook(id) {
+        // === ЧИТАЛКА ===
+        window.openBook = function(id) {
             currentBookId = id;
             const book = booksData.find(b => b.id === id);
             if (!book) return;
             
-            document.getElementById('reader-title').innerText = book.title;
-            document.getElementById('reader-author').innerText = book.author;
-            document.getElementById('reader-text').innerText = book.text;
+            document.getElementById('reader-title').textContent = book.title;
+            document.getElementById('reader-author').textContent = book.author;
+            document.getElementById('reader-text').textContent = book.text;
             document.getElementById('reader-overlay').classList.add('active');
             
             tg.BackButton.show();
-            tg.BackButton.onClick(closeReader);
-        }
+            tg.BackButton.onClick(() => closeReader());
+        };
 
-        function closeReader() {
+        window.closeReader = function() {
             document.getElementById('reader-overlay').classList.remove('active');
             tg.BackButton.hide();
-            renderBooks(); // Обновить бейджи
-        }
+            renderBooks();
+        };
 
-        document.getElementById('close-reader-btn').addEventListener('click', closeReader);
+        document.getElementById('close-reader-btn').onclick = window.closeReader;
 
-        document.getElementById('btn-read').addEventListener('click', () => {
+        document.getElementById('btn-read').onclick = function() {
             if (!readBooks.includes(currentBookId)) {
                 readBooks.push(currentBookId);
                 localStorage.setItem('sr_read', JSON.stringify(readBooks));
-                tg.showPopup({ title: 'Отлично!', message: 'Книга отмечена как прочитанная', buttons: [{type: 'ok'}] });
+                tg.showPopup({ title: 'Готово!', message: 'Отмечено как прочитанное', buttons: [{type: 'ok'}] });
                 renderBooks();
             }
-        });
+        };
 
-        document.getElementById('btn-bookmark').addEventListener('click', () => {
+        document.getElementById('btn-bookmark').onclick = function() {
             const idx = bookmarkedBooks.indexOf(currentBookId);
             if (idx > -1) {
                 bookmarkedBooks.splice(idx, 1);
@@ -383,53 +380,48 @@
                 tg.showPopup({ title: 'Сохранено', message: 'Добавлено в закладки', buttons: [{type: 'ok'}] });
             }
             localStorage.setItem('sr_bookmarks', JSON.stringify(bookmarkedBooks));
-        });
+        };
 
-        // === 5. АДМИН ПАНЕЛЬ ===
-        document.getElementById('admin-login-btn').addEventListener('click', () => {
-            const pwd = prompt("Пароль автора:");
+        // === АДМИН ===
+        document.getElementById('admin-login-btn').onclick = function() {
+            const pwd = prompt("Пароль:");
             if (pwd === "admin123") {
                 document.getElementById('admin-panel').classList.remove('hidden');
                 document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
-            } else if (pwd !== null) {
+            } else if (pwd) {
                 tg.showAlert('Неверный пароль');
             }
-        });
+        };
 
-        document.getElementById('btn-add-post').addEventListener('click', () => {
+        document.getElementById('btn-add-post').onclick = function() {
             const title = document.getElementById('post-title').value;
             const img = document.getElementById('post-img').value;
             const text = document.getElementById('post-text').value;
-            const btn = document.getElementById('btn-add-post');
-
-            if (!title || !text) return tg.showAlert('Заполни заголовок и текст');
-
-            btn.innerText = 'Публикация...';
-            btn.disabled = true;
-
+            
+            if (!title || !text) return tg.showAlert('Заполни поля');
+            
+            if (!db) return tg.showAlert('Firebase не подключен');
+            
             push(ref(db, 'posts'), { title, image: img, text, createdAt: Date.now() })
                 .then(() => {
                     document.getElementById('post-title').value = '';
                     document.getElementById('post-img').value = '';
                     document.getElementById('post-text').value = '';
-                    tg.showPopup({ title: 'Готово', message: 'Новость видна всем пользователям!', buttons: [{type: 'ok'}] });
+                    tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{type: 'ok'}] });
                 })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message))
-                .finally(() => { btn.innerText = 'Опубликовать'; btn.disabled = false; });
-        });
+                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+        };
 
-        document.getElementById('btn-add-book').addEventListener('click', () => {
+        document.getElementById('btn-add-book').onclick = function() {
             const title = document.getElementById('book-title').value;
             const author = document.getElementById('book-author').value;
             const cover = document.getElementById('book-cover').value;
             const text = document.getElementById('book-text').value;
-            const btn = document.getElementById('btn-add-book');
-
-            if (!title || !text) return tg.showAlert('Заполни название и текст');
-
-            btn.innerText = 'Добавление...';
-            btn.disabled = true;
-
+            
+            if (!title || !text) return tg.showAlert('Заполни поля');
+            
+            if (!db) return tg.showAlert('Firebase не подключен');
+            
             push(ref(db, 'books'), {
                 id: Date.now().toString(),
                 title, author: author || "Неизвестен", coverImage: cover, text, createdAt: Date.now()
@@ -439,11 +431,13 @@
                     document.getElementById('book-author').value = '';
                     document.getElementById('book-cover').value = '';
                     document.getElementById('book-text').value = '';
-                    tg.showPopup({ title: 'Готово', message: 'Книга добавлена в общую библиотеку!', buttons: [{type: 'ok'}] });
+                    tg.showPopup({ title: 'Добавлено!', message: 'Книга в библиотеке', buttons: [{type: 'ok'}] });
                 })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message))
-                .finally(() => { btn.innerText = 'Добавить в библиотеку'; btn.disabled = false; });
-        });
+                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+        };
+
+        // Инициализация
+        console.log('✅ Приложение запущено');
     </script>
 </body>
 </html>
