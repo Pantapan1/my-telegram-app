@@ -7,57 +7,108 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+        :focus-visible { outline: 2px solid #0a84ff; outline-offset: 2px; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0f0f0f;
             color: #ffffff;
-            padding-bottom: 100px;
+            padding-bottom: 110px;
         }
 
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
 
-        .header { padding: 20px 0 30px; }
-        .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-        .header p { color: #8e8e93; font-size: 15px; }
+        .header { padding: 20px 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .header p { color: #8e8e93; font-size: 14px; }
+
+        .icon-btn-refresh {
+            width: 46px; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08);
+            background: #1c1c1e; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; transition: transform .15s;
+        }
+        .icon-btn-refresh:active { transform: scale(0.9) rotate(25deg); }
 
         .card {
             background: #1c1c1e;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
             padding: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
+            transition: transform .15s ease;
         }
+        .card.tappable { cursor: pointer; }
+        .card.tappable:active { transform: scale(0.98); }
 
         .card-image {
-            width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 12px;
+            width: 100%; height: 180px; object-fit: cover; border-radius: 14px; margin-bottom: 12px;
+            background: #2c2c2e;
         }
 
-        .card-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+        .cover-fallback {
+            width: 100%; height: 180px; border-radius: 14px; margin-bottom: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 52px; font-weight: 800; color: rgba(255,255,255,0.92);
+        }
+        .cover-fallback.small { height: 100%; border-radius: 8px; font-size: 20px; }
+
+        .card-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
         .card-subtitle { font-size: 13px; color: #8e8e93; margin-bottom: 10px; }
-        .card-text { font-size: 15px; line-height: 1.5; }
+        .card-text { font-size: 15px; line-height: 1.5; color: #d1d1d6; }
+        .card-text.clamp {
+            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .card-meta { font-size: 12px; color: #636366; margin-top: 10px; }
 
         .badge {
             display: inline-block;
             padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
             margin-top: 10px; margin-right: 6px;
         }
-        .badge-read { background: rgba(48, 209, 88, 0.2); color: #30d158; }
-        .badge-bookmark { background: rgba(10, 132, 255, 0.2); color: #0a84ff; }
+        .badge-read { background: rgba(48, 209, 88, 0.16); color: #30d158; }
+        .badge-bookmark { background: rgba(10, 132, 255, 0.16); color: #0a84ff; }
+        .genre-tag {
+            display: inline-block; padding: 3px 10px; border-radius: 10px;
+            background: rgba(255,159,10,0.16); color: #ff9f0a; font-size: 11px; font-weight: 700;
+            margin-bottom: 8px; letter-spacing: 0.2px;
+        }
 
         .btn {
             width: 100%; padding: 16px; border: none; border-radius: 14px;
             background: #0a84ff; color: #fff;
-            font-size: 16px; font-weight: 600; cursor: pointer;
-            margin-top: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 12px; transition: transform .1s, opacity .1s;
         }
+        .btn:active { transform: scale(0.97); }
         .btn-secondary { background: #1c1c1e; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-danger { background: rgba(255,69,58,0.16); color: #ff453a; }
+        .btn:disabled { opacity: 0.35; pointer-events: none; }
 
         .input {
             width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
             background: #0f0f0f; color: #fff; font-size: 15px; margin-bottom: 12px;
         }
+        .input::placeholder { color: #636366; }
         textarea.input { min-height: 100px; resize: vertical; }
+
+        .top-search { display: flex; gap: 8px; margin-bottom: 16px; }
+        .search-input { flex: 1; margin-bottom: 0 !important; }
+
+        .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .chip {
+            padding: 8px 14px; border-radius: 20px; background: #1c1c1e;
+            border: 1px solid rgba(255,255,255,0.08); color: #8e8e93; font-size: 13px; font-weight: 600;
+            cursor: pointer; white-space: nowrap; transition: all .15s;
+        }
+        .chip.active { background: #0a84ff; color: #fff; border-color: #0a84ff; }
+
+        .tab-mini { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-mini-btn {
+            flex: 1; padding: 11px; border-radius: 12px; background: #0f0f0f;
+            border: 1px solid rgba(255,255,255,0.08); color: #8e8e93; font-size: 13px; font-weight: 700;
+            cursor: pointer; text-align: center; transition: all .15s;
+        }
+        .tab-mini-btn.active { background: #0a84ff; color: #fff; border-color: #0a84ff; }
 
         /* === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === */
         .bottom-nav {
@@ -89,39 +140,126 @@
             gap: 4px !important;
             padding: 8px 20px !important;
             flex: 1 !important;
+            position: relative !important;
+            transition: color .15s, transform .1s !important;
         }
+        .nav-btn:active { transform: scale(0.92) !important; }
 
-        .nav-btn .icon { font-size: 22px !important; }
+        .nav-btn .icon { font-size: 22px !important; position: relative; }
         .nav-btn.active { color: #0a84ff !important; }
+        .nav-badge {
+            position: absolute; top: -2px; right: -6px; width: 9px; height: 9px;
+            border-radius: 50%; background: #ff453a; border: 2px solid #1c1c1e;
+        }
 
         /* СЕКЦИИ */
         .section { display: none; }
         .section.active { display: block; }
 
-        /* ЧИТАЛКА */
+        /* ОВЕРЛЕИ (читалка / пост) */
         .reader-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #0f0f0f; z-index: 1000;
             display: none; flex-direction: column;
         }
         .reader-overlay.active { display: flex; }
-        
+
         .reader-header {
-            padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; gap: 10px;
         }
         .reader-content {
-            flex: 1; overflow-y: auto; padding: 24px 20px 40px;
+            flex: 1; overflow-y: auto; padding: 22px 20px 40px;
             font-size: 18px; line-height: 1.7; white-space: pre-wrap;
         }
         .reader-actions {
-            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; gap: 12px; background: #1c1c1e;
+            padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 8px; background: #1c1c1e;
         }
 
+        .progress-outer {
+            height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08);
+            margin: 0 16px 12px; overflow: hidden; flex-shrink: 0;
+        }
+        .progress-inner { height: 100%; background: #30d158; border-radius: 3px; transition: width .3s; }
+
+        .font-size-controls { display: flex; gap: 6px; flex-shrink: 0; }
+        .font-size-btn {
+            width: 32px; height: 32px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.1);
+            background: #1c1c1e; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+
+        .chapter-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 16px; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: transform .1s;
+        }
+        .chapter-item:active { transform: scale(0.98); }
+        .chapter-item.is-read { opacity: 0.55; }
+        .chapter-item-title { font-size: 15px; font-weight: 600; }
+        .chapter-item-check { color: #30d158; font-size: 16px; }
+
+        /* Реакции и комментарии */
+        .reaction-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .reaction-btn {
+            display: flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 20px;
+            background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08); color: #8e8e93;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+        }
+        .reaction-btn.mine { background: rgba(10,132,255,0.16); border-color: #0a84ff; color: #0a84ff; }
+        .reaction-btn:active { transform: scale(0.92); }
+
+        .comment-count-btn {
+            display: flex; align-items: center; gap: 6px; color: #8e8e93; font-size: 13px;
+            margin-top: 14px; background: none; border: none; cursor: pointer; font-weight: 600;
+        }
+
+        .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .comments-title { font-size: 14px; font-weight: 700; color: #8e8e93; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .comment-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-author { font-weight: 700; font-size: 14px; }
+        .comment-meta { font-size: 11px; color: #636366; margin-left: 8px; font-weight: 400; }
+        .comment-text { font-size: 14.5px; line-height: 1.5; color: #e5e5e7; margin-top: 3px; }
+        .comment-delete { color: #ff453a; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 5px; font-weight: 600; padding: 0; }
+
+        /* Админка */
+        .admin-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            background: #0f0f0f; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 8px;
+        }
+        .admin-item-thumb { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; background: #2c2c2e; flex-shrink: 0; }
+        .admin-item-info { flex: 1; min-width: 0; }
+        .admin-item-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .admin-item-sub { font-size: 12px; color: #8e8e93; margin-top: 1px; }
+        .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .icon-btn { width: 36px; height: 36px; border-radius: 9px; border: none; background: #2c2c2e; color: #fff; font-size: 15px; cursor: pointer; }
+        .icon-btn.danger { background: rgba(255,69,58,0.14); color: #ff453a; }
+        .icon-btn:active { transform: scale(0.9); }
+
+        /* Профиль/статистика */
+        .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 22px 10px; }
+        .stats-num { font-size: 26px; font-weight: 800; }
+        .stats-label { font-size: 12px; color: #8e8e93; margin-top: 4px; }
+        .stats-divider { width: 1px; background: rgba(255,255,255,0.1); }
+        .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
+        .genre-stat-row:last-child { border-bottom: none; }
+
+        /* Пустые состояния и скелетоны */
+        .empty-state { text-align: center; padding: 60px 20px; color: #8e8e93; }
+        .empty-state .icon { font-size: 46px; margin-bottom: 14px; display: block; }
+        .empty-state .title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+        .empty-state .sub { font-size: 13px; }
+
+        .skeleton {
+            background: linear-gradient(90deg, #1c1c1e 25%, #2c2c2e 37%, #1c1c1e 63%);
+            background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite;
+            border-radius: 18px; height: 210px; margin-bottom: 14px;
+        }
+        @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
         .hidden { display: none !important; }
-        .loader { text-align: center; padding: 40px; color: #8e8e93; }
-        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 24px 0; }
+        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 22px 0; }
     </style>
 </head>
 <body>
@@ -130,10 +268,16 @@
     <div id="section-feed" class="section active">
         <div class="container">
             <div class="header">
-                <h1>Новости</h1>
-                <p>Последние обновления</p>
+                <div>
+                    <h1>Новости</h1>
+                    <p>Последние обновления</p>
+                </div>
+                <button class="icon-btn-refresh" id="refresh-feed-btn" title="Обновить">🔄</button>
             </div>
-            <div id="feed-container"><div class="loader">Загрузка...</div></div>
+            <div class="top-search">
+                <input type="text" class="input search-input" id="feed-search" placeholder="🔍 Поиск новостей...">
+            </div>
+            <div id="feed-container"><div class="skeleton"></div><div class="skeleton"></div></div>
         </div>
     </div>
 
@@ -141,10 +285,22 @@
     <div id="section-books" class="section">
         <div class="container">
             <div class="header">
-                <h1>Библиотека</h1>
-                <p>Твоя коллекция</p>
+                <div>
+                    <h1>Библиотека</h1>
+                    <p>Твоя коллекция</p>
+                </div>
             </div>
-            <div id="books-container"><div class="loader">Загрузка...</div></div>
+            <div class="top-search">
+                <input type="text" class="input search-input" id="book-search" placeholder="🔍 Поиск книг...">
+            </div>
+            <div class="chip-row" id="genre-filter-row"></div>
+            <div class="chip-row">
+                <button class="chip active" data-sort="new" onclick="setSort('new')">Новые</button>
+                <button class="chip" data-sort="unread" onclick="setSort('unread')">Не прочитано</button>
+                <button class="chip" data-sort="read" onclick="setSort('read')">Прочитано</button>
+                <button class="chip" data-sort="bookmark" onclick="setSort('bookmark')">Закладки</button>
+            </div>
+            <div id="books-container"><div class="skeleton"></div><div class="skeleton"></div></div>
         </div>
     </div>
 
@@ -152,63 +308,128 @@
     <div id="section-profile" class="section">
         <div class="container">
             <div class="header">
-                <h1>Профиль</h1>
-                <p>Статистика</p>
+                <div>
+                    <h1>Профиль</h1>
+                    <p>Статистика</p>
+                </div>
             </div>
-            
-            <div class="card" style="display: flex; justify-content: space-around; text-align: center; padding: 24px;">
+
+            <div class="card stats-grid">
                 <div>
-                    <div style="font-size: 28px; font-weight: 700; color: #30d158;" id="stats-read">0</div>
-                    <div style="font-size: 13px; color: #8e8e93; margin-top: 4px;">Прочитано</div>
+                    <div class="stats-num" style="color:#30d158;" id="stats-read">0</div>
+                    <div class="stats-label">Прочитано</div>
                 </div>
-                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+                <div class="stats-divider"></div>
                 <div>
-                    <div style="font-size: 28px; font-weight: 700; color: #0a84ff;" id="stats-bookmarks">0</div>
-                    <div style="font-size: 13px; color: #8e8e93; margin-top: 4px;">Закладки</div>
+                    <div class="stats-num" style="color:#0a84ff;" id="stats-bookmarks">0</div>
+                    <div class="stats-label">Закладки</div>
                 </div>
+                <div class="stats-divider"></div>
+                <div>
+                    <div class="stats-num" style="color:#ff9f0a;" id="stats-streak">0</div>
+                    <div class="stats-label">Дней подряд</div>
+                </div>
+            </div>
+
+            <div class="card" id="genre-stats-card" style="display:none;">
+                <div class="comments-title" style="margin-bottom:4px;">По жанрам</div>
+                <div id="genre-stats-container"></div>
             </div>
 
             <button class="btn btn-secondary" id="admin-login-btn">🔐 Панель автора</button>
-            
+
             <div id="admin-panel" class="hidden">
                 <div class="divider"></div>
-                <h3 style="margin-bottom: 16px;">Добавить новость</h3>
-                <input type="text" id="post-title" class="input" placeholder="Заголовок">
-                <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
-                <textarea id="post-text" class="input" placeholder="Текст..."></textarea>
-                <button class="btn" id="btn-add-post">Опубликовать</button>
 
-                <div class="divider"></div>
-                <h3 style="margin-bottom: 16px;">Добавить книгу</h3>
-                <input type="text" id="book-title" class="input" placeholder="Название">
-                <input type="text" id="book-author" class="input" placeholder="Автор">
-                <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
-                <textarea id="book-text" class="input" placeholder="Текст..."></textarea>
-                <button class="btn" id="btn-add-book">Добавить</button>
+                <div class="tab-mini">
+                    <button class="tab-mini-btn active" id="admin-tab-btn-posts" onclick="switchAdminTab('posts')">📰 Новости</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-books" onclick="switchAdminTab('books')">📚 Книги</button>
+                </div>
+
+                <!-- ВКЛАДКА: НОВОСТИ -->
+                <div id="admin-tab-posts">
+                    <h3 style="margin-bottom:16px;" id="post-form-heading">Добавить новость</h3>
+                    <input type="text" id="post-title" class="input" placeholder="Заголовок">
+                    <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
+                    <textarea id="post-text" class="input" placeholder="Текст..."></textarea>
+                    <button class="btn" id="btn-add-post">Опубликовать</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-post">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:16px;">Управление новостями</h3>
+                    <div id="admin-posts-list"></div>
+                </div>
+
+                <!-- ВКЛАДКА: КНИГИ -->
+                <div id="admin-tab-books" class="hidden">
+                    <h3 style="margin-bottom:16px;" id="book-form-heading">Добавить книгу</h3>
+                    <input type="text" id="book-title" class="input" placeholder="Название">
+                    <input type="text" id="book-author" class="input" placeholder="Автор">
+                    <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
+                    <input type="text" id="book-genre" class="input" placeholder="Жанр (напр. Фантастика)">
+                    <button class="btn" id="btn-add-book">Добавить книгу</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:16px;">Добавить главу</h3>
+                    <select id="chapter-book-select" class="input"></select>
+                    <input type="text" id="chapter-title" class="input" placeholder="Название главы">
+                    <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
+                    <button class="btn" id="btn-add-chapter">Добавить главу</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:16px;">Управление книгами</h3>
+                    <div id="admin-books-list"></div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ОВЕРЛЕЙ ПОСТА (детали + реакции + комментарии) -->
+    <div id="post-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-post-btn">← Назад</button>
+            <div style="flex:1;min-width:0;">
+                <div id="post-overlay-title" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+        </div>
+        <div class="reader-content" id="post-overlay-content" style="white-space:normal;"></div>
+        <div class="reader-actions" style="flex-direction:column;align-items:stretch;">
+            <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:8px;min-height:44px;"></textarea>
+            <button class="btn" id="btn-send-comment" style="margin-top:0;">Отправить</button>
         </div>
     </div>
 
     <!-- ЧИТАЛКА -->
     <div id="reader-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; margin: 0;" id="close-reader-btn">← Назад</button>
-            <div style="flex: 1;">
-                <div id="reader-title" style="font-weight: 600;"></div>
-                <div id="reader-author" style="font-size: 13px; color: #8e8e93;"></div>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-reader-btn">← Назад</button>
+            <div style="flex:1;min-width:0;">
+                <div id="reader-title" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="reader-author" style="font-size:13px;color:#8e8e93;"></div>
+            </div>
+            <div class="font-size-controls" id="reader-font-controls">
+                <button class="font-size-btn" id="font-dec">A-</button>
+                <button class="font-size-btn" id="font-inc">A+</button>
             </div>
         </div>
-        <div id="reader-text" class="reader-content"></div>
-        <div class="reader-actions">
-            <button class="btn btn-secondary" id="btn-bookmark" style="margin: 0; flex: 1;">🔖 Закладка</button>
-            <button class="btn" id="btn-read" style="margin: 0; flex: 1;">✅ Прочитано</button>
+        <div class="progress-outer hidden" id="reader-progress-wrap" style="margin-top:12px;">
+            <div class="progress-inner" id="reader-progress-inner" style="width:0%;"></div>
+        </div>
+        <div id="reader-body" class="reader-content"></div>
+        <div class="reader-actions hidden" id="reader-actions-chapter">
+            <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1;">←</button>
+            <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1;">📤</button>
+            <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1;">🔖</button>
+            <button class="btn" id="btn-read" style="margin:0;flex:1;">✅</button>
+            <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1;">→</button>
         </div>
     </div>
 
     <!-- === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === -->
     <nav class="bottom-nav">
         <button class="nav-btn active" onclick="switchTab('feed')">
-            <span class="icon">🏠</span>
+            <span class="icon">🏠<span class="nav-badge hidden" id="feed-nav-badge"></span></span>
             <span>Лента</span>
         </button>
         <button class="nav-btn" onclick="switchTab('books')">
@@ -224,7 +445,7 @@
     <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -247,32 +468,90 @@
 
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
+
+        // === ПОЛЬЗОВАТЕЛЬ ===
+        const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+        let currentUser;
+        if (tgUser) {
+            currentUser = {
+                id: String(tgUser.id),
+                name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'
+            };
+        } else {
+            let guestId = localStorage.getItem('sr_guest_id');
+            if (!guestId) {
+                guestId = 'guest_' + Math.random().toString(36).slice(2, 10);
+                localStorage.setItem('sr_guest_id', guestId);
+            }
+            currentUser = { id: guestId, name: 'Гость' };
+        }
+
+        const EMOJIS = ['👍', '❤️', '🔥', '😢', '👏'];
+        const COVER_COLORS = ['#0a84ff', '#30d158', '#ff9f0a', '#ff453a', '#bf5af2', '#64d2ff'];
+        function colorFor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length];
+        }
+        function initialOf(str) { return (str || '?').trim().charAt(0).toUpperCase() || '?'; }
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+        }
+        function formatDate(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
 
         // Данные
         let postsData = [];
         let booksData = [];
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
+        let progressStore = JSON.parse(localStorage.getItem('sr_progress') || '{}');
+        let streakStore = JSON.parse(localStorage.getItem('sr_streak') || '{"count":0,"lastDate":null}');
+        let lastSeenPostsCount = parseInt(localStorage.getItem('sr_last_seen_posts_count') || '0', 10);
+        let readerFontSize = parseInt(localStorage.getItem('sr_fontsize') || '18', 10);
+
+        let currentPostId = null;
         let currentBookId = null;
+        let currentChapters = [];
+        let currentChapterIndex = 0;
+        let activeOverlay = null; // 'post' | 'reader' | null
+
+        let feedSearchTerm = '';
+        let bookSearchTerm = '';
+        let activeGenre = 'Все';
+        let sortMode = 'new';
+
+        let isAdmin = false;
+        let editingPostId = null;
+        let editingBookId = null;
+
+        function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
         // === ГЛОБАЛЬНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (РАБОТАЕТ ВСЕГДА) ===
         window.switchTab = function(tabName) {
-            // Скрываем все секции
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            // Показываем нужную
             document.getElementById('section-' + tabName).classList.add('active');
-            
-            // Обновляем кнопки
+
             document.querySelectorAll('.nav-btn').forEach((btn, index) => {
                 btn.classList.remove('active');
-                if ((tabName === 'feed' && index === 0) || 
-                    (tabName === 'books' && index === 1) || 
+                if ((tabName === 'feed' && index === 0) ||
+                    (tabName === 'books' && index === 1) ||
                     (tabName === 'profile' && index === 2)) {
                     btn.classList.add('active');
                 }
             });
-            
-            // Вибрация
+
+            if (tabName === 'feed') {
+                lastSeenPostsCount = postsData.length;
+                localStorage.setItem('sr_last_seen_posts_count', String(lastSeenPostsCount));
+                document.getElementById('feed-nav-badge').classList.add('hidden');
+            }
+            if (tabName === 'profile') renderProfileStats();
+
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         };
 
@@ -280,94 +559,357 @@
         if (db) {
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
-                postsData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
+                postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
+                if (postsData.length > lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
+                    document.getElementById('feed-nav-badge').classList.remove('hidden');
+                }
                 renderFeed();
+                if (isAdmin) renderAdminPostsList();
+                if (activeOverlay === 'post') renderPostOverlay();
             }, (error) => {
                 console.error('Ошибка чтения posts:', error);
-                document.getElementById('feed-container').innerHTML = '<div class="card">Ошибка загрузки. Проверьте правила Firebase.</div>';
+                document.getElementById('feed-container').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Ошибка загрузки</div><div class="sub">Проверьте правила доступа Firebase</div></div>';
             });
 
             onValue(ref(db, 'books'), (snapshot) => {
                 const data = snapshot.val();
-                booksData = data ? Object.values(data).sort((a, b) => b.createdAt - a.createdAt) : [];
+                booksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
                 renderBooks();
+                renderGenreFilterRow();
+                if (isAdmin) { renderAdminBooksList(); populateChapterBookSelect(); }
+                if (activeOverlay === 'reader' && currentBookId) {
+                    const book = booksData.find(b => b.id === currentBookId);
+                    if (book) { currentChapters = getChapters(book); renderChapterListView(book); }
+                }
             }, (error) => {
                 console.error('Ошибка чтения books:', error);
-                document.getElementById('books-container').innerHTML = '<div class="card">Ошибка загрузки.</div>';
+                document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Ошибка загрузки</div></div>';
             });
         } else {
-            document.getElementById('feed-container').innerHTML = '<div class="card">Firebase не подключен</div>';
-            document.getElementById('books-container').innerHTML = '<div class="card">Firebase не подключен</div>';
+            document.getElementById('feed-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
+            document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
         }
 
+        // === ЛЕНТА ===
         function renderFeed() {
             const container = document.getElementById('feed-container');
-            if (!postsData.length) {
-                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:#8e8e93">Пока нет новостей</div>';
+            let list = postsData;
+            if (feedSearchTerm) {
+                const q = feedSearchTerm.toLowerCase();
+                list = list.filter(p => (p.title || '').toLowerCase().includes(q) || (p.text || '').toLowerCase().includes(q));
+            }
+            if (!list.length) {
+                container.innerHTML = postsData.length
+                    ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Попробуйте другой запрос</div></div>'
+                    : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div><div class="sub">Загляните позже</div></div>';
                 return;
             }
-            container.innerHTML = postsData.map(post => `
-                <div class="card">
-                    ${post.image ? `<img src="${post.image}" class="card-image">` : ''}
-                    <div class="card-title">${post.title}</div>
-                    <div class="card-text">${post.text}</div>
-                </div>
-            `).join('');
+            container.innerHTML = list.map(post => {
+                const reactions = post.reactions || {};
+                const counts = {};
+                Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
+                const topReactions = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
+                return `
+                <div class="card tappable" onclick="openPost('${post.id}')">
+                    ${post.image ? `<img src="${post.image}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    <div class="card-title">${escapeHtml(post.title)}</div>
+                    <div class="card-text clamp">${escapeHtml(post.text)}</div>
+                    <div class="card-meta">${formatDate(post.createdAt)}</div>
+                    <div class="reaction-bar">
+                        ${topReactions.length ? topReactions.map(([e, c]) => `<span class="reaction-btn">${e} ${c}</span>`).join('') : ''}
+                        <span class="comment-count-btn" style="margin-top:0;">💬 ${commentsCount}</span>
+                    </div>
+                </div>`;
+            }).join('');
         }
+
+        document.getElementById('feed-search').addEventListener('input', (e) => { feedSearchTerm = e.target.value; renderFeed(); });
+        document.getElementById('refresh-feed-btn').onclick = function() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            renderFeed();
+        };
+
+        // === ОВЕРЛЕЙ ПОСТА (детали, реакции, комментарии) ===
+        window.openPost = function(id) {
+            currentPostId = id;
+            activeOverlay = 'post';
+            renderPostOverlay();
+            document.getElementById('post-overlay').classList.add('active');
+            tg.BackButton.show();
+        };
+
+        function renderPostOverlay() {
+            const post = postsData.find(p => p.id === currentPostId);
+            if (!post) return;
+            document.getElementById('post-overlay-title').textContent = post.title;
+
+            const reactions = post.reactions || {};
+            const myReaction = reactions[currentUser.id];
+            const counts = {};
+            Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
+
+            const comments = post.comments ? Object.entries(post.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt) : [];
+
+            document.getElementById('post-overlay-content').innerHTML = `
+                ${post.image ? `<img src="${post.image}" class="card-image" style="margin-bottom:16px;" onerror="this.style.display='none'">` : ''}
+                <div style="font-size:16px;line-height:1.6;color:#e5e5e7;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
+                <div class="card-meta">${formatDate(post.createdAt)}</div>
+                <div class="reaction-bar">
+                    ${EMOJIS.map(e => `<button class="reaction-btn ${myReaction === e ? 'mine' : ''}" onclick="toggleReaction('${post.id}','${e}')">${e} ${counts[e] || ''}</button>`).join('')}
+                </div>
+                <button class="btn btn-secondary" style="margin-top:14px;" onclick="sharePost('${post.id}')">📤 Поделиться</button>
+                <div class="comments-block">
+                    <div class="comments-title">Комментарии (${comments.length})</div>
+                    ${comments.length ? comments.map(c => `
+                        <div class="comment-item">
+                            <div><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-meta">${formatDate(c.createdAt)}</span></div>
+                            <div class="comment-text">${escapeHtml(c.text)}</div>
+                            ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" onclick="deleteComment('${post.id}','${c.id}')">Удалить</button>` : ''}
+                        </div>
+                    `).join('') : '<div style="color:#8e8e93;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
+                </div>
+            `;
+        }
+
+        window.toggleReaction = function(postId, emoji) {
+            if (!db) return;
+            const post = postsData.find(p => p.id === postId);
+            const current = post && post.reactions ? post.reactions[currentUser.id] : null;
+            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), current === emoji ? null : emoji);
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        };
+
+        window.sharePost = function(postId) {
+            const post = postsData.find(p => p.id === postId);
+            if (!post) return;
+            const shareText = post.title + '\n\n' + post.text;
+            if (navigator.share) {
+                navigator.share({ title: post.title, text: shareText }).catch(() => {});
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
+            }
+        };
+
+        document.getElementById('btn-send-comment').onclick = function() {
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
+            if (!text) return tg.showAlert('Напишите текст комментария');
+            if (!db) return tg.showAlert('Firebase не подключен');
+            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text, createdAt: Date.now() })
+                .then(() => { input.value = ''; if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); })
+                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+        };
+
+        window.deleteComment = function(postId, commentId) {
+            tg.showConfirm('Удалить комментарий?', (ok) => {
+                if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`));
+            });
+        };
+
+        document.getElementById('close-post-btn').onclick = function() {
+            document.getElementById('post-overlay').classList.remove('active');
+            activeOverlay = null;
+            tg.BackButton.hide();
+        };
+
+        // === КНИГИ ===
+        function getChapters(book) {
+            if (book.chapters) {
+                return Object.entries(book.chapters).map(([id, c]) => ({ id, ...c })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            }
+            if (book.text) return [{ id: 'legacy', title: 'Глава 1', text: book.text }];
+            return [];
+        }
+
+        function bookProgress(book) {
+            const chapters = getChapters(book);
+            if (!chapters.length) return { readCount: 0, total: 0, pct: 0 };
+            const p = progressStore[book.id];
+            const readCount = p && p.readIdx ? p.readIdx.length : 0;
+            return { readCount, total: chapters.length, pct: Math.round((readCount / chapters.length) * 100) };
+        }
+
+        function renderGenreFilterRow() {
+            const genres = Array.from(new Set(booksData.map(b => b.genre).filter(Boolean)));
+            const row = document.getElementById('genre-filter-row');
+            if (!genres.length) { row.innerHTML = ''; return; }
+            const all = ['Все', ...genres];
+            row.innerHTML = all.map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" onclick="setGenre('${g.replace(/'/g, "\\'")}')">${escapeHtml(g)}</button>`).join('');
+        }
+
+        window.setGenre = function(g) { activeGenre = g; renderGenreFilterRow(); renderBooks(); };
+        window.setSort = function(mode) {
+            sortMode = mode;
+            document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === mode));
+            renderBooks();
+        };
+
+        document.getElementById('book-search').addEventListener('input', (e) => { bookSearchTerm = e.target.value; renderBooks(); });
 
         function renderBooks() {
             const container = document.getElementById('books-container');
-            if (!booksData.length) {
-                container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:#8e8e93">Библиотека пуста</div>';
+            let list = booksData.slice();
+
+            if (bookSearchTerm) {
+                const q = bookSearchTerm.toLowerCase();
+                list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
+            }
+            if (activeGenre !== 'Все') list = list.filter(b => b.genre === activeGenre);
+
+            if (sortMode === 'unread') list = list.filter(b => !readBooks.includes(b.id));
+            if (sortMode === 'read') list = list.filter(b => readBooks.includes(b.id));
+            if (sortMode === 'bookmark') list = list.filter(b => bookmarkedBooks.includes(b.id));
+
+            if (!list.length) {
+                container.innerHTML = booksData.length
+                    ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Измените поиск или фильтр</div></div>'
+                    : '<div class="empty-state"><span class="icon">📚</span><div class="title">Библиотека пуста</div><div class="sub">Добавьте первую книгу в панели автора</div></div>';
+                document.getElementById('stats-read').textContent = readBooks.length;
+                document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
                 return;
             }
-            container.innerHTML = booksData.map(book => {
+
+            container.innerHTML = list.map(book => {
                 const isRead = readBooks.includes(book.id);
                 const isBookmarked = bookmarkedBooks.includes(book.id);
+                const prog = bookProgress(book);
                 return `
-                <div class="card" onclick="openBook('${book.id}')" style="cursor:pointer;">
-                    ${book.coverImage ? `<img src="${book.coverImage}" class="card-image">` : ''}
-                    <div class="card-title">${book.title}</div>
-                    <div class="card-subtitle">${book.author}</div>
+                <div class="card tappable" onclick="openBook('${book.id}')">
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
+                    ${book.genre ? `<div class="genre-tag">${escapeHtml(book.genre)}</div>` : ''}
+                    <div class="card-title">${escapeHtml(book.title)}</div>
+                    <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
                     ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''}
                     ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
-                </div>
-            `}).join('');
-            
+                    ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:10px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
+                </div>`;
+            }).join('');
+
             document.getElementById('stats-read').textContent = readBooks.length;
             document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
         }
 
         // === ЧИТАЛКА ===
         window.openBook = function(id) {
-            currentBookId = id;
             const book = booksData.find(b => b.id === id);
             if (!book) return;
-            
-            document.getElementById('reader-title').textContent = book.title;
-            document.getElementById('reader-author').textContent = book.author;
-            document.getElementById('reader-text').textContent = book.text;
+            currentBookId = id;
+            activeOverlay = 'reader';
+            currentChapters = getChapters(book);
+
             document.getElementById('reader-overlay').classList.add('active');
-            
             tg.BackButton.show();
-            tg.BackButton.onClick(() => closeReader());
+
+            if (currentChapters.length <= 1) {
+                openChapter(id, 0);
+            } else {
+                renderChapterListView(book);
+            }
         };
 
-        window.closeReader = function() {
-            document.getElementById('reader-overlay').classList.remove('active');
-            tg.BackButton.hide();
-            renderBooks();
+        function renderChapterListView(book) {
+            document.getElementById('reader-title').textContent = book.title;
+            document.getElementById('reader-author').textContent = book.author || '';
+            document.getElementById('reader-font-controls').classList.add('hidden');
+            document.getElementById('reader-progress-wrap').classList.remove('hidden');
+            document.getElementById('reader-actions-chapter').classList.add('hidden');
+
+            const prog = bookProgress(book);
+            document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
+
+            const readIdx = (progressStore[book.id] && progressStore[book.id].readIdx) || [];
+            document.getElementById('reader-body').innerHTML = `
+                <div style="margin-bottom:16px;color:#8e8e93;font-size:13px;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
+                ${currentChapters.map((ch, idx) => `
+                    <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
+                        <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
+                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#636366;">→</span>'}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        window.openChapter = function(bookId, idx) {
+            const book = booksData.find(b => b.id === bookId);
+            if (!book) return;
+            currentBookId = bookId;
+            currentChapters = getChapters(book);
+            currentChapterIndex = idx;
+
+            if (!progressStore[bookId]) progressStore[bookId] = { readIdx: [], lastIdx: 0 };
+            progressStore[bookId].lastIdx = idx;
+            saveLocal('sr_progress', progressStore);
+
+            const chapter = currentChapters[idx];
+            document.getElementById('reader-title').textContent = book.title + (currentChapters.length > 1 ? ' · ' + (chapter.title || ('Глава ' + (idx + 1))) : '');
+            document.getElementById('reader-author').textContent = book.author || '';
+            document.getElementById('reader-font-controls').classList.remove('hidden');
+            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
+            document.getElementById('reader-body').textContent = chapter.text;
+            document.getElementById('reader-actions-chapter').classList.remove('hidden');
+
+            const readIdx = progressStore[bookId].readIdx || [];
+            document.getElementById('reader-progress-wrap').classList.remove('hidden');
+            document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
+
+            document.getElementById('btn-prev-chapter').disabled = idx === 0;
+            document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
+
+            const isBookmarked = bookmarkedBooks.includes(bookId);
+            document.getElementById('btn-bookmark').textContent = isBookmarked ? '🔖✓' : '🔖';
         };
 
-        document.getElementById('close-reader-btn').onclick = window.closeReader;
+        document.getElementById('btn-prev-chapter').onclick = () => { if (currentChapterIndex > 0) openChapter(currentBookId, currentChapterIndex - 1); };
+        document.getElementById('btn-next-chapter').onclick = () => { if (currentChapterIndex < currentChapters.length - 1) openChapter(currentBookId, currentChapterIndex + 1); };
+
+        document.getElementById('font-dec').onclick = () => {
+            readerFontSize = Math.max(14, readerFontSize - 2);
+            localStorage.setItem('sr_fontsize', String(readerFontSize));
+            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
+        };
+        document.getElementById('font-inc').onclick = () => {
+            readerFontSize = Math.min(28, readerFontSize + 2);
+            localStorage.setItem('sr_fontsize', String(readerFontSize));
+            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
+        };
+
+        document.getElementById('btn-share-chapter').onclick = () => {
+            const book = booksData.find(b => b.id === currentBookId);
+            if (!book) return;
+            const chapter = currentChapters[currentChapterIndex];
+            const shareText = book.title + (chapter ? ' — ' + (chapter.title || '') : '');
+            if (navigator.share) navigator.share({ title: book.title, text: shareText }).catch(() => {});
+            else if (navigator.clipboard) navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Скопировано', buttons: [{ type: 'ok' }] }));
+        };
+
+        function updateStreak() {
+            const today = new Date().toDateString();
+            if (streakStore.lastDate === today) return;
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
+            streakStore.count = (streakStore.lastDate === yesterday) ? streakStore.count + 1 : 1;
+            streakStore.lastDate = today;
+            saveLocal('sr_streak', streakStore);
+        }
 
         document.getElementById('btn-read').onclick = function() {
-            if (!readBooks.includes(currentBookId)) {
-                readBooks.push(currentBookId);
-                localStorage.setItem('sr_read', JSON.stringify(readBooks));
-                tg.showPopup({ title: 'Готово!', message: 'Отмечено как прочитанное', buttons: [{type: 'ok'}] });
-                renderBooks();
+            const bookId = currentBookId;
+            if (!progressStore[bookId]) progressStore[bookId] = { readIdx: [], lastIdx: 0 };
+            if (!progressStore[bookId].readIdx.includes(currentChapterIndex)) {
+                progressStore[bookId].readIdx.push(currentChapterIndex);
+                saveLocal('sr_progress', progressStore);
             }
+            if (progressStore[bookId].readIdx.length >= currentChapters.length && !readBooks.includes(bookId)) {
+                readBooks.push(bookId);
+                saveLocal('sr_read', readBooks);
+                updateStreak();
+                renderProfileStats();
+                tg.showPopup({ title: 'Книга прочитана! 🎉', message: 'Поздравляем, вы закончили книгу', buttons: [{ type: 'ok' }] });
+            } else if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            const readIdx = progressStore[bookId].readIdx;
+            document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
         };
 
         document.getElementById('btn-bookmark').onclick = function() {
@@ -377,66 +919,243 @@
                 tg.showAlert('Удалено из закладок');
             } else {
                 bookmarkedBooks.push(currentBookId);
-                tg.showPopup({ title: 'Сохранено', message: 'Добавлено в закладки', buttons: [{type: 'ok'}] });
+                tg.showPopup({ title: 'Сохранено', message: 'Добавлено в закладки', buttons: [{ type: 'ok' }] });
             }
-            localStorage.setItem('sr_bookmarks', JSON.stringify(bookmarkedBooks));
+            saveLocal('sr_bookmarks', bookmarkedBooks);
+            document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(currentBookId) ? '🔖✓' : '🔖';
         };
+
+        document.getElementById('close-reader-btn').onclick = function() {
+            document.getElementById('reader-overlay').classList.remove('active');
+            activeOverlay = null;
+            tg.BackButton.hide();
+            renderBooks();
+        };
+
+        // === ЕДИНАЯ КНОПКА "НАЗАД" TELEGRAM ===
+        tg.BackButton.onClick(() => {
+            if (activeOverlay === 'post') document.getElementById('close-post-btn').click();
+            else if (activeOverlay === 'reader') document.getElementById('close-reader-btn').click();
+        });
+
+        // === ПРОФИЛЬ / СТАТИСТИКА ===
+        function renderProfileStats() {
+            document.getElementById('stats-read').textContent = readBooks.length;
+            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
+            document.getElementById('stats-streak').textContent = streakStore.count || 0;
+
+            const genreCounts = {};
+            readBooks.forEach(id => {
+                const b = booksData.find(bk => bk.id === id);
+                if (b && b.genre) genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1;
+            });
+            const entries = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
+            const card = document.getElementById('genre-stats-card');
+            if (entries.length) {
+                card.style.display = '';
+                document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `
+                    <div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#8e8e93;">${c} ${c === 1 ? 'книга' : 'книг'}</span></div>
+                `).join('');
+            } else {
+                card.style.display = 'none';
+            }
+        }
 
         // === АДМИН ===
         document.getElementById('admin-login-btn').onclick = function() {
+            if (isAdmin) {
+                document.getElementById('admin-panel').classList.toggle('hidden');
+                return;
+            }
             const pwd = prompt("Пароль:");
             if (pwd === "admin123") {
+                isAdmin = true;
                 document.getElementById('admin-panel').classList.remove('hidden');
                 document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+                renderAdminPostsList();
+                renderAdminBooksList();
+                populateChapterBookSelect();
             } else if (pwd) {
                 tg.showAlert('Неверный пароль');
             }
         };
 
+        window.switchAdminTab = function(tab) {
+            document.getElementById('admin-tab-posts').classList.toggle('hidden', tab !== 'posts');
+            document.getElementById('admin-tab-books').classList.toggle('hidden', tab !== 'books');
+            document.getElementById('admin-tab-btn-posts').classList.toggle('active', tab === 'posts');
+            document.getElementById('admin-tab-btn-books').classList.toggle('active', tab === 'books');
+        };
+
+        function renderAdminPostsList() {
+            const el = document.getElementById('admin-posts-list');
+            if (!el) return;
+            if (!postsData.length) { el.innerHTML = '<div style="color:#8e8e93;font-size:13px;">Новостей пока нет</div>'; return; }
+            el.innerHTML = postsData.map(post => `
+                <div class="admin-item">
+                    ${post.image ? `<img src="${post.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(post.title)}</div>
+                        <div class="admin-item-sub">${formatDate(post.createdAt)}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editPost('${post.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="deletePost('${post.id}')">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.editPost = function(id) {
+            const post = postsData.find(p => p.id === id);
+            if (!post) return;
+            editingPostId = id;
+            document.getElementById('post-title').value = post.title || '';
+            document.getElementById('post-img').value = post.image || '';
+            document.getElementById('post-text').value = post.text || '';
+            document.getElementById('post-form-heading').textContent = 'Редактировать новость';
+            document.getElementById('btn-add-post').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-post').classList.remove('hidden');
+            document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        function resetPostForm() {
+            editingPostId = null;
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-img').value = '';
+            document.getElementById('post-text').value = '';
+            document.getElementById('post-form-heading').textContent = 'Добавить новость';
+            document.getElementById('btn-add-post').textContent = 'Опубликовать';
+            document.getElementById('btn-cancel-edit-post').classList.add('hidden');
+        }
+        document.getElementById('btn-cancel-edit-post').onclick = resetPostForm;
+
+        window.deletePost = function(id) {
+            tg.showConfirm('Удалить новость безвозвратно?', (ok) => {
+                if (ok) remove(ref(db, 'posts/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
+            });
+        };
+
         document.getElementById('btn-add-post').onclick = function() {
-            const title = document.getElementById('post-title').value;
-            const img = document.getElementById('post-img').value;
-            const text = document.getElementById('post-text').value;
-            
+            const title = document.getElementById('post-title').value.trim();
+            const img = document.getElementById('post-img').value.trim();
+            const text = document.getElementById('post-text').value.trim();
+
             if (!title || !text) return tg.showAlert('Заполни поля');
-            
             if (!db) return tg.showAlert('Firebase не подключен');
-            
-            push(ref(db, 'posts'), { title, image: img, text, createdAt: Date.now() })
-                .then(() => {
-                    document.getElementById('post-title').value = '';
-                    document.getElementById('post-img').value = '';
-                    document.getElementById('post-text').value = '';
-                    tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{type: 'ok'}] });
-                })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+
+            if (editingPostId) {
+                update(ref(db, 'posts/' + editingPostId), { title, image: img, text })
+                    .then(() => { resetPostForm(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); })
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            } else {
+                push(ref(db, 'posts'), { title, image: img, text, createdAt: Date.now() })
+                    .then(() => { resetPostForm(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); })
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            }
+        };
+
+        function renderAdminBooksList() {
+            const el = document.getElementById('admin-books-list');
+            if (!el) return;
+            if (!booksData.length) { el.innerHTML = '<div style="color:#8e8e93;font-size:13px;">Книг пока нет</div>'; return; }
+            el.innerHTML = booksData.map(book => `
+                <div class="admin-item">
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(book.title)}</div>
+                        <div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editBook('${book.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="deleteBook('${book.id}')">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.editBook = function(id) {
+            const book = booksData.find(b => b.id === id);
+            if (!book) return;
+            editingBookId = id;
+            document.getElementById('book-title').value = book.title || '';
+            document.getElementById('book-author').value = book.author || '';
+            document.getElementById('book-cover').value = book.coverImage || '';
+            document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-form-heading').textContent = 'Редактировать книгу';
+            document.getElementById('btn-add-book').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-book').classList.remove('hidden');
+            document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        function resetBookForm() {
+            editingBookId = null;
+            document.getElementById('book-title').value = '';
+            document.getElementById('book-author').value = '';
+            document.getElementById('book-cover').value = '';
+            document.getElementById('book-genre').value = '';
+            document.getElementById('book-form-heading').textContent = 'Добавить книгу';
+            document.getElementById('btn-add-book').textContent = 'Добавить книгу';
+            document.getElementById('btn-cancel-edit-book').classList.add('hidden');
+        }
+        document.getElementById('btn-cancel-edit-book').onclick = resetBookForm;
+
+        window.deleteBook = function(id) {
+            tg.showConfirm('Удалить книгу безвозвратно? Все главы будут удалены.', (ok) => {
+                if (ok) remove(ref(db, 'books/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
+            });
         };
 
         document.getElementById('btn-add-book').onclick = function() {
-            const title = document.getElementById('book-title').value;
-            const author = document.getElementById('book-author').value;
-            const cover = document.getElementById('book-cover').value;
-            const text = document.getElementById('book-text').value;
-            
-            if (!title || !text) return tg.showAlert('Заполни поля');
-            
+            const title = document.getElementById('book-title').value.trim();
+            const author = document.getElementById('book-author').value.trim();
+            const cover = document.getElementById('book-cover').value.trim();
+            const genre = document.getElementById('book-genre').value.trim();
+
+            if (!title) return tg.showAlert('Укажи название книги');
             if (!db) return tg.showAlert('Firebase не подключен');
-            
-            push(ref(db, 'books'), {
-                id: Date.now().toString(),
-                title, author: author || "Неизвестен", coverImage: cover, text, createdAt: Date.now()
-            })
+
+            if (editingBookId) {
+                update(ref(db, 'books/' + editingBookId), { title, author: author || 'Неизвестен', coverImage: cover, genre })
+                    .then(() => { resetBookForm(); tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); })
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            } else {
+                push(ref(db, 'books'), { title, author: author || 'Неизвестен', coverImage: cover, genre, createdAt: Date.now() })
+                    .then(() => { resetBookForm(); tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); })
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            }
+        };
+
+        function populateChapterBookSelect() {
+            const sel = document.getElementById('chapter-book-select');
+            if (!sel) return;
+            const prevVal = sel.value;
+            sel.innerHTML = booksData.length
+                ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
+                : '<option value="">Сначала добавьте книгу</option>';
+            if (booksData.some(b => b.id === prevVal)) sel.value = prevVal;
+        }
+
+        document.getElementById('btn-add-chapter').onclick = function() {
+            const bookId = document.getElementById('chapter-book-select').value;
+            const title = document.getElementById('chapter-title').value.trim();
+            const text = document.getElementById('chapter-text').value.trim();
+
+            if (!bookId) return tg.showAlert('Сначала добавьте книгу');
+            if (!text) return tg.showAlert('Введите текст главы');
+            if (!db) return tg.showAlert('Firebase не подключен');
+
+            push(ref(db, 'books/' + bookId + '/chapters'), { title: title || '', text, createdAt: Date.now() })
                 .then(() => {
-                    document.getElementById('book-title').value = '';
-                    document.getElementById('book-author').value = '';
-                    document.getElementById('book-cover').value = '';
-                    document.getElementById('book-text').value = '';
-                    tg.showPopup({ title: 'Добавлено!', message: 'Книга в библиотеке', buttons: [{type: 'ok'}] });
+                    document.getElementById('chapter-title').value = '';
+                    document.getElementById('chapter-text').value = '';
+                    tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] });
                 })
                 .catch(err => tg.showAlert('Ошибка: ' + err.message));
         };
 
         // Инициализация
+        renderProfileStats();
         console.log('✅ Приложение запущено');
     </script>
 </body>
