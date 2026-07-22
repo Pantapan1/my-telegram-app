@@ -336,7 +336,7 @@
         .msg-row { display: flex; margin-bottom: 16px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         
-        /* ЗАКРУГЛЕННЫЕ И ПРИЯТНЫЕ СООБЩЕНИЯ (ИСПРАВЛЕННЫЕ) */
+        /* ЗАКРУГЛЕННЫЕ И ПРИЯТНЫЕ СООБЩЕНИЯ */
         .msg-bubble { 
             max-width: 80%; width: fit-content; height: fit-content; padding: 10px 14px; border-radius: 20px; 
             font-size: 15.5px; line-height: 1.4; position: relative; 
@@ -585,11 +585,15 @@
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Добавить главу</h3>
-                    <select id="chapter-book-select" class="input" style="appearance: none;"></select>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление главами</h3>
+                    <select id="chapter-book-select" class="input" style="appearance: none; margin-bottom: 12px;"></select>
+                    
+                    <div id="admin-chapters-list"></div>
+
+                    <h4 style="margin-bottom:12px; margin-top:8px; color:#2c3e50; font-size:15px;">Добавить новую главу</h4>
                     <input type="text" id="chapter-title" class="input" placeholder="Название главы">
                     <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
-                    <button class="btn" id="btn-add-chapter">Добавить главу</button>
+                    <button class="btn" id="btn-add-chapter">Опубликовать главу</button>
 
                     <div class="divider"></div>
                     <h3 style="margin-bottom:16px; color:#2c3e50;">Управление книгами</h3>
@@ -1831,11 +1835,19 @@
         }
         document.getElementById('btn-cancel-edit-book').onclick = resetBookForm;
 
-        function deleteBook(id) {
-            tg.showConfirm('Удалить книгу безвозвратно? Все главы будут удалены.', (ok) => {
-                if (ok) remove(ref(db, 'books/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success')).catch(err => tg.showAlert(friendlyDbError(err)));
+        // ИЗМЕНЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ КНИГИ С ГАРАНТИЕЙ УДАЛЕНИЯ ИЗ FIREBASE
+        window.deleteBook = function(id) {
+            tg.showConfirm('Удалить книгу безвозвратно прямо из базы Firebase? Все главы будут стерты.', (ok) => {
+                if (ok) {
+                    remove(ref(db, 'books/' + id))
+                        .then(() => {
+                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                            tg.showPopup({ title: 'Готово', message: 'Книга успешно стёрта из базы', buttons: [{ type: 'ok' }] });
+                        })
+                        .catch(err => tg.showAlert('Ошибка удаления из Firebase: ' + friendlyDbError(err)));
+                }
             });
-        }
+        };
 
         document.getElementById('btn-add-book').onclick = function() {
             const title = document.getElementById('book-title').value.trim();
@@ -1857,6 +1869,55 @@
             }
         };
 
+        // НОВЫЙ БЛОК: УПРАВЛЕНИЕ ГЛАВАМИ
+        document.getElementById('chapter-book-select').addEventListener('change', renderAdminChaptersList);
+
+        function renderAdminChaptersList() {
+            const bookId = document.getElementById('chapter-book-select').value;
+            const container = document.getElementById('admin-chapters-list');
+            if (!bookId) { container.innerHTML = ''; return; }
+            
+            const book = booksData.find(b => b.id === bookId);
+            if (!book) { container.innerHTML = ''; return; }
+            
+            const chapters = getChapters(book);
+            if (!chapters.length) {
+                container.innerHTML = '<div style="color:#7f8c8d;font-size:13px; margin-bottom: 16px;">В этой книге пока нет глав</div>';
+                return;
+            }
+            
+            container.innerHTML = chapters.map((ch, idx) => `
+                <div class="admin-item" style="padding: 10px; min-height: auto; margin-bottom: 8px;">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title" style="font-size: 14px;">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn danger" data-del-chapter-book="${bookId}" data-del-chapter-id="${ch.id}" style="width:34px;height:34px;font-size:14px;">🗑</button>
+                    </div>
+                </div>
+            `).join('') + '<div style="margin-bottom:16px;"></div>';
+
+            container.querySelectorAll('[data-del-chapter-id]').forEach(b => {
+                b.onclick = () => deleteChapter(b.getAttribute('data-del-chapter-book'), b.getAttribute('data-del-chapter-id'));
+            });
+        }
+
+        window.deleteChapter = function(bookId, chapterId) {
+            tg.showConfirm('Удалить эту главу из Firebase?', (ok) => {
+                if (ok) {
+                    let refPath = `books/${bookId}/chapters/${chapterId}`;
+                    if (chapterId === 'legacy') refPath = `books/${bookId}/text`;
+                    
+                    remove(ref(db, refPath))
+                        .then(() => {
+                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                            tg.showAlert('Глава стёрта из базы.');
+                        })
+                        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                }
+            });
+        };
+
         function populateChapterBookSelect() {
             const sel = document.getElementById('chapter-book-select');
             if (!sel) return;
@@ -1865,6 +1926,10 @@
                 ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
                 : '<option value="">Сначала добавьте книгу</option>';
             if (booksData.some(b => b.id === prevVal)) sel.value = prevVal;
+            else if (booksData.length > 0) sel.value = booksData[0].id;
+            
+            // Синхронизируем список глав для выбранной книги
+            renderAdminChaptersList();
         }
 
         document.getElementById('btn-add-chapter').onclick = function() {
@@ -1890,4 +1955,4 @@
         console.log('✅ Приложение запущено');
     </script>
 </body>
-    </html>
+</html>
