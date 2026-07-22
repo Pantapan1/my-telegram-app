@@ -779,6 +779,36 @@
         };
 
         // === ЗАГРУЗКА КАРТИНОК С УСТРОЙСТВА ===
+        function withTimeout(promise, ms, timeoutMessage) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms))
+            ]);
+        }
+
+        function friendlyDbError(err) {
+            const msg = (err && err.message) || String(err);
+            if (msg.includes('PERMISSION_DENIED') || msg.includes('Permission denied')) {
+                return 'Нет доступа к базе данных. В консоли Firebase откройте Realtime Database → Rules и разрешите чтение/запись для узлов users и chats.';
+            }
+            return 'Ошибка: ' + msg;
+        }
+
+        function friendlyUploadError(err) {
+            const msg = (err && err.message) || String(err);
+            const code = (err && err.code) || '';
+            if (code.includes('unauthorized') || msg.includes('PERMISSION') || msg.includes('permission')) {
+                return 'Нет доступа к Firebase Storage. Проверьте правила доступа (Storage → Rules) в консоли Firebase.';
+            }
+            if (code.includes('unknown') || msg.includes('CORS') || msg.includes('таймаут') || msg.includes('timeout')) {
+                return 'Не удалось загрузить файл. Проверьте, что в проекте включён Firebase Storage (Build → Storage → Get started) и настроены правила доступа.';
+            }
+            if (code.includes('quota')) {
+                return 'Превышена квота хранилища Firebase Storage.';
+            }
+            return 'Ошибка загрузки: ' + msg;
+        }
+
         function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
             const fileInput = document.getElementById(fileInputId);
             const btn = document.getElementById(uploadBtnId);
@@ -786,20 +816,22 @@
             fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!storage) { tg.showAlert('Загрузка недоступна: Firebase Storage не подключен'); return; }
+                if (!storage) { tg.showAlert('Загрузка недоступна: Firebase Storage не подключен'); fileInput.value = ''; return; }
+                if (!file.type.startsWith('image/')) { tg.showAlert('Выберите файл изображения'); fileInput.value = ''; return; }
                 if (file.size > 8 * 1024 * 1024) { tg.showAlert('Файл слишком большой (максимум 8 МБ)'); fileInput.value = ''; return; }
                 btn.classList.add('uploading');
                 btn.textContent = '⏳';
                 try {
                     const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
                     const sRef = storageRef(storage, path);
-                    await uploadBytes(sRef, file);
-                    const url = await getDownloadURL(sRef);
+                    await withTimeout(uploadBytes(sRef, file), 20000, 'Превышено время ожидания загрузки (таймаут)');
+                    const url = await withTimeout(getDownloadURL(sRef), 15000, 'Превышено время ожидания получения ссылки (таймаут)');
                     document.getElementById(textInputId).value = url;
                     if (onDone) onDone(url);
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 } catch (err) {
-                    tg.showAlert('Ошибка загрузки: ' + err.message);
+                    console.error('Ошибка загрузки файла:', err);
+                    tg.showAlert(friendlyUploadError(err));
                 } finally {
                     btn.classList.remove('uploading');
                     btn.textContent = '📁';
@@ -994,19 +1026,19 @@
             if (editingUserPostId) {
                 update(ref(db, 'posts/' + editingUserPostId), { title, image: img, text })
                     .then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
                 const me = usersData.find(u => u.id === currentUser.id);
                 push(ref(db, 'posts'), {
                     title, image: img, text, createdAt: Date.now(),
                     authorId: currentUser.id, authorName: currentUser.name, authorAvatar: (me && me.avatar) || ''
                 }).then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); })
-                  .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                  .catch(err => tg.showAlert(friendlyDbError(err)));
             }
         };
         window.deleteOwnPost = function(id) {
             tg.showConfirm('Удалить этот пост?', (ok) => {
-                if (ok) remove(ref(db, 'posts/' + id)).then(() => { document.getElementById('close-post-btn').click(); });
+                if (ok) remove(ref(db, 'posts/' + id)).then(() => { document.getElementById('close-post-btn').click(); }).catch(err => tg.showAlert(friendlyDbError(err)));
             });
         };
 
@@ -1081,7 +1113,7 @@
             const post = postsData.find(p => p.id === postId);
             const current = post && post.reactions ? post.reactions[currentUser.id] : null;
             const newVal = current === emoji ? null : emoji;
-            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal);
+            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal).catch(err => tg.showAlert(friendlyDbError(err)));
             update(ref(db, 'users/' + currentUser.id), { lastReactionEmoji: newVal, lastReactionAt: newVal ? Date.now() : null }).catch(() => {});
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
@@ -1104,12 +1136,12 @@
             if (!db) return tg.showAlert('Firebase не подключен');
             push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text, createdAt: Date.now() })
                 .then(() => { input.value = ''; if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                .catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
         function deleteComment(postId, commentId) {
             tg.showConfirm('Удалить комментарий?', (ok) => {
-                if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`));
+                if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`)).catch(err => tg.showAlert(friendlyDbError(err)));
             });
         }
 
@@ -1444,11 +1476,11 @@
         }
 
         function pinQuote(chatId, text, author) {
-            update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } });
+            update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }).catch(err => tg.showAlert(friendlyDbError(err)));
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
         document.getElementById('btn-unpin-quote').onclick = function() {
-            update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null });
+            update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }).catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
         function sendChatMessage() {
@@ -1460,7 +1492,7 @@
                     update(ref(db, 'chats/' + currentChatId), { lastMessage: text, lastMessageAt: Date.now() });
                     input.value = '';
                 })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                .catch(err => tg.showAlert(friendlyDbError(err)));
         }
         document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
@@ -1518,7 +1550,7 @@
                     participants: { [currentUser.id]: true, [otherId]: true },
                     participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName },
                     createdAt: Date.now()
-                });
+                }).catch(err => tg.showAlert(friendlyDbError(err)));
             }
             openChat(chatId);
         }
@@ -1567,7 +1599,7 @@
                     document.getElementById('profile-edit-panel').classList.add('hidden');
                     tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] });
                 })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                .catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
         function renderProfileStats() {
@@ -1676,7 +1708,7 @@
 
         function deletePost(id) {
             tg.showConfirm('Удалить новость безвозвратно?', (ok) => {
-                if (ok) remove(ref(db, 'posts/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
+                if (ok) remove(ref(db, 'posts/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success')).catch(err => tg.showAlert(friendlyDbError(err)));
             });
         }
 
@@ -1691,11 +1723,11 @@
             if (editingPostId) {
                 update(ref(db, 'posts/' + editingPostId), { title, image: img, text })
                     .then(() => { resetPostForm(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
                 push(ref(db, 'posts'), { title, image: img, text, createdAt: Date.now() })
                     .then(() => { resetPostForm(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert(friendlyDbError(err)));
             }
         };
 
@@ -1748,7 +1780,7 @@
 
         function deleteBook(id) {
             tg.showConfirm('Удалить книгу безвозвратно? Все главы будут удалены.', (ok) => {
-                if (ok) remove(ref(db, 'books/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
+                if (ok) remove(ref(db, 'books/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success')).catch(err => tg.showAlert(friendlyDbError(err)));
             });
         }
 
@@ -1764,11 +1796,11 @@
             if (editingBookId) {
                 update(ref(db, 'books/' + editingBookId), { title, author: author || 'Неизвестен', coverImage: cover, genre })
                     .then(() => { resetBookForm(); tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
                 push(ref(db, 'books'), { title, author: author || 'Неизвестен', coverImage: cover, genre, createdAt: Date.now() })
                     .then(() => { resetBookForm(); tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert(friendlyDbError(err)));
             }
         };
 
@@ -1797,7 +1829,7 @@
                     document.getElementById('chapter-text').value = '';
                     tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] });
                 })
-                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+                .catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
         // Инициализация
@@ -1805,4 +1837,4 @@
         console.log('✅ Приложение запущено');
     </script>
 </body>
-</html>
+    </html>
