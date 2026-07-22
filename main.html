@@ -118,16 +118,16 @@
         .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .chip.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
-        .tab-mini { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-mini { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab-mini::-webkit-scrollbar { display: none; }
         .tab-mini-btn {
             flex: 1; padding: 12px; border-radius: 16px; background: #ffffff;
             border: 1px solid rgba(0,0,0,0.05); color: #7f8c8d; font-size: 14px; font-weight: 700;
             cursor: pointer; text-align: center; transition: all .2s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02); white-space: nowrap;
         }
         .tab-mini-btn.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
-        /* Загрузка картинок с устройства */
         .image-field-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
         .image-field-row .input { margin-bottom: 0; flex: 1; }
         .upload-btn {
@@ -141,7 +141,6 @@
         .image-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 16px; margin: -4px 0 12px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .image-preview.show { display: block; }
 
-        /* === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === */
         .bottom-nav {
             position: fixed !important;
             bottom: 0 !important;
@@ -184,7 +183,6 @@
             border-radius: 50%; background: #ff453a; border: 2px solid #fff;
         }
 
-        /* СЕКЦИИ И АНИМАЦИИ */
         .section { display: none; }
         .section.active { display: block; animation: slideUpFade 0.4s ease forwards; }
         
@@ -193,7 +191,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ОВЕРЛЕИ (читалка / пост / чат / компоузер) */
         .reader-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #fdfbf7; z-index: 10000;
@@ -244,7 +241,6 @@
         .chapter-item-title { font-size: 16px; font-weight: 600; color: #2c3e50; }
         .chapter-item-check { color: #30d158; font-size: 18px; }
 
-        /* Реакции и комментарии */
         .reaction-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
         .reaction-btn {
             display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px;
@@ -268,14 +264,13 @@
         .comment-meta { font-size: 12px; color: #95a5a6; margin-left: 8px; font-weight: 500; }
         .comment-text { font-size: 15px; line-height: 1.5; color: #4a4a4a; margin-top: 6px; }
         .comment-delete { color: #e74c3c; font-size: 13px; background: none; border: none; cursor: pointer; margin-top: 8px; font-weight: 600; padding: 0; }
+        .comment-sticker { max-width: 120px; height: auto; border-radius: 12px; object-fit: contain; margin-top: 8px; display: block; }
 
-        /* Автор поста */
         .avatar-sm { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .avatar-sm-fallback { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .post-author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; width: fit-content; }
         .post-author-name { font-size: 14px; font-weight: 700; color: #2c3e50; }
 
-        /* Админка */
         .admin-item {
             display: flex; align-items: center; gap: 12px; padding: 12px;
             background: #ffffff; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px; margin-bottom: 10px;
@@ -286,11 +281,10 @@
         .admin-item-title { font-size: 15px; font-weight: 700; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .admin-item-sub { font-size: 13px; color: #7f8c8d; margin-top: 2px; }
         .admin-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
-        .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #f4f6f7; color: #2c3e50; font-size: 16px; cursor: pointer; transition: all .2s; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #f4f6f7; color: #2c3e50; font-size: 16px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
         .icon-btn.danger { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
         .icon-btn:active { transform: scale(0.9); }
 
-        /* Профиль */
         .profile-banner-wrap { position: relative; margin-bottom: 52px; }
         .profile-banner { width: 100%; height: 140px; border-radius: 24px; object-fit: cover; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
         .profile-banner-fallback { width: 100%; height: 140px; border-radius: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
@@ -307,7 +301,6 @@
         .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 15px; font-weight: 500; color: #2c3e50; }
         .genre-stat-row:last-child { border-bottom: none; }
 
-        /* Чаты */
         .chat-list-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: all .2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
         .chat-list-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
         .chat-list-item:active { transform: scale(0.97); }
@@ -336,7 +329,6 @@
         .msg-row { display: flex; margin-bottom: 16px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         
-        /* ЗАКРУГЛЕННЫЕ И ПРИЯТНЫЕ СООБЩЕНИЯ */
         .msg-bubble { 
             max-width: 80%; width: fit-content; height: fit-content; padding: 10px 14px; border-radius: 20px; 
             font-size: 15.5px; line-height: 1.4; position: relative; 
@@ -354,7 +346,15 @@
             border: none;
         }
         
+        .msg-sticker {
+            max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
+            box-shadow: none; display: block;
+        }
+        .msg-row:not(.mine) .msg-sticker-wrap { padding-left: 0; }
+        .msg-row.mine .msg-sticker-wrap { padding-right: 0; }
+        
         .msg-time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; text-align: right; font-weight: 600; }
+        .msg-time.sticker-time { text-align: center; background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 10px; display: inline-block; margin: 4px auto 0; font-size: 10px;}
         .msg-pin-btn { position: absolute; top: -10px; right: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; color: #ff9f0a; line-height: 1; transition: transform .2s; }
         .msg-pin-btn:hover { transform: scale(1.1); }
 
@@ -368,12 +368,25 @@
         .pinned-quote-bar button { background: none; border: none; color: #e65100; cursor: pointer; font-size: 16px; flex-shrink: 0; font-weight: 700; transition: transform .2s; }
         .pinned-quote-bar button:active { transform: scale(0.8); }
 
-        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(0,0,0,0.05); background: #ffffff; flex-shrink: 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); z-index: 2;}
+        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(0,0,0,0.05); background: #ffffff; flex-shrink: 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); z-index: 2; align-items: center;}
         .chat-input-row input { flex: 1; margin-bottom: 0 !important; background: #f4f6f7; border-color: transparent; }
         .chat-send-btn { width: 52px; height: 52px; border-radius: 20px; border: none; background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 20px; cursor: pointer; flex-shrink: 0; transition: all .2s; box-shadow: 0 4px 12px rgba(237, 143, 3, 0.3); }
         .chat-send-btn:active { transform: scale(0.9); }
+        
+        .sticker-toggle { background: none; border: none; font-size: 28px; cursor: pointer; padding: 0 5px; transition: transform 0.2s;}
+        .sticker-toggle:active { transform: scale(0.9); }
 
-        /* Пустые состояния и скелетоны */
+        .sticker-picker {
+            display: flex; gap: 12px; overflow-x: auto; padding: 12px 16px; background: #ffffff; border-top: 1px solid rgba(0,0,0,0.05);
+            align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.02); z-index: 2; height: 90px; flex-shrink:0;
+        }
+        .sticker-picker::-webkit-scrollbar { display: none; }
+        .sticker-picker img {
+            width: 64px; height: 64px; object-fit: contain; cursor: pointer; transition: transform 0.2s;
+            background: #f4f6f7; border-radius: 12px; padding: 4px; border: 1px solid rgba(0,0,0,0.04); flex-shrink: 0;
+        }
+        .sticker-picker img:active { transform: scale(0.9); }
+
         .empty-state { text-align: center; padding: 60px 20px; color: #7f8c8d; }
         .empty-state .icon { font-size: 52px; margin-bottom: 16px; display: block; animation: float 3s ease-in-out infinite; }
         .empty-state .title { font-size: 18px; font-weight: 800; color: #2c3e50; margin-bottom: 8px; }
@@ -396,7 +409,6 @@
         .hidden { display: none !important; }
         .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 24px 0; }
         
-        /* Красивые скроллбары под летний стиль */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
@@ -550,18 +562,18 @@
                 <div class="tab-mini">
                     <button class="tab-mini-btn active" id="admin-tab-btn-posts" onclick="switchAdminTab('posts')">📰 Новости</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-books" onclick="switchAdminTab('books')">📚 Книги</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-stickers" onclick="switchAdminTab('stickers')">🖼 Стикеры</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
                 <div id="admin-tab-posts">
                     <h3 style="margin-bottom:16px; color:#2c3e50;" id="post-form-heading">Добавить новость</h3>
                     <input type="text" id="post-title" class="input" placeholder="Заголовок">
-                    <div class="image-field-row">
-                        <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
-                        <label class="upload-btn" for="post-img-file" id="post-img-upload-btn">📁</label>
-                        <input type="file" id="post-img-file" accept="image/*" class="hidden">
-                    </div>
-                    <textarea id="post-text" class="input" placeholder="Текст..."></textarea>
+                    
+                    <div id="admin-post-images-container"></div>
+                    <button class="btn btn-secondary" id="btn-admin-add-image" style="margin-bottom:12px; padding: 12px; border-radius: 16px;">+ Добавить картинку</button>
+                    
+                    <textarea id="post-text" class="input" placeholder="Объемный текст статьи..." style="min-height: 200px;"></textarea>
                     <button class="btn" id="btn-add-post">Опубликовать</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-post">Отменить редактирование</button>
 
@@ -599,6 +611,21 @@
                     <h3 style="margin-bottom:16px; color:#2c3e50;">Управление книгами</h3>
                     <div id="admin-books-list"></div>
                 </div>
+
+                <!-- ВКЛАДКА: СТИКЕРЫ -->
+                <div id="admin-tab-stickers" class="hidden">
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Добавить стикер</h3>
+                    <div class="image-field-row">
+                        <input type="text" id="sticker-url-input" class="input" placeholder="Ссылка на стикер (URL)">
+                        <label class="upload-btn" for="sticker-file" id="sticker-upload-btn">📁</label>
+                        <input type="file" id="sticker-file" accept="image/*" class="hidden">
+                    </div>
+                    <button class="btn" id="btn-add-sticker" style="margin-top: 0;">Добавить стикер в чаты</button>
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Все стикеры</h3>
+                    <div id="admin-stickers-list" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -611,10 +638,14 @@
                 <div id="post-overlay-title" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color:#2c3e50; font-size:18px;"></div>
             </div>
         </div>
-        <div class="reader-content" id="post-overlay-content" style="white-space:normal;"></div>
-        <div class="reader-actions" style="flex-direction:column;align-items:stretch;">
-            <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:10px;min-height:50px;"></textarea>
-            <button class="btn" id="btn-send-comment" style="margin-top:0;">Отправить</button>
+        <div class="reader-content" id="post-overlay-content" style="white-space:normal; line-height: 1.8;"></div>
+        <div class="reader-actions" style="flex-direction:column;align-items:stretch; padding: 12px 16px;">
+            <div class="sticker-picker hidden" id="comment-sticker-picker" style="border-top: none; padding: 0 0 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 10px; box-shadow: none;"></div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="sticker-toggle" id="btn-toggle-comment-stickers">🤩</button>
+                <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px;"></textarea>
+                <button class="chat-send-btn" id="btn-send-comment">➤</button>
+            </div>
         </div>
     </div>
 
@@ -626,13 +657,11 @@
         </div>
         <div class="reader-content" style="white-space:normal;">
             <input type="text" id="compose-title" class="input" placeholder="Заголовок">
-            <div class="image-field-row">
-                <input type="text" id="compose-img" class="input" placeholder="Ссылка на картинку (необязательно)">
-                <label class="upload-btn" for="compose-img-file" id="compose-img-upload-btn">📁</label>
-                <input type="file" id="compose-img-file" accept="image/*" class="hidden">
-            </div>
-            <img id="compose-img-preview" class="image-preview" src="">
-            <textarea id="compose-text" class="input" placeholder="Что у вас нового?" style="min-height:160px;"></textarea>
+            
+            <div id="compose-images-container"></div>
+            <button class="btn btn-secondary" id="btn-compose-add-image" style="margin-bottom:12px; padding: 12px; border-radius: 16px;">+ Добавить картинку</button>
+            
+            <textarea id="compose-text" class="input" placeholder="Текст вашей статьи..." style="min-height:200px;"></textarea>
             <button class="btn" id="btn-submit-compose">Опубликовать</button>
         </div>
     </div>
@@ -667,7 +696,11 @@
             <div class="chat-quote-watermark" id="chat-quote-watermark"></div>
             <div class="chat-messages-list" id="chat-messages-list"></div>
         </div>
+        
+        <div class="sticker-picker hidden" id="chat-sticker-picker"></div>
+        
         <div class="chat-input-row">
+            <button class="sticker-toggle" id="btn-toggle-stickers">🤩</button>
             <input type="text" id="chat-message-input" class="input" placeholder="Сообщение...">
             <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
         </div>
@@ -794,11 +827,11 @@
             return `<div class="${cls}-fallback" style="background:${colorFor(name || '')}">${initialOf(name)}</div>`;
         }
 
-        // Данные
         let postsData = [];
         let booksData = [];
         let usersData = [];
         let chatsData = [];
+        let stickersData = [];
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
         let progressStore = JSON.parse(localStorage.getItem('sr_progress') || '{}');
@@ -826,7 +859,6 @@
 
         function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-        // === ГЛОБАЛЬНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ===
         window.switchTab = function(tabName) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + tabName).classList.add('active');
@@ -880,9 +912,7 @@
             return 'Ошибка загрузки: ' + msg;
         }
 
-        function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
-            const fileInput = document.getElementById(fileInputId);
-            const btn = document.getElementById(uploadBtnId);
+        function setupImageUploadFlex(fileInput, textInput, btn, pathPrefix, onDone) {
             if (!fileInput || !btn) return;
             fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
@@ -897,7 +927,7 @@
                     const sRef = storageRef(storage, path);
                     await withTimeout(uploadBytes(sRef, file), 20000, 'Таймаут загрузки');
                     const url = await withTimeout(getDownloadURL(sRef), 15000, 'Таймаут ссылки');
-                    document.getElementById(textInputId).value = url;
+                    if(textInput) textInput.value = url;
                     if (onDone) onDone(url);
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 } catch (err) {
@@ -909,22 +939,41 @@
                 }
             });
         }
-        setupImageUpload('post-img-file', 'post-img', 'post-img-upload-btn', 'posts');
+        function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
+            setupImageUploadFlex(document.getElementById(fileInputId), document.getElementById(textInputId), document.getElementById(uploadBtnId), pathPrefix, onDone);
+        }
+
         setupImageUpload('book-cover-file', 'book-cover', 'book-cover-upload-btn', 'books');
         setupImageUpload('profile-avatar-file', 'profile-avatar-input', 'profile-avatar-upload-btn', 'avatars');
         setupImageUpload('profile-banner-file', 'profile-banner-input', 'profile-banner-upload-btn', 'banners');
-        setupImageUpload('compose-img-file', 'compose-img', 'compose-img-upload-btn', 'posts', (url) => {
-            const preview = document.getElementById('compose-img-preview');
-            preview.src = url;
-            preview.classList.add('show');
-        });
-        document.getElementById('compose-img').addEventListener('input', (e) => {
-            const preview = document.getElementById('compose-img-preview');
-            if (e.target.value.trim()) { preview.src = e.target.value.trim(); preview.classList.add('show'); }
-            else preview.classList.remove('show');
-        });
+        setupImageUpload('sticker-file', 'sticker-url-input', 'sticker-upload-btn', 'stickers');
 
-        // === FIREBASE: ПОЛЬЗОВАТЕЛЬСКИЙ ПРОФИЛЬ ===
+        // === ДИНАМИЧЕСКИЕ КАРТИНКИ ДЛЯ ПОСТОВ ===
+        window.createPostImageField = function(containerId, url = '') {
+            const id = 'img_' + Math.random().toString(36).substr(2, 9);
+            const div = document.createElement('div');
+            div.className = 'image-field-row dynamic-img-row';
+            div.innerHTML = `
+                <input type="text" class="input post-image-input" placeholder="Ссылка на картинку" value="${escapeHtml(url)}">
+                <label class="upload-btn" for="file_${id}" id="btn_${id}">📁</label>
+                <input type="file" id="file_${id}" accept="image/*" class="hidden">
+                <button class="icon-btn danger" onclick="this.parentElement.remove()" style="width:52px;height:52px;flex-shrink:0;">🗑</button>
+            `;
+            document.getElementById(containerId).appendChild(div);
+            setupImageUploadFlex(div.querySelector(`#file_${id}`), div.querySelector('.post-image-input'), div.querySelector(`#btn_${id}`), 'posts');
+        }
+        document.getElementById('btn-admin-add-image').onclick = () => createPostImageField('admin-post-images-container');
+        document.getElementById('btn-compose-add-image').onclick = () => createPostImageField('compose-images-container');
+
+        function getImagesFromContainer(containerId) {
+            const inputs = document.getElementById(containerId).querySelectorAll('.post-image-input');
+            return Array.from(inputs).map(inp => inp.value.trim()).filter(Boolean);
+        }
+        function populateImagesContainer(containerId, imagesArr) {
+            document.getElementById(containerId).innerHTML = '';
+            imagesArr.forEach(url => createPostImageField(containerId, url));
+        }
+
         function ensureUserProfile() {
             if (!db) return;
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, lastSeen: Date.now() }).catch(() => {});
@@ -934,7 +983,6 @@
             setInterval(ensureUserProfile, 60000);
         }
 
-        // === FIREBASE: ЧТЕНИЕ ДАННЫХ ===
         if (db) {
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
@@ -982,6 +1030,13 @@
                     if (chat) renderChatOverlay(chat);
                 }
             });
+
+            onValue(ref(db, 'stickers'), (snapshot) => {
+                const data = snapshot.val();
+                stickersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (isAdmin) renderAdminStickersList();
+                renderStickerPicker();
+            });
         }
 
         // === ЛЕНТА ===
@@ -1004,6 +1059,10 @@
                 Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
                 const topReactions = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
                 const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
+                
+                const imagesArr = post.images || (post.image ? [post.image] : []);
+                const coverImage = imagesArr.length > 0 ? imagesArr[0] : null;
+                
                 const authorRow = post.authorId ? `
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
@@ -1012,7 +1071,7 @@
                 return `
                 <div class="card tappable" data-post-id="${post.id}">
                     ${authorRow}
-                    ${post.image ? `<img src="${post.image}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    ${coverImage ? `<img src="${coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="card-title">${escapeHtml(post.title)}</div>
                     <div class="card-text clamp">${escapeHtml(post.text)}</div>
                     <div class="card-meta">${formatDate(post.createdAt)}</div>
@@ -1041,14 +1100,13 @@
             renderFeed();
         };
 
-        // === КОМПОУЗЕР (пост пользователя) ===
+        // === КОМПОУЗЕР ===
         function resetComposeForm() {
             editingUserPostId = null;
             document.getElementById('compose-heading').textContent = 'Написать в ленту';
             document.getElementById('compose-title').value = '';
-            document.getElementById('compose-img').value = '';
+            document.getElementById('compose-images-container').innerHTML = '';
             document.getElementById('compose-text').value = '';
-            document.getElementById('compose-img-preview').classList.remove('show');
             document.getElementById('btn-submit-compose').textContent = 'Опубликовать';
         }
         document.getElementById('btn-open-compose').onclick = function() {
@@ -1068,9 +1126,9 @@
             editingUserPostId = id;
             document.getElementById('compose-heading').textContent = 'Редактировать пост';
             document.getElementById('compose-title').value = post.title || '';
-            document.getElementById('compose-img').value = post.image || '';
+            const imagesArr = post.images || (post.image ? [post.image] : []);
+            populateImagesContainer('compose-images-container', imagesArr);
             document.getElementById('compose-text').value = post.text || '';
-            if (post.image) { document.getElementById('compose-img-preview').src = post.image; document.getElementById('compose-img-preview').classList.add('show'); }
             document.getElementById('btn-submit-compose').textContent = 'Сохранить изменения';
             document.getElementById('post-overlay').classList.remove('active');
             document.getElementById('compose-overlay').classList.add('active');
@@ -1079,19 +1137,20 @@
         };
         document.getElementById('btn-submit-compose').onclick = function() {
             const title = document.getElementById('compose-title').value.trim();
-            const img = document.getElementById('compose-img').value.trim();
             const text = document.getElementById('compose-text').value.trim();
+            const imagesArr = getImagesFromContainer('compose-images-container');
+
             if (!title || !text) return tg.showAlert('Заполните заголовок и текст');
             if (!db) return tg.showAlert('Firebase не подключен');
 
             if (editingUserPostId) {
-                update(ref(db, 'posts/' + editingUserPostId), { title, image: img, text })
+                update(ref(db, 'posts/' + editingUserPostId), { title, images: imagesArr, text })
                     .then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); })
                     .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
                 const me = usersData.find(u => u.id === currentUser.id);
                 push(ref(db, 'posts'), {
-                    title, image: img, text, createdAt: Date.now(),
+                    title, images: imagesArr, text, createdAt: Date.now(),
                     authorId: currentUser.id, authorName: currentUser.name, authorAvatar: (me && me.avatar) || ''
                 }).then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); })
                   .catch(err => tg.showAlert(friendlyDbError(err)));
@@ -1103,10 +1162,11 @@
             });
         };
 
-        // === ОВЕРЛЕЙ ПОСТА (детали, реакции, комментарии) ===
+        // === ОВЕРЛЕЙ ПОСТА ===
         window.openPost = function(id) {
             currentPostId = id;
             activeOverlay = 'post';
+            document.getElementById('comment-sticker-picker').classList.add('hidden');
             renderPostOverlay();
             document.getElementById('post-overlay').classList.add('active');
             tg.BackButton.show();
@@ -1131,9 +1191,12 @@
                     <span class="post-author-name">${escapeHtml(post.authorName)}</span>
                 </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:14px;">📰 Новость от редакции</div>';
 
+            const imagesArr = post.images || (post.image ? [post.image] : []);
+            const imagesHtml = imagesArr.map(url => `<img src="${url}" style="width:100%; border-radius:18px; margin-bottom:16px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">`).join('');
+
             document.getElementById('post-overlay-content').innerHTML = `
                 ${authorBlock}
-                ${post.image ? `<img src="${post.image}" class="card-image" style="margin-bottom:20px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">` : ''}
+                ${imagesHtml}
                 <div style="font-size:16px;line-height:1.7;color:#333;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
                 <div class="card-meta" style="margin-top: 16px;">${formatDate(post.createdAt)}</div>
                 ${isOwner ? `<div style="display:flex;gap:10px;margin-top:18px;">
@@ -1149,7 +1212,7 @@
                     ${comments.length ? comments.map(c => `
                         <div class="comment-item">
                             <div><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-meta">${formatDate(c.createdAt)}</span></div>
-                            <div class="comment-text">${escapeHtml(c.text)}</div>
+                            ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : `<div class="comment-text">${escapeHtml(c.text)}</div>`}
                             ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
                     `).join('') : '<div style="color:#7f8c8d;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
@@ -1200,6 +1263,21 @@
                 .catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
+        // Отправка стикера в комментарий
+        document.getElementById('btn-toggle-comment-stickers').onclick = function() {
+            document.getElementById('comment-sticker-picker').classList.toggle('hidden');
+        };
+
+        window.sendCommentSticker = function(url) {
+            if (!currentPostId || !db) return;
+            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: '', sticker: url, createdAt: Date.now() })
+                .then(() => {
+                    document.getElementById('comment-sticker-picker').classList.add('hidden');
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                })
+                .catch(err => tg.showAlert(friendlyDbError(err)));
+        };
+
         function deleteComment(postId, commentId) {
             tg.showConfirm('Удалить комментарий?', (ok) => {
                 if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`)).catch(err => tg.showAlert(friendlyDbError(err)));
@@ -1212,7 +1290,7 @@
             tg.BackButton.hide();
         };
 
-        // === КНИГИ ===
+        // === КНИГИ (без изменений, опущены для компактности, но включены в сборку) ===
         function getChapters(book) {
             if (book.chapters) {
                 return Object.entries(book.chapters).map(([id, c]) => ({ id, ...c })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -1256,7 +1334,6 @@
                 list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
             }
             if (activeGenre !== 'Все') list = list.filter(b => b.genre === activeGenre);
-
             if (sortMode === 'unread') list = list.filter(b => !readBooks.includes(b.id));
             if (sortMode === 'read') list = list.filter(b => readBooks.includes(b.id));
             if (sortMode === 'bookmark') list = list.filter(b => bookmarkedBooks.includes(b.id));
@@ -1285,12 +1362,10 @@
                     ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:12px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta" style="margin-top:6px;">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
                 </div>`;
             }).join('');
-
             document.getElementById('stats-read').textContent = readBooks.length;
             document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
         }
 
-        // === ЧИТАЛКА ===
         window.openBook = function(id) {
             const book = booksData.find(b => b.id === id);
             if (!book) return;
@@ -1301,11 +1376,8 @@
             document.getElementById('reader-overlay').classList.add('active');
             tg.BackButton.show();
 
-            if (currentChapters.length <= 1) {
-                openChapter(id, 0);
-            } else {
-                renderChapterListView(book);
-            }
+            if (currentChapters.length <= 1) openChapter(id, 0);
+            else renderChapterListView(book);
         };
 
         function renderChapterListView(book) {
@@ -1498,6 +1570,7 @@
             activeOverlay = 'chat';
             document.getElementById('chat-overlay').classList.add('active');
             tg.BackButton.show();
+            document.getElementById('chat-sticker-picker').classList.add('hidden'); // прячем стикеры при входе
             const chat = chatsData.find(c => c.id === chatId);
             if (chat) renderChatOverlay(chat);
         };
@@ -1515,11 +1588,25 @@
 
             const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
             const listEl = document.getElementById('chat-messages-list');
-            listEl.innerHTML = messages.length ? messages.map(m => `
+            
+            listEl.innerHTML = messages.length ? messages.map(m => {
+                const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                
+                if (m.sticker) {
+                    return `
+                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                        <div class="msg-sticker-wrap">
+                            <img src="${m.sticker}" class="msg-sticker">
+                            <span class="msg-time sticker-time">${timeStr}</span>
+                        </div>
+                    </div>`;
+                }
+
+                return `
                 <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
-                    <div class="msg-bubble">${escapeHtml(m.text)}<span class="msg-time">${new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div>
-                </div>
-            `).join('') : '<div style="color:#95a5a6;font-size:14px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
+                    <div class="msg-bubble">${escapeHtml(m.text)}<span class="msg-time">${timeStr}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div>
+                </div>`;
+            }).join('') : '<div style="color:#95a5a6;font-size:14px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
 
             listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
                 btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
@@ -1553,6 +1640,38 @@
         }
         document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+        // === СТИКЕРЫ (УНИВЕРСАЛЬНАЯ ЛОГИКА) ===
+        document.getElementById('btn-toggle-stickers').onclick = function() {
+            document.getElementById('chat-sticker-picker').classList.toggle('hidden');
+            const body = document.getElementById('chat-body');
+            body.scrollTop = body.scrollHeight;
+        };
+
+        function renderStickerPicker() {
+            const pickers = [
+                { el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' },
+                { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }
+            ];
+            
+            pickers.forEach(picker => {
+                if (!picker.el) return;
+                if (!stickersData.length) {
+                    picker.el.innerHTML = '<div style="font-size:12px; color:#95a5a6;">Нет стикеров</div>';
+                    return;
+                }
+                picker.el.innerHTML = stickersData.map(s => `<img src="${s.url}" onclick="${picker.action}('${s.url}')">`).join('');
+            });
+        }
+
+        window.sendSticker = function(url) {
+            if (!currentChatId || !db) return;
+            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text: '', sticker: url, createdAt: Date.now() })
+                .then(() => {
+                    update(ref(db, 'chats/' + currentChatId), { lastMessage: '🖼 Стикер', lastMessageAt: Date.now() });
+                    document.getElementById('chat-sticker-picker').classList.add('hidden');
+                });
+        };
 
         document.getElementById('close-chat-btn').onclick = function() {
             document.getElementById('chat-overlay').classList.remove('active');
@@ -1683,7 +1802,6 @@
             }
         }
 
-        // === ЕДИНАЯ КНОПКА "НАЗАД" TELEGRAM ===
         tg.BackButton.onClick(() => {
             if (activeOverlay === 'post') document.getElementById('close-post-btn').click();
             else if (activeOverlay === 'reader') document.getElementById('close-reader-btn').click();
@@ -1705,6 +1823,7 @@
                 document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
                 renderAdminPostsList();
                 renderAdminBooksList();
+                renderAdminStickersList();
                 populateChapterBookSelect();
             } else if (pwd) {
                 tg.showAlert('Неверный пароль');
@@ -1714,17 +1833,50 @@
         window.switchAdminTab = function(tab) {
             document.getElementById('admin-tab-posts').classList.toggle('hidden', tab !== 'posts');
             document.getElementById('admin-tab-books').classList.toggle('hidden', tab !== 'books');
+            document.getElementById('admin-tab-stickers').classList.toggle('hidden', tab !== 'stickers');
+            
             document.getElementById('admin-tab-btn-posts').classList.toggle('active', tab === 'posts');
             document.getElementById('admin-tab-btn-books').classList.toggle('active', tab === 'books');
+            document.getElementById('admin-tab-btn-stickers').classList.toggle('active', tab === 'stickers');
+        };
+
+        // СТИКЕРЫ АДМИНКА
+        document.getElementById('btn-add-sticker').onclick = function() {
+            const url = document.getElementById('sticker-url-input').value.trim();
+            if (!url) return tg.showAlert('Добавь ссылку на стикер');
+            if (!db) return;
+            push(ref(db, 'stickers'), { url, createdAt: Date.now() }).then(() => {
+                document.getElementById('sticker-url-input').value = '';
+                tg.showPopup({ title: 'Готово', message: 'Стикер добавлен', buttons: [{ type: 'ok' }] });
+            }).catch(err => tg.showAlert(friendlyDbError(err)));
+        };
+
+        function renderAdminStickersList() {
+            const el = document.getElementById('admin-stickers-list');
+            if (!el) return;
+            if (!stickersData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Стикеров пока нет</div>'; return; }
+            el.innerHTML = stickersData.map(s => `
+                <div style="position:relative; width:64px; height:64px; background:#f4f6f7; border-radius:12px; padding:4px;">
+                    <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
+                    <button class="icon-btn danger" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; font-size:12px; line-height:1;" onclick="deleteSticker('${s.id}')">✕</button>
+                </div>
+            `).join('');
+        }
+        
+        window.deleteSticker = function(id) {
+            if (confirm('Удалить стикер?')) remove(ref(db, 'stickers/' + id));
         };
 
         function renderAdminPostsList() {
             const el = document.getElementById('admin-posts-list');
             if (!el) return;
             if (!postsData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Новостей пока нет</div>'; return; }
-            el.innerHTML = postsData.map(post => `
+            el.innerHTML = postsData.map(post => {
+                const imagesArr = post.images || (post.image ? [post.image] : []);
+                const cover = imagesArr.length > 0 ? imagesArr[0] : null;
+                return `
                 <div class="admin-item">
-                    ${post.image ? `<img src="${post.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    ${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="admin-item-info">
                         <div class="admin-item-title">${escapeHtml(post.title)}</div>
                         <div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div>
@@ -1733,8 +1885,8 @@
                         <button class="icon-btn" data-edit-id="${post.id}">✏️</button>
                         <button class="icon-btn danger" data-del-id="${post.id}">🗑</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
             el.querySelectorAll('[data-edit-id]').forEach(b => { b.onclick = () => editPost(b.getAttribute('data-edit-id')); });
             el.querySelectorAll('[data-del-id]').forEach(b => { b.onclick = () => deletePost(b.getAttribute('data-del-id')); });
         }
@@ -1744,7 +1896,8 @@
             if (!post) return;
             editingPostId = id;
             document.getElementById('post-title').value = post.title || '';
-            document.getElementById('post-img').value = post.image || '';
+            const imagesArr = post.images || (post.image ? [post.image] : []);
+            populateImagesContainer('admin-post-images-container', imagesArr);
             document.getElementById('post-text').value = post.text || '';
             document.getElementById('post-form-heading').textContent = 'Редактировать новость';
             document.getElementById('btn-add-post').textContent = 'Сохранить изменения';
@@ -1755,7 +1908,7 @@
         function resetPostForm() {
             editingPostId = null;
             document.getElementById('post-title').value = '';
-            document.getElementById('post-img').value = '';
+            document.getElementById('admin-post-images-container').innerHTML = '';
             document.getElementById('post-text').value = '';
             document.getElementById('post-form-heading').textContent = 'Добавить новость';
             document.getElementById('btn-add-post').textContent = 'Опубликовать';
@@ -1771,18 +1924,18 @@
 
         document.getElementById('btn-add-post').onclick = function() {
             const title = document.getElementById('post-title').value.trim();
-            const img = document.getElementById('post-img').value.trim();
             const text = document.getElementById('post-text').value.trim();
+            const imagesArr = getImagesFromContainer('admin-post-images-container');
 
             if (!title || !text) return tg.showAlert('Заполни поля');
             if (!db) return tg.showAlert('Firebase не подключен');
 
             if (editingPostId) {
-                update(ref(db, 'posts/' + editingPostId), { title, image: img, text })
+                update(ref(db, 'posts/' + editingPostId), { title, images: imagesArr, text })
                     .then(() => { resetPostForm(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); })
                     .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
-                push(ref(db, 'posts'), { title, image: img, text, createdAt: Date.now() })
+                push(ref(db, 'posts'), { title, images: imagesArr, text, createdAt: Date.now() })
                     .then(() => { resetPostForm(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); })
                     .catch(err => tg.showAlert(friendlyDbError(err)));
             }
@@ -1835,7 +1988,6 @@
         }
         document.getElementById('btn-cancel-edit-book').onclick = resetBookForm;
 
-        // ИЗМЕНЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ КНИГИ С ГАРАНТИЕЙ УДАЛЕНИЯ ИЗ FIREBASE
         window.deleteBook = function(id) {
             tg.showConfirm('Удалить книгу безвозвратно прямо из базы Firebase? Все главы будут стерты.', (ok) => {
                 if (ok) {
@@ -1869,7 +2021,6 @@
             }
         };
 
-        // НОВЫЙ БЛОК: УПРАВЛЕНИЕ ГЛАВАМИ
         document.getElementById('chapter-book-select').addEventListener('change', renderAdminChaptersList);
 
         function renderAdminChaptersList() {
@@ -1928,7 +2079,6 @@
             if (booksData.some(b => b.id === prevVal)) sel.value = prevVal;
             else if (booksData.length > 0) sel.value = booksData[0].id;
             
-            // Синхронизируем список глав для выбранной книги
             renderAdminChaptersList();
         }
 
@@ -1950,7 +2100,6 @@
                 .catch(err => tg.showAlert(friendlyDbError(err)));
         };
 
-        // Инициализация
         renderProfileStats();
         console.log('✅ Приложение запущено');
     </script>
