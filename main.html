@@ -18,15 +18,15 @@
             min-height: 100vh;
         }
 
-        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
-        .header { padding: 20px 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; color: #2c3e50; }
+        .header { padding: 16px 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; color: #2c3e50; }
         .header p { color: #7f8c8d; font-size: 14px; }
 
         .fab-row { display: flex; gap: 8px; flex-shrink: 0; }
         .icon-btn-refresh {
-            width: 46px; height: 46px; border-radius: 18px; border: 1px solid rgba(0,0,0,0.05);
+            width: 42px; height: 42px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);
             background: #ffffff; color: #2c3e50; font-size: 18px; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center; transition: all .2s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
@@ -39,9 +39,9 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 14px;
+            border-radius: 20px;
+            padding: 14px;
+            margin-bottom: 10px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.03);
             transition: all .3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
@@ -50,44 +50,44 @@
         .card.tappable:active { transform: scale(0.97); }
 
         .card-image {
-            width: 100%; height: 180px; object-fit: cover; border-radius: 18px; margin-bottom: 12px;
+            width: 100%; height: 160px; object-fit: cover; border-radius: 16px; margin-bottom: 10px;
             background: #e0e0e0;
         }
 
         .cover-fallback {
-            width: 100%; height: 180px; border-radius: 18px; margin-bottom: 12px;
+            width: 100%; height: 160px; border-radius: 16px; margin-bottom: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 52px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 48px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .cover-fallback.small { height: 100%; border-radius: 12px; font-size: 20px; }
 
-        .card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; color: #2c3e50; }
-        .card-subtitle { font-size: 14px; color: #7f8c8d; margin-bottom: 10px; }
-        .card-text { font-size: 15px; line-height: 1.6; color: #4a4a4a; }
+        .card-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.2px; color: #2c3e50; }
+        .card-subtitle { font-size: 13px; color: #7f8c8d; margin-bottom: 8px; }
+        .card-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; }
         .card-text.clamp {
             display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
         }
-        .card-meta { font-size: 12px; color: #95a5a6; margin-top: 10px; }
+        .card-meta { font-size: 12px; color: #95a5a6; margin-top: 8px; }
 
         .badge {
             display: inline-block;
-            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
-            margin-top: 10px; margin-right: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            padding: 4px 10px; border-radius: 16px; font-size: 11px; font-weight: 600;
+            margin-top: 8px; margin-right: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
         .badge-read { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .badge-bookmark { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
         .genre-tag {
-            display: inline-block; padding: 4px 12px; border-radius: 12px;
+            display: inline-block; padding: 4px 10px; border-radius: 12px;
             background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2;
-            font-size: 12px; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.2px;
+            font-size: 11px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.2px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
         .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 20px;
+            width: 100%; padding: 14px; border: none; border-radius: 18px;
             background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
-            color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
-            margin-top: 12px; transition: all .2s ease;
+            color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+            margin-top: 10px; transition: all .2s ease;
             box-shadow: 0 4px 14px rgba(237, 143, 3, 0.3);
         }
         .btn:hover { box-shadow: 0 6px 20px rgba(237, 143, 3, 0.4); transform: translateY(-1px); }
@@ -97,48 +97,48 @@
         .btn:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
 
         .input {
-            width: 100%; padding: 16px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.08);
-            background: #ffffff; color: #333; font-size: 15px; margin-bottom: 12px;
+            width: 100%; padding: 14px; border-radius: 18px; border: 1px solid rgba(0,0,0,0.08);
+            background: #ffffff; color: #333; font-size: 14px; margin-bottom: 10px;
             transition: all .2s ease; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
         }
         .input:focus { border-color: #ff9f0a; outline: none; box-shadow: 0 0 0 3px rgba(255,159,10,0.2); }
         .input::placeholder { color: #95a5a6; }
-        textarea.input { min-height: 100px; resize: vertical; }
+        textarea.input { min-height: 80px; resize: vertical; }
 
-        .top-search { display: flex; gap: 8px; margin-bottom: 16px; }
+        .top-search { display: flex; gap: 8px; margin-bottom: 12px; }
         .search-input { flex: 1; margin-bottom: 0 !important; }
 
-        .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
         .chip {
-            padding: 8px 16px; border-radius: 20px; background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.06); color: #555; font-size: 13px; font-weight: 600;
+            padding: 6px 14px; border-radius: 16px; background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.06); color: #555; font-size: 12px; font-weight: 600;
             cursor: pointer; white-space: nowrap; transition: all .2s ease;
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .chip.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
-        .tab-mini { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .tab-mini { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
         .tab-mini::-webkit-scrollbar { display: none; }
         .tab-mini-btn {
-            flex: 1; padding: 12px; border-radius: 16px; background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.05); color: #7f8c8d; font-size: 14px; font-weight: 700;
+            flex: 1; padding: 10px; border-radius: 14px; background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.05); color: #7f8c8d; font-size: 13px; font-weight: 700;
             cursor: pointer; text-align: center; transition: all .2s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02); white-space: nowrap;
         }
         .tab-mini-btn.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
-        .image-field-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
+        .image-field-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start; }
         .image-field-row .input { margin-bottom: 0; flex: 1; }
         .upload-btn {
-            width: 52px; height: 52px; border-radius: 16px; background: #ffffff;
+            width: 48px; height: 48px; border-radius: 14px; background: #ffffff;
             border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center;
-            font-size: 20px; cursor: pointer; flex-shrink: 0; transition: all .2s ease;
+            font-size: 18px; cursor: pointer; flex-shrink: 0; transition: all .2s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         .upload-btn:active { transform: scale(0.9); }
         .upload-btn.uploading { opacity: 0.5; pointer-events: none; }
-        .image-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 16px; margin: -4px 0 12px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .image-preview { width: 100%; max-height: 140px; object-fit: cover; border-radius: 14px; margin: -4px 0 10px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .image-preview.show { display: block; }
 
         .bottom-nav {
@@ -152,7 +152,7 @@
             border-top: none !important;
             display: flex !important;
             justify-content: space-around !important;
-            padding: 12px 0 24px !important;
+            padding: 8px 0 16px !important;
             z-index: 9999 !important;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.06) !important;
         }
@@ -167,19 +167,19 @@
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
-            gap: 6px !important;
-            padding: 8px 10px !important;
+            gap: 4px !important;
+            padding: 6px 8px !important;
             flex: 1 !important;
             position: relative !important;
             transition: all .2s ease !important;
         }
         .nav-btn:active { transform: scale(0.92) !important; }
 
-        .nav-btn .icon { font-size: 24px !important; position: relative; transition: transform 0.2s; }
+        .nav-btn .icon { font-size: 22px !important; position: relative; transition: transform 0.2s; }
         .nav-btn.active { color: #ff9f0a !important; }
         .nav-btn.active .icon { transform: translateY(-2px); }
         .nav-badge {
-            position: absolute; top: -2px; right: -6px; width: 10px; height: 10px;
+            position: absolute; top: -2px; right: -4px; width: 8px; height: 8px;
             border-radius: 50%; background: #ff453a; border: 2px solid #fff;
         }
 
@@ -199,140 +199,142 @@
         .reader-overlay.active { display: flex; animation: slideUpFade 0.3s ease forwards; }
 
         .reader-header {
-            padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 10px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
             background: #ffffff;
             display: flex; align-items: center; gap: 10px; flex-shrink: 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
         .reader-content {
-            flex: 1; overflow-y: auto; padding: 22px 20px 40px;
-            font-size: 18px; line-height: 1.7; white-space: pre-wrap;
+            flex: 1; overflow-y: auto; padding: 16px 16px 24px;
+            font-size: 17px; line-height: 1.6; white-space: pre-wrap;
             color: #333;
         }
         .reader-actions {
-            padding: 16px; border-top: 1px solid rgba(0,0,0,0.05);
-            display: flex; gap: 10px; background: #ffffff; flex-shrink: 0;
+            padding: 12px 16px; border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex; gap: 8px; background: #ffffff; flex-shrink: 0;
             box-shadow: 0 -4px 16px rgba(0,0,0,0.03);
         }
 
         .progress-outer {
             height: 6px; border-radius: 4px; background: #e0e0e0;
-            margin: 0 16px 12px; overflow: hidden; flex-shrink: 0;
+            margin: 0 16px 10px; overflow: hidden; flex-shrink: 0;
         }
         .progress-inner { height: 100%; background: #30d158; border-radius: 4px; transition: width .3s ease; }
 
         .font-size-controls { display: flex; gap: 6px; flex-shrink: 0; }
         .font-size-btn {
-            width: 36px; height: 36px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05);
-            background: #f0f0f0; color: #333; font-size: 14px; font-weight: 700; cursor: pointer;
+            width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05);
+            background: #f0f0f0; color: #333; font-size: 13px; font-weight: 700; cursor: pointer;
             transition: all .2s;
         }
         .font-size-btn:active { background: #e0e0e0; transform: scale(0.95); }
 
         .chapter-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 16px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04);
-            border-radius: 18px; margin-bottom: 10px; cursor: pointer; transition: all .2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            padding: 12px 14px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04);
+            border-radius: 16px; margin-bottom: 8px; cursor: pointer; transition: all .2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .chapter-item:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .chapter-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .chapter-item:active { transform: scale(0.98); }
         .chapter-item.is-read { opacity: 0.6; background: #fafafa; }
-        .chapter-item-title { font-size: 16px; font-weight: 600; color: #2c3e50; }
-        .chapter-item-check { color: #30d158; font-size: 18px; }
+        .chapter-item-title { font-size: 15px; font-weight: 600; color: #2c3e50; }
+        .chapter-item-check { color: #30d158; font-size: 16px; }
 
-        .reaction-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+        .reaction-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
         .reaction-btn {
-            display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px;
+            display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 16px;
             background: #ffffff; border: 1px solid rgba(0,0,0,0.06); color: #555;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
         .reaction-btn.mine { background: #fff3e0; border-color: #ff9f0a; color: #e65100; }
         .reaction-btn:hover { transform: translateY(-2px); }
         .reaction-btn:active { transform: scale(0.92); }
 
         .comment-count-btn {
-            display: flex; align-items: center; gap: 6px; color: #7f8c8d; font-size: 14px;
-            margin-top: 14px; background: none; border: none; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; color: #7f8c8d; font-size: 13px;
+            margin-top: 10px; background: none; border: none; cursor: pointer; font-weight: 600;
         }
 
-        .comments-block { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.06); }
-        .comments-title { font-size: 15px; font-weight: 800; color: #2c3e50; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .comment-item { padding: 14px 16px; background: #ffffff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .comment-author { font-weight: 700; font-size: 15px; color: #2c3e50; }
-        .comment-meta { font-size: 12px; color: #95a5a6; margin-left: 8px; font-weight: 500; }
-        .comment-text { font-size: 15px; line-height: 1.5; color: #4a4a4a; margin-top: 6px; }
-        .comment-delete { color: #e74c3c; font-size: 13px; background: none; border: none; cursor: pointer; margin-top: 8px; font-weight: 600; padding: 0; }
-        .comment-sticker { max-width: 120px; height: auto; border-radius: 12px; object-fit: contain; margin-top: 8px; display: block; }
+        .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); }
+        .comments-title { font-size: 14px; font-weight: 800; color: #2c3e50; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .comment-item { padding: 12px 14px; background: #ffffff; border-radius: 18px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .comment-author { font-weight: 700; font-size: 14px; color: #2c3e50; }
+        .comment-meta { font-size: 11px; color: #95a5a6; margin-left: 8px; font-weight: 500; }
+        .comment-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; margin-top: 4px; }
+        .comment-delete { color: #e74c3c; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 6px; font-weight: 600; padding: 0; }
+        .comment-sticker { max-width: 100px; height: auto; border-radius: 10px; object-fit: contain; margin-top: 6px; display: block; }
 
-        .avatar-sm { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        .avatar-sm-fallback { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        .post-author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; width: fit-content; }
-        .post-author-name { font-size: 14px; font-weight: 700; color: #2c3e50; }
+        .avatar-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .avatar-sm-fallback { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; cursor: pointer; width: fit-content; }
+        .post-author-name { font-size: 13px; font-weight: 700; color: #2c3e50; }
 
         .admin-item {
-            display: flex; align-items: center; gap: 12px; padding: 12px;
-            background: #ffffff; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px; margin-bottom: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            background: #ffffff; border: 1px solid rgba(0,0,0,0.05); border-radius: 16px; margin-bottom: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .admin-item-thumb { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; background: #e0e0e0; flex-shrink: 0; }
+        .admin-item-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #e0e0e0; flex-shrink: 0; }
         .admin-item-info { flex: 1; min-width: 0; }
-        .admin-item-title { font-size: 15px; font-weight: 700; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .admin-item-sub { font-size: 13px; color: #7f8c8d; margin-top: 2px; }
-        .admin-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
-        .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #f4f6f7; color: #2c3e50; font-size: 16px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+        .admin-item-title { font-size: 14px; font-weight: 700; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .admin-item-sub { font-size: 12px; color: #7f8c8d; margin-top: 2px; }
+        .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); background: #f4f6f7; color: #2c3e50; font-size: 14px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
         .icon-btn.danger { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
         .icon-btn:active { transform: scale(0.9); }
 
-        .profile-banner-wrap { position: relative; margin-bottom: 52px; }
-        .profile-banner { width: 100%; height: 140px; border-radius: 24px; object-fit: cover; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
-        .profile-banner-fallback { width: 100%; height: 140px; border-radius: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
-        .profile-avatar-wrap { position: absolute; left: 20px; bottom: -40px; }
-        .profile-avatar { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; border: 5px solid #f4f7f6; background: #e0e0e0; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .profile-avatar-fallback { width: 86px; height: 86px; border-radius: 50%; border: 5px solid #f4f7f6; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .profile-name-row h2 { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: #2c3e50; }
-        .profile-bio { font-size: 15px; color: #7f8c8d; margin-bottom: 8px; min-height: 4px; line-height: 1.5; }
+        .profile-banner-wrap { position: relative; margin-bottom: 44px; }
+        .profile-banner { width: 100%; height: 120px; border-radius: 20px; object-fit: cover; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .profile-banner-fallback { width: 100%; height: 120px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .profile-avatar-wrap { position: absolute; left: 16px; bottom: -36px; }
+        .profile-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 4px solid #f4f7f6; background: #e0e0e0; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .profile-avatar-fallback { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #f4f7f6; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .profile-name-row h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #2c3e50; }
+        .profile-bio { font-size: 14px; color: #7f8c8d; margin-bottom: 6px; min-height: 4px; line-height: 1.5; }
 
-        .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 24px 12px; }
-        .stats-num { font-size: 28px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .stats-label { font-size: 13px; font-weight: 600; color: #7f8c8d; margin-top: 6px; }
+        .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 16px 12px; }
+        .stats-num { font-size: 24px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stats-label { font-size: 12px; font-weight: 600; color: #7f8c8d; margin-top: 4px; }
         .stats-divider { width: 1px; background: rgba(0,0,0,0.06); }
-        .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 15px; font-weight: 500; color: #2c3e50; }
+        .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 14px; font-weight: 500; color: #2c3e50; }
         .genre-stat-row:last-child { border-bottom: none; }
 
-        .chat-list-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: all .2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .chat-list-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
+        .chat-list-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04); border-radius: 18px; margin-bottom: 8px; cursor: pointer; transition: all .2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .chat-list-item:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.04); }
         .chat-list-item:active { transform: scale(0.97); }
         .chat-avatar-wrap { position: relative; flex-shrink: 0; }
-        .chat-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .chat-avatar-fallback { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .mood-badge { position: absolute; bottom: -2px; right: -2px; font-size: 16px; background: #ffffff; border-radius: 50%; padding: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chat-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .chat-avatar-fallback { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .mood-badge { position: absolute; bottom: -2px; right: -2px; font-size: 14px; background: #ffffff; border-radius: 50%; padding: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .chat-info { flex: 1; min-width: 0; }
-        .chat-info-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-        .chat-name { font-size: 16px; font-weight: 700; color: #2c3e50; }
-        .chat-time { font-size: 12px; font-weight: 600; color: #95a5a6; flex-shrink: 0; }
-        .chat-preview { font-size: 14px; color: #7f8c8d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
-        .chat-unread-dot { width: 10px; height: 10px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; box-shadow: 0 0 8px rgba(10,132,255,0.4); }
-        .online-dot-text { font-size: 13px; font-weight: 500; color: #16a085; }
+        .chat-info-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+        .chat-name { font-size: 15px; font-weight: 700; color: #2c3e50; }
+        .chat-time { font-size: 11px; font-weight: 600; color: #95a5a6; flex-shrink: 0; }
+        .chat-preview { font-size: 13px; color: #7f8c8d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .chat-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; box-shadow: 0 0 6px rgba(10,132,255,0.4); }
+        .online-dot-text { font-size: 12px; font-weight: 500; color: #16a085; }
 
-        .user-pick-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffffff; border-radius: 18px; margin-bottom: 8px; border: 1px solid rgba(0,0,0,0.04); cursor: pointer; transition: all .2s; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .user-pick-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .user-pick-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #ffffff; border-radius: 16px; margin-bottom: 8px; border: 1px solid rgba(0,0,0,0.04); cursor: pointer; transition: all .2s; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .user-pick-item:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .group-user-cb { width: 20px; height: 20px; accent-color: #ff9f0a; cursor: pointer; }
 
         .chat-quote-watermark {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            padding: 50px 34px; text-align: center; font-family: Georgia, 'Times New Roman', serif; font-style: italic;
-            font-size: 24px; line-height: 1.55; color: rgba(0,0,0,0.03); pointer-events: none; z-index: 0;
+            padding: 40px 24px; text-align: center; font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+            font-size: 20px; line-height: 1.5; color: rgba(0,0,0,0.03); pointer-events: none; z-index: 0;
         }
         
-        .chat-messages-list { position: relative; z-index: 1; padding-top: 10px; }
-        .msg-row { display: flex; margin-bottom: 16px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .chat-messages-list { position: relative; z-index: 1; padding-top: 8px; }
+        .msg-row { display: flex; margin-bottom: 8px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         
         .msg-bubble { 
-            max-width: 80%; width: fit-content; height: fit-content; padding: 10px 14px; border-radius: 20px; 
-            font-size: 15.5px; line-height: 1.4; position: relative; 
-            word-wrap: break-word; box-shadow: 0 4px 14px rgba(0,0,0,0.05); text-align: left;
+            max-width: 80%; width: fit-content; height: fit-content; padding: 8px 12px; border-radius: 18px; 
+            font-size: 14.5px; line-height: 1.4; position: relative; 
+            word-wrap: break-word; box-shadow: 0 2px 10px rgba(0,0,0,0.04); text-align: left;
         }
         .msg-row:not(.mine) .msg-bubble { 
             background: #ffffff; color: #333; 
@@ -347,15 +349,15 @@
         }
         
         .msg-sticker {
-            max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
+            max-width: 140px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
             box-shadow: none; display: block;
         }
         .msg-row:not(.mine) .msg-sticker-wrap { padding-left: 0; }
         .msg-row.mine .msg-sticker-wrap { padding-right: 0; }
         
-        .msg-time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; text-align: right; font-weight: 600; }
-        .msg-time.sticker-time { text-align: center; background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 10px; display: inline-block; margin: 4px auto 0; font-size: 10px;}
-        .msg-pin-btn { position: absolute; top: -10px; right: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; color: #ff9f0a; line-height: 1; transition: transform .2s; }
+        .msg-time { font-size: 10px; opacity: 0.7; margin-top: 2px; display: block; text-align: right; font-weight: 600; }
+        .msg-time.sticker-time { text-align: center; background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 8px; display: inline-block; margin: 4px auto 0; font-size: 10px;}
+        .msg-pin-btn { position: absolute; top: -8px; right: -6px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; color: #ff9f0a; line-height: 1; transition: transform .2s; }
         .msg-pin-btn:hover { transform: scale(1.1); }
 
         @keyframes msgPopIn {
@@ -363,51 +365,40 @@
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        .pinned-quote-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff3e0; border-bottom: 1px solid #ffe0b2; font-size: 13.5px; color: #e65100; flex-shrink: 0; box-shadow: 0 2px 10px rgba(230,81,0,0.05); z-index: 2;}
+        .pinned-quote-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fff3e0; border-bottom: 1px solid #ffe0b2; font-size: 12.5px; color: #e65100; flex-shrink: 0; box-shadow: 0 2px 8px rgba(230,81,0,0.05); z-index: 2;}
         .pinned-quote-bar span.text { flex: 1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-        .pinned-quote-bar button { background: none; border: none; color: #e65100; cursor: pointer; font-size: 16px; flex-shrink: 0; font-weight: 700; transition: transform .2s; }
+        .pinned-quote-bar button { background: none; border: none; color: #e65100; cursor: pointer; font-size: 14px; flex-shrink: 0; font-weight: 700; transition: transform .2s; }
         .pinned-quote-bar button:active { transform: scale(0.8); }
 
-        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(0,0,0,0.05); background: #ffffff; flex-shrink: 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); z-index: 2; align-items: center;}
-        .chat-input-row input { flex: 1; margin-bottom: 0 !important; background: #f4f6f7; border-color: transparent; }
-        .chat-send-btn { width: 52px; height: 52px; border-radius: 20px; border: none; background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 20px; cursor: pointer; flex-shrink: 0; transition: all .2s; box-shadow: 0 4px 12px rgba(237, 143, 3, 0.3); }
+        .chat-input-row { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid rgba(0,0,0,0.05); background: #ffffff; flex-shrink: 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.03); z-index: 2; align-items: center;}
+        .chat-input-row input { flex: 1; margin-bottom: 0 !important; background: #f4f6f7; border-color: transparent; padding: 12px; }
+        .chat-send-btn { width: 44px; height: 44px; border-radius: 16px; border: none; background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0; transition: all .2s; box-shadow: 0 2px 10px rgba(237, 143, 3, 0.3); }
         .chat-send-btn:active { transform: scale(0.9); }
         
-        .sticker-toggle { background: none; border: none; font-size: 28px; cursor: pointer; padding: 0 5px; transition: transform 0.2s;}
+        .sticker-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 4px; transition: transform 0.2s;}
         .sticker-toggle:active { transform: scale(0.9); }
 
-        .sticker-picker {
-            display: flex; gap: 12px; overflow-x: auto; padding: 12px 16px; background: #ffffff; border-top: 1px solid rgba(0,0,0,0.05);
-            align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.02); z-index: 2; height: 90px; flex-shrink:0;
-        }
-        .sticker-picker::-webkit-scrollbar { display: none; }
-        .sticker-picker img {
-            width: 64px; height: 64px; object-fit: contain; cursor: pointer; transition: transform 0.2s;
-            background: #f4f6f7; border-radius: 12px; padding: 4px; border: 1px solid rgba(0,0,0,0.04); flex-shrink: 0;
-        }
-        .sticker-picker img:active { transform: scale(0.9); }
-
-        .empty-state { text-align: center; padding: 60px 20px; color: #7f8c8d; }
-        .empty-state .icon { font-size: 52px; margin-bottom: 16px; display: block; animation: float 3s ease-in-out infinite; }
-        .empty-state .title { font-size: 18px; font-weight: 800; color: #2c3e50; margin-bottom: 8px; }
-        .empty-state .sub { font-size: 14px; line-height: 1.5; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #7f8c8d; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; animation: float 3s ease-in-out infinite; }
+        .empty-state .title { font-size: 16px; font-weight: 800; color: #2c3e50; margin-bottom: 6px; }
+        .empty-state .sub { font-size: 13px; line-height: 1.5; }
 
         @keyframes float {
             0% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
             100% { transform: translateY(0); }
         }
 
         .skeleton {
             background: linear-gradient(90deg, #ffffff 25%, #f0f0f0 37%, #ffffff 63%);
             background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite;
-            border-radius: 24px; height: 210px; margin-bottom: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03);
+            border-radius: 20px; height: 180px; margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03);
         }
         @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
         .hidden { display: none !important; }
-        .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 24px 0; }
+        .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 20px 0; }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -416,6 +407,18 @@
     </style>
 </head>
 <body>
+
+    <!-- AUTH OVERLAY -->
+    <div id="auth-overlay" style="position:fixed; inset:0; background:linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%); z-index:20000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+        <div class="card" style="width:100%; max-width:320px;">
+            <h2 style="text-align:center; margin-bottom:20px; color:#2c3e50; font-weight: 800;">Авторизация</h2>
+            <p style="text-align:center; color:#7f8c8d; font-size:13px; margin-bottom:16px;">Войдите или создайте аккаунт, если у вас нет Telegram</p>
+            <input type="text" id="auth-username" class="input" placeholder="Никнейм (только буквы и цифры)">
+            <input type="password" id="auth-password" class="input" placeholder="Пароль">
+            <button class="btn" id="btn-login-auth">Войти</button>
+            <button class="btn btn-secondary" id="btn-register-auth">Создать аккаунт</button>
+        </div>
+    </div>
 
     <!-- ЛЕНТА -->
     <div id="section-feed" class="section active">
@@ -484,6 +487,7 @@
                     <h1>Профиль</h1>
                     <p>Статистика и настройки</p>
                 </div>
+                <button class="icon-btn-refresh" id="btn-logout" title="Выйти" style="color:#e74c3c;">🚪</button>
             </div>
 
             <div class="profile-banner-wrap">
@@ -537,7 +541,7 @@
                     <div class="stats-label">Дней подряд</div>
                 </div>
             </div>
-            <div class="card stats-grid" style="padding:20px 12px;">
+            <div class="card stats-grid" style="padding:16px 12px;">
                 <div>
                     <div class="stats-num" style="color:#8e44ad;font-size:24px;" id="stats-posts">0</div>
                     <div class="stats-label">Постов</div>
@@ -567,24 +571,24 @@
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
                 <div id="admin-tab-posts">
-                    <h3 style="margin-bottom:16px; color:#2c3e50;" id="post-form-heading">Добавить новость</h3>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;" id="post-form-heading">Добавить новость</h3>
                     <input type="text" id="post-title" class="input" placeholder="Заголовок">
                     
                     <div id="admin-post-images-container"></div>
-                    <button class="btn btn-secondary" id="btn-admin-add-image" style="margin-bottom:12px; padding: 12px; border-radius: 16px;">+ Добавить картинку</button>
+                    <button class="btn btn-secondary" id="btn-admin-add-image" style="margin-bottom:10px; padding: 12px; border-radius: 16px;">+ Добавить картинку</button>
                     
-                    <textarea id="post-text" class="input" placeholder="Объемный текст статьи..." style="min-height: 200px;"></textarea>
+                    <textarea id="post-text" class="input" placeholder="Объемный текст статьи..." style="min-height: 160px;"></textarea>
                     <button class="btn" id="btn-add-post">Опубликовать</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-post">Отменить редактирование</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление новостями</h3>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Управление новостями</h3>
                     <div id="admin-posts-list"></div>
                 </div>
 
                 <!-- ВКЛАДКА: КНИГИ -->
                 <div id="admin-tab-books" class="hidden">
-                    <h3 style="margin-bottom:16px; color:#2c3e50;" id="book-form-heading">Добавить книгу</h3>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;" id="book-form-heading">Добавить книгу</h3>
                     <input type="text" id="book-title" class="input" placeholder="Название">
                     <input type="text" id="book-author" class="input" placeholder="Автор">
                     <div class="image-field-row">
@@ -597,33 +601,40 @@
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление главами</h3>
-                    <select id="chapter-book-select" class="input" style="appearance: none; margin-bottom: 12px;"></select>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Управление главами</h3>
+                    <select id="chapter-book-select" class="input" style="appearance: none; margin-bottom: 10px;"></select>
                     
                     <div id="admin-chapters-list"></div>
 
-                    <h4 style="margin-bottom:12px; margin-top:8px; color:#2c3e50; font-size:15px;">Добавить новую главу</h4>
+                    <h4 style="margin-bottom:10px; margin-top:8px; color:#2c3e50; font-size:14px;">Добавить новую главу</h4>
                     <input type="text" id="chapter-title" class="input" placeholder="Название главы">
                     <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
                     <button class="btn" id="btn-add-chapter">Опубликовать главу</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление книгами</h3>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Управление книгами</h3>
                     <div id="admin-books-list"></div>
                 </div>
 
                 <!-- ВКЛАДКА: СТИКЕРЫ -->
                 <div id="admin-tab-stickers" class="hidden">
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Добавить стикер</h3>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Создать стикер-пак</h3>
+                    <div style="display:flex; gap:8px; margin-bottom:16px;">
+                        <input type="text" id="new-pack-name" class="input" style="margin-bottom:0;" placeholder="Название пака">
+                        <button class="btn" id="btn-add-pack" style="margin-top:0; width:auto; padding:0 20px;">+ Пак</button>
+                    </div>
+
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Добавить стикер</h3>
+                    <select id="sticker-pack-select" class="input" style="appearance: none; margin-bottom: 10px;"></select>
                     <div class="image-field-row">
                         <input type="text" id="sticker-url-input" class="input" placeholder="Ссылка на стикер (URL)">
                         <label class="upload-btn" for="sticker-file" id="sticker-upload-btn">📁</label>
                         <input type="file" id="sticker-file" accept="image/*" class="hidden">
                     </div>
-                    <button class="btn" id="btn-add-sticker" style="margin-top: 0;">Добавить стикер в чаты</button>
+                    <button class="btn" id="btn-add-sticker" style="margin-top: 0;">Добавить стикер в пак</button>
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px; color:#2c3e50;">Все стикеры</h3>
-                    <div id="admin-stickers-list" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                    
+                    <div id="admin-stickers-list"></div>
                 </div>
 
             </div>
@@ -633,17 +644,17 @@
     <!-- ОВЕРЛЕЙ ПОСТА (детали + реакции + комментарии) -->
     <div id="post-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-post-btn">← Назад</button>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-post-btn">← Назад</button>
             <div style="flex:1;min-width:0;">
-                <div id="post-overlay-title" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color:#2c3e50; font-size:18px;"></div>
+                <div id="post-overlay-title" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color:#2c3e50; font-size:16px;"></div>
             </div>
         </div>
-        <div class="reader-content" id="post-overlay-content" style="white-space:normal; line-height: 1.8;"></div>
-        <div class="reader-actions" style="flex-direction:column;align-items:stretch; padding: 12px 16px;">
-            <div class="sticker-picker hidden" id="comment-sticker-picker" style="border-top: none; padding: 0 0 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 10px; box-shadow: none;"></div>
-            <div style="display:flex; gap:10px; align-items:center;">
+        <div class="reader-content" id="post-overlay-content" style="white-space:normal; line-height: 1.7;"></div>
+        <div class="reader-actions" style="flex-direction:column;align-items:stretch; padding: 10px 16px;">
+            <div id="comment-sticker-picker" style="display:none; overflow-x:auto; padding-bottom:8px; border-bottom:1px solid #eee; margin-bottom:8px;"></div>
+            <div style="display:flex; gap:8px; align-items:center;">
                 <button class="sticker-toggle" id="btn-toggle-comment-stickers">🤩</button>
-                <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px;"></textarea>
+                <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px; padding: 10px;"></textarea>
                 <button class="chat-send-btn" id="btn-send-comment">➤</button>
             </div>
         </div>
@@ -652,25 +663,26 @@
     <!-- КОМПОУЗЕР (написать / редактировать свой пост) -->
     <div id="compose-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-compose-btn">← Назад</button>
-            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:18px;" id="compose-heading">Написать в ленту</div></div>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-compose-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:16px;" id="compose-heading">Написать в ленту</div></div>
         </div>
         <div class="reader-content" style="white-space:normal;">
             <input type="text" id="compose-title" class="input" placeholder="Заголовок">
             
             <div id="compose-images-container"></div>
-            <button class="btn btn-secondary" id="btn-compose-add-image" style="margin-bottom:12px; padding: 12px; border-radius: 16px;">+ Добавить картинку</button>
+            <button class="btn btn-secondary" id="btn-compose-add-image" style="margin-bottom:10px; padding: 10px; border-radius:14px;">+ Добавить картинку</button>
             
-            <textarea id="compose-text" class="input" placeholder="Текст вашей статьи..." style="min-height:200px;"></textarea>
+            <textarea id="compose-text" class="input" placeholder="Текст вашей статьи..." style="min-height:160px;"></textarea>
             <button class="btn" id="btn-submit-compose">Опубликовать</button>
         </div>
     </div>
 
-    <!-- НОВЫЙ ЧАТ -->
+    <!-- НОВЫЙ ЧАТ ИЛИ ГРУППА -->
     <div id="new-chat-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-new-chat-btn">← Назад</button>
-            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:18px;">Новый чат</div></div>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-new-chat-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:16px;">Новый чат</div></div>
+            <button class="btn btn-secondary" id="btn-open-create-group" style="width:auto; margin:0; padding:8px 12px; border-radius:12px;">👥 Группа</button>
         </div>
         <div class="reader-content" style="white-space:normal; background: #fdfbf7;">
             <input type="text" id="user-search" class="input" placeholder="🔍 Найти читателя по имени...">
@@ -678,15 +690,57 @@
         </div>
     </div>
 
+    <!-- СОЗДАНИЕ ГРУППЫ -->
+    <div id="create-group-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-create-group-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:16px;">Новая группа</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div class="image-field-row">
+                <input type="text" id="group-avatar" class="input" placeholder="Ссылка на аватар (URL)">
+                <label class="upload-btn" for="group-avatar-file" id="group-avatar-upload-btn">📁</label>
+                <input type="file" id="group-avatar-file" accept="image/*" class="hidden">
+            </div>
+            <input type="text" id="group-name" class="input" placeholder="Название группы">
+            <textarea id="group-desc" class="input" placeholder="Описание группы" style="min-height:60px;"></textarea>
+            
+            <h4 style="margin: 10px 0; color:#2c3e50; font-size: 15px;">Выберите участников:</h4>
+            <div id="group-user-pick-list" style="max-height: 240px; overflow-y:auto; border:1px solid rgba(0,0,0,0.08); border-radius:16px; padding:8px; margin-bottom:12px; background:#fff;"></div>
+            
+            <button class="btn" id="btn-submit-group">Создать группу</button>
+        </div>
+    </div>
+
+    <!-- РЕДАКТИРОВАНИЕ ГРУППЫ -->
+    <div id="edit-group-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-edit-group-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:16px;">Настройки группы</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div class="image-field-row">
+                <input type="text" id="edit-group-avatar" class="input" placeholder="Ссылка на аватар (URL)">
+                <label class="upload-btn" for="edit-group-avatar-file" id="edit-group-avatar-upload-btn">📁</label>
+                <input type="file" id="edit-group-avatar-file" accept="image/*" class="hidden">
+            </div>
+            <input type="text" id="edit-group-name" class="input" placeholder="Название группы">
+            <textarea id="edit-group-desc" class="input" placeholder="Описание группы" style="min-height:60px;"></textarea>
+            
+            <button class="btn" id="btn-save-edit-group">Сохранить изменения</button>
+        </div>
+    </div>
+
     <!-- ОКНО ЧАТА -->
     <div id="chat-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:10px 16px;margin:0; border-radius:14px;" id="close-chat-btn">←</button>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="close-chat-btn">←</button>
             <div id="chat-partner-avatar-wrap" style="flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
-                <div id="chat-partner-name" style="font-weight:800; color:#2c3e50; font-size:16px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="chat-partner-name" style="font-weight:800; color:#2c3e50; font-size:15px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                 <div id="chat-partner-status" class="online-dot-text"></div>
             </div>
+            <button class="btn btn-secondary hidden" id="chat-edit-group-btn" style="width:auto; margin:0; padding:8px 10px; border-radius:12px;">⚙️</button>
         </div>
         <div class="pinned-quote-bar hidden" id="chat-pinned-bar">
             <span class="text" id="chat-pinned-text"></span>
@@ -697,7 +751,7 @@
             <div class="chat-messages-list" id="chat-messages-list"></div>
         </div>
         
-        <div class="sticker-picker hidden" id="chat-sticker-picker"></div>
+        <div id="chat-sticker-picker" style="display:none; overflow-x:auto; padding-bottom:8px; border-top:1px solid #eee; background:#fff;"></div>
         
         <div class="chat-input-row">
             <button class="sticker-toggle" id="btn-toggle-stickers">🤩</button>
@@ -709,30 +763,30 @@
     <!-- ЧИТАЛКА -->
     <div id="reader-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:10px 16px;margin:0; border-radius:14px;" id="close-reader-btn">← Назад</button>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="close-reader-btn">← Назад</button>
             <div style="flex:1;min-width:0;">
-                <div id="reader-title" style="font-weight:800; color:#2c3e50; font-size:16px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                <div id="reader-author" style="font-size:13px;color:#7f8c8d; font-weight:500;"></div>
+                <div id="reader-title" style="font-weight:800; color:#2c3e50; font-size:15px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="reader-author" style="font-size:12px;color:#7f8c8d; font-weight:500;"></div>
             </div>
             <div class="font-size-controls" id="reader-font-controls">
                 <button class="font-size-btn" id="font-dec">A-</button>
                 <button class="font-size-btn" id="font-inc">A+</button>
             </div>
         </div>
-        <div class="progress-outer hidden" id="reader-progress-wrap" style="margin-top:12px;">
+        <div class="progress-outer hidden" id="reader-progress-wrap" style="margin-top:10px;">
             <div class="progress-inner" id="reader-progress-inner" style="width:0%;"></div>
         </div>
-        <div id="reader-body" class="reader-content" style="background:#ffffff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); line-height:1.8; color:#333;"></div>
+        <div id="reader-body" class="reader-content" style="background:#ffffff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); line-height:1.7; color:#333;"></div>
         <div class="reader-actions hidden" id="reader-actions-chapter">
-            <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1; border-radius:16px;">←</button>
-            <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1; border-radius:16px;">📤</button>
-            <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1; border-radius:16px;">🔖</button>
-            <button class="btn" id="btn-read" style="margin:0;flex:1; border-radius:16px;">✅</button>
-            <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1; border-radius:16px;">→</button>
+            <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1; border-radius:14px;">←</button>
+            <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1; border-radius:14px;">📤</button>
+            <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1; border-radius:14px;">🔖</button>
+            <button class="btn" id="btn-read" style="margin:0;flex:1; border-radius:14px;">✅</button>
+            <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1; border-radius:14px;">→</button>
         </div>
     </div>
 
-    <!-- === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === -->
+    <!-- === ЯКОРНАЯ НАВИГАЦИЯ === -->
     <nav class="bottom-nav">
         <button class="nav-btn active" onclick="switchTab('feed')">
             <span class="icon">🏠<span class="nav-badge hidden" id="feed-nav-badge"></span></span>
@@ -755,7 +809,7 @@
     <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update, remove, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -773,31 +827,79 @@
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
             storage = getStorage(app);
-            console.log('✅ Firebase подключен');
         } catch (e) {
-            console.error('❌ Firebase ошибка:', e);
+            console.error('Firebase ошибка:', e);
         }
 
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
 
-        // === ПОЛЬЗОВАТЕЛЬ ===
-        const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
-        let currentUser;
-        if (tgUser) {
-            currentUser = {
-                id: String(tgUser.id),
-                name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'
-            };
-        } else {
-            let guestId = localStorage.getItem('sr_guest_id');
-            if (!guestId) {
-                guestId = 'guest_' + Math.random().toString(36).slice(2, 10);
-                localStorage.setItem('sr_guest_id', guestId);
-            }
-            currentUser = { id: guestId, name: 'Гость' };
+        let currentUser = null;
+        let tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+        let authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+        // === АВТОРИЗАЦИЯ ===
+        function initApp() {
+            document.getElementById('auth-overlay').style.display = 'none';
+            startFirebaseListeners();
+            if (db) ensureUserProfile();
         }
+
+        if (tgUser) {
+            currentUser = { id: String(tgUser.id), name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель' };
+            initApp();
+        } else if (authUser) {
+            currentUser = authUser;
+            initApp();
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+        }
+
+        document.getElementById('btn-register-auth').onclick = function() {
+            if(!db) return alert('База данных недоступна');
+            const un = document.getElementById('auth-username').value.trim();
+            const pw = document.getElementById('auth-password').value.trim();
+            if(!un || !pw) return alert('Введите никнейм и пароль');
+            const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+            if(!safeUn) return alert('Используйте только английские буквы и цифры для ника');
+            
+            get(child(ref(db), `auth_users/${safeUn}`)).then((snapshot) => {
+                if(snapshot.exists()) {
+                     alert('Никнейм уже занят!');
+                } else {
+                     const newId = 'usr_' + Date.now();
+                     set(ref(db, `auth_users/${safeUn}`), { password: pw, id: newId }).then(() => {
+                         localStorage.setItem('sr_auth_user', JSON.stringify({id: newId, name: un}));
+                         location.reload();
+                     });
+                }
+            }).catch(e => alert(friendlyDbError(e)));
+        };
+
+        document.getElementById('btn-login-auth').onclick = function() {
+            if(!db) return alert('База данных недоступна');
+            const un = document.getElementById('auth-username').value.trim();
+            const pw = document.getElementById('auth-password').value.trim();
+            if(!un || !pw) return alert('Введите никнейм и пароль');
+            const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+            
+            get(child(ref(db), `auth_users/${safeUn}`)).then((snapshot) => {
+                if(snapshot.exists() && snapshot.val().password === pw) {
+                     localStorage.setItem('sr_auth_user', JSON.stringify({id: snapshot.val().id, name: un}));
+                     location.reload();
+                } else {
+                     alert('Неверный никнейм или пароль');
+                }
+            }).catch(e => alert(friendlyDbError(e)));
+        };
+
+        document.getElementById('btn-logout').onclick = function() {
+            if(confirm('Выйти из аккаунта?')) {
+                localStorage.removeItem('sr_auth_user');
+                location.reload();
+            }
+        };
 
         const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏'];
         const COVER_COLORS = ['#ff9f0a', '#30d158', '#0a84ff', '#ff453a', '#bf5af2', '#64d2ff'];
@@ -832,6 +934,7 @@
         let usersData = [];
         let chatsData = [];
         let stickersData = [];
+        let stickerPacksData = [];
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
         let progressStore = JSON.parse(localStorage.getItem('sr_progress') || '{}');
@@ -851,7 +954,6 @@
         let bookSearchTerm = '';
         let activeGenre = 'Все';
         let sortMode = 'new';
-
         let isAdmin = false;
         let editingPostId = null;
         let editingBookId = null;
@@ -881,34 +983,20 @@
                 renderChatsList();
             }
             if (tabName === 'profile') renderProfileStats();
-
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         };
 
         function withTimeout(promise, ms, timeoutMessage) {
-            return Promise.race([
-                promise,
-                new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms))
-            ]);
+            return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms))]);
         }
-
         function friendlyDbError(err) {
             const msg = (err && err.message) || String(err);
-            if (msg.includes('PERMISSION_DENIED') || msg.includes('Permission denied')) {
-                return 'Нет доступа к базе данных. В консоли Firebase откройте Realtime Database → Rules и разрешите чтение/запись.';
-            }
+            if (msg.includes('PERMISSION_DENIED')) return 'Нет доступа к базе данных.';
             return 'Ошибка: ' + msg;
         }
-
         function friendlyUploadError(err) {
             const msg = (err && err.message) || String(err);
-            const code = (err && err.code) || '';
-            if (code.includes('unauthorized') || msg.includes('PERMISSION')) {
-                return 'Нет доступа к Firebase Storage. Проверьте правила доступа.';
-            }
-            if (code.includes('unknown') || msg.includes('таймаут') || msg.includes('timeout')) {
-                return 'Не удалось загрузить файл.';
-            }
+            if (msg.includes('PERMISSION')) return 'Нет доступа к Firebase Storage.';
             return 'Ошибка загрузки: ' + msg;
         }
 
@@ -917,26 +1005,20 @@
             fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!storage) { tg.showAlert('Загрузка недоступна: Firebase Storage не подключен'); fileInput.value = ''; return; }
+                if (!storage) { tg.showAlert('Firebase Storage не подключен'); fileInput.value = ''; return; }
                 if (!file.type.startsWith('image/')) { tg.showAlert('Выберите файл изображения'); fileInput.value = ''; return; }
-                if (file.size > 8 * 1024 * 1024) { tg.showAlert('Файл слишком большой (максимум 8 МБ)'); fileInput.value = ''; return; }
-                btn.classList.add('uploading');
-                btn.textContent = '⏳';
+                if (file.size > 8 * 1024 * 1024) { tg.showAlert('Файл слишком большой'); fileInput.value = ''; return; }
+                btn.classList.add('uploading'); btn.textContent = '⏳';
                 try {
                     const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
                     const sRef = storageRef(storage, path);
-                    await withTimeout(uploadBytes(sRef, file), 20000, 'Таймаут загрузки');
-                    const url = await withTimeout(getDownloadURL(sRef), 15000, 'Таймаут ссылки');
+                    await withTimeout(uploadBytes(sRef, file), 20000, 'Таймаут');
+                    const url = await withTimeout(getDownloadURL(sRef), 15000, 'Таймаут');
                     if(textInput) textInput.value = url;
                     if (onDone) onDone(url);
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                } catch (err) {
-                    tg.showAlert(friendlyUploadError(err));
-                } finally {
-                    btn.classList.remove('uploading');
-                    btn.textContent = '📁';
-                    fileInput.value = '';
-                }
+                } catch (err) { tg.showAlert(friendlyUploadError(err)); } 
+                finally { btn.classList.remove('uploading'); btn.textContent = '📁'; fileInput.value = ''; }
             });
         }
         function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
@@ -947,8 +1029,9 @@
         setupImageUpload('profile-avatar-file', 'profile-avatar-input', 'profile-avatar-upload-btn', 'avatars');
         setupImageUpload('profile-banner-file', 'profile-banner-input', 'profile-banner-upload-btn', 'banners');
         setupImageUpload('sticker-file', 'sticker-url-input', 'sticker-upload-btn', 'stickers');
+        setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
+        setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
 
-        // === ДИНАМИЧЕСКИЕ КАРТИНКИ ДЛЯ ПОСТОВ ===
         window.createPostImageField = function(containerId, url = '') {
             const id = 'img_' + Math.random().toString(36).substr(2, 9);
             const div = document.createElement('div');
@@ -957,7 +1040,7 @@
                 <input type="text" class="input post-image-input" placeholder="Ссылка на картинку" value="${escapeHtml(url)}">
                 <label class="upload-btn" for="file_${id}" id="btn_${id}">📁</label>
                 <input type="file" id="file_${id}" accept="image/*" class="hidden">
-                <button class="icon-btn danger" onclick="this.parentElement.remove()" style="width:52px;height:52px;flex-shrink:0;">🗑</button>
+                <button class="icon-btn danger" onclick="this.parentElement.remove()" style="width:48px;height:48px;flex-shrink:0;">🗑</button>
             `;
             document.getElementById(containerId).appendChild(div);
             setupImageUploadFlex(div.querySelector(`#file_${id}`), div.querySelector('.post-image-input'), div.querySelector(`#btn_${id}`), 'posts');
@@ -966,8 +1049,7 @@
         document.getElementById('btn-compose-add-image').onclick = () => createPostImageField('compose-images-container');
 
         function getImagesFromContainer(containerId) {
-            const inputs = document.getElementById(containerId).querySelectorAll('.post-image-input');
-            return Array.from(inputs).map(inp => inp.value.trim()).filter(Boolean);
+            return Array.from(document.getElementById(containerId).querySelectorAll('.post-image-input')).map(inp => inp.value.trim()).filter(Boolean);
         }
         function populateImagesContainer(containerId, imagesArr) {
             document.getElementById(containerId).innerHTML = '';
@@ -975,23 +1057,19 @@
         }
 
         function ensureUserProfile() {
-            if (!db) return;
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, lastSeen: Date.now() }).catch(() => {});
         }
-        if (db) {
-            ensureUserProfile();
+        
+        function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
-        }
 
-        if (db) {
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
                 postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
                 if (postsData.length > lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
                     document.getElementById('feed-nav-badge').classList.remove('hidden');
                 }
-                renderFeed();
-                renderProfileStats();
+                renderFeed(); renderProfileStats();
                 if (isAdmin) renderAdminPostsList();
                 if (activeOverlay === 'post') renderPostOverlay();
             });
@@ -999,8 +1077,7 @@
             onValue(ref(db, 'books'), (snapshot) => {
                 const data = snapshot.val();
                 booksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
-                renderBooks();
-                renderGenreFilterRow();
+                renderBooks(); renderGenreFilterRow();
                 if (isAdmin) { renderAdminBooksList(); populateChapterBookSelect(); }
                 if (activeOverlay === 'reader' && currentBookId) {
                     const book = booksData.find(b => b.id === currentBookId);
@@ -1011,9 +1088,8 @@
             onValue(ref(db, 'users'), (snapshot) => {
                 const data = snapshot.val();
                 usersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-                renderChatsList();
-                renderOwnProfileHeader();
-                if (activeOverlay === 'newchat') renderUserPickList();
+                renderChatsList(); renderOwnProfileHeader();
+                if (activeOverlay === 'newchat' || activeOverlay === 'creategroup') renderUserPickList();
                 if (activeOverlay === 'chat' && currentChatId) {
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if (chat) renderChatOverlay(chat);
@@ -1023,8 +1099,7 @@
             onValue(ref(db, 'chats'), (snapshot) => {
                 const data = snapshot.val();
                 chatsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-                renderChatsList();
-                renderProfileStats();
+                renderChatsList(); renderProfileStats();
                 if (activeOverlay === 'chat' && currentChatId) {
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if (chat) renderChatOverlay(chat);
@@ -1035,6 +1110,13 @@
                 const data = snapshot.val();
                 stickersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
                 if (isAdmin) renderAdminStickersList();
+                renderStickerPicker();
+            });
+            
+            onValue(ref(db, 'sticker_packs'), (snapshot) => {
+                const data = snapshot.val();
+                stickerPacksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (isAdmin) { populateStickerPackSelect(); renderAdminStickersList(); }
                 renderStickerPicker();
             });
         }
@@ -1049,8 +1131,8 @@
             }
             if (!list.length) {
                 container.innerHTML = postsData.length
-                    ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Попробуйте другой запрос</div></div>'
-                    : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div><div class="sub">Загляните позже или напишите первым</div></div>';
+                    ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div></div>'
+                    : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div></div>';
                 return;
             }
             container.innerHTML = list.map(post => {
@@ -1059,15 +1141,13 @@
                 Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
                 const topReactions = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
                 const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
-                
                 const imagesArr = post.images || (post.image ? [post.image] : []);
                 const coverImage = imagesArr.length > 0 ? imagesArr[0] : null;
-                
                 const authorRow = post.authorId ? `
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
                         <span class="post-author-name">${escapeHtml(post.authorName)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
-                    </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:10px;">📰 Новость от редакции</div>';
+                    </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
                 return `
                 <div class="card tappable" data-post-id="${post.id}">
                     ${authorRow}
@@ -1081,10 +1161,7 @@
                     </div>
                 </div>`;
             }).join('');
-
-            document.querySelectorAll('#feed-container .card').forEach(card => {
-                card.onclick = () => openPost(card.dataset.postId);
-            });
+            document.querySelectorAll('#feed-container .card').forEach(c => c.onclick = () => openPost(c.dataset.postId));
             document.querySelectorAll('#feed-container .post-author-row').forEach(row => {
                 row.onclick = (e) => {
                     e.stopPropagation();
@@ -1095,10 +1172,7 @@
         }
 
         document.getElementById('feed-search').addEventListener('input', (e) => { feedSearchTerm = e.target.value; renderFeed(); });
-        document.getElementById('refresh-feed-btn').onclick = function() {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            renderFeed();
-        };
+        document.getElementById('refresh-feed-btn').onclick = function() { tg.HapticFeedback && tg.HapticFeedback.impactOccurred('medium'); renderFeed(); };
 
         // === КОМПОУЗЕР ===
         function resetComposeForm() {
@@ -1110,15 +1184,10 @@
             document.getElementById('btn-submit-compose').textContent = 'Опубликовать';
         }
         document.getElementById('btn-open-compose').onclick = function() {
-            resetComposeForm();
-            document.getElementById('compose-overlay').classList.add('active');
-            activeOverlay = 'compose';
-            tg.BackButton.show();
+            resetComposeForm(); document.getElementById('compose-overlay').classList.add('active'); activeOverlay = 'compose'; tg.BackButton.show();
         };
         document.getElementById('close-compose-btn').onclick = function() {
-            document.getElementById('compose-overlay').classList.remove('active');
-            activeOverlay = null;
-            tg.BackButton.hide();
+            document.getElementById('compose-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
         };
         window.editOwnPost = function(id) {
             const post = postsData.find(p => p.id === id);
@@ -1126,87 +1195,70 @@
             editingUserPostId = id;
             document.getElementById('compose-heading').textContent = 'Редактировать пост';
             document.getElementById('compose-title').value = post.title || '';
-            const imagesArr = post.images || (post.image ? [post.image] : []);
-            populateImagesContainer('compose-images-container', imagesArr);
+            populateImagesContainer('compose-images-container', post.images || (post.image ? [post.image] : []));
             document.getElementById('compose-text').value = post.text || '';
             document.getElementById('btn-submit-compose').textContent = 'Сохранить изменения';
             document.getElementById('post-overlay').classList.remove('active');
             document.getElementById('compose-overlay').classList.add('active');
-            activeOverlay = 'compose';
-            tg.BackButton.show();
+            activeOverlay = 'compose'; tg.BackButton.show();
         };
         document.getElementById('btn-submit-compose').onclick = function() {
             const title = document.getElementById('compose-title').value.trim();
             const text = document.getElementById('compose-text').value.trim();
             const imagesArr = getImagesFromContainer('compose-images-container');
-
             if (!title || !text) return tg.showAlert('Заполните заголовок и текст');
             if (!db) return tg.showAlert('Firebase не подключен');
 
             if (editingUserPostId) {
                 update(ref(db, 'posts/' + editingUserPostId), { title, images: imagesArr, text })
                     .then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert(friendlyDbError(err)));
             } else {
                 const me = usersData.find(u => u.id === currentUser.id);
                 push(ref(db, 'posts'), {
                     title, images: imagesArr, text, createdAt: Date.now(),
                     authorId: currentUser.id, authorName: currentUser.name, authorAvatar: (me && me.avatar) || ''
                 }).then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); })
-                  .catch(err => tg.showAlert(friendlyDbError(err)));
             }
         };
         window.deleteOwnPost = function(id) {
-            tg.showConfirm('Удалить этот пост?', (ok) => {
-                if (ok) remove(ref(db, 'posts/' + id)).then(() => { document.getElementById('close-post-btn').click(); }).catch(err => tg.showAlert(friendlyDbError(err)));
-            });
+            tg.showConfirm('Удалить этот пост?', (ok) => { if (ok) remove(ref(db, 'posts/' + id)).then(() => document.getElementById('close-post-btn').click()); });
         };
 
         // === ОВЕРЛЕЙ ПОСТА ===
         window.openPost = function(id) {
-            currentPostId = id;
-            activeOverlay = 'post';
-            document.getElementById('comment-sticker-picker').classList.add('hidden');
+            currentPostId = id; activeOverlay = 'post';
+            document.getElementById('comment-sticker-picker').style.display = 'none';
             renderPostOverlay();
-            document.getElementById('post-overlay').classList.add('active');
-            tg.BackButton.show();
+            document.getElementById('post-overlay').classList.add('active'); tg.BackButton.show();
         };
 
         function renderPostOverlay() {
             const post = postsData.find(p => p.id === currentPostId);
             if (!post) return;
             document.getElementById('post-overlay-title').textContent = post.title;
-
             const reactions = post.reactions || {};
-            const myReaction = reactions[currentUser.id];
-            const counts = {};
-            Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
-
+            const counts = {}; Object.values(reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
             const comments = post.comments ? Object.entries(post.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt) : [];
             const isOwner = post.authorId && post.authorId === currentUser.id;
 
             const authorBlock = post.authorId ? `
-                <div class="post-author-row" style="margin-bottom:16px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
+                <div class="post-author-row" style="margin-bottom:12px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                     ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
                     <span class="post-author-name">${escapeHtml(post.authorName)}</span>
-                </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:14px;">📰 Новость от редакции</div>';
+                </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:10px;">📰 Новость от редакции</div>';
 
             const imagesArr = post.images || (post.image ? [post.image] : []);
-            const imagesHtml = imagesArr.map(url => `<img src="${url}" style="width:100%; border-radius:18px; margin-bottom:16px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">`).join('');
+            const imagesHtml = imagesArr.map(url => `<img src="${url}" style="width:100%; border-radius:16px; margin-bottom:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">`).join('');
 
             document.getElementById('post-overlay-content').innerHTML = `
-                ${authorBlock}
-                ${imagesHtml}
-                <div style="font-size:16px;line-height:1.7;color:#333;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
-                <div class="card-meta" style="margin-top: 16px;">${formatDate(post.createdAt)}</div>
-                ${isOwner ? `<div style="display:flex;gap:10px;margin-top:18px;">
-                    <button class="btn btn-secondary" style="margin:0;flex:1; border-radius:16px;" id="btn-edit-own-post">✏️ Изменить</button>
-                    <button class="btn btn-danger" style="margin:0;flex:1; border-radius:16px;" id="btn-delete-own-post">🗑 Удалить</button>
-                </div>` : ''}
+                ${authorBlock} ${imagesHtml}
+                <div style="font-size:15px;line-height:1.6;color:#333;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
+                <div class="card-meta" style="margin-top: 12px;">${formatDate(post.createdAt)}</div>
+                ${isOwner ? `<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-secondary" style="margin:0;flex:1; border-radius:14px;" id="btn-edit-own-post">✏️ Изменить</button><button class="btn btn-danger" style="margin:0;flex:1; border-radius:14px;" id="btn-delete-own-post">🗑 Удалить</button></div>` : ''}
                 <div class="reaction-bar">
-                    ${EMOJIS.map(e => `<button class="reaction-btn ${myReaction === e ? 'mine' : ''}" data-emoji="${e}">${e} ${counts[e] || ''}</button>`).join('')}
+                    ${EMOJIS.map(e => `<button class="reaction-btn ${reactions[currentUser.id] === e ? 'mine' : ''}" data-emoji="${e}">${e} ${counts[e] || ''}</button>`).join('')}
                 </div>
-                <button class="btn btn-secondary" style="margin-top:16px; border-radius:20px;" id="btn-share-post">📤 Поделиться</button>
+                <button class="btn btn-secondary" style="margin-top:12px; border-radius:16px;" id="btn-share-post">📤 Поделиться</button>
                 <div class="comments-block">
                     <div class="comments-title">Комментарии (${comments.length})</div>
                     ${comments.length ? comments.map(c => `
@@ -1215,203 +1267,133 @@
                             ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : `<div class="comment-text">${escapeHtml(c.text)}</div>`}
                             ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
-                    `).join('') : '<div style="color:#7f8c8d;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
+                    `).join('') : '<div style="color:#7f8c8d;font-size:13px;">Пока нет комментариев. Будьте первым!</div>'}
                 </div>
             `;
 
             const row = document.querySelector('#post-overlay-content .post-author-row');
             if (row) row.onclick = () => { const aid = row.getAttribute('data-author-id'); if (aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name')); };
-
-            document.querySelectorAll('#post-overlay-content .reaction-btn').forEach(b => { b.onclick = () => toggleReaction(post.id, b.dataset.emoji); });
-            document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => { b.onclick = () => deleteComment(post.id, b.dataset.cid); });
-            const shareBtn = document.getElementById('btn-share-post');
-            if (shareBtn) shareBtn.onclick = () => sharePost(post.id);
-            const editBtn = document.getElementById('btn-edit-own-post');
-            if (editBtn) editBtn.onclick = () => editOwnPost(post.id);
-            const delBtn = document.getElementById('btn-delete-own-post');
-            if (delBtn) delBtn.onclick = () => deleteOwnPost(post.id);
+            document.querySelectorAll('#post-overlay-content .reaction-btn').forEach(b => b.onclick = () => toggleReaction(post.id, b.dataset.emoji));
+            document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => b.onclick = () => deleteComment(post.id, b.dataset.cid));
+            if (document.getElementById('btn-share-post')) document.getElementById('btn-share-post').onclick = () => sharePost(post.id);
+            if (document.getElementById('btn-edit-own-post')) document.getElementById('btn-edit-own-post').onclick = () => editOwnPost(post.id);
+            if (document.getElementById('btn-delete-own-post')) document.getElementById('btn-delete-own-post').onclick = () => deleteOwnPost(post.id);
         }
 
         function toggleReaction(postId, emoji) {
-            if (!db) return;
-            const post = postsData.find(p => p.id === postId);
-            const current = post && post.reactions ? post.reactions[currentUser.id] : null;
+            const current = postsData.find(p => p.id === postId)?.reactions?.[currentUser.id];
             const newVal = current === emoji ? null : emoji;
-            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal).catch(err => tg.showAlert(friendlyDbError(err)));
-            update(ref(db, 'users/' + currentUser.id), { lastReactionEmoji: newVal, lastReactionAt: newVal ? Date.now() : null }).catch(() => {});
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal);
+            update(ref(db, 'users/' + currentUser.id), { lastReactionEmoji: newVal, lastReactionAt: newVal ? Date.now() : null }).catch(()=>{});
+            tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light');
         }
 
         function sharePost(postId) {
             const post = postsData.find(p => p.id === postId);
             if (!post) return;
             const shareText = post.title + '\n\n' + post.text;
-            if (navigator.share) {
-                navigator.share({ title: post.title, text: shareText }).catch(() => {});
-            } else if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
-            }
+            if (navigator.share) navigator.share({ title: post.title, text: shareText }).catch(()=>{});
+            else if (navigator.clipboard) navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
         }
 
         document.getElementById('btn-send-comment').onclick = function() {
             const input = document.getElementById('comment-input');
-            const text = input.value.trim();
-            if (!text) return tg.showAlert('Напишите текст комментария');
-            if (!db) return tg.showAlert('Firebase не подключен');
-            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text, createdAt: Date.now() })
-                .then(() => { input.value = ''; if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); })
-                .catch(err => tg.showAlert(friendlyDbError(err)));
+            if (!input.value.trim() || !db) return;
+            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: input.value.trim(), createdAt: Date.now() }).then(() => { input.value = ''; });
         };
 
-        // Отправка стикера в комментарий
         document.getElementById('btn-toggle-comment-stickers').onclick = function() {
-            document.getElementById('comment-sticker-picker').classList.toggle('hidden');
+            const p = document.getElementById('comment-sticker-picker');
+            p.style.display = p.style.display === 'none' ? 'flex' : 'none';
         };
 
         window.sendCommentSticker = function(url) {
             if (!currentPostId || !db) return;
-            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: '', sticker: url, createdAt: Date.now() })
-                .then(() => {
-                    document.getElementById('comment-sticker-picker').classList.add('hidden');
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                })
-                .catch(err => tg.showAlert(friendlyDbError(err)));
+            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: '', sticker: url, createdAt: Date.now() }).then(() => {
+                document.getElementById('comment-sticker-picker').style.display = 'none';
+                tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+            });
         };
 
         function deleteComment(postId, commentId) {
-            tg.showConfirm('Удалить комментарий?', (ok) => {
-                if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`)).catch(err => tg.showAlert(friendlyDbError(err)));
-            });
+            tg.showConfirm('Удалить комментарий?', (ok) => { if(ok) remove(ref(db, `posts/${postId}/comments/${commentId}`)); });
         }
 
         document.getElementById('close-post-btn').onclick = function() {
-            document.getElementById('post-overlay').classList.remove('active');
-            activeOverlay = null;
-            tg.BackButton.hide();
+            document.getElementById('post-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
         };
 
-        // === КНИГИ (без изменений, опущены для компактности, но включены в сборку) ===
+        // === КНИГИ ===
         function getChapters(book) {
-            if (book.chapters) {
-                return Object.entries(book.chapters).map(([id, c]) => ({ id, ...c })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-            }
+            if (book.chapters) return Object.entries(book.chapters).map(([id, c]) => ({ id, ...c })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
             if (book.text) return [{ id: 'legacy', title: 'Глава 1', text: book.text }];
             return [];
         }
-
         function bookProgress(book) {
             const chapters = getChapters(book);
             if (!chapters.length) return { readCount: 0, total: 0, pct: 0 };
-            const p = progressStore[book.id];
-            const readCount = p && p.readIdx ? p.readIdx.length : 0;
+            const readCount = progressStore[book.id]?.readIdx?.length || 0;
             return { readCount, total: chapters.length, pct: Math.round((readCount / chapters.length) * 100) };
         }
-
         function renderGenreFilterRow() {
             const genres = Array.from(new Set(booksData.map(b => b.genre).filter(Boolean)));
             const row = document.getElementById('genre-filter-row');
             if (!genres.length) { row.innerHTML = ''; return; }
-            const all = ['Все', ...genres];
-            row.innerHTML = all.map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>`).join('');
-            row.querySelectorAll('.chip').forEach(c => { c.onclick = () => setGenre(c.getAttribute('data-genre')); });
+            row.innerHTML = ['Все', ...genres].map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>`).join('');
+            row.querySelectorAll('.chip').forEach(c => c.onclick = () => { activeGenre = c.dataset.genre; renderGenreFilterRow(); renderBooks(); });
         }
-
-        function setGenre(g) { activeGenre = g; renderGenreFilterRow(); renderBooks(); }
         window.setSort = function(mode) {
-            sortMode = mode;
-            document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === mode));
-            renderBooks();
+            sortMode = mode; document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === mode)); renderBooks();
         };
-
         document.getElementById('book-search').addEventListener('input', (e) => { bookSearchTerm = e.target.value; renderBooks(); });
 
         function renderBooks() {
             const container = document.getElementById('books-container');
             let list = booksData.slice();
-
-            if (bookSearchTerm) {
-                const q = bookSearchTerm.toLowerCase();
-                list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
-            }
+            if (bookSearchTerm) list = list.filter(b => (b.title || '').toLowerCase().includes(bookSearchTerm.toLowerCase()) || (b.author || '').toLowerCase().includes(bookSearchTerm.toLowerCase()));
             if (activeGenre !== 'Все') list = list.filter(b => b.genre === activeGenre);
             if (sortMode === 'unread') list = list.filter(b => !readBooks.includes(b.id));
             if (sortMode === 'read') list = list.filter(b => readBooks.includes(b.id));
             if (sortMode === 'bookmark') list = list.filter(b => bookmarkedBooks.includes(b.id));
 
-            if (!list.length) {
-                container.innerHTML = booksData.length
-                    ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Измените поиск или фильтр</div></div>'
-                    : '<div class="empty-state"><span class="icon">📚</span><div class="title">Библиотека пуста</div><div class="sub">Добавьте первую книгу в панели автора</div></div>';
-                document.getElementById('stats-read').textContent = readBooks.length;
-                document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
-                return;
-            }
-
+            if (!list.length) { container.innerHTML = '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div></div>'; return; }
             container.innerHTML = list.map(book => {
-                const isRead = readBooks.includes(book.id);
-                const isBookmarked = bookmarkedBooks.includes(book.id);
-                const prog = bookProgress(book);
+                const isRead = readBooks.includes(book.id), isBookmarked = bookmarkedBooks.includes(book.id), prog = bookProgress(book);
                 return `
                 <div class="card tappable" onclick="openBook('${book.id}')">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
                     ${book.genre ? `<div class="genre-tag">${escapeHtml(book.genre)}</div>` : ''}
                     <div class="card-title">${escapeHtml(book.title)}</div>
                     <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
-                    ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''}
-                    ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
-                    ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:12px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta" style="margin-top:6px;">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
+                    ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''} ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
+                    ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:10px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta" style="margin-top:6px;">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
                 </div>`;
             }).join('');
-            document.getElementById('stats-read').textContent = readBooks.length;
-            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
+            document.getElementById('stats-read').textContent = readBooks.length; document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
         }
 
         window.openBook = function(id) {
             const book = booksData.find(b => b.id === id);
             if (!book) return;
-            currentBookId = id;
-            activeOverlay = 'reader';
-            currentChapters = getChapters(book);
-
-            document.getElementById('reader-overlay').classList.add('active');
-            tg.BackButton.show();
-
-            if (currentChapters.length <= 1) openChapter(id, 0);
-            else renderChapterListView(book);
+            currentBookId = id; activeOverlay = 'reader'; currentChapters = getChapters(book);
+            document.getElementById('reader-overlay').classList.add('active'); tg.BackButton.show();
+            if (currentChapters.length <= 1) openChapter(id, 0); else renderChapterListView(book);
         };
-
         function renderChapterListView(book) {
-            document.getElementById('reader-title').textContent = book.title;
-            document.getElementById('reader-author').textContent = book.author || '';
-            document.getElementById('reader-font-controls').classList.add('hidden');
-            document.getElementById('reader-progress-wrap').classList.remove('hidden');
-            document.getElementById('reader-actions-chapter').classList.add('hidden');
-
-            const prog = bookProgress(book);
+            document.getElementById('reader-title').textContent = book.title; document.getElementById('reader-author').textContent = book.author || '';
+            document.getElementById('reader-font-controls').classList.add('hidden'); document.getElementById('reader-progress-wrap').classList.remove('hidden'); document.getElementById('reader-actions-chapter').classList.add('hidden');
+            const prog = bookProgress(book), readIdx = progressStore[book.id]?.readIdx || [];
             document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
-
-            const readIdx = (progressStore[book.id] && progressStore[book.id].readIdx) || [];
             document.getElementById('reader-body').innerHTML = `
-                <div style="margin-bottom:18px;color:#7f8c8d;font-size:14px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
-                ${currentChapters.map((ch, idx) => `
-                    <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
-                        <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
-                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#95a5a6; font-weight:800;">→</span>'}
-                    </div>
-                `).join('')}
+                <div style="margin-bottom:14px;color:#7f8c8d;font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
+                ${currentChapters.map((ch, idx) => `<div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})"><span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#95a5a6; font-weight:800;">→</span>'}</div>`).join('')}
             `;
         }
-
         window.openChapter = function(bookId, idx) {
-            const book = booksData.find(b => b.id === bookId);
-            if (!book) return;
-            currentBookId = bookId;
-            currentChapters = getChapters(book);
-            currentChapterIndex = idx;
-
+            const book = booksData.find(b => b.id === bookId); if (!book) return;
+            currentBookId = bookId; currentChapters = getChapters(book); currentChapterIndex = idx;
             if (!progressStore[bookId]) progressStore[bookId] = { readIdx: [], lastIdx: 0 };
-            progressStore[bookId].lastIdx = idx;
-            saveLocal('sr_progress', progressStore);
+            progressStore[bookId].lastIdx = idx; saveLocal('sr_progress', progressStore);
 
             const chapter = currentChapters[idx];
             document.getElementById('reader-title').textContent = book.title + (currentChapters.length > 1 ? ' · ' + (chapter.title || ('Глава ' + (idx + 1))) : '');
@@ -1424,162 +1406,114 @@
             const readIdx = progressStore[bookId].readIdx || [];
             document.getElementById('reader-progress-wrap').classList.remove('hidden');
             document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
-
-            document.getElementById('btn-prev-chapter').disabled = idx === 0;
-            document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
-
-            const isBookmarked = bookmarkedBooks.includes(bookId);
-            document.getElementById('btn-bookmark').textContent = isBookmarked ? '🔖✓' : '🔖';
+            document.getElementById('btn-prev-chapter').disabled = idx === 0; document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
+            document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(bookId) ? '🔖✓' : '🔖';
         };
 
         document.getElementById('btn-prev-chapter').onclick = () => { if (currentChapterIndex > 0) openChapter(currentBookId, currentChapterIndex - 1); };
         document.getElementById('btn-next-chapter').onclick = () => { if (currentChapterIndex < currentChapters.length - 1) openChapter(currentBookId, currentChapterIndex + 1); };
-
-        document.getElementById('font-dec').onclick = () => {
-            readerFontSize = Math.max(14, readerFontSize - 2);
-            localStorage.setItem('sr_fontsize', String(readerFontSize));
-            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
-        };
-        document.getElementById('font-inc').onclick = () => {
-            readerFontSize = Math.min(28, readerFontSize + 2);
-            localStorage.setItem('sr_fontsize', String(readerFontSize));
-            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
-        };
-
+        document.getElementById('font-dec').onclick = () => { readerFontSize = Math.max(14, readerFontSize - 2); localStorage.setItem('sr_fontsize', String(readerFontSize)); document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; };
+        document.getElementById('font-inc').onclick = () => { readerFontSize = Math.min(28, readerFontSize + 2); localStorage.setItem('sr_fontsize', String(readerFontSize)); document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; };
         document.getElementById('btn-share-chapter').onclick = () => {
-            const book = booksData.find(b => b.id === currentBookId);
-            if (!book) return;
+            const book = booksData.find(b => b.id === currentBookId); if (!book) return;
             const chapter = currentChapters[currentChapterIndex];
             const shareText = book.title + (chapter ? ' — ' + (chapter.title || '') : '');
-            if (navigator.share) navigator.share({ title: book.title, text: shareText }).catch(() => {});
-            else if (navigator.clipboard) navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Скопировано', buttons: [{ type: 'ok' }] }));
+            if (navigator.share) navigator.share({ title: book.title, text: shareText }).catch(()=>{}); else if (navigator.clipboard) navigator.clipboard.writeText(shareText);
         };
-
         function updateStreak() {
-            const today = new Date().toDateString();
+            const today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
             if (streakStore.lastDate === today) return;
-            const yesterday = new Date(Date.now() - 86400000).toDateString();
             streakStore.count = (streakStore.lastDate === yesterday) ? streakStore.count + 1 : 1;
-            streakStore.lastDate = today;
-            saveLocal('sr_streak', streakStore);
+            streakStore.lastDate = today; saveLocal('sr_streak', streakStore);
         }
-
         document.getElementById('btn-read').onclick = function() {
-            const bookId = currentBookId;
-            if (!progressStore[bookId]) progressStore[bookId] = { readIdx: [], lastIdx: 0 };
-            if (!progressStore[bookId].readIdx.includes(currentChapterIndex)) {
-                progressStore[bookId].readIdx.push(currentChapterIndex);
-                saveLocal('sr_progress', progressStore);
-            }
-            if (progressStore[bookId].readIdx.length >= currentChapters.length && !readBooks.includes(bookId)) {
-                readBooks.push(bookId);
-                saveLocal('sr_read', readBooks);
-                updateStreak();
-                renderProfileStats();
-                tg.showPopup({ title: 'Книга прочитана! 🎉', message: 'Поздравляем, вы закончили книгу', buttons: [{ type: 'ok' }] });
-            } else if (tg.HapticFeedback) {
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            const readIdx = progressStore[bookId].readIdx;
-            document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
+            if (!progressStore[currentBookId]) progressStore[currentBookId] = { readIdx: [], lastIdx: 0 };
+            if (!progressStore[currentBookId].readIdx.includes(currentChapterIndex)) { progressStore[currentBookId].readIdx.push(currentChapterIndex); saveLocal('sr_progress', progressStore); }
+            if (progressStore[currentBookId].readIdx.length >= currentChapters.length && !readBooks.includes(currentBookId)) {
+                readBooks.push(currentBookId); saveLocal('sr_read', readBooks); updateStreak(); renderProfileStats();
+                tg.showPopup({ title: 'Книга прочитана! 🎉', message: 'Поздравляем!', buttons: [{ type: 'ok' }] });
+            } else tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+            document.getElementById('reader-progress-inner').style.width = Math.round((progressStore[currentBookId].readIdx.length / currentChapters.length) * 100) + '%';
         };
-
         document.getElementById('btn-bookmark').onclick = function() {
             const idx = bookmarkedBooks.indexOf(currentBookId);
-            if (idx > -1) {
-                bookmarkedBooks.splice(idx, 1);
-                tg.showAlert('Удалено из закладок');
-            } else {
-                bookmarkedBooks.push(currentBookId);
-                tg.showPopup({ title: 'Сохранено', message: 'Добавлено в закладки', buttons: [{ type: 'ok' }] });
-            }
-            saveLocal('sr_bookmarks', bookmarkedBooks);
-            document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(currentBookId) ? '🔖✓' : '🔖';
+            if (idx > -1) { bookmarkedBooks.splice(idx, 1); tg.showAlert('Удалено из закладок'); } else { bookmarkedBooks.push(currentBookId); }
+            saveLocal('sr_bookmarks', bookmarkedBooks); document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(currentBookId) ? '🔖✓' : '🔖';
         };
+        document.getElementById('close-reader-btn').onclick = function() { document.getElementById('reader-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide(); renderBooks(); };
 
-        document.getElementById('close-reader-btn').onclick = function() {
-            document.getElementById('reader-overlay').classList.remove('active');
-            activeOverlay = null;
-            tg.BackButton.hide();
-            renderBooks();
-        };
-
-        // === ЧАТЫ ===
+        // === ЧАТЫ И ГРУППЫ ===
         function otherParticipant(chat) {
             const ids = Object.keys(chat.participants || {});
-            const otherId = ids.find(id => id !== currentUser.id);
+            const otherId = ids.find(id => id !== currentUser.id) || currentUser.id;
             const names = chat.participantNames || {};
             const userRec = usersData.find(u => u.id === otherId);
             return {
-                id: otherId,
-                name: (userRec && userRec.name) || names[otherId] || 'Читатель',
-                avatar: userRec ? userRec.avatar : null,
-                lastSeen: userRec ? userRec.lastSeen : null,
+                id: otherId, name: (userRec && userRec.name) || names[otherId] || 'Читатель',
+                avatar: userRec ? userRec.avatar : null, lastSeen: userRec ? userRec.lastSeen : null,
                 mood: (userRec && userRec.lastReactionAt && (Date.now() - userRec.lastReactionAt < 86400000)) ? userRec.lastReactionEmoji : null
             };
-        }
-
-        function computeUnread(chat) {
-            const lastRead = chatLastRead[chat.id] || 0;
-            const messages = chat.messages ? Object.values(chat.messages) : [];
-            return messages.filter(m => m.senderId !== currentUser.id && m.createdAt > lastRead).length;
-        }
-
-        function updateChatsBadge(show) {
-            document.getElementById('chats-nav-badge').classList.toggle('hidden', !show);
         }
 
         function renderChatsList() {
             const container = document.getElementById('chats-container');
             const myChats = chatsData.filter(c => c.participants && c.participants[currentUser.id]);
             if (!myChats.length) {
-                container.innerHTML = '<div class="empty-state"><span class="icon">💬</span><div class="title">Пока нет чатов</div><div class="sub">Нажмите ➕, чтобы начать общение с другим читателем</div></div>';
-                updateChatsBadge(false);
-                return;
+                container.innerHTML = '<div class="empty-state"><span class="icon">💬</span><div class="title">Пока нет чатов</div></div>';
+                document.getElementById('chats-nav-badge').classList.add('hidden'); return;
             }
             myChats.sort((a, b) => (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0));
             let anyUnread = false;
             container.innerHTML = myChats.map(chat => {
-                const other = otherParticipant(chat);
-                const unread = computeUnread(chat);
+                const unread = chat.messages ? Object.values(chat.messages).filter(m => m.senderId !== currentUser.id && m.createdAt > (chatLastRead[chat.id] || 0)).length : 0;
                 if (unread > 0) anyUnread = true;
+                
+                let avatarHTML, nameStr, moodStr = '';
+                if(chat.type === 'group') {
+                    avatarHTML = avatarHtml(chat.name, chat.avatar, 'chat-avatar');
+                    nameStr = escapeHtml(chat.name);
+                } else {
+                    const other = otherParticipant(chat);
+                    avatarHTML = avatarHtml(other.name, other.avatar, 'chat-avatar');
+                    nameStr = escapeHtml(other.name);
+                    moodStr = other.mood ? `<span class="mood-badge">${other.mood}</span>` : '';
+                }
+
                 return `
                 <div class="chat-list-item" data-chat-id="${chat.id}">
-                    <div class="chat-avatar-wrap">
-                        ${avatarHtml(other.name, other.avatar, 'chat-avatar')}
-                        ${other.mood ? `<span class="mood-badge">${other.mood}</span>` : ''}
-                    </div>
+                    <div class="chat-avatar-wrap">${avatarHTML}${moodStr}</div>
                     <div class="chat-info">
-                        <div class="chat-info-top">
-                            <span class="chat-name">${escapeHtml(other.name)}</span>
-                            <span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span>
-                        </div>
+                        <div class="chat-info-top"><span class="chat-name">${nameStr}</span><span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span></div>
                         <div class="chat-preview">${escapeHtml(chat.lastMessage || 'Нет сообщений')}</div>
                     </div>
                     ${unread > 0 ? `<div class="chat-unread-dot"></div>` : ''}
                 </div>`;
             }).join('');
-            document.querySelectorAll('#chats-container .chat-list-item').forEach(item => {
-                item.onclick = () => openChat(item.getAttribute('data-chat-id'));
-            });
-            updateChatsBadge(anyUnread);
+            document.querySelectorAll('#chats-container .chat-list-item').forEach(item => item.onclick = () => openChat(item.getAttribute('data-chat-id')));
+            document.getElementById('chats-nav-badge').classList.toggle('hidden', !anyUnread);
         }
 
         window.openChat = function(chatId) {
-            currentChatId = chatId;
-            activeOverlay = 'chat';
-            document.getElementById('chat-overlay').classList.add('active');
-            tg.BackButton.show();
-            document.getElementById('chat-sticker-picker').classList.add('hidden'); // прячем стикеры при входе
+            currentChatId = chatId; activeOverlay = 'chat';
+            document.getElementById('chat-overlay').classList.add('active'); tg.BackButton.show();
+            document.getElementById('chat-sticker-picker').style.display = 'none';
             const chat = chatsData.find(c => c.id === chatId);
             if (chat) renderChatOverlay(chat);
         };
 
         function renderChatOverlay(chat) {
-            const other = otherParticipant(chat);
-            document.getElementById('chat-partner-name').textContent = other.name;
-            document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
-            document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
+            if(chat.type === 'group') {
+                document.getElementById('chat-partner-name').textContent = chat.name;
+                document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
+                document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников';
+                document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== currentUser.id);
+            } else {
+                const other = otherParticipant(chat);
+                document.getElementById('chat-partner-name').textContent = other.name;
+                document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
+                document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
+                document.getElementById('chat-edit-group-btn').classList.add('hidden');
+            }
 
             const pinned = chat.pinnedQuote;
             document.getElementById('chat-pinned-bar').classList.toggle('hidden', !pinned);
@@ -1591,215 +1525,193 @@
             
             listEl.innerHTML = messages.length ? messages.map(m => {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const senderName = chat.type === 'group' && m.senderId !== currentUser.id ? `<div style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px;">${escapeHtml(m.senderName)}</div>` : '';
                 
                 if (m.sticker) {
-                    return `
-                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
-                        <div class="msg-sticker-wrap">
-                            <img src="${m.sticker}" class="msg-sticker">
-                            <span class="msg-time sticker-time">${timeStr}</span>
-                        </div>
-                    </div>`;
+                    return `<div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}"><div class="msg-sticker-wrap">${senderName}<img src="${m.sticker}" class="msg-sticker"><span class="msg-time sticker-time">${timeStr}</span></div></div>`;
                 }
+                return `<div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}"><div class="msg-bubble">${senderName}${escapeHtml(m.text)}<span class="msg-time">${timeStr}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div></div>`;
+            }).join('') : '<div style="color:#95a5a6;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
 
-                return `
-                <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
-                    <div class="msg-bubble">${escapeHtml(m.text)}<span class="msg-time">${timeStr}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div>
-                </div>`;
-            }).join('') : '<div style="color:#95a5a6;font-size:14px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
+            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author')));
 
-            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
-                btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
-            });
-
-            chatLastRead[chat.id] = Date.now();
-            saveLocal('sr_chat_last_read', chatLastRead);
+            chatLastRead[chat.id] = Date.now(); saveLocal('sr_chat_last_read', chatLastRead);
             document.getElementById('chats-nav-badge').classList.add('hidden');
-            const body = document.getElementById('chat-body');
-            body.scrollTop = body.scrollHeight;
+            const body = document.getElementById('chat-body'); body.scrollTop = body.scrollHeight;
         }
 
-        function pinQuote(chatId, text, author) {
-            update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }).catch(err => tg.showAlert(friendlyDbError(err)));
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-        document.getElementById('btn-unpin-quote').onclick = function() {
-            update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }).catch(err => tg.showAlert(friendlyDbError(err)));
-        };
-
+        function pinQuote(chatId, text, author) { update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }); tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); }
+        document.getElementById('btn-unpin-quote').onclick = function() { update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }); };
+        
         function sendChatMessage() {
             const input = document.getElementById('chat-message-input');
-            const text = input.value.trim();
-            if (!text || !currentChatId || !db) return;
-            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text, createdAt: Date.now() })
-                .then(() => {
-                    update(ref(db, 'chats/' + currentChatId), { lastMessage: text, lastMessageAt: Date.now() });
-                    input.value = '';
-                })
-                .catch(err => tg.showAlert(friendlyDbError(err)));
+            if (!input.value.trim() || !currentChatId || !db) return;
+            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text: input.value.trim(), createdAt: Date.now() }).then(() => {
+                update(ref(db, 'chats/' + currentChatId), { lastMessage: input.value.trim(), lastMessageAt: Date.now() }); input.value = '';
+            });
         }
         document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
 
-        // === СТИКЕРЫ (УНИВЕРСАЛЬНАЯ ЛОГИКА) ===
+        document.getElementById('close-chat-btn').onclick = function() {
+            document.getElementById('chat-overlay').classList.remove('active'); activeOverlay = null; currentChatId = null; tg.BackButton.hide(); renderChatsList();
+        };
+
+        // НОВЫЙ ЧАТ/ГРУППА
+        document.getElementById('btn-new-chat').onclick = function() {
+            document.getElementById('user-search').value = ''; document.getElementById('new-chat-overlay').classList.add('active'); activeOverlay = 'newchat'; tg.BackButton.show(); renderUserPickList();
+        };
+        document.getElementById('close-new-chat-btn').onclick = function() {
+            document.getElementById('new-chat-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+        };
+        document.getElementById('btn-open-create-group').onclick = function() {
+            document.getElementById('new-chat-overlay').classList.remove('active');
+            document.getElementById('create-group-overlay').classList.add('active');
+            activeOverlay = 'creategroup';
+            document.getElementById('group-name').value = ''; document.getElementById('group-desc').value = ''; document.getElementById('group-avatar').value = '';
+            renderUserPickList();
+        };
+        document.getElementById('close-create-group-btn').onclick = function() {
+            document.getElementById('create-group-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+        };
+
+        function renderUserPickList() {
+            const q = document.getElementById('user-search').value.trim().toLowerCase();
+            let list = usersData.filter(u => u.id !== currentUser.id);
+            if (q) list = list.filter(u => (u.name || '').toLowerCase().includes(q));
+            
+            if (activeOverlay === 'creategroup') {
+                const container = document.getElementById('group-user-pick-list');
+                if (!list.length) { container.innerHTML = '<div style="color:#95a5a6; font-size:13px; text-align:center;">Нет пользователей</div>'; return; }
+                container.innerHTML = list.map(u => `
+                    <label style="display:flex; align-items:center; gap:10px; padding:6px; cursor:pointer;">
+                        <input type="checkbox" value="${u.id}" class="group-user-cb">
+                        ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
+                        <span style="font-weight:600; font-size:14px; color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</span>
+                    </label>
+                `).join('');
+            } else {
+                const container = document.getElementById('user-pick-list');
+                if (!list.length) { container.innerHTML = '<div class="empty-state"><div class="title">Никого не найдено</div></div>'; return; }
+                container.innerHTML = list.map(u => `
+                    <div class="user-pick-item" onclick="startChatWith('${u.id}', '${escapeHtml(u.name || 'Читатель')}')">
+                        ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
+                        <div><div style="font-weight:700;font-size:14px;color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</div><div style="font-size:11px;color:#95a5a6;margin-top:2px;">${lastSeenText(u.lastSeen)}</div></div>
+                    </div>
+                `).join('');
+            }
+        }
+        document.getElementById('user-search').addEventListener('input', renderUserPickList);
+
+        function startChatWith(otherId, otherName) {
+            const chatId = [currentUser.id, otherId].sort().join('_');
+            document.getElementById('new-chat-overlay').classList.remove('active');
+            if (!chatsData.find(c => c.id === chatId)) {
+                set(ref(db, 'chats/' + chatId), { participants: { [currentUser.id]: true, [otherId]: true }, participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName }, createdAt: Date.now() });
+            }
+            openChat(chatId);
+        }
+
+        // Логика создания группы
+        document.getElementById('btn-submit-group').onclick = function() {
+            const name = document.getElementById('group-name').value.trim();
+            if(!name) return tg.showAlert('Введите название группы');
+            const participants = { [currentUser.id]: true };
+            document.querySelectorAll('.group-user-cb:checked').forEach(cb => participants[cb.value] = true);
+            const chatId = 'group_' + Date.now();
+            set(ref(db, 'chats/' + chatId), {
+                type: 'group', name, desc: document.getElementById('group-desc').value.trim(), avatar: document.getElementById('group-avatar').value.trim(),
+                adminId: currentUser.id, participants, createdAt: Date.now(), lastMessage: 'Группа создана', lastMessageAt: Date.now()
+            }).then(() => { document.getElementById('close-create-group-btn').click(); openChat(chatId); });
+        };
+
+        // Логика редактирования группы
+        document.getElementById('chat-edit-group-btn').onclick = function() {
+            const chat = chatsData.find(c => c.id === currentChatId);
+            if(!chat || chat.type !== 'group') return;
+            document.getElementById('edit-group-name').value = chat.name || '';
+            document.getElementById('edit-group-desc').value = chat.desc || '';
+            document.getElementById('edit-group-avatar').value = chat.avatar || '';
+            document.getElementById('chat-overlay').classList.remove('active');
+            document.getElementById('edit-group-overlay').classList.add('active');
+            activeOverlay = 'editgroup';
+        };
+        document.getElementById('close-edit-group-btn').onclick = function() {
+            document.getElementById('edit-group-overlay').classList.remove('active');
+            openChat(currentChatId);
+        };
+        document.getElementById('btn-save-edit-group').onclick = function() {
+            const name = document.getElementById('edit-group-name').value.trim();
+            if(!name) return tg.showAlert('Название не может быть пустым');
+            update(ref(db, 'chats/' + currentChatId), { name, desc: document.getElementById('edit-group-desc').value.trim(), avatar: document.getElementById('edit-group-avatar').value.trim() }).then(() => {
+                document.getElementById('close-edit-group-btn').click();
+            });
+        };
+
+        // === СТИКЕРЫ (С ПАКАМИ) ===
         document.getElementById('btn-toggle-stickers').onclick = function() {
-            document.getElementById('chat-sticker-picker').classList.toggle('hidden');
-            const body = document.getElementById('chat-body');
-            body.scrollTop = body.scrollHeight;
+            const p = document.getElementById('chat-sticker-picker');
+            p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+            const body = document.getElementById('chat-body'); body.scrollTop = body.scrollHeight;
         };
 
         function renderStickerPicker() {
-            const pickers = [
-                { el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' },
-                { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }
-            ];
-            
+            const pickers = [{ el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' }, { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }];
+            let allPacks = [...stickerPacksData];
+            if(stickersData.length > 0) allPacks.push({ id: 'legacy', name: 'Остальные', stickers: stickersData.reduce((acc, s) => ({...acc, [s.id]: s}), {}) });
+
             pickers.forEach(picker => {
                 if (!picker.el) return;
-                if (!stickersData.length) {
-                    picker.el.innerHTML = '<div style="font-size:12px; color:#95a5a6;">Нет стикеров</div>';
-                    return;
-                }
-                picker.el.innerHTML = stickersData.map(s => `<img src="${s.url}" onclick="${picker.action}('${s.url}')">`).join('');
+                if (!allPacks.length) { picker.el.innerHTML = '<div style="font-size:12px; color:#95a5a6;">Нет стикеров</div>'; return; }
+                let html = '';
+                allPacks.forEach(pack => {
+                    if(!pack.stickers) return;
+                    html += `<div style="display:flex; flex-direction:column; gap:4px; margin-right:12px; flex-shrink:0;">
+                                <span style="font-size:10px; font-weight:700; color:#95a5a6; padding-left:4px; text-transform:uppercase;">${escapeHtml(pack.name)}</span>
+                                <div style="display:flex; gap:6px;">
+                                    ${Object.values(pack.stickers).map(s => `<img src="${s.url}" onclick="${picker.action}('${s.url}')" style="width:50px;height:50px;object-fit:contain;background:#f4f6f7;border-radius:10px;padding:4px;cursor:pointer;">`).join('')}
+                                </div>
+                             </div>`;
+                });
+                picker.el.innerHTML = html;
             });
         }
 
         window.sendSticker = function(url) {
             if (!currentChatId || !db) return;
             push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text: '', sticker: url, createdAt: Date.now() })
-                .then(() => {
-                    update(ref(db, 'chats/' + currentChatId), { lastMessage: '🖼 Стикер', lastMessageAt: Date.now() });
-                    document.getElementById('chat-sticker-picker').classList.add('hidden');
-                });
+                .then(() => { update(ref(db, 'chats/' + currentChatId), { lastMessage: '🖼 Стикер', lastMessageAt: Date.now() }); document.getElementById('chat-sticker-picker').style.display = 'none'; });
         };
-
-        document.getElementById('close-chat-btn').onclick = function() {
-            document.getElementById('chat-overlay').classList.remove('active');
-            activeOverlay = null;
-            currentChatId = null;
-            tg.BackButton.hide();
-            renderChatsList();
-        };
-
-        document.getElementById('btn-new-chat').onclick = function() {
-            document.getElementById('user-search').value = '';
-            document.getElementById('new-chat-overlay').classList.add('active');
-            activeOverlay = 'newchat';
-            tg.BackButton.show();
-            renderUserPickList();
-        };
-        document.getElementById('close-new-chat-btn').onclick = function() {
-            document.getElementById('new-chat-overlay').classList.remove('active');
-            activeOverlay = null;
-            tg.BackButton.hide();
-        };
-        document.getElementById('user-search').addEventListener('input', renderUserPickList);
-
-        function renderUserPickList() {
-            const q = document.getElementById('user-search').value.trim().toLowerCase();
-            let list = usersData.filter(u => u.id !== currentUser.id);
-            if (q) list = list.filter(u => (u.name || '').toLowerCase().includes(q));
-            const container = document.getElementById('user-pick-list');
-            if (!list.length) { container.innerHTML = '<div class="empty-state"><span class="icon">🙈</span><div class="title">Никого не найдено</div><div class="sub">Другие читатели появятся здесь, как только откроют приложение</div></div>'; return; }
-            container.innerHTML = list.map(u => `
-                <div class="user-pick-item" data-id="${u.id}" data-name="${escapeHtml(u.name || 'Читатель')}">
-                    ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
-                    <div>
-                        <div style="font-weight:700;font-size:15px;color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</div>
-                        <div style="font-size:12px;color:#95a5a6;margin-top:2px;">${lastSeenText(u.lastSeen)}</div>
-                    </div>
-                </div>
-            `).join('');
-            container.querySelectorAll('.user-pick-item').forEach(item => {
-                item.onclick = () => startChatWith(item.getAttribute('data-id'), item.getAttribute('data-name'));
-            });
-        }
-
-        function startChatWith(otherId, otherName) {
-            if (!otherId || otherId === currentUser.id) return;
-            const chatId = [currentUser.id, otherId].sort().join('_');
-            document.getElementById('new-chat-overlay').classList.remove('active');
-            document.getElementById('post-overlay').classList.remove('active');
-            const exists = chatsData.find(c => c.id === chatId);
-            if (!exists) {
-                set(ref(db, 'chats/' + chatId), {
-                    participants: { [currentUser.id]: true, [otherId]: true },
-                    participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName },
-                    createdAt: Date.now()
-                }).catch(err => tg.showAlert(friendlyDbError(err)));
-            }
-            openChat(chatId);
-        }
 
         // === ПРОФИЛЬ ===
         function renderOwnProfileHeader() {
             const me = usersData.find(u => u.id === currentUser.id);
-            const name = (me && me.name) || currentUser.name;
-            const bio = (me && me.bio) || '';
-            const avatar = (me && me.avatar) || '';
-            const banner = (me && me.banner) || '';
-
-            document.getElementById('profile-display-name').textContent = name;
-            document.getElementById('profile-display-bio').textContent = bio;
-
-            const avatarImg = document.getElementById('profile-avatar-img');
-            const avatarFallback = document.getElementById('profile-avatar-fallback');
-            if (avatar) { avatarImg.src = avatar; avatarImg.style.display = 'block'; avatarFallback.style.display = 'none'; }
-            else { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; avatarFallback.textContent = initialOf(name); avatarFallback.style.background = colorFor(name); }
-
-            const bannerImg = document.getElementById('profile-banner-img');
-            const bannerFallback = document.getElementById('profile-banner-fallback');
-            if (banner) { bannerImg.src = banner; bannerImg.style.display = 'block'; bannerFallback.style.display = 'none'; }
-            else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; }
+            const name = (me && me.name) || currentUser.name, bio = (me && me.bio) || '', avatar = (me && me.avatar) || '', banner = (me && me.banner) || '';
+            document.getElementById('profile-display-name').textContent = name; document.getElementById('profile-display-bio').textContent = bio;
+            const avatarImg = document.getElementById('profile-avatar-img'), avatarFallback = document.getElementById('profile-avatar-fallback');
+            if (avatar) { avatarImg.src = avatar; avatarImg.style.display = 'block'; avatarFallback.style.display = 'none'; } else { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; avatarFallback.textContent = initialOf(name); avatarFallback.style.background = colorFor(name); }
+            const bannerImg = document.getElementById('profile-banner-img'), bannerFallback = document.getElementById('profile-banner-fallback');
+            if (banner) { bannerImg.src = banner; bannerImg.style.display = 'block'; bannerFallback.style.display = 'none'; } else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; }
 
             if (!document.getElementById('profile-edit-panel').classList.contains('hidden')) return;
-            document.getElementById('profile-name-input').value = (me && me.name) || '';
-            document.getElementById('profile-bio-input').value = bio;
-            document.getElementById('profile-avatar-input').value = avatar;
-            document.getElementById('profile-banner-input').value = banner;
+            document.getElementById('profile-name-input').value = (me && me.name) || ''; document.getElementById('profile-bio-input').value = bio; document.getElementById('profile-avatar-input').value = avatar; document.getElementById('profile-banner-input').value = banner;
         }
 
-        document.getElementById('btn-edit-profile').onclick = function() {
-            document.getElementById('profile-edit-panel').classList.toggle('hidden');
-        };
-
+        document.getElementById('btn-edit-profile').onclick = function() { document.getElementById('profile-edit-panel').classList.toggle('hidden'); };
         document.getElementById('btn-save-profile').onclick = function() {
             if (!db) return tg.showAlert('Firebase не подключен');
             const name = document.getElementById('profile-name-input').value.trim();
-            const bio = document.getElementById('profile-bio-input').value.trim();
-            const avatar = document.getElementById('profile-avatar-input').value.trim();
-            const banner = document.getElementById('profile-banner-input').value.trim();
-            update(ref(db, 'users/' + currentUser.id), { name: name || currentUser.name, bio, avatar, banner })
-                .then(() => {
-                    if (name) currentUser.name = name;
-                    document.getElementById('profile-edit-panel').classList.add('hidden');
-                    tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] });
-                })
-                .catch(err => tg.showAlert(friendlyDbError(err)));
+            update(ref(db, 'users/' + currentUser.id), { name: name || currentUser.name, bio: document.getElementById('profile-bio-input').value.trim(), avatar: document.getElementById('profile-avatar-input').value.trim(), banner: document.getElementById('profile-banner-input').value.trim() })
+                .then(() => { if (name) currentUser.name = name; document.getElementById('profile-edit-panel').classList.add('hidden'); tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] }); })
         };
 
         function renderProfileStats() {
-            document.getElementById('stats-read').textContent = readBooks.length;
-            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
-            document.getElementById('stats-streak').textContent = streakStore.count || 0;
-            document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length;
-            document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
-
-            const genreCounts = {};
-            readBooks.forEach(id => {
-                const b = booksData.find(bk => bk.id === id);
-                if (b && b.genre) genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1;
-            });
+            document.getElementById('stats-read').textContent = readBooks.length; document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length; document.getElementById('stats-streak').textContent = streakStore.count || 0;
+            document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length; document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
+            const genreCounts = {}; readBooks.forEach(id => { const b = booksData.find(bk => bk.id === id); if (b && b.genre) genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1; });
             const entries = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
             const card = document.getElementById('genre-stats-card');
-            if (entries.length) {
-                card.style.display = '';
-                document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `
-                    <div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#7f8c8d;">${c} ${c === 1 ? 'книга' : 'книг'}</span></div>
-                `).join('');
-            } else {
-                card.style.display = 'none';
-            }
+            if (entries.length) { card.style.display = ''; document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `<div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#7f8c8d;">${c}</span></div>`).join(''); } else { card.style.display = 'none'; }
         }
 
         tg.BackButton.onClick(() => {
@@ -1807,301 +1719,139 @@
             else if (activeOverlay === 'reader') document.getElementById('close-reader-btn').click();
             else if (activeOverlay === 'chat') document.getElementById('close-chat-btn').click();
             else if (activeOverlay === 'newchat') document.getElementById('close-new-chat-btn').click();
+            else if (activeOverlay === 'creategroup') document.getElementById('close-create-group-btn').click();
+            else if (activeOverlay === 'editgroup') document.getElementById('close-edit-group-btn').click();
             else if (activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
         });
 
         // === АДМИН ===
         document.getElementById('admin-login-btn').onclick = function() {
-            if (isAdmin) {
-                document.getElementById('admin-panel').classList.toggle('hidden');
-                return;
-            }
+            if (isAdmin) { document.getElementById('admin-panel').classList.toggle('hidden'); return; }
             const pwd = prompt("Пароль:");
-            if (pwd === "admin123") {
-                isAdmin = true;
-                document.getElementById('admin-panel').classList.remove('hidden');
-                document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
-                renderAdminPostsList();
-                renderAdminBooksList();
-                renderAdminStickersList();
-                populateChapterBookSelect();
-            } else if (pwd) {
-                tg.showAlert('Неверный пароль');
-            }
+            if (pwd === "admin123") { isAdmin = true; document.getElementById('admin-panel').classList.remove('hidden'); document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' }); renderAdminPostsList(); renderAdminBooksList(); renderAdminStickersList(); populateChapterBookSelect(); } else if (pwd) { tg.showAlert('Неверный пароль'); }
         };
 
         window.switchAdminTab = function(tab) {
-            document.getElementById('admin-tab-posts').classList.toggle('hidden', tab !== 'posts');
-            document.getElementById('admin-tab-books').classList.toggle('hidden', tab !== 'books');
-            document.getElementById('admin-tab-stickers').classList.toggle('hidden', tab !== 'stickers');
-            
-            document.getElementById('admin-tab-btn-posts').classList.toggle('active', tab === 'posts');
-            document.getElementById('admin-tab-btn-books').classList.toggle('active', tab === 'books');
-            document.getElementById('admin-tab-btn-stickers').classList.toggle('active', tab === 'stickers');
+            ['posts', 'books', 'stickers'].forEach(t => { document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); });
         };
 
-        // СТИКЕРЫ АДМИНКА
+        // АДМИН - СТИКЕРЫ
+        document.getElementById('btn-add-pack').onclick = function() {
+            const name = document.getElementById('new-pack-name').value.trim();
+            if(!name) return tg.showAlert('Введите название');
+            push(ref(db, 'sticker_packs'), { name, createdAt: Date.now() }).then(() => { document.getElementById('new-pack-name').value = ''; });
+        }
+        function populateStickerPackSelect() {
+            const sel = document.getElementById('sticker-pack-select'); if(!sel) return;
+            const prev = sel.value;
+            sel.innerHTML = stickerPacksData.length ? stickerPacksData.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('') : '<option value="">Сначала создайте пак</option>';
+            if(stickerPacksData.some(p => p.id === prev)) sel.value = prev;
+        }
         document.getElementById('btn-add-sticker').onclick = function() {
+            const packId = document.getElementById('sticker-pack-select').value;
             const url = document.getElementById('sticker-url-input').value.trim();
             if (!url) return tg.showAlert('Добавь ссылку на стикер');
-            if (!db) return;
-            push(ref(db, 'stickers'), { url, createdAt: Date.now() }).then(() => {
-                document.getElementById('sticker-url-input').value = '';
-                tg.showPopup({ title: 'Готово', message: 'Стикер добавлен', buttons: [{ type: 'ok' }] });
-            }).catch(err => tg.showAlert(friendlyDbError(err)));
+            if(packId) { push(ref(db, `sticker_packs/${packId}/stickers`), { url, createdAt: Date.now() }).then(() => { document.getElementById('sticker-url-input').value = ''; tg.showPopup({ title: 'Готово', message: 'Стикер добавлен', buttons: [{ type: 'ok' }] }); }); }
+            else { push(ref(db, 'stickers'), { url, createdAt: Date.now() }).then(() => { document.getElementById('sticker-url-input').value = ''; }); }
         };
 
         function renderAdminStickersList() {
-            const el = document.getElementById('admin-stickers-list');
-            if (!el) return;
-            if (!stickersData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Стикеров пока нет</div>'; return; }
-            el.innerHTML = stickersData.map(s => `
-                <div style="position:relative; width:64px; height:64px; background:#f4f6f7; border-radius:12px; padding:4px;">
-                    <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
-                    <button class="icon-btn danger" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; font-size:12px; line-height:1;" onclick="deleteSticker('${s.id}')">✕</button>
-                </div>
-            `).join('');
-        }
-        
-        window.deleteSticker = function(id) {
-            if (confirm('Удалить стикер?')) remove(ref(db, 'stickers/' + id));
-        };
-
-        function renderAdminPostsList() {
-            const el = document.getElementById('admin-posts-list');
-            if (!el) return;
-            if (!postsData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Новостей пока нет</div>'; return; }
-            el.innerHTML = postsData.map(post => {
-                const imagesArr = post.images || (post.image ? [post.image] : []);
-                const cover = imagesArr.length > 0 ? imagesArr[0] : null;
-                return `
-                <div class="admin-item">
-                    ${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
-                    <div class="admin-item-info">
-                        <div class="admin-item-title">${escapeHtml(post.title)}</div>
-                        <div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div>
-                    </div>
-                    <div class="admin-item-actions">
-                        <button class="icon-btn" data-edit-id="${post.id}">✏️</button>
-                        <button class="icon-btn danger" data-del-id="${post.id}">🗑</button>
-                    </div>
-                </div>`;
-            }).join('');
-            el.querySelectorAll('[data-edit-id]').forEach(b => { b.onclick = () => editPost(b.getAttribute('data-edit-id')); });
-            el.querySelectorAll('[data-del-id]').forEach(b => { b.onclick = () => deletePost(b.getAttribute('data-del-id')); });
-        }
-
-        function editPost(id) {
-            const post = postsData.find(p => p.id === id);
-            if (!post) return;
-            editingPostId = id;
-            document.getElementById('post-title').value = post.title || '';
-            const imagesArr = post.images || (post.image ? [post.image] : []);
-            populateImagesContainer('admin-post-images-container', imagesArr);
-            document.getElementById('post-text').value = post.text || '';
-            document.getElementById('post-form-heading').textContent = 'Редактировать новость';
-            document.getElementById('btn-add-post').textContent = 'Сохранить изменения';
-            document.getElementById('btn-cancel-edit-post').classList.remove('hidden');
-            document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function resetPostForm() {
-            editingPostId = null;
-            document.getElementById('post-title').value = '';
-            document.getElementById('admin-post-images-container').innerHTML = '';
-            document.getElementById('post-text').value = '';
-            document.getElementById('post-form-heading').textContent = 'Добавить новость';
-            document.getElementById('btn-add-post').textContent = 'Опубликовать';
-            document.getElementById('btn-cancel-edit-post').classList.add('hidden');
-        }
-        document.getElementById('btn-cancel-edit-post').onclick = resetPostForm;
-
-        function deletePost(id) {
-            tg.showConfirm('Удалить новость безвозвратно?', (ok) => {
-                if (ok) remove(ref(db, 'posts/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success')).catch(err => tg.showAlert(friendlyDbError(err)));
-            });
-        }
-
-        document.getElementById('btn-add-post').onclick = function() {
-            const title = document.getElementById('post-title').value.trim();
-            const text = document.getElementById('post-text').value.trim();
-            const imagesArr = getImagesFromContainer('admin-post-images-container');
-
-            if (!title || !text) return tg.showAlert('Заполни поля');
-            if (!db) return tg.showAlert('Firebase не подключен');
-
-            if (editingPostId) {
-                update(ref(db, 'posts/' + editingPostId), { title, images: imagesArr, text })
-                    .then(() => { resetPostForm(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert(friendlyDbError(err)));
-            } else {
-                push(ref(db, 'posts'), { title, images: imagesArr, text, createdAt: Date.now() })
-                    .then(() => { resetPostForm(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert(friendlyDbError(err)));
-            }
-        };
-
-        function renderAdminBooksList() {
-            const el = document.getElementById('admin-books-list');
-            if (!el) return;
-            if (!booksData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Книг пока нет</div>'; return; }
-            el.innerHTML = booksData.map(book => `
-                <div class="admin-item">
-                    ${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
-                    <div class="admin-item-info">
-                        <div class="admin-item-title">${escapeHtml(book.title)}</div>
-                        <div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div>
-                    </div>
-                    <div class="admin-item-actions">
-                        <button class="icon-btn" data-edit-id="${book.id}">✏️</button>
-                        <button class="icon-btn danger" data-del-id="${book.id}">🗑</button>
-                    </div>
-                </div>
-            `).join('');
-            el.querySelectorAll('[data-edit-id]').forEach(b => { b.onclick = () => editBook(b.getAttribute('data-edit-id')); });
-            el.querySelectorAll('[data-del-id]').forEach(b => { b.onclick = () => deleteBook(b.getAttribute('data-del-id')); });
-        }
-
-        function editBook(id) {
-            const book = booksData.find(b => b.id === id);
-            if (!book) return;
-            editingBookId = id;
-            document.getElementById('book-title').value = book.title || '';
-            document.getElementById('book-author').value = book.author || '';
-            document.getElementById('book-cover').value = book.coverImage || '';
-            document.getElementById('book-genre').value = book.genre || '';
-            document.getElementById('book-form-heading').textContent = 'Редактировать книгу';
-            document.getElementById('btn-add-book').textContent = 'Сохранить изменения';
-            document.getElementById('btn-cancel-edit-book').classList.remove('hidden');
-            document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function resetBookForm() {
-            editingBookId = null;
-            document.getElementById('book-title').value = '';
-            document.getElementById('book-author').value = '';
-            document.getElementById('book-cover').value = '';
-            document.getElementById('book-genre').value = '';
-            document.getElementById('book-form-heading').textContent = 'Добавить книгу';
-            document.getElementById('btn-add-book').textContent = 'Добавить книгу';
-            document.getElementById('btn-cancel-edit-book').classList.add('hidden');
-        }
-        document.getElementById('btn-cancel-edit-book').onclick = resetBookForm;
-
-        window.deleteBook = function(id) {
-            tg.showConfirm('Удалить книгу безвозвратно прямо из базы Firebase? Все главы будут стерты.', (ok) => {
-                if (ok) {
-                    remove(ref(db, 'books/' + id))
-                        .then(() => {
-                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                            tg.showPopup({ title: 'Готово', message: 'Книга успешно стёрта из базы', buttons: [{ type: 'ok' }] });
-                        })
-                        .catch(err => tg.showAlert('Ошибка удаления из Firebase: ' + friendlyDbError(err)));
+            const el = document.getElementById('admin-stickers-list'); if (!el) return;
+            let html = '';
+            stickerPacksData.forEach(pack => {
+                html += `<div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px;">${escapeHtml(pack.name)} <button class="icon-btn danger" style="display:inline-block; width:24px; height:24px; font-size:12px; margin-left:10px;" onclick="if(confirm('Удалить весь пак?')) remove(ref(db, 'sticker_packs/${pack.id}'))">🗑</button></div>`;
+                if(pack.stickers) {
+                    Object.entries(pack.stickers).forEach(([sid, s]) => {
+                        html += `<div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px;">
+                                    <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
+                                    <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'sticker_packs/${pack.id}/stickers/${sid}'))">✕</button>
+                                 </div>`;
+                    });
                 }
             });
+            if(stickersData.length > 0) {
+                 html += `<div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px; color:#95a5a6;">Остальные (без пака)</div>`;
+                 stickersData.forEach(s => {
+                      html += `<div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px;">
+                            <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
+                            <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'stickers/${s.id}'))">✕</button>
+                        </div>`;
+                 });
+            }
+            el.innerHTML = html;
+        }
+
+        // АДМИН - ПОСТЫ
+        function renderAdminPostsList() {
+            const el = document.getElementById('admin-posts-list'); if (!el) return;
+            if (!postsData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Новостей пока нет</div>'; return; }
+            el.innerHTML = postsData.map(post => {
+                const cover = (post.images || (post.image ? [post.image] : []))[0];
+                return `<div class="admin-item">${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    <div class="admin-item-info"><div class="admin-item-title">${escapeHtml(post.title)}</div><div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div></div>
+                    <div class="admin-item-actions"><button class="icon-btn" onclick="editPost('${post.id}')">✏️</button><button class="icon-btn danger" onclick="if(confirm('Удалить новость?')) remove(ref(db, 'posts/${post.id}'))">🗑</button></div></div>`;
+            }).join('');
+        }
+        window.editPost = function(id) {
+            const post = postsData.find(p => p.id === id); if (!post) return;
+            editingPostId = id; document.getElementById('post-title').value = post.title || ''; populateImagesContainer('admin-post-images-container', post.images || (post.image ? [post.image] : [])); document.getElementById('post-text').value = post.text || '';
+            document.getElementById('post-form-heading').textContent = 'Редактировать новость'; document.getElementById('btn-add-post').textContent = 'Сохранить изменения'; document.getElementById('btn-cancel-edit-post').classList.remove('hidden'); document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
+        };
+        document.getElementById('btn-cancel-edit-post').onclick = function() {
+            editingPostId = null; document.getElementById('post-title').value = ''; document.getElementById('admin-post-images-container').innerHTML = ''; document.getElementById('post-text').value = '';
+            document.getElementById('post-form-heading').textContent = 'Добавить новость'; document.getElementById('btn-add-post').textContent = 'Опубликовать'; document.getElementById('btn-cancel-edit-post').classList.add('hidden');
+        };
+        document.getElementById('btn-add-post').onclick = function() {
+            if (!document.getElementById('post-title').value.trim() || !document.getElementById('post-text').value.trim()) return tg.showAlert('Заполни поля');
+            const data = { title: document.getElementById('post-title').value.trim(), images: getImagesFromContainer('admin-post-images-container'), text: document.getElementById('post-text').value.trim() };
+            if (editingPostId) { update(ref(db, 'posts/' + editingPostId), data).then(() => { document.getElementById('btn-cancel-edit-post').click(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); }); } 
+            else { push(ref(db, 'posts'), { ...data, createdAt: Date.now() }).then(() => { document.getElementById('btn-cancel-edit-post').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); }); }
         };
 
+        // АДМИН - КНИГИ И ГЛАВЫ
+        function renderAdminBooksList() {
+            const el = document.getElementById('admin-books-list'); if (!el) return;
+            if (!booksData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Книг пока нет</div>'; return; }
+            el.innerHTML = booksData.map(book => `<div class="admin-item">${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
+                    <div class="admin-item-info"><div class="admin-item-title">${escapeHtml(book.title)}</div><div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div></div>
+                    <div class="admin-item-actions"><button class="icon-btn" onclick="editBook('${book.id}')">✏️</button><button class="icon-btn danger" onclick="if(confirm('Удалить книгу?')) remove(ref(db, 'books/${book.id}'))">🗑</button></div></div>`).join('');
+        }
+        window.editBook = function(id) {
+            const book = booksData.find(b => b.id === id); if (!book) return;
+            editingBookId = id; document.getElementById('book-title').value = book.title || ''; document.getElementById('book-author').value = book.author || ''; document.getElementById('book-cover').value = book.coverImage || ''; document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-form-heading').textContent = 'Редактировать книгу'; document.getElementById('btn-add-book').textContent = 'Сохранить изменения'; document.getElementById('btn-cancel-edit-book').classList.remove('hidden'); document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
+        };
+        document.getElementById('btn-cancel-edit-book').onclick = function() {
+            editingBookId = null; document.getElementById('book-title').value = ''; document.getElementById('book-author').value = ''; document.getElementById('book-cover').value = ''; document.getElementById('book-genre').value = '';
+            document.getElementById('book-form-heading').textContent = 'Добавить книгу'; document.getElementById('btn-add-book').textContent = 'Добавить книгу'; document.getElementById('btn-cancel-edit-book').classList.add('hidden');
+        };
         document.getElementById('btn-add-book').onclick = function() {
-            const title = document.getElementById('book-title').value.trim();
-            const author = document.getElementById('book-author').value.trim();
-            const cover = document.getElementById('book-cover').value.trim();
-            const genre = document.getElementById('book-genre').value.trim();
-
-            if (!title) return tg.showAlert('Укажи название книги');
-            if (!db) return tg.showAlert('Firebase не подключен');
-
-            if (editingBookId) {
-                update(ref(db, 'books/' + editingBookId), { title, author: author || 'Неизвестен', coverImage: cover, genre })
-                    .then(() => { resetBookForm(); tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert(friendlyDbError(err)));
-            } else {
-                push(ref(db, 'books'), { title, author: author || 'Неизвестен', coverImage: cover, genre, createdAt: Date.now() })
-                    .then(() => { resetBookForm(); tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); })
-                    .catch(err => tg.showAlert(friendlyDbError(err)));
-            }
+            if (!document.getElementById('book-title').value.trim()) return tg.showAlert('Укажи название книги');
+            const data = { title: document.getElementById('book-title').value.trim(), author: document.getElementById('book-author').value.trim() || 'Неизвестен', coverImage: document.getElementById('book-cover').value.trim(), genre: document.getElementById('book-genre').value.trim() };
+            if (editingBookId) { update(ref(db, 'books/' + editingBookId), data).then(() => { document.getElementById('btn-cancel-edit-book').click(); tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); }); } 
+            else { push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then(() => { document.getElementById('btn-cancel-edit-book').click(); tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); }); }
         };
 
         document.getElementById('chapter-book-select').addEventListener('change', renderAdminChaptersList);
-
         function renderAdminChaptersList() {
-            const bookId = document.getElementById('chapter-book-select').value;
-            const container = document.getElementById('admin-chapters-list');
+            const bookId = document.getElementById('chapter-book-select').value, container = document.getElementById('admin-chapters-list');
             if (!bookId) { container.innerHTML = ''; return; }
-            
-            const book = booksData.find(b => b.id === bookId);
-            if (!book) { container.innerHTML = ''; return; }
-            
-            const chapters = getChapters(book);
-            if (!chapters.length) {
-                container.innerHTML = '<div style="color:#7f8c8d;font-size:13px; margin-bottom: 16px;">В этой книге пока нет глав</div>';
-                return;
-            }
-            
-            container.innerHTML = chapters.map((ch, idx) => `
-                <div class="admin-item" style="padding: 10px; min-height: auto; margin-bottom: 8px;">
-                    <div class="admin-item-info">
-                        <div class="admin-item-title" style="font-size: 14px;">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div>
-                    </div>
-                    <div class="admin-item-actions">
-                        <button class="icon-btn danger" data-del-chapter-book="${bookId}" data-del-chapter-id="${ch.id}" style="width:34px;height:34px;font-size:14px;">🗑</button>
-                    </div>
-                </div>
-            `).join('') + '<div style="margin-bottom:16px;"></div>';
-
-            container.querySelectorAll('[data-del-chapter-id]').forEach(b => {
-                b.onclick = () => deleteChapter(b.getAttribute('data-del-chapter-book'), b.getAttribute('data-del-chapter-id'));
-            });
+            const book = booksData.find(b => b.id === bookId); if (!book) { container.innerHTML = ''; return; }
+            const chapters = getChapters(book); if (!chapters.length) { container.innerHTML = '<div style="color:#7f8c8d;font-size:12px; margin-bottom: 12px;">В этой книге пока нет глав</div>'; return; }
+            container.innerHTML = chapters.map((ch, idx) => `<div class="admin-item" style="padding: 10px; min-height: auto; margin-bottom: 6px;">
+                    <div class="admin-item-info"><div class="admin-item-title" style="font-size: 13px;">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div></div>
+                    <div class="admin-item-actions"><button class="icon-btn danger" style="width:30px;height:30px;font-size:12px;" onclick="if(confirm('Удалить главу?')) remove(ref(db, 'books/${bookId}/${ch.id === 'legacy' ? 'text' : 'chapters/' + ch.id}'))">🗑</button></div></div>`).join('') + '<div style="margin-bottom:12px;"></div>';
         }
-
-        window.deleteChapter = function(bookId, chapterId) {
-            tg.showConfirm('Удалить эту главу из Firebase?', (ok) => {
-                if (ok) {
-                    let refPath = `books/${bookId}/chapters/${chapterId}`;
-                    if (chapterId === 'legacy') refPath = `books/${bookId}/text`;
-                    
-                    remove(ref(db, refPath))
-                        .then(() => {
-                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                            tg.showAlert('Глава стёрта из базы.');
-                        })
-                        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
-                }
-            });
-        };
-
         function populateChapterBookSelect() {
-            const sel = document.getElementById('chapter-book-select');
-            if (!sel) return;
-            const prevVal = sel.value;
-            sel.innerHTML = booksData.length
-                ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
-                : '<option value="">Сначала добавьте книгу</option>';
-            if (booksData.some(b => b.id === prevVal)) sel.value = prevVal;
-            else if (booksData.length > 0) sel.value = booksData[0].id;
-            
-            renderAdminChaptersList();
+            const sel = document.getElementById('chapter-book-select'); if (!sel) return;
+            const prevVal = sel.value; sel.innerHTML = booksData.length ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('') : '<option value="">Сначала добавьте книгу</option>';
+            if (booksData.some(b => b.id === prevVal)) sel.value = prevVal; else if (booksData.length > 0) sel.value = booksData[0].id; renderAdminChaptersList();
         }
-
         document.getElementById('btn-add-chapter').onclick = function() {
             const bookId = document.getElementById('chapter-book-select').value;
-            const title = document.getElementById('chapter-title').value.trim();
-            const text = document.getElementById('chapter-text').value.trim();
-
-            if (!bookId) return tg.showAlert('Сначала добавьте книгу');
-            if (!text) return tg.showAlert('Введите текст главы');
-            if (!db) return tg.showAlert('Firebase не подключен');
-
-            push(ref(db, 'books/' + bookId + '/chapters'), { title: title || '', text, createdAt: Date.now() })
-                .then(() => {
-                    document.getElementById('chapter-title').value = '';
-                    document.getElementById('chapter-text').value = '';
-                    tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] });
-                })
-                .catch(err => tg.showAlert(friendlyDbError(err)));
+            if (!bookId) return tg.showAlert('Сначала добавьте книгу'); if (!document.getElementById('chapter-text').value.trim()) return tg.showAlert('Введите текст главы');
+            push(ref(db, 'books/' + bookId + '/chapters'), { title: document.getElementById('chapter-title').value.trim() || '', text: document.getElementById('chapter-text').value.trim(), createdAt: Date.now() }).then(() => { document.getElementById('chapter-title').value = ''; document.getElementById('chapter-text').value = ''; tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] }); });
         };
-
-        renderProfileStats();
-        console.log('✅ Приложение запущено');
     </script>
 </body>
 </html>
