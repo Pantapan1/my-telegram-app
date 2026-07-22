@@ -22,12 +22,13 @@
         .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
         .header p { color: #8e8e93; font-size: 14px; }
 
+        .fab-row { display: flex; gap: 8px; flex-shrink: 0; }
         .icon-btn-refresh {
             width: 46px; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08);
             background: #1c1c1e; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center; transition: transform .15s;
         }
-        .icon-btn-refresh:active { transform: scale(0.9) rotate(25deg); }
+        .icon-btn-refresh:active { transform: scale(0.9) rotate(15deg); }
 
         .card {
             background: #1c1c1e;
@@ -110,6 +111,19 @@
         }
         .tab-mini-btn.active { background: #0a84ff; color: #fff; border-color: #0a84ff; }
 
+        /* Загрузка картинок с устройства */
+        .image-field-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
+        .image-field-row .input { margin-bottom: 0; flex: 1; }
+        .upload-btn {
+            width: 48px; height: 48px; border-radius: 12px; background: #1c1c1e;
+            border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; flex-shrink: 0; transition: transform .1s, opacity .1s;
+        }
+        .upload-btn:active { transform: scale(0.9); }
+        .upload-btn.uploading { opacity: 0.5; pointer-events: none; }
+        .image-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 12px; margin: -4px 0 12px; display: none; }
+        .image-preview.show { display: block; }
+
         /* === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === */
         .bottom-nav {
             position: fixed !important;
@@ -122,7 +136,7 @@
             border-top: 1px solid rgba(255,255,255,0.1) !important;
             display: flex !important;
             justify-content: space-around !important;
-            padding: 12px 0 24px !important;
+            padding: 10px 0 24px !important;
             z-index: 9999 !important;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.3) !important;
         }
@@ -131,21 +145,21 @@
             background: none !important;
             border: none !important;
             color: #8e8e93 !important;
-            font-size: 11px !important;
+            font-size: 10.5px !important;
             font-weight: 500 !important;
             cursor: pointer !important;
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             gap: 4px !important;
-            padding: 8px 20px !important;
+            padding: 8px 10px !important;
             flex: 1 !important;
             position: relative !important;
             transition: color .15s, transform .1s !important;
         }
         .nav-btn:active { transform: scale(0.92) !important; }
 
-        .nav-btn .icon { font-size: 22px !important; position: relative; }
+        .nav-btn .icon { font-size: 21px !important; position: relative; }
         .nav-btn.active { color: #0a84ff !important; }
         .nav-badge {
             position: absolute; top: -2px; right: -6px; width: 9px; height: 9px;
@@ -156,17 +170,17 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* ОВЕРЛЕИ (читалка / пост) */
+        /* ОВЕРЛЕИ (читалка / пост / чат / компоузер) */
         .reader-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: #0f0f0f; z-index: 1000;
+            background: #0f0f0f; z-index: 10000;
             display: none; flex-direction: column;
         }
         .reader-overlay.active { display: flex; }
 
         .reader-header {
             padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; gap: 10px;
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
         }
         .reader-content {
             flex: 1; overflow-y: auto; padding: 22px 20px 40px;
@@ -174,7 +188,7 @@
         }
         .reader-actions {
             padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; gap: 8px; background: #1c1c1e;
+            display: flex; gap: 8px; background: #1c1c1e; flex-shrink: 0;
         }
 
         .progress-outer {
@@ -223,6 +237,12 @@
         .comment-text { font-size: 14.5px; line-height: 1.5; color: #e5e5e7; margin-top: 3px; }
         .comment-delete { color: #ff453a; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 5px; font-weight: 600; padding: 0; }
 
+        /* Автор поста */
+        .avatar-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #2c2c2e; }
+        .avatar-sm-fallback { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; cursor: pointer; width: fit-content; }
+        .post-author-name { font-size: 13px; font-weight: 700; color: #d1d1d6; }
+
         /* Админка */
         .admin-item {
             display: flex; align-items: center; gap: 10px; padding: 10px;
@@ -237,13 +257,63 @@
         .icon-btn.danger { background: rgba(255,69,58,0.14); color: #ff453a; }
         .icon-btn:active { transform: scale(0.9); }
 
-        /* Профиль/статистика */
+        /* Профиль */
+        .profile-banner-wrap { position: relative; margin-bottom: 46px; }
+        .profile-banner { width: 100%; height: 120px; border-radius: 18px; object-fit: cover; display: none; }
+        .profile-banner-fallback { width: 100%; height: 120px; border-radius: 18px; }
+        .profile-avatar-wrap { position: absolute; left: 16px; bottom: -34px; }
+        .profile-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 4px solid #0f0f0f; background: #2c2c2e; display: none; }
+        .profile-avatar-fallback { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #0f0f0f; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #fff; }
+        .profile-name-row h2 { font-size: 21px; font-weight: 800; margin-bottom: 4px; }
+        .profile-bio { font-size: 13.5px; color: #8e8e93; margin-bottom: 4px; min-height: 4px; }
+
         .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 22px 10px; }
         .stats-num { font-size: 26px; font-weight: 800; }
         .stats-label { font-size: 12px; color: #8e8e93; margin-top: 4px; }
         .stats-divider { width: 1px; background: rgba(255,255,255,0.1); }
         .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
         .genre-stat-row:last-child { border-bottom: none; }
+
+        /* Чаты */
+        .chat-list-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: transform .1s; }
+        .chat-list-item:active { transform: scale(0.98); }
+        .chat-avatar-wrap { position: relative; flex-shrink: 0; }
+        .chat-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #2c2c2e; }
+        .chat-avatar-fallback { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; }
+        .mood-badge { position: absolute; bottom: -2px; right: -2px; font-size: 15px; background: #1c1c1e; border-radius: 50%; padding: 1px; }
+        .chat-info { flex: 1; min-width: 0; }
+        .chat-info-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        .chat-name { font-size: 15px; font-weight: 700; }
+        .chat-time { font-size: 11px; color: #636366; flex-shrink: 0; }
+        .chat-preview { font-size: 13px; color: #8e8e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .chat-unread-dot { width: 9px; height: 9px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; }
+        .online-dot-text { font-size: 12px; color: #8e8e93; }
+
+        .user-pick-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; cursor: pointer; transition: background .1s; }
+        .user-pick-item:active { background: rgba(255,255,255,0.05); }
+
+        .chat-quote-watermark {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            padding: 50px 34px; text-align: center; font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+            font-size: 21px; line-height: 1.55; color: rgba(255,255,255,0.055); pointer-events: none; z-index: 0;
+        }
+        .chat-messages-list { position: relative; z-index: 1; }
+        .msg-row { display: flex; margin-bottom: 14px; }
+        .msg-row.mine { justify-content: flex-end; }
+        .msg-bubble { max-width: 76%; padding: 10px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.45; position: relative; }
+        .msg-row:not(.mine) .msg-bubble { background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06); border-bottom-left-radius: 4px; }
+        .msg-row.mine .msg-bubble { background: #0a84ff; color: #fff; border-bottom-right-radius: 4px; }
+        .msg-time { font-size: 10px; opacity: 0.6; margin-top: 4px; display: block; text-align: right; }
+        .msg-pin-btn { position: absolute; top: -9px; right: -6px; background: #2c2c2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; color: #ff9f0a; line-height: 1; }
+
+        .pinned-quote-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(255,159,10,0.08); border-bottom: 1px solid rgba(255,159,10,0.15); font-size: 12.5px; color: #ff9f0a; flex-shrink: 0; }
+        .pinned-quote-bar span.text { flex: 1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pinned-quote-bar button { background: none; border: none; color: #ff9f0a; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+
+        .chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); background: #1c1c1e; flex-shrink: 0; }
+        .chat-input-row input { flex: 1; margin-bottom: 0 !important; }
+        .chat-send-btn { width: 48px; height: 48px; border-radius: 12px; border: none; background: #0a84ff; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+        .chat-send-btn:active { transform: scale(0.9); }
 
         /* Пустые состояния и скелетоны */
         .empty-state { text-align: center; padding: 60px 20px; color: #8e8e93; }
@@ -272,7 +342,10 @@
                     <h1>Новости</h1>
                     <p>Последние обновления</p>
                 </div>
-                <button class="icon-btn-refresh" id="refresh-feed-btn" title="Обновить">🔄</button>
+                <div class="fab-row">
+                    <button class="icon-btn-refresh" id="btn-open-compose" title="Написать в ленту">✍️</button>
+                    <button class="icon-btn-refresh" id="refresh-feed-btn" title="Обновить">🔄</button>
+                </div>
             </div>
             <div class="top-search">
                 <input type="text" class="input search-input" id="feed-search" placeholder="🔍 Поиск новостей...">
@@ -304,15 +377,66 @@
         </div>
     </div>
 
+    <!-- ЧАТЫ -->
+    <div id="section-chats" class="section">
+        <div class="container">
+            <div class="header">
+                <div>
+                    <h1>Чаты</h1>
+                    <p>Общение с читателями</p>
+                </div>
+                <div class="fab-row">
+                    <button class="icon-btn-refresh" id="btn-new-chat" title="Новый чат">➕</button>
+                </div>
+            </div>
+            <div id="chats-container"><div class="empty-state"><span class="icon">💬</span><div class="title">Загрузка...</div></div></div>
+        </div>
+    </div>
+
     <!-- ПРОФИЛЬ -->
     <div id="section-profile" class="section">
         <div class="container">
             <div class="header">
                 <div>
                     <h1>Профиль</h1>
-                    <p>Статистика</p>
+                    <p>Статистика и настройки</p>
                 </div>
             </div>
+
+            <div class="profile-banner-wrap">
+                <img id="profile-banner-img" class="profile-banner" src="">
+                <div id="profile-banner-fallback" class="profile-banner-fallback"></div>
+                <div class="profile-avatar-wrap">
+                    <img id="profile-avatar-img" class="profile-avatar" src="">
+                    <div id="profile-avatar-fallback" class="profile-avatar-fallback"></div>
+                </div>
+            </div>
+            <div class="profile-name-row">
+                <h2 id="profile-display-name">Читатель</h2>
+            </div>
+            <div class="profile-bio" id="profile-display-bio"></div>
+
+            <button class="btn btn-secondary" id="btn-edit-profile">✏️ Редактировать профиль</button>
+            <div id="profile-edit-panel" class="hidden">
+                <div class="divider"></div>
+                <input type="text" id="profile-name-input" class="input" placeholder="Отображаемое имя">
+                <textarea id="profile-bio-input" class="input" placeholder="О себе..." style="min-height:70px;"></textarea>
+
+                <div class="image-field-row">
+                    <input type="text" id="profile-avatar-input" class="input" placeholder="Ссылка на аватар (URL)">
+                    <label class="upload-btn" for="profile-avatar-file" id="profile-avatar-upload-btn">📁</label>
+                    <input type="file" id="profile-avatar-file" accept="image/*" class="hidden">
+                </div>
+                <div class="image-field-row">
+                    <input type="text" id="profile-banner-input" class="input" placeholder="Ссылка на баннер (URL)">
+                    <label class="upload-btn" for="profile-banner-file" id="profile-banner-upload-btn">📁</label>
+                    <input type="file" id="profile-banner-file" accept="image/*" class="hidden">
+                </div>
+
+                <button class="btn" id="btn-save-profile">Сохранить профиль</button>
+            </div>
+
+            <div class="divider"></div>
 
             <div class="card stats-grid">
                 <div>
@@ -328,6 +452,17 @@
                 <div>
                     <div class="stats-num" style="color:#ff9f0a;" id="stats-streak">0</div>
                     <div class="stats-label">Дней подряд</div>
+                </div>
+            </div>
+            <div class="card stats-grid" style="padding:16px 10px;">
+                <div>
+                    <div class="stats-num" style="color:#bf5af2;font-size:20px;" id="stats-posts">0</div>
+                    <div class="stats-label">Постов</div>
+                </div>
+                <div class="stats-divider"></div>
+                <div>
+                    <div class="stats-num" style="color:#64d2ff;font-size:20px;" id="stats-chats">0</div>
+                    <div class="stats-label">Чатов</div>
                 </div>
             </div>
 
@@ -350,7 +485,11 @@
                 <div id="admin-tab-posts">
                     <h3 style="margin-bottom:16px;" id="post-form-heading">Добавить новость</h3>
                     <input type="text" id="post-title" class="input" placeholder="Заголовок">
-                    <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
+                    <div class="image-field-row">
+                        <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
+                        <label class="upload-btn" for="post-img-file" id="post-img-upload-btn">📁</label>
+                        <input type="file" id="post-img-file" accept="image/*" class="hidden">
+                    </div>
                     <textarea id="post-text" class="input" placeholder="Текст..."></textarea>
                     <button class="btn" id="btn-add-post">Опубликовать</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-post">Отменить редактирование</button>
@@ -365,7 +504,11 @@
                     <h3 style="margin-bottom:16px;" id="book-form-heading">Добавить книгу</h3>
                     <input type="text" id="book-title" class="input" placeholder="Название">
                     <input type="text" id="book-author" class="input" placeholder="Автор">
-                    <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
+                    <div class="image-field-row">
+                        <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
+                        <label class="upload-btn" for="book-cover-file" id="book-cover-upload-btn">📁</label>
+                        <input type="file" id="book-cover-file" accept="image/*" class="hidden">
+                    </div>
                     <input type="text" id="book-genre" class="input" placeholder="Жанр (напр. Фантастика)">
                     <button class="btn" id="btn-add-book">Добавить книгу</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
@@ -397,6 +540,61 @@
         <div class="reader-actions" style="flex-direction:column;align-items:stretch;">
             <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:8px;min-height:44px;"></textarea>
             <button class="btn" id="btn-send-comment" style="margin-top:0;">Отправить</button>
+        </div>
+    </div>
+
+    <!-- КОМПОУЗЕР (написать / редактировать свой пост) -->
+    <div id="compose-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-compose-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:700;" id="compose-heading">Написать в ленту</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <input type="text" id="compose-title" class="input" placeholder="Заголовок">
+            <div class="image-field-row">
+                <input type="text" id="compose-img" class="input" placeholder="Ссылка на картинку (необязательно)">
+                <label class="upload-btn" for="compose-img-file" id="compose-img-upload-btn">📁</label>
+                <input type="file" id="compose-img-file" accept="image/*" class="hidden">
+            </div>
+            <img id="compose-img-preview" class="image-preview" src="">
+            <textarea id="compose-text" class="input" placeholder="Что у вас нового?" style="min-height:140px;"></textarea>
+            <button class="btn" id="btn-submit-compose">Опубликовать</button>
+        </div>
+    </div>
+
+    <!-- НОВЫЙ ЧАТ -->
+    <div id="new-chat-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-new-chat-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:700;">Новый чат</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <input type="text" id="user-search" class="input" placeholder="🔍 Найти читателя по имени...">
+            <div id="user-pick-list"></div>
+        </div>
+    </div>
+
+    <!-- ОКНО ЧАТА -->
+    <div id="chat-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-chat-btn">← Назад</button>
+            <div id="chat-partner-avatar-wrap" style="flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;">
+                <div id="chat-partner-name" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="chat-partner-status" class="online-dot-text"></div>
+            </div>
+        </div>
+        <div class="pinned-quote-bar hidden" id="chat-pinned-bar">
+            <span class="text" id="chat-pinned-text"></span>
+            <button id="btn-unpin-quote">✕</button>
+        </div>
+        <div class="reader-content" id="chat-body" style="position:relative;">
+            <div class="chat-quote-watermark" id="chat-quote-watermark"></div>
+            <div class="chat-messages-list" id="chat-messages-list"></div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-message-input" class="input" placeholder="Сообщение...">
+            <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
         </div>
     </div>
 
@@ -436,6 +634,10 @@
             <span class="icon">📚</span>
             <span>Книги</span>
         </button>
+        <button class="nav-btn" onclick="switchTab('chats')">
+            <span class="icon">💬<span class="nav-badge hidden" id="chats-nav-badge"></span></span>
+            <span>Чаты</span>
+        </button>
         <button class="nav-btn" onclick="switchTab('profile')">
             <span class="icon">👤</span>
             <span>Профиль</span>
@@ -446,6 +648,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -457,10 +660,11 @@
             appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
         };
 
-        let db;
+        let db, storage;
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
+            storage = getStorage(app);
             console.log('✅ Firebase подключен');
         } catch (e) {
             console.error('❌ Firebase ошибка:', e);
@@ -503,22 +707,37 @@
             const d = new Date(ts);
             return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
+        function lastSeenText(ts) {
+            if (!ts) return 'не в сети';
+            const diff = Date.now() - ts;
+            if (diff < 120000) return '🟢 в сети';
+            if (diff < 86400000) return 'был(а) недавно';
+            return 'офлайн';
+        }
+        function avatarHtml(name, avatarUrl, cls) {
+            if (avatarUrl) return `<img src="${avatarUrl}" class="${cls}">`;
+            return `<div class="${cls}-fallback" style="background:${colorFor(name || '')}">${initialOf(name)}</div>`;
+        }
 
         // Данные
         let postsData = [];
         let booksData = [];
+        let usersData = [];
+        let chatsData = [];
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
         let progressStore = JSON.parse(localStorage.getItem('sr_progress') || '{}');
         let streakStore = JSON.parse(localStorage.getItem('sr_streak') || '{"count":0,"lastDate":null}');
         let lastSeenPostsCount = parseInt(localStorage.getItem('sr_last_seen_posts_count') || '0', 10);
         let readerFontSize = parseInt(localStorage.getItem('sr_fontsize') || '18', 10);
+        let chatLastRead = JSON.parse(localStorage.getItem('sr_chat_last_read') || '{}');
 
         let currentPostId = null;
         let currentBookId = null;
         let currentChapters = [];
         let currentChapterIndex = 0;
-        let activeOverlay = null; // 'post' | 'reader' | null
+        let currentChatId = null;
+        let activeOverlay = null; // 'post' | 'reader' | 'chat' | 'newchat' | 'compose' | null
 
         let feedSearchTerm = '';
         let bookSearchTerm = '';
@@ -528,6 +747,7 @@
         let isAdmin = false;
         let editingPostId = null;
         let editingBookId = null;
+        let editingUserPostId = null;
 
         function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
@@ -536,13 +756,10 @@
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + tabName).classList.add('active');
 
+            const order = ['feed', 'books', 'chats', 'profile'];
             document.querySelectorAll('.nav-btn').forEach((btn, index) => {
                 btn.classList.remove('active');
-                if ((tabName === 'feed' && index === 0) ||
-                    (tabName === 'books' && index === 1) ||
-                    (tabName === 'profile' && index === 2)) {
-                    btn.classList.add('active');
-                }
+                if (order[index] === tabName) btn.classList.add('active');
             });
 
             if (tabName === 'feed') {
@@ -550,12 +767,72 @@
                 localStorage.setItem('sr_last_seen_posts_count', String(lastSeenPostsCount));
                 document.getElementById('feed-nav-badge').classList.add('hidden');
             }
+            if (tabName === 'chats') {
+                chatsData.forEach(c => { if (c.participants && c.participants[currentUser.id]) chatLastRead[c.id] = Date.now(); });
+                saveLocal('sr_chat_last_read', chatLastRead);
+                document.getElementById('chats-nav-badge').classList.add('hidden');
+                renderChatsList();
+            }
             if (tabName === 'profile') renderProfileStats();
 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         };
 
-        // === FIREBASE ===
+        // === ЗАГРУЗКА КАРТИНОК С УСТРОЙСТВА ===
+        function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
+            const fileInput = document.getElementById(fileInputId);
+            const btn = document.getElementById(uploadBtnId);
+            if (!fileInput || !btn) return;
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (!storage) { tg.showAlert('Загрузка недоступна: Firebase Storage не подключен'); return; }
+                if (file.size > 8 * 1024 * 1024) { tg.showAlert('Файл слишком большой (максимум 8 МБ)'); fileInput.value = ''; return; }
+                btn.classList.add('uploading');
+                btn.textContent = '⏳';
+                try {
+                    const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                    const sRef = storageRef(storage, path);
+                    await uploadBytes(sRef, file);
+                    const url = await getDownloadURL(sRef);
+                    document.getElementById(textInputId).value = url;
+                    if (onDone) onDone(url);
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } catch (err) {
+                    tg.showAlert('Ошибка загрузки: ' + err.message);
+                } finally {
+                    btn.classList.remove('uploading');
+                    btn.textContent = '📁';
+                    fileInput.value = '';
+                }
+            });
+        }
+        setupImageUpload('post-img-file', 'post-img', 'post-img-upload-btn', 'posts');
+        setupImageUpload('book-cover-file', 'book-cover', 'book-cover-upload-btn', 'books');
+        setupImageUpload('profile-avatar-file', 'profile-avatar-input', 'profile-avatar-upload-btn', 'avatars');
+        setupImageUpload('profile-banner-file', 'profile-banner-input', 'profile-banner-upload-btn', 'banners');
+        setupImageUpload('compose-img-file', 'compose-img', 'compose-img-upload-btn', 'posts', (url) => {
+            const preview = document.getElementById('compose-img-preview');
+            preview.src = url;
+            preview.classList.add('show');
+        });
+        document.getElementById('compose-img').addEventListener('input', (e) => {
+            const preview = document.getElementById('compose-img-preview');
+            if (e.target.value.trim()) { preview.src = e.target.value.trim(); preview.classList.add('show'); }
+            else preview.classList.remove('show');
+        });
+
+        // === FIREBASE: ПОЛЬЗОВАТЕЛЬСКИЙ ПРОФИЛЬ (heartbeat) ===
+        function ensureUserProfile() {
+            if (!db) return;
+            update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, lastSeen: Date.now() }).catch(() => {});
+        }
+        if (db) {
+            ensureUserProfile();
+            setInterval(ensureUserProfile, 60000);
+        }
+
+        // === FIREBASE: ЧТЕНИЕ ДАННЫХ ===
         if (db) {
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
@@ -564,6 +841,7 @@
                     document.getElementById('feed-nav-badge').classList.remove('hidden');
                 }
                 renderFeed();
+                renderProfileStats();
                 if (isAdmin) renderAdminPostsList();
                 if (activeOverlay === 'post') renderPostOverlay();
             }, (error) => {
@@ -585,6 +863,29 @@
                 console.error('Ошибка чтения books:', error);
                 document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Ошибка загрузки</div></div>';
             });
+
+            onValue(ref(db, 'users'), (snapshot) => {
+                const data = snapshot.val();
+                usersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                renderChatsList();
+                renderOwnProfileHeader();
+                if (activeOverlay === 'newchat') renderUserPickList();
+                if (activeOverlay === 'chat' && currentChatId) {
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if (chat) renderChatOverlay(chat);
+                }
+            });
+
+            onValue(ref(db, 'chats'), (snapshot) => {
+                const data = snapshot.val();
+                chatsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                renderChatsList();
+                renderProfileStats();
+                if (activeOverlay === 'chat' && currentChatId) {
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if (chat) renderChatOverlay(chat);
+                }
+            });
         } else {
             document.getElementById('feed-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
             document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
@@ -601,7 +902,7 @@
             if (!list.length) {
                 container.innerHTML = postsData.length
                     ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Попробуйте другой запрос</div></div>'
-                    : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div><div class="sub">Загляните позже</div></div>';
+                    : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div><div class="sub">Загляните позже или напишите первым</div></div>';
                 return;
             }
             container.innerHTML = list.map(post => {
@@ -610,8 +911,14 @@
                 Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
                 const topReactions = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
                 const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
+                const authorRow = post.authorId ? `
+                    <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
+                        ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
+                        <span class="post-author-name">${escapeHtml(post.authorName)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
+                    </div>` : '<div style="color:#8e8e93;font-size:12px;margin-bottom:8px;">📰 Новость от редакции</div>';
                 return `
-                <div class="card tappable" onclick="openPost('${post.id}')">
+                <div class="card tappable" data-post-id="${post.id}">
+                    ${authorRow}
                     ${post.image ? `<img src="${post.image}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="card-title">${escapeHtml(post.title)}</div>
                     <div class="card-text clamp">${escapeHtml(post.text)}</div>
@@ -622,12 +929,85 @@
                     </div>
                 </div>`;
             }).join('');
+
+            document.querySelectorAll('#feed-container .card').forEach(card => {
+                card.onclick = () => openPost(card.dataset.postId);
+            });
+            document.querySelectorAll('#feed-container .post-author-row').forEach(row => {
+                row.onclick = (e) => {
+                    e.stopPropagation();
+                    const aid = row.getAttribute('data-author-id');
+                    if (aid && aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name'));
+                };
+            });
         }
 
         document.getElementById('feed-search').addEventListener('input', (e) => { feedSearchTerm = e.target.value; renderFeed(); });
         document.getElementById('refresh-feed-btn').onclick = function() {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             renderFeed();
+        };
+
+        // === КОМПОУЗЕР (пост пользователя) ===
+        function resetComposeForm() {
+            editingUserPostId = null;
+            document.getElementById('compose-heading').textContent = 'Написать в ленту';
+            document.getElementById('compose-title').value = '';
+            document.getElementById('compose-img').value = '';
+            document.getElementById('compose-text').value = '';
+            document.getElementById('compose-img-preview').classList.remove('show');
+            document.getElementById('btn-submit-compose').textContent = 'Опубликовать';
+        }
+        document.getElementById('btn-open-compose').onclick = function() {
+            resetComposeForm();
+            document.getElementById('compose-overlay').classList.add('active');
+            activeOverlay = 'compose';
+            tg.BackButton.show();
+        };
+        document.getElementById('close-compose-btn').onclick = function() {
+            document.getElementById('compose-overlay').classList.remove('active');
+            activeOverlay = null;
+            tg.BackButton.hide();
+        };
+        window.editOwnPost = function(id) {
+            const post = postsData.find(p => p.id === id);
+            if (!post) return;
+            editingUserPostId = id;
+            document.getElementById('compose-heading').textContent = 'Редактировать пост';
+            document.getElementById('compose-title').value = post.title || '';
+            document.getElementById('compose-img').value = post.image || '';
+            document.getElementById('compose-text').value = post.text || '';
+            if (post.image) { document.getElementById('compose-img-preview').src = post.image; document.getElementById('compose-img-preview').classList.add('show'); }
+            document.getElementById('btn-submit-compose').textContent = 'Сохранить изменения';
+            document.getElementById('post-overlay').classList.remove('active');
+            document.getElementById('compose-overlay').classList.add('active');
+            activeOverlay = 'compose';
+            tg.BackButton.show();
+        };
+        document.getElementById('btn-submit-compose').onclick = function() {
+            const title = document.getElementById('compose-title').value.trim();
+            const img = document.getElementById('compose-img').value.trim();
+            const text = document.getElementById('compose-text').value.trim();
+            if (!title || !text) return tg.showAlert('Заполните заголовок и текст');
+            if (!db) return tg.showAlert('Firebase не подключен');
+
+            if (editingUserPostId) {
+                update(ref(db, 'posts/' + editingUserPostId), { title, image: img, text })
+                    .then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); })
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            } else {
+                const me = usersData.find(u => u.id === currentUser.id);
+                push(ref(db, 'posts'), {
+                    title, image: img, text, createdAt: Date.now(),
+                    authorId: currentUser.id, authorName: currentUser.name, authorAvatar: (me && me.avatar) || ''
+                }).then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); })
+                  .catch(err => tg.showAlert('Ошибка: ' + err.message));
+            }
+        };
+        window.deleteOwnPost = function(id) {
+            tg.showConfirm('Удалить этот пост?', (ok) => {
+                if (ok) remove(ref(db, 'posts/' + id)).then(() => { document.getElementById('close-post-btn').click(); });
+            });
         };
 
         // === ОВЕРЛЕЙ ПОСТА (детали, реакции, комментарии) ===
@@ -650,37 +1030,63 @@
             Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
 
             const comments = post.comments ? Object.entries(post.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt) : [];
+            const isOwner = post.authorId && post.authorId === currentUser.id;
+
+            const authorBlock = post.authorId ? `
+                <div class="post-author-row" style="margin-bottom:14px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
+                    ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
+                    <span class="post-author-name">${escapeHtml(post.authorName)}</span>
+                </div>` : '<div style="color:#8e8e93;font-size:12px;margin-bottom:10px;">📰 Новость от редакции</div>';
 
             document.getElementById('post-overlay-content').innerHTML = `
+                ${authorBlock}
                 ${post.image ? `<img src="${post.image}" class="card-image" style="margin-bottom:16px;" onerror="this.style.display='none'">` : ''}
                 <div style="font-size:16px;line-height:1.6;color:#e5e5e7;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
                 <div class="card-meta">${formatDate(post.createdAt)}</div>
+                ${isOwner ? `<div style="display:flex;gap:8px;margin-top:14px;">
+                    <button class="btn btn-secondary" style="margin:0;flex:1;" id="btn-edit-own-post">✏️ Изменить</button>
+                    <button class="btn btn-danger" style="margin:0;flex:1;" id="btn-delete-own-post">🗑 Удалить</button>
+                </div>` : ''}
                 <div class="reaction-bar">
-                    ${EMOJIS.map(e => `<button class="reaction-btn ${myReaction === e ? 'mine' : ''}" onclick="toggleReaction('${post.id}','${e}')">${e} ${counts[e] || ''}</button>`).join('')}
+                    ${EMOJIS.map(e => `<button class="reaction-btn ${myReaction === e ? 'mine' : ''}" data-emoji="${e}">${e} ${counts[e] || ''}</button>`).join('')}
                 </div>
-                <button class="btn btn-secondary" style="margin-top:14px;" onclick="sharePost('${post.id}')">📤 Поделиться</button>
+                <button class="btn btn-secondary" style="margin-top:14px;" id="btn-share-post">📤 Поделиться</button>
                 <div class="comments-block">
                     <div class="comments-title">Комментарии (${comments.length})</div>
                     ${comments.length ? comments.map(c => `
                         <div class="comment-item">
                             <div><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-meta">${formatDate(c.createdAt)}</span></div>
                             <div class="comment-text">${escapeHtml(c.text)}</div>
-                            ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" onclick="deleteComment('${post.id}','${c.id}')">Удалить</button>` : ''}
+                            ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
                     `).join('') : '<div style="color:#8e8e93;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
                 </div>
             `;
+
+            const row = document.querySelector('#post-overlay-content .post-author-row');
+            if (row) row.onclick = () => { const aid = row.getAttribute('data-author-id'); if (aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name')); };
+
+            document.querySelectorAll('#post-overlay-content .reaction-btn').forEach(b => { b.onclick = () => toggleReaction(post.id, b.dataset.emoji); });
+            document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => { b.onclick = () => deleteComment(post.id, b.dataset.cid); });
+            const shareBtn = document.getElementById('btn-share-post');
+            if (shareBtn) shareBtn.onclick = () => sharePost(post.id);
+            const editBtn = document.getElementById('btn-edit-own-post');
+            if (editBtn) editBtn.onclick = () => editOwnPost(post.id);
+            const delBtn = document.getElementById('btn-delete-own-post');
+            if (delBtn) delBtn.onclick = () => deleteOwnPost(post.id);
         }
 
-        window.toggleReaction = function(postId, emoji) {
+        function toggleReaction(postId, emoji) {
             if (!db) return;
             const post = postsData.find(p => p.id === postId);
             const current = post && post.reactions ? post.reactions[currentUser.id] : null;
-            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), current === emoji ? null : emoji);
+            const newVal = current === emoji ? null : emoji;
+            set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal);
+            update(ref(db, 'users/' + currentUser.id), { lastReactionEmoji: newVal, lastReactionAt: newVal ? Date.now() : null }).catch(() => {});
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        };
+        }
 
-        window.sharePost = function(postId) {
+        function sharePost(postId) {
             const post = postsData.find(p => p.id === postId);
             if (!post) return;
             const shareText = post.title + '\n\n' + post.text;
@@ -689,7 +1095,7 @@
             } else if (navigator.clipboard) {
                 navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
             }
-        };
+        }
 
         document.getElementById('btn-send-comment').onclick = function() {
             const input = document.getElementById('comment-input');
@@ -701,11 +1107,11 @@
                 .catch(err => tg.showAlert('Ошибка: ' + err.message));
         };
 
-        window.deleteComment = function(postId, commentId) {
+        function deleteComment(postId, commentId) {
             tg.showConfirm('Удалить комментарий?', (ok) => {
                 if (ok) remove(ref(db, `posts/${postId}/comments/${commentId}`));
             });
-        };
+        }
 
         document.getElementById('close-post-btn').onclick = function() {
             document.getElementById('post-overlay').classList.remove('active');
@@ -735,10 +1141,11 @@
             const row = document.getElementById('genre-filter-row');
             if (!genres.length) { row.innerHTML = ''; return; }
             const all = ['Все', ...genres];
-            row.innerHTML = all.map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" onclick="setGenre('${g.replace(/'/g, "\\'")}')">${escapeHtml(g)}</button>`).join('');
+            row.innerHTML = all.map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>`).join('');
+            row.querySelectorAll('.chip').forEach(c => { c.onclick = () => setGenre(c.getAttribute('data-genre')); });
         }
 
-        window.setGenre = function(g) { activeGenre = g; renderGenreFilterRow(); renderBooks(); };
+        function setGenre(g) { activeGenre = g; renderGenreFilterRow(); renderBooks(); }
         window.setSort = function(mode) {
             sortMode = mode;
             document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === mode));
@@ -932,17 +1339,243 @@
             renderBooks();
         };
 
-        // === ЕДИНАЯ КНОПКА "НАЗАД" TELEGRAM ===
-        tg.BackButton.onClick(() => {
-            if (activeOverlay === 'post') document.getElementById('close-post-btn').click();
-            else if (activeOverlay === 'reader') document.getElementById('close-reader-btn').click();
-        });
+        // === ЧАТЫ ===
+        function otherParticipant(chat) {
+            const ids = Object.keys(chat.participants || {});
+            const otherId = ids.find(id => id !== currentUser.id);
+            const names = chat.participantNames || {};
+            const userRec = usersData.find(u => u.id === otherId);
+            return {
+                id: otherId,
+                name: (userRec && userRec.name) || names[otherId] || 'Читатель',
+                avatar: userRec ? userRec.avatar : null,
+                lastSeen: userRec ? userRec.lastSeen : null,
+                mood: (userRec && userRec.lastReactionAt && (Date.now() - userRec.lastReactionAt < 86400000)) ? userRec.lastReactionEmoji : null
+            };
+        }
 
-        // === ПРОФИЛЬ / СТАТИСТИКА ===
+        function computeUnread(chat) {
+            const lastRead = chatLastRead[chat.id] || 0;
+            const messages = chat.messages ? Object.values(chat.messages) : [];
+            return messages.filter(m => m.senderId !== currentUser.id && m.createdAt > lastRead).length;
+        }
+
+        function updateChatsBadge(show) {
+            document.getElementById('chats-nav-badge').classList.toggle('hidden', !show);
+        }
+
+        function renderChatsList() {
+            const container = document.getElementById('chats-container');
+            const myChats = chatsData.filter(c => c.participants && c.participants[currentUser.id]);
+            if (!myChats.length) {
+                container.innerHTML = '<div class="empty-state"><span class="icon">💬</span><div class="title">Пока нет чатов</div><div class="sub">Нажмите ➕, чтобы начать общение с другим читателем</div></div>';
+                updateChatsBadge(false);
+                return;
+            }
+            myChats.sort((a, b) => (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0));
+            let anyUnread = false;
+            container.innerHTML = myChats.map(chat => {
+                const other = otherParticipant(chat);
+                const unread = computeUnread(chat);
+                if (unread > 0) anyUnread = true;
+                return `
+                <div class="chat-list-item" data-chat-id="${chat.id}">
+                    <div class="chat-avatar-wrap">
+                        ${avatarHtml(other.name, other.avatar, 'chat-avatar')}
+                        ${other.mood ? `<span class="mood-badge">${other.mood}</span>` : ''}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-info-top">
+                            <span class="chat-name">${escapeHtml(other.name)}</span>
+                            <span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span>
+                        </div>
+                        <div class="chat-preview">${escapeHtml(chat.lastMessage || 'Нет сообщений')}</div>
+                    </div>
+                    ${unread > 0 ? `<div class="chat-unread-dot"></div>` : ''}
+                </div>`;
+            }).join('');
+            document.querySelectorAll('#chats-container .chat-list-item').forEach(item => {
+                item.onclick = () => openChat(item.getAttribute('data-chat-id'));
+            });
+            updateChatsBadge(anyUnread);
+        }
+
+        window.openChat = function(chatId) {
+            currentChatId = chatId;
+            activeOverlay = 'chat';
+            document.getElementById('chat-overlay').classList.add('active');
+            tg.BackButton.show();
+            const chat = chatsData.find(c => c.id === chatId);
+            if (chat) renderChatOverlay(chat);
+        };
+
+        function renderChatOverlay(chat) {
+            const other = otherParticipant(chat);
+            document.getElementById('chat-partner-name').textContent = other.name;
+            document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
+            document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
+
+            const pinned = chat.pinnedQuote;
+            document.getElementById('chat-pinned-bar').classList.toggle('hidden', !pinned);
+            if (pinned) document.getElementById('chat-pinned-text').textContent = '"' + pinned.text + '" — ' + pinned.author;
+            document.getElementById('chat-quote-watermark').textContent = pinned ? '"' + pinned.text + '"' : '';
+
+            const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
+            const listEl = document.getElementById('chat-messages-list');
+            listEl.innerHTML = messages.length ? messages.map(m => `
+                <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-bubble">
+                        ${escapeHtml(m.text)}
+                        <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
+                    </div>
+                </div>
+            `).join('') : '<div style="color:#8e8e93;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
+
+            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
+                btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
+            });
+
+            chatLastRead[chat.id] = Date.now();
+            saveLocal('sr_chat_last_read', chatLastRead);
+            document.getElementById('chats-nav-badge').classList.add('hidden');
+            const body = document.getElementById('chat-body');
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function pinQuote(chatId, text, author) {
+            update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } });
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+        document.getElementById('btn-unpin-quote').onclick = function() {
+            update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null });
+        };
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-message-input');
+            const text = input.value.trim();
+            if (!text || !currentChatId || !db) return;
+            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text, createdAt: Date.now() })
+                .then(() => {
+                    update(ref(db, 'chats/' + currentChatId), { lastMessage: text, lastMessageAt: Date.now() });
+                    input.value = '';
+                })
+                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+        }
+        document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
+        document.getElementById('chat-message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+        document.getElementById('close-chat-btn').onclick = function() {
+            document.getElementById('chat-overlay').classList.remove('active');
+            activeOverlay = null;
+            currentChatId = null;
+            tg.BackButton.hide();
+            renderChatsList();
+        };
+
+        document.getElementById('btn-new-chat').onclick = function() {
+            document.getElementById('user-search').value = '';
+            document.getElementById('new-chat-overlay').classList.add('active');
+            activeOverlay = 'newchat';
+            tg.BackButton.show();
+            renderUserPickList();
+        };
+        document.getElementById('close-new-chat-btn').onclick = function() {
+            document.getElementById('new-chat-overlay').classList.remove('active');
+            activeOverlay = null;
+            tg.BackButton.hide();
+        };
+        document.getElementById('user-search').addEventListener('input', renderUserPickList);
+
+        function renderUserPickList() {
+            const q = document.getElementById('user-search').value.trim().toLowerCase();
+            let list = usersData.filter(u => u.id !== currentUser.id);
+            if (q) list = list.filter(u => (u.name || '').toLowerCase().includes(q));
+            const container = document.getElementById('user-pick-list');
+            if (!list.length) { container.innerHTML = '<div class="empty-state"><span class="icon">🙈</span><div class="title">Никого не найдено</div><div class="sub">Другие читатели появятся здесь, как только откроют приложение</div></div>'; return; }
+            container.innerHTML = list.map(u => `
+                <div class="user-pick-item" data-id="${u.id}" data-name="${escapeHtml(u.name || 'Читатель')}">
+                    ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">${escapeHtml(u.name || 'Читатель')}</div>
+                        <div style="font-size:12px;color:#8e8e93;">${lastSeenText(u.lastSeen)}</div>
+                    </div>
+                </div>
+            `).join('');
+            container.querySelectorAll('.user-pick-item').forEach(item => {
+                item.onclick = () => startChatWith(item.getAttribute('data-id'), item.getAttribute('data-name'));
+            });
+        }
+
+        function startChatWith(otherId, otherName) {
+            if (!otherId || otherId === currentUser.id) return;
+            const chatId = [currentUser.id, otherId].sort().join('_');
+            document.getElementById('new-chat-overlay').classList.remove('active');
+            document.getElementById('post-overlay').classList.remove('active');
+            const exists = chatsData.find(c => c.id === chatId);
+            if (!exists) {
+                set(ref(db, 'chats/' + chatId), {
+                    participants: { [currentUser.id]: true, [otherId]: true },
+                    participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName },
+                    createdAt: Date.now()
+                });
+            }
+            openChat(chatId);
+        }
+
+        // === ПРОФИЛЬ ===
+        function renderOwnProfileHeader() {
+            const me = usersData.find(u => u.id === currentUser.id);
+            const name = (me && me.name) || currentUser.name;
+            const bio = (me && me.bio) || '';
+            const avatar = (me && me.avatar) || '';
+            const banner = (me && me.banner) || '';
+
+            document.getElementById('profile-display-name').textContent = name;
+            document.getElementById('profile-display-bio').textContent = bio;
+
+            const avatarImg = document.getElementById('profile-avatar-img');
+            const avatarFallback = document.getElementById('profile-avatar-fallback');
+            if (avatar) { avatarImg.src = avatar; avatarImg.style.display = 'block'; avatarFallback.style.display = 'none'; }
+            else { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; avatarFallback.textContent = initialOf(name); avatarFallback.style.background = colorFor(name); }
+
+            const bannerImg = document.getElementById('profile-banner-img');
+            const bannerFallback = document.getElementById('profile-banner-fallback');
+            if (banner) { bannerImg.src = banner; bannerImg.style.display = 'block'; bannerFallback.style.display = 'none'; }
+            else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #1c1c1e)`; }
+
+            if (!document.getElementById('profile-edit-panel').classList.contains('hidden')) return;
+            document.getElementById('profile-name-input').value = (me && me.name) || '';
+            document.getElementById('profile-bio-input').value = bio;
+            document.getElementById('profile-avatar-input').value = avatar;
+            document.getElementById('profile-banner-input').value = banner;
+        }
+
+        document.getElementById('btn-edit-profile').onclick = function() {
+            document.getElementById('profile-edit-panel').classList.toggle('hidden');
+        };
+
+        document.getElementById('btn-save-profile').onclick = function() {
+            if (!db) return tg.showAlert('Firebase не подключен');
+            const name = document.getElementById('profile-name-input').value.trim();
+            const bio = document.getElementById('profile-bio-input').value.trim();
+            const avatar = document.getElementById('profile-avatar-input').value.trim();
+            const banner = document.getElementById('profile-banner-input').value.trim();
+            update(ref(db, 'users/' + currentUser.id), { name: name || currentUser.name, bio, avatar, banner })
+                .then(() => {
+                    if (name) currentUser.name = name;
+                    document.getElementById('profile-edit-panel').classList.add('hidden');
+                    tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] });
+                })
+                .catch(err => tg.showAlert('Ошибка: ' + err.message));
+        };
+
         function renderProfileStats() {
             document.getElementById('stats-read').textContent = readBooks.length;
             document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
             document.getElementById('stats-streak').textContent = streakStore.count || 0;
+            document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length;
+            document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
 
             const genreCounts = {};
             readBooks.forEach(id => {
@@ -960,6 +1593,15 @@
                 card.style.display = 'none';
             }
         }
+
+        // === ЕДИНАЯ КНОПКА "НАЗАД" TELEGRAM ===
+        tg.BackButton.onClick(() => {
+            if (activeOverlay === 'post') document.getElementById('close-post-btn').click();
+            else if (activeOverlay === 'reader') document.getElementById('close-reader-btn').click();
+            else if (activeOverlay === 'chat') document.getElementById('close-chat-btn').click();
+            else if (activeOverlay === 'newchat') document.getElementById('close-new-chat-btn').click();
+            else if (activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
+        });
 
         // === АДМИН ===
         document.getElementById('admin-login-btn').onclick = function() {
@@ -996,17 +1638,19 @@
                     ${post.image ? `<img src="${post.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="admin-item-info">
                         <div class="admin-item-title">${escapeHtml(post.title)}</div>
-                        <div class="admin-item-sub">${formatDate(post.createdAt)}</div>
+                        <div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div>
                     </div>
                     <div class="admin-item-actions">
-                        <button class="icon-btn" onclick="editPost('${post.id}')">✏️</button>
-                        <button class="icon-btn danger" onclick="deletePost('${post.id}')">🗑</button>
+                        <button class="icon-btn" data-edit-id="${post.id}">✏️</button>
+                        <button class="icon-btn danger" data-del-id="${post.id}">🗑</button>
                     </div>
                 </div>
             `).join('');
+            el.querySelectorAll('[data-edit-id]').forEach(b => { b.onclick = () => editPost(b.getAttribute('data-edit-id')); });
+            el.querySelectorAll('[data-del-id]').forEach(b => { b.onclick = () => deletePost(b.getAttribute('data-del-id')); });
         }
 
-        window.editPost = function(id) {
+        function editPost(id) {
             const post = postsData.find(p => p.id === id);
             if (!post) return;
             editingPostId = id;
@@ -1017,7 +1661,7 @@
             document.getElementById('btn-add-post').textContent = 'Сохранить изменения';
             document.getElementById('btn-cancel-edit-post').classList.remove('hidden');
             document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
-        };
+        }
 
         function resetPostForm() {
             editingPostId = null;
@@ -1030,11 +1674,11 @@
         }
         document.getElementById('btn-cancel-edit-post').onclick = resetPostForm;
 
-        window.deletePost = function(id) {
+        function deletePost(id) {
             tg.showConfirm('Удалить новость безвозвратно?', (ok) => {
                 if (ok) remove(ref(db, 'posts/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
             });
-        };
+        }
 
         document.getElementById('btn-add-post').onclick = function() {
             const title = document.getElementById('post-title').value.trim();
@@ -1067,14 +1711,16 @@
                         <div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div>
                     </div>
                     <div class="admin-item-actions">
-                        <button class="icon-btn" onclick="editBook('${book.id}')">✏️</button>
-                        <button class="icon-btn danger" onclick="deleteBook('${book.id}')">🗑</button>
+                        <button class="icon-btn" data-edit-id="${book.id}">✏️</button>
+                        <button class="icon-btn danger" data-del-id="${book.id}">🗑</button>
                     </div>
                 </div>
             `).join('');
+            el.querySelectorAll('[data-edit-id]').forEach(b => { b.onclick = () => editBook(b.getAttribute('data-edit-id')); });
+            el.querySelectorAll('[data-del-id]').forEach(b => { b.onclick = () => deleteBook(b.getAttribute('data-del-id')); });
         }
 
-        window.editBook = function(id) {
+        function editBook(id) {
             const book = booksData.find(b => b.id === id);
             if (!book) return;
             editingBookId = id;
@@ -1086,7 +1732,7 @@
             document.getElementById('btn-add-book').textContent = 'Сохранить изменения';
             document.getElementById('btn-cancel-edit-book').classList.remove('hidden');
             document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
-        };
+        }
 
         function resetBookForm() {
             editingBookId = null;
@@ -1100,11 +1746,11 @@
         }
         document.getElementById('btn-cancel-edit-book').onclick = resetBookForm;
 
-        window.deleteBook = function(id) {
+        function deleteBook(id) {
             tg.showConfirm('Удалить книгу безвозвратно? Все главы будут удалены.', (ok) => {
                 if (ok) remove(ref(db, 'books/' + id)).then(() => tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'));
             });
-        };
+        }
 
         document.getElementById('btn-add-book').onclick = function() {
             const title = document.getElementById('book-title').value.trim();
