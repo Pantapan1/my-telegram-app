@@ -847,7 +847,10 @@
         }
 
         if (tgUser) {
-            currentUser = { id: String(tgUser.id), name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель' };
+            currentUser = { 
+                id: String(tgUser.id), 
+                name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель' 
+            };
             initApp();
         } else if (authUser) {
             currentUser = authUser;
@@ -857,35 +860,36 @@
         }
 
         document.getElementById('btn-register-auth').onclick = function() {
-            if(!db) return alert('База данных недоступна');
+            if (!db) return alert('База данных недоступна');
             const un = document.getElementById('auth-username').value.trim();
             const pw = document.getElementById('auth-password').value.trim();
-            if(!un || !pw) return alert('Введите никнейм и пароль');
+            if (!un || !pw) return alert('Введите никнейм и пароль');
+            
             const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
-            if(!safeUn) return alert('Используйте только английские буквы и цифры для ника');
+            if (!safeUn) return alert('Используйте только английские буквы и цифры для ника');
             
             get(child(ref(db), `auth_users/${safeUn}`)).then((snapshot) => {
-                if(snapshot.exists()) {
+                if (snapshot.exists()) {
                      alert('Никнейм уже занят!');
                 } else {
                      const newId = 'usr_' + Date.now();
                      set(ref(db, `auth_users/${safeUn}`), { password: pw, id: newId }).then(() => {
                          localStorage.setItem('sr_auth_user', JSON.stringify({id: newId, name: un}));
                          location.reload();
-                     });
+                     }).catch(e => alert(friendlyDbError(e)));
                 }
             }).catch(e => alert(friendlyDbError(e)));
         };
 
         document.getElementById('btn-login-auth').onclick = function() {
-            if(!db) return alert('База данных недоступна');
+            if (!db) return alert('База данных недоступна');
             const un = document.getElementById('auth-username').value.trim();
             const pw = document.getElementById('auth-password').value.trim();
-            if(!un || !pw) return alert('Введите никнейм и пароль');
-            const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+            if (!un || !pw) return alert('Введите никнейм и пароль');
             
+            const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
             get(child(ref(db), `auth_users/${safeUn}`)).then((snapshot) => {
-                if(snapshot.exists() && snapshot.val().password === pw) {
+                if (snapshot.exists() && snapshot.val().password === pw) {
                      localStorage.setItem('sr_auth_user', JSON.stringify({id: snapshot.val().id, name: un}));
                      location.reload();
                 } else {
@@ -895,28 +899,36 @@
         };
 
         document.getElementById('btn-logout').onclick = function() {
-            if(confirm('Выйти из аккаунта?')) {
+            if (confirm('Выйти из аккаунта?')) {
                 localStorage.removeItem('sr_auth_user');
                 location.reload();
             }
         };
 
+        // Базовые переменные и утилиты
         const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏'];
         const COVER_COLORS = ['#ff9f0a', '#30d158', '#0a84ff', '#ff453a', '#bf5af2', '#64d2ff'];
+        
         function colorFor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
             return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length];
         }
-        function initialOf(str) { return (str || '?').trim().charAt(0).toUpperCase() || '?'; }
+        
+        function initialOf(str) { 
+            return (str || '?').trim().charAt(0).toUpperCase() || '?'; 
+        }
+        
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
         }
+        
         function formatDate(ts) {
             if (!ts) return '';
             const d = new Date(ts);
             return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
+        
         function lastSeenText(ts) {
             if (!ts) return 'не в сети';
             const diff = Date.now() - ts;
@@ -924,6 +936,7 @@
             if (diff < 86400000) return 'был(а) недавно';
             return 'офлайн';
         }
+        
         function avatarHtml(name, avatarUrl, cls) {
             if (avatarUrl) return `<img src="${avatarUrl}" class="${cls}">`;
             return `<div class="${cls}-fallback" style="background:${colorFor(name || '')}">${initialOf(name)}</div>`;
@@ -935,6 +948,7 @@
         let chatsData = [];
         let stickersData = [];
         let stickerPacksData = [];
+        
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
         let progressStore = JSON.parse(localStorage.getItem('sr_progress') || '{}');
@@ -959,7 +973,9 @@
         let editingBookId = null;
         let editingUserPostId = null;
 
-        function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+        function saveLocal(key, val) { 
+            localStorage.setItem(key, JSON.stringify(val)); 
+        }
 
         window.switchTab = function(tabName) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -977,23 +993,33 @@
                 document.getElementById('feed-nav-badge').classList.add('hidden');
             }
             if (tabName === 'chats') {
-                chatsData.forEach(c => { if (c.participants && c.participants[currentUser.id]) chatLastRead[c.id] = Date.now(); });
+                chatsData.forEach(c => { 
+                    if (c.participants && c.participants[currentUser.id]) chatLastRead[c.id] = Date.now(); 
+                });
                 saveLocal('sr_chat_last_read', chatLastRead);
                 document.getElementById('chats-nav-badge').classList.add('hidden');
                 renderChatsList();
             }
-            if (tabName === 'profile') renderProfileStats();
+            if (tabName === 'profile') {
+                renderProfileStats();
+            }
+            
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         };
 
         function withTimeout(promise, ms, timeoutMessage) {
-            return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms))]);
+            return Promise.race([
+                promise, 
+                new Promise((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), ms))
+            ]);
         }
+
         function friendlyDbError(err) {
             const msg = (err && err.message) || String(err);
             if (msg.includes('PERMISSION_DENIED')) return 'Нет доступа к базе данных.';
             return 'Ошибка: ' + msg;
         }
+
         function friendlyUploadError(err) {
             const msg = (err && err.message) || String(err);
             if (msg.includes('PERMISSION')) return 'Нет доступа к Firebase Storage.';
@@ -1005,24 +1031,54 @@
             fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!storage) { tg.showAlert('Firebase Storage не подключен'); fileInput.value = ''; return; }
-                if (!file.type.startsWith('image/')) { tg.showAlert('Выберите файл изображения'); fileInput.value = ''; return; }
-                if (file.size > 8 * 1024 * 1024) { tg.showAlert('Файл слишком большой'); fileInput.value = ''; return; }
-                btn.classList.add('uploading'); btn.textContent = '⏳';
+                
+                if (!storage) { 
+                    tg.showAlert('Firebase Storage не подключен'); 
+                    fileInput.value = ''; 
+                    return; 
+                }
+                if (!file.type.startsWith('image/')) { 
+                    tg.showAlert('Выберите файл изображения'); 
+                    fileInput.value = ''; 
+                    return; 
+                }
+                if (file.size > 8 * 1024 * 1024) { 
+                    tg.showAlert('Файл слишком большой'); 
+                    fileInput.value = ''; 
+                    return; 
+                }
+                
+                btn.classList.add('uploading'); 
+                btn.textContent = '⏳';
+                
                 try {
                     const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
                     const sRef = storageRef(storage, path);
+                    
                     await withTimeout(uploadBytes(sRef, file), 20000, 'Таймаут');
                     const url = await withTimeout(getDownloadURL(sRef), 15000, 'Таймаут');
-                    if(textInput) textInput.value = url;
+                    
+                    if (textInput) textInput.value = url;
                     if (onDone) onDone(url);
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                } catch (err) { tg.showAlert(friendlyUploadError(err)); } 
-                finally { btn.classList.remove('uploading'); btn.textContent = '📁'; fileInput.value = ''; }
+                } catch (err) { 
+                    tg.showAlert(friendlyUploadError(err)); 
+                } finally { 
+                    btn.classList.remove('uploading'); 
+                    btn.textContent = '📁'; 
+                    fileInput.value = ''; 
+                }
             });
         }
+
         function setupImageUpload(fileInputId, textInputId, uploadBtnId, pathPrefix, onDone) {
-            setupImageUploadFlex(document.getElementById(fileInputId), document.getElementById(textInputId), document.getElementById(uploadBtnId), pathPrefix, onDone);
+            setupImageUploadFlex(
+                document.getElementById(fileInputId), 
+                document.getElementById(textInputId), 
+                document.getElementById(uploadBtnId), 
+                pathPrefix, 
+                onDone
+            );
         }
 
         setupImageUpload('book-cover-file', 'book-cover', 'book-cover-upload-btn', 'books');
@@ -1045,19 +1101,24 @@
             document.getElementById(containerId).appendChild(div);
             setupImageUploadFlex(div.querySelector(`#file_${id}`), div.querySelector('.post-image-input'), div.querySelector(`#btn_${id}`), 'posts');
         }
+
         document.getElementById('btn-admin-add-image').onclick = () => createPostImageField('admin-post-images-container');
         document.getElementById('btn-compose-add-image').onclick = () => createPostImageField('compose-images-container');
 
         function getImagesFromContainer(containerId) {
             return Array.from(document.getElementById(containerId).querySelectorAll('.post-image-input')).map(inp => inp.value.trim()).filter(Boolean);
         }
+
         function populateImagesContainer(containerId, imagesArr) {
             document.getElementById(containerId).innerHTML = '';
             imagesArr.forEach(url => createPostImageField(containerId, url));
         }
 
         function ensureUserProfile() {
-            update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, lastSeen: Date.now() }).catch(() => {});
+            update(ref(db, 'users/' + currentUser.id), { 
+                name: currentUser.name, 
+                lastSeen: Date.now() 
+            }).catch(() => {});
         }
         
         function startFirebaseListeners() {
@@ -1066,10 +1127,14 @@
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
                 postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
+                
                 if (postsData.length > lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
                     document.getElementById('feed-nav-badge').classList.remove('hidden');
                 }
-                renderFeed(); renderProfileStats();
+                
+                renderFeed(); 
+                renderProfileStats();
+                
                 if (isAdmin) renderAdminPostsList();
                 if (activeOverlay === 'post') renderPostOverlay();
             });
@@ -1077,19 +1142,35 @@
             onValue(ref(db, 'books'), (snapshot) => {
                 const data = snapshot.val();
                 booksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
-                renderBooks(); renderGenreFilterRow();
-                if (isAdmin) { renderAdminBooksList(); populateChapterBookSelect(); }
+                
+                renderBooks(); 
+                renderGenreFilterRow();
+                
+                if (isAdmin) { 
+                    renderAdminBooksList(); 
+                    populateChapterBookSelect(); 
+                }
+                
                 if (activeOverlay === 'reader' && currentBookId) {
                     const book = booksData.find(b => b.id === currentBookId);
-                    if (book) { currentChapters = getChapters(book); renderChapterListView(book); }
+                    if (book) { 
+                        currentChapters = getChapters(book); 
+                        renderChapterListView(book); 
+                    }
                 }
             });
 
             onValue(ref(db, 'users'), (snapshot) => {
                 const data = snapshot.val();
                 usersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-                renderChatsList(); renderOwnProfileHeader();
-                if (activeOverlay === 'newchat' || activeOverlay === 'creategroup') renderUserPickList();
+                
+                renderChatsList(); 
+                renderOwnProfileHeader();
+                
+                if (activeOverlay === 'newchat' || activeOverlay === 'creategroup') {
+                    renderUserPickList();
+                }
+                
                 if (activeOverlay === 'chat' && currentChatId) {
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if (chat) renderChatOverlay(chat);
@@ -1099,7 +1180,10 @@
             onValue(ref(db, 'chats'), (snapshot) => {
                 const data = snapshot.val();
                 chatsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-                renderChatsList(); renderProfileStats();
+                
+                renderChatsList(); 
+                renderProfileStats();
+                
                 if (activeOverlay === 'chat' && currentChatId) {
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if (chat) renderChatOverlay(chat);
@@ -1109,6 +1193,7 @@
             onValue(ref(db, 'stickers'), (snapshot) => {
                 const data = snapshot.val();
                 stickersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                
                 if (isAdmin) renderAdminStickersList();
                 renderStickerPicker();
             });
@@ -1116,7 +1201,11 @@
             onValue(ref(db, 'sticker_packs'), (snapshot) => {
                 const data = snapshot.val();
                 stickerPacksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-                if (isAdmin) { populateStickerPackSelect(); renderAdminStickersList(); }
+                
+                if (isAdmin) { 
+                    populateStickerPackSelect(); 
+                    renderAdminStickersList(); 
+                }
                 renderStickerPicker();
             });
         }
@@ -1125,29 +1214,35 @@
         function renderFeed() {
             const container = document.getElementById('feed-container');
             let list = postsData;
+            
             if (feedSearchTerm) {
                 const q = feedSearchTerm.toLowerCase();
                 list = list.filter(p => (p.title || '').toLowerCase().includes(q) || (p.text || '').toLowerCase().includes(q));
             }
+            
             if (!list.length) {
                 container.innerHTML = postsData.length
                     ? '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div></div>'
                     : '<div class="empty-state"><span class="icon">📭</span><div class="title">Пока нет новостей</div></div>';
                 return;
             }
+            
             container.innerHTML = list.map(post => {
                 const reactions = post.reactions || {};
                 const counts = {};
                 Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
                 const topReactions = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                
                 const commentsCount = post.comments ? Object.keys(post.comments).length : 0;
                 const imagesArr = post.images || (post.image ? [post.image] : []);
                 const coverImage = imagesArr.length > 0 ? imagesArr[0] : null;
+                
                 const authorRow = post.authorId ? `
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
                         <span class="post-author-name">${escapeHtml(post.authorName)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
                     </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
+                
                 return `
                 <div class="card tappable" data-post-id="${post.id}">
                     ${authorRow}
@@ -1161,18 +1256,31 @@
                     </div>
                 </div>`;
             }).join('');
-            document.querySelectorAll('#feed-container .card').forEach(c => c.onclick = () => openPost(c.dataset.postId));
+            
+            document.querySelectorAll('#feed-container .card').forEach(c => {
+                c.onclick = () => openPost(c.dataset.postId);
+            });
+            
             document.querySelectorAll('#feed-container .post-author-row').forEach(row => {
                 row.onclick = (e) => {
                     e.stopPropagation();
                     const aid = row.getAttribute('data-author-id');
-                    if (aid && aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name'));
+                    if (aid && aid !== currentUser.id) {
+                        startChatWith(aid, row.getAttribute('data-author-name'));
+                    }
                 };
             });
         }
 
-        document.getElementById('feed-search').addEventListener('input', (e) => { feedSearchTerm = e.target.value; renderFeed(); });
-        document.getElementById('refresh-feed-btn').onclick = function() { tg.HapticFeedback && tg.HapticFeedback.impactOccurred('medium'); renderFeed(); };
+        document.getElementById('feed-search').addEventListener('input', (e) => { 
+            feedSearchTerm = e.target.value; 
+            renderFeed(); 
+        });
+        
+        document.getElementById('refresh-feed-btn').onclick = function() { 
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium'); 
+            renderFeed(); 
+        };
 
         // === КОМПОУЗЕР ===
         function resetComposeForm() {
@@ -1183,61 +1291,103 @@
             document.getElementById('compose-text').value = '';
             document.getElementById('btn-submit-compose').textContent = 'Опубликовать';
         }
+        
         document.getElementById('btn-open-compose').onclick = function() {
-            resetComposeForm(); document.getElementById('compose-overlay').classList.add('active'); activeOverlay = 'compose'; tg.BackButton.show();
+            resetComposeForm(); 
+            document.getElementById('compose-overlay').classList.add('active'); 
+            activeOverlay = 'compose'; 
+            tg.BackButton.show();
         };
+        
         document.getElementById('close-compose-btn').onclick = function() {
-            document.getElementById('compose-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+            document.getElementById('compose-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            tg.BackButton.hide();
         };
+        
         window.editOwnPost = function(id) {
             const post = postsData.find(p => p.id === id);
             if (!post) return;
+            
             editingUserPostId = id;
             document.getElementById('compose-heading').textContent = 'Редактировать пост';
             document.getElementById('compose-title').value = post.title || '';
-            populateImagesContainer('compose-images-container', post.images || (post.image ? [post.image] : []));
+            
+            const imagesArr = post.images || (post.image ? [post.image] : []);
+            populateImagesContainer('compose-images-container', imagesArr);
+            
             document.getElementById('compose-text').value = post.text || '';
             document.getElementById('btn-submit-compose').textContent = 'Сохранить изменения';
             document.getElementById('post-overlay').classList.remove('active');
             document.getElementById('compose-overlay').classList.add('active');
-            activeOverlay = 'compose'; tg.BackButton.show();
+            activeOverlay = 'compose'; 
+            tg.BackButton.show();
         };
+        
         document.getElementById('btn-submit-compose').onclick = function() {
             const title = document.getElementById('compose-title').value.trim();
             const text = document.getElementById('compose-text').value.trim();
             const imagesArr = getImagesFromContainer('compose-images-container');
+            
             if (!title || !text) return tg.showAlert('Заполните заголовок и текст');
             if (!db) return tg.showAlert('Firebase не подключен');
 
             if (editingUserPostId) {
-                update(ref(db, 'posts/' + editingUserPostId), { title, images: imagesArr, text })
-                    .then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); })
+                update(ref(db, 'posts/' + editingUserPostId), { 
+                    title: title, 
+                    images: imagesArr, 
+                    text: text 
+                }).then(() => { 
+                    document.getElementById('close-compose-btn').click(); 
+                    tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err)));
             } else {
                 const me = usersData.find(u => u.id === currentUser.id);
                 push(ref(db, 'posts'), {
-                    title, images: imagesArr, text, createdAt: Date.now(),
-                    authorId: currentUser.id, authorName: currentUser.name, authorAvatar: (me && me.avatar) || ''
-                }).then(() => { document.getElementById('close-compose-btn').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); })
+                    title: title, 
+                    images: imagesArr, 
+                    text: text, 
+                    createdAt: Date.now(),
+                    authorId: currentUser.id, 
+                    authorName: currentUser.name, 
+                    authorAvatar: (me && me.avatar) || ''
+                }).then(() => { 
+                    document.getElementById('close-compose-btn').click(); 
+                    tg.showPopup({ title: 'Опубликовано!', message: 'Ваш пост появился в ленте', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
             }
         };
+        
         window.deleteOwnPost = function(id) {
-            tg.showConfirm('Удалить этот пост?', (ok) => { if (ok) remove(ref(db, 'posts/' + id)).then(() => document.getElementById('close-post-btn').click()); });
+            tg.showConfirm('Удалить этот пост?', (ok) => { 
+                if (ok) {
+                    remove(ref(db, 'posts/' + id))
+                        .then(() => document.getElementById('close-post-btn').click())
+                        .catch(err => tg.showAlert('Ошибка удаления: ' + friendlyDbError(err)));
+                } 
+            });
         };
 
         // === ОВЕРЛЕЙ ПОСТА ===
         window.openPost = function(id) {
-            currentPostId = id; activeOverlay = 'post';
+            currentPostId = id; 
+            activeOverlay = 'post';
             document.getElementById('comment-sticker-picker').style.display = 'none';
             renderPostOverlay();
-            document.getElementById('post-overlay').classList.add('active'); tg.BackButton.show();
+            document.getElementById('post-overlay').classList.add('active'); 
+            tg.BackButton.show();
         };
 
         function renderPostOverlay() {
             const post = postsData.find(p => p.id === currentPostId);
             if (!post) return;
+            
             document.getElementById('post-overlay-title').textContent = post.title;
+            
             const reactions = post.reactions || {};
-            const counts = {}; Object.values(reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
+            const counts = {}; 
+            Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1 });
+            
             const comments = post.comments ? Object.entries(post.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt) : [];
             const isOwner = post.authorId && post.authorId === currentUser.id;
 
@@ -1251,19 +1401,31 @@
             const imagesHtml = imagesArr.map(url => `<img src="${url}" style="width:100%; border-radius:16px; margin-bottom:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">`).join('');
 
             document.getElementById('post-overlay-content').innerHTML = `
-                ${authorBlock} ${imagesHtml}
+                ${authorBlock} 
+                ${imagesHtml}
                 <div style="font-size:15px;line-height:1.6;color:#333;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
                 <div class="card-meta" style="margin-top: 12px;">${formatDate(post.createdAt)}</div>
-                ${isOwner ? `<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-secondary" style="margin:0;flex:1; border-radius:14px;" id="btn-edit-own-post">✏️ Изменить</button><button class="btn btn-danger" style="margin:0;flex:1; border-radius:14px;" id="btn-delete-own-post">🗑 Удалить</button></div>` : ''}
+                
+                ${isOwner ? `
+                <div style="display:flex;gap:8px;margin-top:14px;">
+                    <button class="btn btn-secondary" style="margin:0;flex:1; border-radius:14px;" id="btn-edit-own-post">✏️ Изменить</button>
+                    <button class="btn btn-danger" style="margin:0;flex:1; border-radius:14px;" id="btn-delete-own-post">🗑 Удалить</button>
+                </div>` : ''}
+                
                 <div class="reaction-bar">
                     ${EMOJIS.map(e => `<button class="reaction-btn ${reactions[currentUser.id] === e ? 'mine' : ''}" data-emoji="${e}">${e} ${counts[e] || ''}</button>`).join('')}
                 </div>
+                
                 <button class="btn btn-secondary" style="margin-top:12px; border-radius:16px;" id="btn-share-post">📤 Поделиться</button>
+                
                 <div class="comments-block">
                     <div class="comments-title">Комментарии (${comments.length})</div>
                     ${comments.length ? comments.map(c => `
                         <div class="comment-item">
-                            <div><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-meta">${formatDate(c.createdAt)}</span></div>
+                            <div>
+                                <span class="comment-author">${escapeHtml(c.author)}</span>
+                                <span class="comment-meta">${formatDate(c.createdAt)}</span>
+                            </div>
                             ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : `<div class="comment-text">${escapeHtml(c.text)}</div>`}
                             ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
@@ -1272,9 +1434,21 @@
             `;
 
             const row = document.querySelector('#post-overlay-content .post-author-row');
-            if (row) row.onclick = () => { const aid = row.getAttribute('data-author-id'); if (aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name')); };
-            document.querySelectorAll('#post-overlay-content .reaction-btn').forEach(b => b.onclick = () => toggleReaction(post.id, b.dataset.emoji));
-            document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => b.onclick = () => deleteComment(post.id, b.dataset.cid));
+            if (row) {
+                row.onclick = () => { 
+                    const aid = row.getAttribute('data-author-id'); 
+                    if (aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name')); 
+                };
+            }
+
+            document.querySelectorAll('#post-overlay-content .reaction-btn').forEach(b => {
+                b.onclick = () => toggleReaction(post.id, b.dataset.emoji);
+            });
+            
+            document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => {
+                b.onclick = () => deleteComment(post.id, b.dataset.cid);
+            });
+            
             if (document.getElementById('btn-share-post')) document.getElementById('btn-share-post').onclick = () => sharePost(post.id);
             if (document.getElementById('btn-edit-own-post')) document.getElementById('btn-edit-own-post').onclick = () => editOwnPost(post.id);
             if (document.getElementById('btn-delete-own-post')) document.getElementById('btn-delete-own-post').onclick = () => deleteOwnPost(post.id);
@@ -1283,23 +1457,40 @@
         function toggleReaction(postId, emoji) {
             const current = postsData.find(p => p.id === postId)?.reactions?.[currentUser.id];
             const newVal = current === emoji ? null : emoji;
+            
             set(ref(db, `posts/${postId}/reactions/${currentUser.id}`), newVal);
-            update(ref(db, 'users/' + currentUser.id), { lastReactionEmoji: newVal, lastReactionAt: newVal ? Date.now() : null }).catch(()=>{});
-            tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light');
+            update(ref(db, 'users/' + currentUser.id), { 
+                lastReactionEmoji: newVal, 
+                lastReactionAt: newVal ? Date.now() : null 
+            }).catch(()=>{});
+            
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
         function sharePost(postId) {
             const post = postsData.find(p => p.id === postId);
             if (!post) return;
             const shareText = post.title + '\n\n' + post.text;
-            if (navigator.share) navigator.share({ title: post.title, text: shareText }).catch(()=>{});
-            else if (navigator.clipboard) navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
+            
+            if (navigator.share) {
+                navigator.share({ title: post.title, text: shareText }).catch(()=>{});
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => tg.showPopup({ title: 'Готово', message: 'Текст скопирован', buttons: [{ type: 'ok' }] }));
+            }
         }
 
         document.getElementById('btn-send-comment').onclick = function() {
             const input = document.getElementById('comment-input');
             if (!input.value.trim() || !db) return;
-            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: input.value.trim(), createdAt: Date.now() }).then(() => { input.value = ''; });
+            
+            push(ref(db, `posts/${currentPostId}/comments`), { 
+                author: currentUser.name, 
+                userId: currentUser.id, 
+                text: input.value.trim(), 
+                createdAt: Date.now() 
+            }).then(() => { 
+                input.value = ''; 
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
         document.getElementById('btn-toggle-comment-stickers').onclick = function() {
@@ -1309,91 +1500,188 @@
 
         window.sendCommentSticker = function(url) {
             if (!currentPostId || !db) return;
-            push(ref(db, `posts/${currentPostId}/comments`), { author: currentUser.name, userId: currentUser.id, text: '', sticker: url, createdAt: Date.now() }).then(() => {
+            
+            push(ref(db, `posts/${currentPostId}/comments`), { 
+                author: currentUser.name, 
+                userId: currentUser.id, 
+                text: '', 
+                sticker: url, 
+                createdAt: Date.now() 
+            }).then(() => {
                 document.getElementById('comment-sticker-picker').style.display = 'none';
-                tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
-            });
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
         function deleteComment(postId, commentId) {
-            tg.showConfirm('Удалить комментарий?', (ok) => { if(ok) remove(ref(db, `posts/${postId}/comments/${commentId}`)); });
+            tg.showConfirm('Удалить комментарий?', (ok) => { 
+                if(ok) {
+                    remove(ref(db, `posts/${postId}/comments/${commentId}`))
+                        .catch(err => tg.showAlert('Ошибка удаления: ' + friendlyDbError(err)));
+                } 
+            });
         }
 
         document.getElementById('close-post-btn').onclick = function() {
-            document.getElementById('post-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+            document.getElementById('post-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            tg.BackButton.hide();
         };
 
         // === КНИГИ ===
         function getChapters(book) {
-            if (book.chapters) return Object.entries(book.chapters).map(([id, c]) => ({ id, ...c })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            if (book.chapters) {
+                return Object.entries(book.chapters)
+                    .map(([id, c]) => ({ id, ...c }))
+                    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            }
             if (book.text) return [{ id: 'legacy', title: 'Глава 1', text: book.text }];
             return [];
         }
+        
         function bookProgress(book) {
             const chapters = getChapters(book);
             if (!chapters.length) return { readCount: 0, total: 0, pct: 0 };
+            
             const readCount = progressStore[book.id]?.readIdx?.length || 0;
-            return { readCount, total: chapters.length, pct: Math.round((readCount / chapters.length) * 100) };
+            return { 
+                readCount, 
+                total: chapters.length, 
+                pct: Math.round((readCount / chapters.length) * 100) 
+            };
         }
+        
         function renderGenreFilterRow() {
             const genres = Array.from(new Set(booksData.map(b => b.genre).filter(Boolean)));
             const row = document.getElementById('genre-filter-row');
-            if (!genres.length) { row.innerHTML = ''; return; }
-            row.innerHTML = ['Все', ...genres].map(g => `<button class="chip ${activeGenre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>`).join('');
-            row.querySelectorAll('.chip').forEach(c => c.onclick = () => { activeGenre = c.dataset.genre; renderGenreFilterRow(); renderBooks(); });
+            
+            if (!genres.length) { 
+                row.innerHTML = ''; 
+                return; 
+            }
+            
+            row.innerHTML = ['Все', ...genres].map(g => `
+                <button class="chip ${activeGenre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>
+            `).join('');
+            
+            row.querySelectorAll('.chip').forEach(c => {
+                c.onclick = () => { 
+                    activeGenre = c.dataset.genre; 
+                    renderGenreFilterRow(); 
+                    renderBooks(); 
+                };
+            });
         }
+        
         window.setSort = function(mode) {
-            sortMode = mode; document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === mode)); renderBooks();
+            sortMode = mode; 
+            document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => {
+                c.classList.toggle('active', c.dataset.sort === mode)
+            }); 
+            renderBooks();
         };
-        document.getElementById('book-search').addEventListener('input', (e) => { bookSearchTerm = e.target.value; renderBooks(); });
+        
+        document.getElementById('book-search').addEventListener('input', (e) => { 
+            bookSearchTerm = e.target.value; 
+            renderBooks(); 
+        });
 
         function renderBooks() {
             const container = document.getElementById('books-container');
             let list = booksData.slice();
-            if (bookSearchTerm) list = list.filter(b => (b.title || '').toLowerCase().includes(bookSearchTerm.toLowerCase()) || (b.author || '').toLowerCase().includes(bookSearchTerm.toLowerCase()));
-            if (activeGenre !== 'Все') list = list.filter(b => b.genre === activeGenre);
+            
+            if (bookSearchTerm) {
+                const term = bookSearchTerm.toLowerCase();
+                list = list.filter(b => (b.title || '').toLowerCase().includes(term) || (b.author || '').toLowerCase().includes(term));
+            }
+            
+            if (activeGenre !== 'Все') {
+                list = list.filter(b => b.genre === activeGenre);
+            }
+            
             if (sortMode === 'unread') list = list.filter(b => !readBooks.includes(b.id));
             if (sortMode === 'read') list = list.filter(b => readBooks.includes(b.id));
             if (sortMode === 'bookmark') list = list.filter(b => bookmarkedBooks.includes(b.id));
 
-            if (!list.length) { container.innerHTML = '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div></div>'; return; }
+            if (!list.length) { 
+                container.innerHTML = '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div></div>'; 
+                return; 
+            }
+            
             container.innerHTML = list.map(book => {
-                const isRead = readBooks.includes(book.id), isBookmarked = bookmarkedBooks.includes(book.id), prog = bookProgress(book);
+                const isRead = readBooks.includes(book.id);
+                const isBookmarked = bookmarkedBooks.includes(book.id);
+                const prog = bookProgress(book);
+                
                 return `
                 <div class="card tappable" onclick="openBook('${book.id}')">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
                     ${book.genre ? `<div class="genre-tag">${escapeHtml(book.genre)}</div>` : ''}
                     <div class="card-title">${escapeHtml(book.title)}</div>
                     <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
-                    ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''} ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
+                    ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''} 
+                    ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
                     ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:10px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta" style="margin-top:6px;">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
                 </div>`;
             }).join('');
-            document.getElementById('stats-read').textContent = readBooks.length; document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
+            
+            document.getElementById('stats-read').textContent = readBooks.length; 
+            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length;
         }
 
         window.openBook = function(id) {
             const book = booksData.find(b => b.id === id);
             if (!book) return;
-            currentBookId = id; activeOverlay = 'reader'; currentChapters = getChapters(book);
-            document.getElementById('reader-overlay').classList.add('active'); tg.BackButton.show();
-            if (currentChapters.length <= 1) openChapter(id, 0); else renderChapterListView(book);
+            
+            currentBookId = id; 
+            activeOverlay = 'reader'; 
+            currentChapters = getChapters(book);
+            
+            document.getElementById('reader-overlay').classList.add('active'); 
+            tg.BackButton.show();
+            
+            if (currentChapters.length <= 1) {
+                openChapter(id, 0); 
+            } else {
+                renderChapterListView(book);
+            }
         };
+        
         function renderChapterListView(book) {
-            document.getElementById('reader-title').textContent = book.title; document.getElementById('reader-author').textContent = book.author || '';
-            document.getElementById('reader-font-controls').classList.add('hidden'); document.getElementById('reader-progress-wrap').classList.remove('hidden'); document.getElementById('reader-actions-chapter').classList.add('hidden');
-            const prog = bookProgress(book), readIdx = progressStore[book.id]?.readIdx || [];
+            document.getElementById('reader-title').textContent = book.title; 
+            document.getElementById('reader-author').textContent = book.author || '';
+            document.getElementById('reader-font-controls').classList.add('hidden'); 
+            document.getElementById('reader-progress-wrap').classList.remove('hidden'); 
+            document.getElementById('reader-actions-chapter').classList.add('hidden');
+            
+            const prog = bookProgress(book);
+            const readIdx = progressStore[book.id]?.readIdx || [];
+            
             document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
             document.getElementById('reader-body').innerHTML = `
                 <div style="margin-bottom:14px;color:#7f8c8d;font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
-                ${currentChapters.map((ch, idx) => `<div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})"><span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#95a5a6; font-weight:800;">→</span>'}</div>`).join('')}
+                ${currentChapters.map((ch, idx) => `
+                    <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
+                        <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
+                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#95a5a6; font-weight:800;">→</span>'}
+                    </div>
+                `).join('')}
             `;
         }
+        
         window.openChapter = function(bookId, idx) {
-            const book = booksData.find(b => b.id === bookId); if (!book) return;
-            currentBookId = bookId; currentChapters = getChapters(book); currentChapterIndex = idx;
-            if (!progressStore[bookId]) progressStore[bookId] = { readIdx: [], lastIdx: 0 };
-            progressStore[bookId].lastIdx = idx; saveLocal('sr_progress', progressStore);
+            const book = booksData.find(b => b.id === bookId); 
+            if (!book) return;
+            
+            currentBookId = bookId; 
+            currentChapters = getChapters(book); 
+            currentChapterIndex = idx;
+            
+            if (!progressStore[bookId]) {
+                progressStore[bookId] = { readIdx: [], lastIdx: 0 };
+            }
+            progressStore[bookId].lastIdx = idx; 
+            saveLocal('sr_progress', progressStore);
 
             const chapter = currentChapters[idx];
             document.getElementById('reader-title').textContent = book.title + (currentChapters.length > 1 ? ' · ' + (chapter.title || ('Глава ' + (idx + 1))) : '');
@@ -1406,41 +1694,96 @@
             const readIdx = progressStore[bookId].readIdx || [];
             document.getElementById('reader-progress-wrap').classList.remove('hidden');
             document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
-            document.getElementById('btn-prev-chapter').disabled = idx === 0; document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
+            
+            document.getElementById('btn-prev-chapter').disabled = idx === 0; 
+            document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
             document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(bookId) ? '🔖✓' : '🔖';
         };
 
-        document.getElementById('btn-prev-chapter').onclick = () => { if (currentChapterIndex > 0) openChapter(currentBookId, currentChapterIndex - 1); };
-        document.getElementById('btn-next-chapter').onclick = () => { if (currentChapterIndex < currentChapters.length - 1) openChapter(currentBookId, currentChapterIndex + 1); };
-        document.getElementById('font-dec').onclick = () => { readerFontSize = Math.max(14, readerFontSize - 2); localStorage.setItem('sr_fontsize', String(readerFontSize)); document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; };
-        document.getElementById('font-inc').onclick = () => { readerFontSize = Math.min(28, readerFontSize + 2); localStorage.setItem('sr_fontsize', String(readerFontSize)); document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; };
+        document.getElementById('btn-prev-chapter').onclick = () => { 
+            if (currentChapterIndex > 0) openChapter(currentBookId, currentChapterIndex - 1); 
+        };
+        
+        document.getElementById('btn-next-chapter').onclick = () => { 
+            if (currentChapterIndex < currentChapters.length - 1) openChapter(currentBookId, currentChapterIndex + 1); 
+        };
+        
+        document.getElementById('font-dec').onclick = () => { 
+            readerFontSize = Math.max(14, readerFontSize - 2); 
+            localStorage.setItem('sr_fontsize', String(readerFontSize)); 
+            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; 
+        };
+        
+        document.getElementById('font-inc').onclick = () => { 
+            readerFontSize = Math.min(28, readerFontSize + 2); 
+            localStorage.setItem('sr_fontsize', String(readerFontSize)); 
+            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px'; 
+        };
+        
         document.getElementById('btn-share-chapter').onclick = () => {
-            const book = booksData.find(b => b.id === currentBookId); if (!book) return;
+            const book = booksData.find(b => b.id === currentBookId); 
+            if (!book) return;
             const chapter = currentChapters[currentChapterIndex];
             const shareText = book.title + (chapter ? ' — ' + (chapter.title || '') : '');
-            if (navigator.share) navigator.share({ title: book.title, text: shareText }).catch(()=>{}); else if (navigator.clipboard) navigator.clipboard.writeText(shareText);
+            if (navigator.share) {
+                navigator.share({ title: book.title, text: shareText }).catch(()=>{}); 
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText);
+                tg.showPopup({ title: 'Готово', message: 'Ссылка скопирована', buttons: [{ type: 'ok' }] });
+            }
         };
+        
         function updateStreak() {
-            const today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+            const today = new Date().toDateString();
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
             if (streakStore.lastDate === today) return;
+            
             streakStore.count = (streakStore.lastDate === yesterday) ? streakStore.count + 1 : 1;
-            streakStore.lastDate = today; saveLocal('sr_streak', streakStore);
+            streakStore.lastDate = today; 
+            saveLocal('sr_streak', streakStore);
         }
+        
         document.getElementById('btn-read').onclick = function() {
-            if (!progressStore[currentBookId]) progressStore[currentBookId] = { readIdx: [], lastIdx: 0 };
-            if (!progressStore[currentBookId].readIdx.includes(currentChapterIndex)) { progressStore[currentBookId].readIdx.push(currentChapterIndex); saveLocal('sr_progress', progressStore); }
+            if (!progressStore[currentBookId]) {
+                progressStore[currentBookId] = { readIdx: [], lastIdx: 0 };
+            }
+            if (!progressStore[currentBookId].readIdx.includes(currentChapterIndex)) { 
+                progressStore[currentBookId].readIdx.push(currentChapterIndex); 
+                saveLocal('sr_progress', progressStore); 
+            }
+            
             if (progressStore[currentBookId].readIdx.length >= currentChapters.length && !readBooks.includes(currentBookId)) {
-                readBooks.push(currentBookId); saveLocal('sr_read', readBooks); updateStreak(); renderProfileStats();
+                readBooks.push(currentBookId); 
+                saveLocal('sr_read', readBooks); 
+                updateStreak(); 
+                renderProfileStats();
                 tg.showPopup({ title: 'Книга прочитана! 🎉', message: 'Поздравляем!', buttons: [{ type: 'ok' }] });
-            } else tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
-            document.getElementById('reader-progress-inner').style.width = Math.round((progressStore[currentBookId].readIdx.length / currentChapters.length) * 100) + '%';
+            } else {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+            
+            const percent = Math.round((progressStore[currentBookId].readIdx.length / currentChapters.length) * 100);
+            document.getElementById('reader-progress-inner').style.width = percent + '%';
         };
+        
         document.getElementById('btn-bookmark').onclick = function() {
             const idx = bookmarkedBooks.indexOf(currentBookId);
-            if (idx > -1) { bookmarkedBooks.splice(idx, 1); tg.showAlert('Удалено из закладок'); } else { bookmarkedBooks.push(currentBookId); }
-            saveLocal('sr_bookmarks', bookmarkedBooks); document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(currentBookId) ? '🔖✓' : '🔖';
+            if (idx > -1) { 
+                bookmarkedBooks.splice(idx, 1); 
+                tg.showAlert('Удалено из закладок'); 
+            } else { 
+                bookmarkedBooks.push(currentBookId); 
+            }
+            saveLocal('sr_bookmarks', bookmarkedBooks); 
+            document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(currentBookId) ? '🔖✓' : '🔖';
         };
-        document.getElementById('close-reader-btn').onclick = function() { document.getElementById('reader-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide(); renderBooks(); };
+        
+        document.getElementById('close-reader-btn').onclick = function() { 
+            document.getElementById('reader-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            tg.BackButton.hide(); 
+            renderBooks(); 
+        };
 
         // === ЧАТЫ И ГРУППЫ ===
         function otherParticipant(chat) {
@@ -1449,8 +1792,10 @@
             const names = chat.participantNames || {};
             const userRec = usersData.find(u => u.id === otherId);
             return {
-                id: otherId, name: (userRec && userRec.name) || names[otherId] || 'Читатель',
-                avatar: userRec ? userRec.avatar : null, lastSeen: userRec ? userRec.lastSeen : null,
+                id: otherId, 
+                name: (userRec && userRec.name) || names[otherId] || 'Читатель',
+                avatar: userRec ? userRec.avatar : null, 
+                lastSeen: userRec ? userRec.lastSeen : null,
                 mood: (userRec && userRec.lastReactionAt && (Date.now() - userRec.lastReactionAt < 86400000)) ? userRec.lastReactionEmoji : null
             };
         }
@@ -1458,18 +1803,24 @@
         function renderChatsList() {
             const container = document.getElementById('chats-container');
             const myChats = chatsData.filter(c => c.participants && c.participants[currentUser.id]);
+            
             if (!myChats.length) {
                 container.innerHTML = '<div class="empty-state"><span class="icon">💬</span><div class="title">Пока нет чатов</div></div>';
-                document.getElementById('chats-nav-badge').classList.add('hidden'); return;
+                document.getElementById('chats-nav-badge').classList.add('hidden'); 
+                return;
             }
+            
             myChats.sort((a, b) => (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0));
             let anyUnread = false;
+            
             container.innerHTML = myChats.map(chat => {
-                const unread = chat.messages ? Object.values(chat.messages).filter(m => m.senderId !== currentUser.id && m.createdAt > (chatLastRead[chat.id] || 0)).length : 0;
+                const lastReadTime = chatLastRead[chat.id] || 0;
+                const unread = chat.messages ? Object.values(chat.messages).filter(m => m.senderId !== currentUser.id && m.createdAt > lastReadTime).length : 0;
                 if (unread > 0) anyUnread = true;
                 
                 let avatarHTML, nameStr, moodStr = '';
-                if(chat.type === 'group') {
+                
+                if (chat.type === 'group') {
                     avatarHTML = avatarHtml(chat.name, chat.avatar, 'chat-avatar');
                     nameStr = escapeHtml(chat.name);
                 } else {
@@ -1483,26 +1834,35 @@
                 <div class="chat-list-item" data-chat-id="${chat.id}">
                     <div class="chat-avatar-wrap">${avatarHTML}${moodStr}</div>
                     <div class="chat-info">
-                        <div class="chat-info-top"><span class="chat-name">${nameStr}</span><span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span></div>
+                        <div class="chat-info-top">
+                            <span class="chat-name">${nameStr}</span>
+                            <span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span>
+                        </div>
                         <div class="chat-preview">${escapeHtml(chat.lastMessage || 'Нет сообщений')}</div>
                     </div>
                     ${unread > 0 ? `<div class="chat-unread-dot"></div>` : ''}
                 </div>`;
             }).join('');
-            document.querySelectorAll('#chats-container .chat-list-item').forEach(item => item.onclick = () => openChat(item.getAttribute('data-chat-id')));
+            
+            document.querySelectorAll('#chats-container .chat-list-item').forEach(item => {
+                item.onclick = () => openChat(item.getAttribute('data-chat-id'))
+            });
             document.getElementById('chats-nav-badge').classList.toggle('hidden', !anyUnread);
         }
 
         window.openChat = function(chatId) {
-            currentChatId = chatId; activeOverlay = 'chat';
-            document.getElementById('chat-overlay').classList.add('active'); tg.BackButton.show();
+            currentChatId = chatId; 
+            activeOverlay = 'chat';
+            document.getElementById('chat-overlay').classList.add('active'); 
+            tg.BackButton.show();
             document.getElementById('chat-sticker-picker').style.display = 'none';
+            
             const chat = chatsData.find(c => c.id === chatId);
             if (chat) renderChatOverlay(chat);
         };
 
         function renderChatOverlay(chat) {
-            if(chat.type === 'group') {
+            if (chat.type === 'group') {
                 document.getElementById('chat-partner-name').textContent = chat.name;
                 document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
                 document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников';
@@ -1517,7 +1877,9 @@
 
             const pinned = chat.pinnedQuote;
             document.getElementById('chat-pinned-bar').classList.toggle('hidden', !pinned);
-            if (pinned) document.getElementById('chat-pinned-text').textContent = '"' + pinned.text + '" — ' + pinned.author;
+            if (pinned) {
+                document.getElementById('chat-pinned-text').textContent = '"' + pinned.text + '" — ' + pinned.author;
+            }
             document.getElementById('chat-quote-watermark').textContent = pinned ? '"' + pinned.text + '"' : '';
 
             const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
@@ -1525,64 +1887,130 @@
             
             listEl.innerHTML = messages.length ? messages.map(m => {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const senderName = chat.type === 'group' && m.senderId !== currentUser.id ? `<div style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px;">${escapeHtml(m.senderName)}</div>` : '';
+                const senderName = (chat.type === 'group' && m.senderId !== currentUser.id) 
+                    ? `<div style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px;">${escapeHtml(m.senderName)}</div>` 
+                    : '';
                 
                 if (m.sticker) {
-                    return `<div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}"><div class="msg-sticker-wrap">${senderName}<img src="${m.sticker}" class="msg-sticker"><span class="msg-time sticker-time">${timeStr}</span></div></div>`;
+                    return `
+                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                        <div class="msg-sticker-wrap">
+                            ${senderName}
+                            <img src="${m.sticker}" class="msg-sticker">
+                            <span class="msg-time sticker-time">${timeStr}</span>
+                        </div>
+                    </div>`;
                 }
-                return `<div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}"><div class="msg-bubble">${senderName}${escapeHtml(m.text)}<span class="msg-time">${timeStr}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div></div>`;
+                
+                return `
+                <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-bubble">
+                        ${senderName}
+                        ${escapeHtml(m.text)}
+                        <span class="msg-time">${timeStr}</span>
+                        <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
+                    </div>
+                </div>`;
             }).join('') : '<div style="color:#95a5a6;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
 
-            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author')));
+            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
+                btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
+            });
 
-            chatLastRead[chat.id] = Date.now(); saveLocal('sr_chat_last_read', chatLastRead);
+            chatLastRead[chat.id] = Date.now(); 
+            saveLocal('sr_chat_last_read', chatLastRead);
             document.getElementById('chats-nav-badge').classList.add('hidden');
-            const body = document.getElementById('chat-body'); body.scrollTop = body.scrollHeight;
+            
+            const body = document.getElementById('chat-body'); 
+            body.scrollTop = body.scrollHeight;
         }
 
-        function pinQuote(chatId, text, author) { update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }); tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); }
-        document.getElementById('btn-unpin-quote').onclick = function() { update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }); };
+        function pinQuote(chatId, text, author) { 
+            update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }); 
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); 
+        }
+        
+        document.getElementById('btn-unpin-quote').onclick = function() { 
+            update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }); 
+        };
         
         function sendChatMessage() {
             const input = document.getElementById('chat-message-input');
             if (!input.value.trim() || !currentChatId || !db) return;
-            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text: input.value.trim(), createdAt: Date.now() }).then(() => {
-                update(ref(db, 'chats/' + currentChatId), { lastMessage: input.value.trim(), lastMessageAt: Date.now() }); input.value = '';
+            
+            push(ref(db, 'chats/' + currentChatId + '/messages'), { 
+                senderId: currentUser.id, 
+                senderName: currentUser.name, 
+                text: input.value.trim(), 
+                createdAt: Date.now() 
+            }).then(() => {
+                update(ref(db, 'chats/' + currentChatId), { 
+                    lastMessage: input.value.trim(), 
+                    lastMessageAt: Date.now() 
+                }); 
+                input.value = '';
             });
         }
+        
         document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
-        document.getElementById('chat-message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+        document.getElementById('chat-message-input').addEventListener('keydown', (e) => { 
+            if (e.key === 'Enter') sendChatMessage(); 
+        });
 
         document.getElementById('close-chat-btn').onclick = function() {
-            document.getElementById('chat-overlay').classList.remove('active'); activeOverlay = null; currentChatId = null; tg.BackButton.hide(); renderChatsList();
+            document.getElementById('chat-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            currentChatId = null; 
+            tg.BackButton.hide(); 
+            renderChatsList();
         };
 
         // НОВЫЙ ЧАТ/ГРУППА
         document.getElementById('btn-new-chat').onclick = function() {
-            document.getElementById('user-search').value = ''; document.getElementById('new-chat-overlay').classList.add('active'); activeOverlay = 'newchat'; tg.BackButton.show(); renderUserPickList();
+            document.getElementById('user-search').value = ''; 
+            document.getElementById('new-chat-overlay').classList.add('active'); 
+            activeOverlay = 'newchat'; 
+            tg.BackButton.show(); 
+            renderUserPickList();
         };
+        
         document.getElementById('close-new-chat-btn').onclick = function() {
-            document.getElementById('new-chat-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+            document.getElementById('new-chat-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            tg.BackButton.hide();
         };
+        
         document.getElementById('btn-open-create-group').onclick = function() {
             document.getElementById('new-chat-overlay').classList.remove('active');
             document.getElementById('create-group-overlay').classList.add('active');
             activeOverlay = 'creategroup';
-            document.getElementById('group-name').value = ''; document.getElementById('group-desc').value = ''; document.getElementById('group-avatar').value = '';
+            
+            document.getElementById('group-name').value = ''; 
+            document.getElementById('group-desc').value = ''; 
+            document.getElementById('group-avatar').value = '';
+            
             renderUserPickList();
         };
+        
         document.getElementById('close-create-group-btn').onclick = function() {
-            document.getElementById('create-group-overlay').classList.remove('active'); activeOverlay = null; tg.BackButton.hide();
+            document.getElementById('create-group-overlay').classList.remove('active'); 
+            activeOverlay = null; 
+            tg.BackButton.hide();
         };
 
         function renderUserPickList() {
             const q = document.getElementById('user-search').value.trim().toLowerCase();
             let list = usersData.filter(u => u.id !== currentUser.id);
-            if (q) list = list.filter(u => (u.name || '').toLowerCase().includes(q));
+            if (q) {
+                list = list.filter(u => (u.name || '').toLowerCase().includes(q));
+            }
             
             if (activeOverlay === 'creategroup') {
                 const container = document.getElementById('group-user-pick-list');
-                if (!list.length) { container.innerHTML = '<div style="color:#95a5a6; font-size:13px; text-align:center;">Нет пользователей</div>'; return; }
+                if (!list.length) { 
+                    container.innerHTML = '<div style="color:#95a5a6; font-size:13px; text-align:center;">Нет пользователей</div>'; 
+                    return; 
+                }
                 container.innerHTML = list.map(u => `
                     <label style="display:flex; align-items:center; gap:10px; padding:6px; cursor:pointer;">
                         <input type="checkbox" value="${u.id}" class="group-user-cb">
@@ -1592,22 +2020,34 @@
                 `).join('');
             } else {
                 const container = document.getElementById('user-pick-list');
-                if (!list.length) { container.innerHTML = '<div class="empty-state"><div class="title">Никого не найдено</div></div>'; return; }
+                if (!list.length) { 
+                    container.innerHTML = '<div class="empty-state"><div class="title">Никого не найдено</div></div>'; 
+                    return; 
+                }
                 container.innerHTML = list.map(u => `
                     <div class="user-pick-item" onclick="startChatWith('${u.id}', '${escapeHtml(u.name || 'Читатель')}')">
                         ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
-                        <div><div style="font-weight:700;font-size:14px;color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</div><div style="font-size:11px;color:#95a5a6;margin-top:2px;">${lastSeenText(u.lastSeen)}</div></div>
+                        <div>
+                            <div style="font-weight:700;font-size:14px;color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</div>
+                            <div style="font-size:11px;color:#95a5a6;margin-top:2px;">${lastSeenText(u.lastSeen)}</div>
+                        </div>
                     </div>
                 `).join('');
             }
         }
+        
         document.getElementById('user-search').addEventListener('input', renderUserPickList);
 
         function startChatWith(otherId, otherName) {
             const chatId = [currentUser.id, otherId].sort().join('_');
             document.getElementById('new-chat-overlay').classList.remove('active');
+            
             if (!chatsData.find(c => c.id === chatId)) {
-                set(ref(db, 'chats/' + chatId), { participants: { [currentUser.id]: true, [otherId]: true }, participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName }, createdAt: Date.now() });
+                set(ref(db, 'chats/' + chatId), { 
+                    participants: { [currentUser.id]: true, [otherId]: true }, 
+                    participantNames: { [currentUser.id]: currentUser.name, [otherId]: otherName }, 
+                    createdAt: Date.now() 
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
             }
             openChat(chatId);
         }
@@ -1615,63 +2055,108 @@
         // Логика создания группы
         document.getElementById('btn-submit-group').onclick = function() {
             const name = document.getElementById('group-name').value.trim();
-            if(!name) return tg.showAlert('Введите название группы');
+            if (!name) {
+                return tg.showAlert('Введите название группы');
+            }
+            
             const participants = { [currentUser.id]: true };
-            document.querySelectorAll('.group-user-cb:checked').forEach(cb => participants[cb.value] = true);
+            document.querySelectorAll('.group-user-cb:checked').forEach(cb => {
+                participants[cb.value] = true;
+            });
+            
             const chatId = 'group_' + Date.now();
             set(ref(db, 'chats/' + chatId), {
-                type: 'group', name, desc: document.getElementById('group-desc').value.trim(), avatar: document.getElementById('group-avatar').value.trim(),
-                adminId: currentUser.id, participants, createdAt: Date.now(), lastMessage: 'Группа создана', lastMessageAt: Date.now()
-            }).then(() => { document.getElementById('close-create-group-btn').click(); openChat(chatId); });
+                type: 'group', 
+                name: name, 
+                desc: document.getElementById('group-desc').value.trim(), 
+                avatar: document.getElementById('group-avatar').value.trim(),
+                adminId: currentUser.id, 
+                participants: participants, 
+                createdAt: Date.now(), 
+                lastMessage: 'Группа создана', 
+                lastMessageAt: Date.now()
+            }).then(() => { 
+                document.getElementById('close-create-group-btn').click(); 
+                openChat(chatId); 
+            }).catch(err => tg.showAlert('Ошибка создания группы: ' + friendlyDbError(err)));
         };
 
         // Логика редактирования группы
         document.getElementById('chat-edit-group-btn').onclick = function() {
             const chat = chatsData.find(c => c.id === currentChatId);
-            if(!chat || chat.type !== 'group') return;
+            if (!chat || chat.type !== 'group') return;
+            
             document.getElementById('edit-group-name').value = chat.name || '';
             document.getElementById('edit-group-desc').value = chat.desc || '';
             document.getElementById('edit-group-avatar').value = chat.avatar || '';
+            
             document.getElementById('chat-overlay').classList.remove('active');
             document.getElementById('edit-group-overlay').classList.add('active');
             activeOverlay = 'editgroup';
         };
+        
         document.getElementById('close-edit-group-btn').onclick = function() {
             document.getElementById('edit-group-overlay').classList.remove('active');
             openChat(currentChatId);
         };
+        
         document.getElementById('btn-save-edit-group').onclick = function() {
             const name = document.getElementById('edit-group-name').value.trim();
-            if(!name) return tg.showAlert('Название не может быть пустым');
-            update(ref(db, 'chats/' + currentChatId), { name, desc: document.getElementById('edit-group-desc').value.trim(), avatar: document.getElementById('edit-group-avatar').value.trim() }).then(() => {
+            if (!name) return tg.showAlert('Название не может быть пустым');
+            
+            update(ref(db, 'chats/' + currentChatId), { 
+                name: name, 
+                desc: document.getElementById('edit-group-desc').value.trim(), 
+                avatar: document.getElementById('edit-group-avatar').value.trim() 
+            }).then(() => {
                 document.getElementById('close-edit-group-btn').click();
-            });
+            }).catch(err => tg.showAlert('Ошибка сохранения: ' + friendlyDbError(err)));
         };
 
         // === СТИКЕРЫ (С ПАКАМИ) ===
         document.getElementById('btn-toggle-stickers').onclick = function() {
             const p = document.getElementById('chat-sticker-picker');
             p.style.display = p.style.display === 'none' ? 'flex' : 'none';
-            const body = document.getElementById('chat-body'); body.scrollTop = body.scrollHeight;
+            const body = document.getElementById('chat-body'); 
+            body.scrollTop = body.scrollHeight;
         };
 
         function renderStickerPicker() {
-            const pickers = [{ el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' }, { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }];
+            const pickers = [
+                { el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' }, 
+                { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }
+            ];
+            
             let allPacks = [...stickerPacksData];
-            if(stickersData.length > 0) allPacks.push({ id: 'legacy', name: 'Остальные', stickers: stickersData.reduce((acc, s) => ({...acc, [s.id]: s}), {}) });
+            
+            if (stickersData.length > 0) {
+                allPacks.push({ 
+                    id: 'legacy', 
+                    name: 'Остальные', 
+                    stickers: stickersData.reduce((acc, s) => ({...acc, [s.id]: s}), {}) 
+                });
+            }
 
             pickers.forEach(picker => {
                 if (!picker.el) return;
-                if (!allPacks.length) { picker.el.innerHTML = '<div style="font-size:12px; color:#95a5a6;">Нет стикеров</div>'; return; }
+                
+                if (!allPacks.length) { 
+                    picker.el.innerHTML = '<div style="font-size:12px; color:#95a5a6;">Нет стикеров</div>'; 
+                    return; 
+                }
+                
                 let html = '';
                 allPacks.forEach(pack => {
-                    if(!pack.stickers) return;
-                    html += `<div style="display:flex; flex-direction:column; gap:4px; margin-right:12px; flex-shrink:0;">
-                                <span style="font-size:10px; font-weight:700; color:#95a5a6; padding-left:4px; text-transform:uppercase;">${escapeHtml(pack.name)}</span>
-                                <div style="display:flex; gap:6px;">
-                                    ${Object.values(pack.stickers).map(s => `<img src="${s.url}" onclick="${picker.action}('${s.url}')" style="width:50px;height:50px;object-fit:contain;background:#f4f6f7;border-radius:10px;padding:4px;cursor:pointer;">`).join('')}
-                                </div>
-                             </div>`;
+                    if (!pack.stickers) return;
+                    html += `
+                        <div style="display:flex; flex-direction:column; gap:4px; margin-right:12px; flex-shrink:0;">
+                            <span style="font-size:10px; font-weight:700; color:#95a5a6; padding-left:4px; text-transform:uppercase;">${escapeHtml(pack.name)}</span>
+                            <div style="display:flex; gap:6px;">
+                                ${Object.values(pack.stickers).map(s => `
+                                    <img src="${s.url}" onclick="${picker.action}('${s.url}')" style="width:50px;height:50px;object-fit:contain;background:#f4f6f7;border-radius:10px;padding:4px;cursor:pointer;">
+                                `).join('')}
+                            </div>
+                        </div>`;
                 });
                 picker.el.innerHTML = html;
             });
@@ -1679,39 +2164,115 @@
 
         window.sendSticker = function(url) {
             if (!currentChatId || !db) return;
-            push(ref(db, 'chats/' + currentChatId + '/messages'), { senderId: currentUser.id, senderName: currentUser.name, text: '', sticker: url, createdAt: Date.now() })
-                .then(() => { update(ref(db, 'chats/' + currentChatId), { lastMessage: '🖼 Стикер', lastMessageAt: Date.now() }); document.getElementById('chat-sticker-picker').style.display = 'none'; });
+            
+            push(ref(db, 'chats/' + currentChatId + '/messages'), { 
+                senderId: currentUser.id, 
+                senderName: currentUser.name, 
+                text: '', 
+                sticker: url, 
+                createdAt: Date.now() 
+            }).then(() => { 
+                update(ref(db, 'chats/' + currentChatId), { 
+                    lastMessage: '🖼 Стикер', 
+                    lastMessageAt: Date.now() 
+                }); 
+                document.getElementById('chat-sticker-picker').style.display = 'none'; 
+            }).catch(err => tg.showAlert('Ошибка отправки: ' + friendlyDbError(err)));
         };
 
         // === ПРОФИЛЬ ===
         function renderOwnProfileHeader() {
             const me = usersData.find(u => u.id === currentUser.id);
-            const name = (me && me.name) || currentUser.name, bio = (me && me.bio) || '', avatar = (me && me.avatar) || '', banner = (me && me.banner) || '';
-            document.getElementById('profile-display-name').textContent = name; document.getElementById('profile-display-bio').textContent = bio;
-            const avatarImg = document.getElementById('profile-avatar-img'), avatarFallback = document.getElementById('profile-avatar-fallback');
-            if (avatar) { avatarImg.src = avatar; avatarImg.style.display = 'block'; avatarFallback.style.display = 'none'; } else { avatarImg.style.display = 'none'; avatarFallback.style.display = 'flex'; avatarFallback.textContent = initialOf(name); avatarFallback.style.background = colorFor(name); }
-            const bannerImg = document.getElementById('profile-banner-img'), bannerFallback = document.getElementById('profile-banner-fallback');
-            if (banner) { bannerImg.src = banner; bannerImg.style.display = 'block'; bannerFallback.style.display = 'none'; } else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; }
+            const name = (me && me.name) || currentUser.name;
+            const bio = (me && me.bio) || '';
+            const avatar = (me && me.avatar) || '';
+            const banner = (me && me.banner) || '';
+            
+            document.getElementById('profile-display-name').textContent = name; 
+            document.getElementById('profile-display-bio').textContent = bio;
+            
+            const avatarImg = document.getElementById('profile-avatar-img');
+            const avatarFallback = document.getElementById('profile-avatar-fallback');
+            
+            if (avatar) { 
+                avatarImg.src = avatar; 
+                avatarImg.style.display = 'block'; 
+                avatarFallback.style.display = 'none'; 
+            } else { 
+                avatarImg.style.display = 'none'; 
+                avatarFallback.style.display = 'flex'; 
+                avatarFallback.textContent = initialOf(name); 
+                avatarFallback.style.background = colorFor(name); 
+            }
+            
+            const bannerImg = document.getElementById('profile-banner-img');
+            const bannerFallback = document.getElementById('profile-banner-fallback');
+            
+            if (banner) { 
+                bannerImg.src = banner; 
+                bannerImg.style.display = 'block'; 
+                bannerFallback.style.display = 'none'; 
+            } else { 
+                bannerImg.style.display = 'none'; 
+                bannerFallback.style.display = 'block'; 
+                bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; 
+            }
 
             if (!document.getElementById('profile-edit-panel').classList.contains('hidden')) return;
-            document.getElementById('profile-name-input').value = (me && me.name) || ''; document.getElementById('profile-bio-input').value = bio; document.getElementById('profile-avatar-input').value = avatar; document.getElementById('profile-banner-input').value = banner;
+            
+            document.getElementById('profile-name-input').value = (me && me.name) || ''; 
+            document.getElementById('profile-bio-input').value = bio; 
+            document.getElementById('profile-avatar-input').value = avatar; 
+            document.getElementById('profile-banner-input').value = banner;
         }
 
-        document.getElementById('btn-edit-profile').onclick = function() { document.getElementById('profile-edit-panel').classList.toggle('hidden'); };
+        document.getElementById('btn-edit-profile').onclick = function() { 
+            document.getElementById('profile-edit-panel').classList.toggle('hidden'); 
+        };
+        
         document.getElementById('btn-save-profile').onclick = function() {
             if (!db) return tg.showAlert('Firebase не подключен');
+            
             const name = document.getElementById('profile-name-input').value.trim();
-            update(ref(db, 'users/' + currentUser.id), { name: name || currentUser.name, bio: document.getElementById('profile-bio-input').value.trim(), avatar: document.getElementById('profile-avatar-input').value.trim(), banner: document.getElementById('profile-banner-input').value.trim() })
-                .then(() => { if (name) currentUser.name = name; document.getElementById('profile-edit-panel').classList.add('hidden'); tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] }); })
+            update(ref(db, 'users/' + currentUser.id), { 
+                name: name || currentUser.name, 
+                bio: document.getElementById('profile-bio-input').value.trim(), 
+                avatar: document.getElementById('profile-avatar-input').value.trim(), 
+                banner: document.getElementById('profile-banner-input').value.trim() 
+            }).then(() => { 
+                if (name) currentUser.name = name; 
+                document.getElementById('profile-edit-panel').classList.add('hidden'); 
+                tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] }); 
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
         function renderProfileStats() {
-            document.getElementById('stats-read').textContent = readBooks.length; document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length; document.getElementById('stats-streak').textContent = streakStore.count || 0;
-            document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length; document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
-            const genreCounts = {}; readBooks.forEach(id => { const b = booksData.find(bk => bk.id === id); if (b && b.genre) genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1; });
+            document.getElementById('stats-read').textContent = readBooks.length; 
+            document.getElementById('stats-bookmarks').textContent = bookmarkedBooks.length; 
+            document.getElementById('stats-streak').textContent = streakStore.count || 0;
+            document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length; 
+            document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
+            
+            const genreCounts = {}; 
+            readBooks.forEach(id => { 
+                const b = booksData.find(bk => bk.id === id); 
+                if (b && b.genre) genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1; 
+            });
+            
             const entries = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
             const card = document.getElementById('genre-stats-card');
-            if (entries.length) { card.style.display = ''; document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `<div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#7f8c8d;">${c}</span></div>`).join(''); } else { card.style.display = 'none'; }
+            
+            if (entries.length) { 
+                card.style.display = ''; 
+                document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `
+                    <div class="genre-stat-row">
+                        <span>${escapeHtml(g)}</span>
+                        <span style="color:#7f8c8d;">${c}</span>
+                    </div>
+                `).join(''); 
+            } else { 
+                card.style.display = 'none'; 
+            }
         }
 
         tg.BackButton.onClick(() => {
@@ -1726,132 +2287,371 @@
 
         // === АДМИН ===
         document.getElementById('admin-login-btn').onclick = function() {
-            if (isAdmin) { document.getElementById('admin-panel').classList.toggle('hidden'); return; }
+            if (isAdmin) { 
+                document.getElementById('admin-panel').classList.toggle('hidden'); 
+                return; 
+            }
+            
             const pwd = prompt("Пароль:");
-            if (pwd === "admin123") { isAdmin = true; document.getElementById('admin-panel').classList.remove('hidden'); document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' }); renderAdminPostsList(); renderAdminBooksList(); renderAdminStickersList(); populateChapterBookSelect(); } else if (pwd) { tg.showAlert('Неверный пароль'); }
+            if (pwd === "admin123") { 
+                isAdmin = true; 
+                document.getElementById('admin-panel').classList.remove('hidden'); 
+                document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' }); 
+                renderAdminPostsList(); 
+                renderAdminBooksList(); 
+                renderAdminStickersList(); 
+                populateChapterBookSelect(); 
+            } else if (pwd) { 
+                tg.showAlert('Неверный пароль'); 
+            }
         };
 
         window.switchAdminTab = function(tab) {
-            ['posts', 'books', 'stickers'].forEach(t => { document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); });
+            ['posts', 'books', 'stickers'].forEach(t => { 
+                document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
+                document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
+            });
         };
 
         // АДМИН - СТИКЕРЫ
         document.getElementById('btn-add-pack').onclick = function() {
             const name = document.getElementById('new-pack-name').value.trim();
-            if(!name) return tg.showAlert('Введите название');
-            push(ref(db, 'sticker_packs'), { name, createdAt: Date.now() }).then(() => { document.getElementById('new-pack-name').value = ''; });
+            if (!name) return tg.showAlert('Введите название');
+            
+            push(ref(db, 'sticker_packs'), { 
+                name: name, 
+                createdAt: Date.now() 
+            }).then(() => { 
+                document.getElementById('new-pack-name').value = ''; 
+            }).catch(err => tg.showAlert('Ошибка создания пака: ' + friendlyDbError(err)));
         }
+        
         function populateStickerPackSelect() {
-            const sel = document.getElementById('sticker-pack-select'); if(!sel) return;
+            const sel = document.getElementById('sticker-pack-select'); 
+            if (!sel) return;
+            
             const prev = sel.value;
-            sel.innerHTML = stickerPacksData.length ? stickerPacksData.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('') : '<option value="">Сначала создайте пак</option>';
-            if(stickerPacksData.some(p => p.id === prev)) sel.value = prev;
+            sel.innerHTML = stickerPacksData.length 
+                ? stickerPacksData.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('') 
+                : '<option value="">Сначала создайте пак</option>';
+                
+            if (stickerPacksData.some(p => p.id === prev)) {
+                sel.value = prev;
+            }
         }
+        
         document.getElementById('btn-add-sticker').onclick = function() {
             const packId = document.getElementById('sticker-pack-select').value;
             const url = document.getElementById('sticker-url-input').value.trim();
             if (!url) return tg.showAlert('Добавь ссылку на стикер');
-            if(packId) { push(ref(db, `sticker_packs/${packId}/stickers`), { url, createdAt: Date.now() }).then(() => { document.getElementById('sticker-url-input').value = ''; tg.showPopup({ title: 'Готово', message: 'Стикер добавлен', buttons: [{ type: 'ok' }] }); }); }
-            else { push(ref(db, 'stickers'), { url, createdAt: Date.now() }).then(() => { document.getElementById('sticker-url-input').value = ''; }); }
+            
+            if (packId) { 
+                push(ref(db, `sticker_packs/${packId}/stickers`), { 
+                    url: url, 
+                    createdAt: Date.now() 
+                }).then(() => { 
+                    document.getElementById('sticker-url-input').value = ''; 
+                    tg.showPopup({ title: 'Готово', message: 'Стикер добавлен', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err))); 
+            } else { 
+                push(ref(db, 'stickers'), { 
+                    url: url, 
+                    createdAt: Date.now() 
+                }).then(() => { 
+                    document.getElementById('sticker-url-input').value = ''; 
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err))); 
+            }
         };
 
         function renderAdminStickersList() {
-            const el = document.getElementById('admin-stickers-list'); if (!el) return;
+            const el = document.getElementById('admin-stickers-list'); 
+            if (!el) return;
+            
             let html = '';
+            
             stickerPacksData.forEach(pack => {
-                html += `<div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px;">${escapeHtml(pack.name)} <button class="icon-btn danger" style="display:inline-block; width:24px; height:24px; font-size:12px; margin-left:10px;" onclick="if(confirm('Удалить весь пак?')) remove(ref(db, 'sticker_packs/${pack.id}'))">🗑</button></div>`;
-                if(pack.stickers) {
+                html += `
+                    <div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px;">
+                        ${escapeHtml(pack.name)} 
+                        <button class="icon-btn danger" style="display:inline-block; width:24px; height:24px; font-size:12px; margin-left:10px;" onclick="if(confirm('Удалить весь пак?')) remove(ref(db, 'sticker_packs/${pack.id}'))">🗑</button>
+                    </div>`;
+                    
+                if (pack.stickers) {
                     Object.entries(pack.stickers).forEach(([sid, s]) => {
-                        html += `<div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px;">
-                                    <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
-                                    <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'sticker_packs/${pack.id}/stickers/${sid}'))">✕</button>
-                                 </div>`;
+                        html += `
+                            <div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px; display:inline-block; margin-right:8px; margin-top:8px;">
+                                <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
+                                <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'sticker_packs/${pack.id}/stickers/${sid}'))">✕</button>
+                            </div>`;
                     });
                 }
             });
-            if(stickersData.length > 0) {
+            
+            if (stickersData.length > 0) {
                  html += `<div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px; color:#95a5a6;">Остальные (без пака)</div>`;
                  stickersData.forEach(s => {
-                      html += `<div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px;">
+                      html += `
+                        <div style="position:relative; width:48px; height:48px; background:#f4f6f7; border-radius:10px; padding:4px; display:inline-block; margin-right:8px; margin-top:8px;">
                             <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
                             <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'stickers/${s.id}'))">✕</button>
                         </div>`;
                  });
             }
+            
             el.innerHTML = html;
         }
 
         // АДМИН - ПОСТЫ
         function renderAdminPostsList() {
-            const el = document.getElementById('admin-posts-list'); if (!el) return;
-            if (!postsData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Новостей пока нет</div>'; return; }
+            const el = document.getElementById('admin-posts-list'); 
+            if (!el) return;
+            
+            if (!postsData.length) { 
+                el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Новостей пока нет</div>'; 
+                return; 
+            }
+            
             el.innerHTML = postsData.map(post => {
                 const cover = (post.images || (post.image ? [post.image] : []))[0];
-                return `<div class="admin-item">${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
-                    <div class="admin-item-info"><div class="admin-item-title">${escapeHtml(post.title)}</div><div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div></div>
-                    <div class="admin-item-actions"><button class="icon-btn" onclick="editPost('${post.id}')">✏️</button><button class="icon-btn danger" onclick="if(confirm('Удалить новость?')) remove(ref(db, 'posts/${post.id}'))">🗑</button></div></div>`;
+                return `
+                <div class="admin-item">
+                    ${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(post.title)}</div>
+                        <div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editPost('${post.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="if(confirm('Удалить новость?')) remove(ref(db, 'posts/${post.id}')).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)))">🗑</button>
+                    </div>
+                </div>`;
             }).join('');
         }
+        
         window.editPost = function(id) {
-            const post = postsData.find(p => p.id === id); if (!post) return;
-            editingPostId = id; document.getElementById('post-title').value = post.title || ''; populateImagesContainer('admin-post-images-container', post.images || (post.image ? [post.image] : [])); document.getElementById('post-text').value = post.text || '';
-            document.getElementById('post-form-heading').textContent = 'Редактировать новость'; document.getElementById('btn-add-post').textContent = 'Сохранить изменения'; document.getElementById('btn-cancel-edit-post').classList.remove('hidden'); document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
+            const post = postsData.find(p => p.id === id); 
+            if (!post) return;
+            
+            editingPostId = id; 
+            document.getElementById('post-title').value = post.title || ''; 
+            populateImagesContainer('admin-post-images-container', post.images || (post.image ? [post.image] : [])); 
+            document.getElementById('post-text').value = post.text || '';
+            document.getElementById('post-form-heading').textContent = 'Редактировать новость'; 
+            document.getElementById('btn-add-post').textContent = 'Сохранить изменения'; 
+            document.getElementById('btn-cancel-edit-post').classList.remove('hidden'); 
+            document.getElementById('post-title').scrollIntoView({ behavior: 'smooth' });
         };
+        
         document.getElementById('btn-cancel-edit-post').onclick = function() {
-            editingPostId = null; document.getElementById('post-title').value = ''; document.getElementById('admin-post-images-container').innerHTML = ''; document.getElementById('post-text').value = '';
-            document.getElementById('post-form-heading').textContent = 'Добавить новость'; document.getElementById('btn-add-post').textContent = 'Опубликовать'; document.getElementById('btn-cancel-edit-post').classList.add('hidden');
+            editingPostId = null; 
+            document.getElementById('post-title').value = ''; 
+            document.getElementById('admin-post-images-container').innerHTML = ''; 
+            document.getElementById('post-text').value = '';
+            document.getElementById('post-form-heading').textContent = 'Добавить новость'; 
+            document.getElementById('btn-add-post').textContent = 'Опубликовать'; 
+            document.getElementById('btn-cancel-edit-post').classList.add('hidden');
         };
+        
         document.getElementById('btn-add-post').onclick = function() {
-            if (!document.getElementById('post-title').value.trim() || !document.getElementById('post-text').value.trim()) return tg.showAlert('Заполни поля');
-            const data = { title: document.getElementById('post-title').value.trim(), images: getImagesFromContainer('admin-post-images-container'), text: document.getElementById('post-text').value.trim() };
-            if (editingPostId) { update(ref(db, 'posts/' + editingPostId), data).then(() => { document.getElementById('btn-cancel-edit-post').click(); tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); }); } 
-            else { push(ref(db, 'posts'), { ...data, createdAt: Date.now() }).then(() => { document.getElementById('btn-cancel-edit-post').click(); tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); }); }
+            const title = document.getElementById('post-title').value.trim();
+            const text = document.getElementById('post-text').value.trim();
+            
+            if (!title || !text) return tg.showAlert('Заполни поля');
+            
+            const data = { 
+                title: title, 
+                images: getImagesFromContainer('admin-post-images-container'), 
+                text: text 
+            };
+            
+            if (editingPostId) { 
+                update(ref(db, 'posts/' + editingPostId), data).then(() => { 
+                    document.getElementById('btn-cancel-edit-post').click(); 
+                    tg.showPopup({ title: 'Сохранено', message: 'Новость обновлена', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err))); 
+            } else { 
+                push(ref(db, 'posts'), { ...data, createdAt: Date.now() }).then(() => { 
+                    document.getElementById('btn-cancel-edit-post').click(); 
+                    tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err))); 
+            }
         };
 
         // АДМИН - КНИГИ И ГЛАВЫ
         function renderAdminBooksList() {
-            const el = document.getElementById('admin-books-list'); if (!el) return;
-            if (!booksData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Книг пока нет</div>'; return; }
-            el.innerHTML = booksData.map(book => `<div class="admin-item">${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
-                    <div class="admin-item-info"><div class="admin-item-title">${escapeHtml(book.title)}</div><div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div></div>
-                    <div class="admin-item-actions"><button class="icon-btn" onclick="editBook('${book.id}')">✏️</button><button class="icon-btn danger" onclick="if(confirm('Удалить книгу?')) remove(ref(db, 'books/${book.id}'))">🗑</button></div></div>`).join('');
+            const el = document.getElementById('admin-books-list'); 
+            if (!el) return;
+            
+            if (!booksData.length) { 
+                el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Книг пока нет</div>'; 
+                return; 
+            }
+            
+            el.innerHTML = booksData.map(book => `
+                <div class="admin-item">
+                    ${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(book.title)}</div>
+                        <div class="admin-item-sub">${escapeHtml(book.author || 'Неизвестен')} · ${getChapters(book).length} гл.</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editBook('${book.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="deleteBook('${book.id}')">🗑</button>
+                    </div>
+                </div>`).join('');
         }
+        
         window.editBook = function(id) {
-            const book = booksData.find(b => b.id === id); if (!book) return;
-            editingBookId = id; document.getElementById('book-title').value = book.title || ''; document.getElementById('book-author').value = book.author || ''; document.getElementById('book-cover').value = book.coverImage || ''; document.getElementById('book-genre').value = book.genre || '';
-            document.getElementById('book-form-heading').textContent = 'Редактировать книгу'; document.getElementById('btn-add-book').textContent = 'Сохранить изменения'; document.getElementById('btn-cancel-edit-book').classList.remove('hidden'); document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
+            const book = booksData.find(b => b.id === id); 
+            if (!book) return;
+            
+            editingBookId = id; 
+            document.getElementById('book-title').value = book.title || ''; 
+            document.getElementById('book-author').value = book.author || ''; 
+            document.getElementById('book-cover').value = book.coverImage || ''; 
+            document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-form-heading').textContent = 'Редактировать книгу'; 
+            document.getElementById('btn-add-book').textContent = 'Сохранить изменения'; 
+            document.getElementById('btn-cancel-edit-book').classList.remove('hidden'); 
+            document.getElementById('book-title').scrollIntoView({ behavior: 'smooth' });
         };
+        
         document.getElementById('btn-cancel-edit-book').onclick = function() {
-            editingBookId = null; document.getElementById('book-title').value = ''; document.getElementById('book-author').value = ''; document.getElementById('book-cover').value = ''; document.getElementById('book-genre').value = '';
-            document.getElementById('book-form-heading').textContent = 'Добавить книгу'; document.getElementById('btn-add-book').textContent = 'Добавить книгу'; document.getElementById('btn-cancel-edit-book').classList.add('hidden');
+            editingBookId = null; 
+            document.getElementById('book-title').value = ''; 
+            document.getElementById('book-author').value = ''; 
+            document.getElementById('book-cover').value = ''; 
+            document.getElementById('book-genre').value = '';
+            document.getElementById('book-form-heading').textContent = 'Добавить книгу'; 
+            document.getElementById('btn-add-book').textContent = 'Добавить книгу'; 
+            document.getElementById('btn-cancel-edit-book').classList.add('hidden');
         };
+
+        // ИЗМЕНЕННАЯ ФУНКЦИЯ УДАЛЕНИЯ КНИГИ С ГАРАНТИЕЙ УДАЛЕНИЯ ИЗ FIREBASE
+        window.deleteBook = function(id) {
+            tg.showConfirm('Удалить книгу безвозвратно прямо из базы Firebase? Все главы будут стерты.', (ok) => {
+                if (ok) {
+                    remove(ref(db, 'books/' + id))
+                        .then(() => {
+                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                            tg.showPopup({ title: 'Готово', message: 'Книга успешно стёрта из базы', buttons: [{ type: 'ok' }] });
+                        })
+                        .catch(err => tg.showAlert('Ошибка удаления из Firebase: ' + friendlyDbError(err)));
+                }
+            });
+        };
+
         document.getElementById('btn-add-book').onclick = function() {
-            if (!document.getElementById('book-title').value.trim()) return tg.showAlert('Укажи название книги');
-            const data = { title: document.getElementById('book-title').value.trim(), author: document.getElementById('book-author').value.trim() || 'Неизвестен', coverImage: document.getElementById('book-cover').value.trim(), genre: document.getElementById('book-genre').value.trim() };
-            if (editingBookId) { update(ref(db, 'books/' + editingBookId), data).then(() => { document.getElementById('btn-cancel-edit-book').click(); tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); }); } 
-            else { push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then(() => { document.getElementById('btn-cancel-edit-book').click(); tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); }); }
+            const title = document.getElementById('book-title').value.trim();
+            if (!title) return tg.showAlert('Укажи название книги');
+            
+            const data = { 
+                title: title, 
+                author: document.getElementById('book-author').value.trim() || 'Неизвестен', 
+                coverImage: document.getElementById('book-cover').value.trim(), 
+                genre: document.getElementById('book-genre').value.trim() 
+            };
+            
+            if (editingBookId) { 
+                update(ref(db, 'books/' + editingBookId), data).then(() => { 
+                    document.getElementById('btn-cancel-edit-book').click(); 
+                    tg.showPopup({ title: 'Сохранено', message: 'Книга обновлена', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err))); 
+            } else { 
+                push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then(() => { 
+                    document.getElementById('btn-cancel-edit-book').click(); 
+                    tg.showPopup({ title: 'Добавлено!', message: 'Теперь добавьте главы книги ниже', buttons: [{ type: 'ok' }] }); 
+                }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err))); 
+            }
         };
 
         document.getElementById('chapter-book-select').addEventListener('change', renderAdminChaptersList);
+        
         function renderAdminChaptersList() {
-            const bookId = document.getElementById('chapter-book-select').value, container = document.getElementById('admin-chapters-list');
-            if (!bookId) { container.innerHTML = ''; return; }
-            const book = booksData.find(b => b.id === bookId); if (!book) { container.innerHTML = ''; return; }
-            const chapters = getChapters(book); if (!chapters.length) { container.innerHTML = '<div style="color:#7f8c8d;font-size:12px; margin-bottom: 12px;">В этой книге пока нет глав</div>'; return; }
-            container.innerHTML = chapters.map((ch, idx) => `<div class="admin-item" style="padding: 10px; min-height: auto; margin-bottom: 6px;">
-                    <div class="admin-item-info"><div class="admin-item-title" style="font-size: 13px;">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div></div>
-                    <div class="admin-item-actions"><button class="icon-btn danger" style="width:30px;height:30px;font-size:12px;" onclick="if(confirm('Удалить главу?')) remove(ref(db, 'books/${bookId}/${ch.id === 'legacy' ? 'text' : 'chapters/' + ch.id}'))">🗑</button></div></div>`).join('') + '<div style="margin-bottom:12px;"></div>';
+            const bookId = document.getElementById('chapter-book-select').value;
+            const container = document.getElementById('admin-chapters-list');
+            
+            if (!bookId) { 
+                container.innerHTML = ''; 
+                return; 
+            }
+            
+            const book = booksData.find(b => b.id === bookId); 
+            if (!book) { 
+                container.innerHTML = ''; 
+                return; 
+            }
+            
+            const chapters = getChapters(book); 
+            if (!chapters.length) { 
+                container.innerHTML = '<div style="color:#7f8c8d;font-size:12px; margin-bottom: 12px;">В этой книге пока нет глав</div>'; 
+                return; 
+            }
+            
+            container.innerHTML = chapters.map((ch, idx) => `
+                <div class="admin-item" style="padding: 10px; min-height: auto; margin-bottom: 6px;">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title" style="font-size: 13px;">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn danger" style="width:30px;height:30px;font-size:12px;" onclick="deleteChapter('${bookId}', '${ch.id}')">🗑</button>
+                    </div>
+                </div>
+            `).join('') + '<div style="margin-bottom:12px;"></div>';
         }
+
+        window.deleteChapter = function(bookId, chapterId) {
+            tg.showConfirm('Удалить эту главу из Firebase?', (ok) => {
+                if (ok) {
+                    let refPath = `books/${bookId}/chapters/${chapterId}`;
+                    if (chapterId === 'legacy') refPath = `books/${bookId}/text`;
+                    
+                    remove(ref(db, refPath))
+                        .then(() => {
+                            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        })
+                        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                }
+            });
+        };
+
         function populateChapterBookSelect() {
-            const sel = document.getElementById('chapter-book-select'); if (!sel) return;
-            const prevVal = sel.value; sel.innerHTML = booksData.length ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('') : '<option value="">Сначала добавьте книгу</option>';
-            if (booksData.some(b => b.id === prevVal)) sel.value = prevVal; else if (booksData.length > 0) sel.value = booksData[0].id; renderAdminChaptersList();
+            const sel = document.getElementById('chapter-book-select'); 
+            if (!sel) return;
+            
+            const prevVal = sel.value; 
+            sel.innerHTML = booksData.length 
+                ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('') 
+                : '<option value="">Сначала добавьте книгу</option>';
+                
+            if (booksData.some(b => b.id === prevVal)) {
+                sel.value = prevVal; 
+            } else if (booksData.length > 0) {
+                sel.value = booksData[0].id; 
+            }
+            
+            renderAdminChaptersList();
         }
+        
         document.getElementById('btn-add-chapter').onclick = function() {
             const bookId = document.getElementById('chapter-book-select').value;
-            if (!bookId) return tg.showAlert('Сначала добавьте книгу'); if (!document.getElementById('chapter-text').value.trim()) return tg.showAlert('Введите текст главы');
-            push(ref(db, 'books/' + bookId + '/chapters'), { title: document.getElementById('chapter-title').value.trim() || '', text: document.getElementById('chapter-text').value.trim(), createdAt: Date.now() }).then(() => { document.getElementById('chapter-title').value = ''; document.getElementById('chapter-text').value = ''; tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] }); });
+            const text = document.getElementById('chapter-text').value.trim();
+            const title = document.getElementById('chapter-title').value.trim() || '';
+            
+            if (!bookId) return tg.showAlert('Сначала добавьте книгу'); 
+            if (!text) return tg.showAlert('Введите текст главы');
+            
+            push(ref(db, 'books/' + bookId + '/chapters'), { 
+                title: title, 
+                text: text, 
+                createdAt: Date.now() 
+            }).then(() => { 
+                document.getElementById('chapter-title').value = ''; 
+                document.getElementById('chapter-text').value = ''; 
+                tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] }); 
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
+        
     </script>
 </body>
 </html>
