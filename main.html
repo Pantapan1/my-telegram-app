@@ -7,89 +7,102 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :focus-visible { outline: 2px solid #0a84ff; outline-offset: 2px; }
+        :focus-visible { outline: 2px solid #ff9f0a; outline-offset: 2px; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0f0f0f;
-            color: #ffffff;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%);
+            background-attachment: fixed;
+            color: #2c3e50;
             padding-bottom: 110px;
+            min-height: 100vh;
         }
 
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
 
         .header { padding: 20px 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
-        .header p { color: #8e8e93; font-size: 14px; }
+        .header h1 { font-size: 30px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; color: #2c3e50; }
+        .header p { color: #7f8c8d; font-size: 14px; }
 
         .fab-row { display: flex; gap: 8px; flex-shrink: 0; }
         .icon-btn-refresh {
-            width: 46px; height: 46px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08);
-            background: #1c1c1e; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; transition: transform .15s;
+            width: 46px; height: 46px; border-radius: 18px; border: 1px solid rgba(0,0,0,0.05);
+            background: #ffffff; color: #2c3e50; font-size: 18px; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; transition: all .2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
+        .icon-btn-refresh:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
         .icon-btn-refresh:active { transform: scale(0.9) rotate(15deg); }
 
         .card {
-            background: #1c1c1e;
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
             padding: 16px;
             margin-bottom: 14px;
-            transition: transform .15s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            transition: all .3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .card.tappable { cursor: pointer; }
-        .card.tappable:active { transform: scale(0.98); }
+        .card.tappable:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
+        .card.tappable:active { transform: scale(0.97); }
 
         .card-image {
-            width: 100%; height: 180px; object-fit: cover; border-radius: 14px; margin-bottom: 12px;
-            background: #2c2c2e;
+            width: 100%; height: 180px; object-fit: cover; border-radius: 18px; margin-bottom: 12px;
+            background: #e0e0e0;
         }
 
         .cover-fallback {
-            width: 100%; height: 180px; border-radius: 14px; margin-bottom: 12px;
+            width: 100%; height: 180px; border-radius: 18px; margin-bottom: 12px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 52px; font-weight: 800; color: rgba(255,255,255,0.92);
+            font-size: 52px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .cover-fallback.small { height: 100%; border-radius: 8px; font-size: 20px; }
+        .cover-fallback.small { height: 100%; border-radius: 12px; font-size: 20px; }
 
-        .card-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
-        .card-subtitle { font-size: 13px; color: #8e8e93; margin-bottom: 10px; }
-        .card-text { font-size: 15px; line-height: 1.5; color: #d1d1d6; }
+        .card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; color: #2c3e50; }
+        .card-subtitle { font-size: 14px; color: #7f8c8d; margin-bottom: 10px; }
+        .card-text { font-size: 15px; line-height: 1.6; color: #4a4a4a; }
         .card-text.clamp {
             display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
         }
-        .card-meta { font-size: 12px; color: #636366; margin-top: 10px; }
+        .card-meta { font-size: 12px; color: #95a5a6; margin-top: 10px; }
 
         .badge {
             display: inline-block;
-            padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
-            margin-top: 10px; margin-right: 6px;
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            margin-top: 10px; margin-right: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
-        .badge-read { background: rgba(48, 209, 88, 0.16); color: #30d158; }
-        .badge-bookmark { background: rgba(10, 132, 255, 0.16); color: #0a84ff; }
+        .badge-read { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-bookmark { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
         .genre-tag {
-            display: inline-block; padding: 3px 10px; border-radius: 10px;
-            background: rgba(255,159,10,0.16); color: #ff9f0a; font-size: 11px; font-weight: 700;
-            margin-bottom: 8px; letter-spacing: 0.2px;
+            display: inline-block; padding: 4px 12px; border-radius: 12px;
+            background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2;
+            font-size: 12px; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
         .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 14px;
-            background: #0a84ff; color: #fff;
-            font-size: 16px; font-weight: 700; cursor: pointer;
-            margin-top: 12px; transition: transform .1s, opacity .1s;
+            width: 100%; padding: 16px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
+            color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 12px; transition: all .2s ease;
+            box-shadow: 0 4px 14px rgba(237, 143, 3, 0.3);
         }
+        .btn:hover { box-shadow: 0 6px 20px rgba(237, 143, 3, 0.4); transform: translateY(-1px); }
         .btn:active { transform: scale(0.97); }
-        .btn-secondary { background: #1c1c1e; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-        .btn-danger { background: rgba(255,69,58,0.16); color: #ff453a; }
-        .btn:disabled { opacity: 0.35; pointer-events: none; }
+        .btn-secondary { background: #ffffff; color: #2c3e50; border: 1px solid #dfe6e9; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .btn-danger { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .btn:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
 
         .input {
-            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            background: #0f0f0f; color: #fff; font-size: 15px; margin-bottom: 12px;
+            width: 100%; padding: 16px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.08);
+            background: #ffffff; color: #333; font-size: 15px; margin-bottom: 12px;
+            transition: all .2s ease; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
         }
-        .input::placeholder { color: #636366; }
+        .input:focus { border-color: #ff9f0a; outline: none; box-shadow: 0 0 0 3px rgba(255,159,10,0.2); }
+        .input::placeholder { color: #95a5a6; }
         textarea.input { min-height: 100px; resize: vertical; }
 
         .top-search { display: flex; gap: 8px; margin-bottom: 16px; }
@@ -97,31 +110,35 @@
 
         .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
         .chip {
-            padding: 8px 14px; border-radius: 20px; background: #1c1c1e;
-            border: 1px solid rgba(255,255,255,0.08); color: #8e8e93; font-size: 13px; font-weight: 600;
-            cursor: pointer; white-space: nowrap; transition: all .15s;
+            padding: 8px 16px; border-radius: 20px; background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.06); color: #555; font-size: 13px; font-weight: 600;
+            cursor: pointer; white-space: nowrap; transition: all .2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .chip.active { background: #0a84ff; color: #fff; border-color: #0a84ff; }
+        .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .chip.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
         .tab-mini { display: flex; gap: 8px; margin-bottom: 20px; }
         .tab-mini-btn {
-            flex: 1; padding: 11px; border-radius: 12px; background: #0f0f0f;
-            border: 1px solid rgba(255,255,255,0.08); color: #8e8e93; font-size: 13px; font-weight: 700;
-            cursor: pointer; text-align: center; transition: all .15s;
+            flex: 1; padding: 12px; border-radius: 16px; background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.05); color: #7f8c8d; font-size: 14px; font-weight: 700;
+            cursor: pointer; text-align: center; transition: all .2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .tab-mini-btn.active { background: #0a84ff; color: #fff; border-color: #0a84ff; }
+        .tab-mini-btn.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
         /* Загрузка картинок с устройства */
         .image-field-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
         .image-field-row .input { margin-bottom: 0; flex: 1; }
         .upload-btn {
-            width: 48px; height: 48px; border-radius: 12px; background: #1c1c1e;
-            border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
-            font-size: 18px; cursor: pointer; flex-shrink: 0; transition: transform .1s, opacity .1s;
+            width: 52px; height: 52px; border-radius: 16px; background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; flex-shrink: 0; transition: all .2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
         .upload-btn:active { transform: scale(0.9); }
         .upload-btn.uploading { opacity: 0.5; pointer-events: none; }
-        .image-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 12px; margin: -4px 0 12px; display: none; }
+        .image-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 16px; margin: -4px 0 12px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .image-preview.show { display: block; }
 
         /* === ЯКОРНАЯ НАВИГАЦИЯ (ВСЕГДА ВИДНА) === */
@@ -130,206 +147,260 @@
             bottom: 0 !important;
             left: 0 !important;
             right: 0 !important;
-            background: rgba(28, 28, 30, 0.98) !important;
+            background: rgba(255, 255, 255, 0.9) !important;
             backdrop-filter: blur(20px) !important;
             -webkit-backdrop-filter: blur(20px) !important;
-            border-top: 1px solid rgba(255,255,255,0.1) !important;
+            border-top: none !important;
             display: flex !important;
             justify-content: space-around !important;
-            padding: 10px 0 24px !important;
+            padding: 12px 0 24px !important;
             z-index: 9999 !important;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.3) !important;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.06) !important;
         }
 
         .nav-btn {
             background: none !important;
             border: none !important;
-            color: #8e8e93 !important;
-            font-size: 10.5px !important;
-            font-weight: 500 !important;
+            color: #95a5a6 !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
             cursor: pointer !important;
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
-            gap: 4px !important;
+            gap: 6px !important;
             padding: 8px 10px !important;
             flex: 1 !important;
             position: relative !important;
-            transition: color .15s, transform .1s !important;
+            transition: all .2s ease !important;
         }
         .nav-btn:active { transform: scale(0.92) !important; }
 
-        .nav-btn .icon { font-size: 21px !important; position: relative; }
-        .nav-btn.active { color: #0a84ff !important; }
+        .nav-btn .icon { font-size: 24px !important; position: relative; transition: transform 0.2s; }
+        .nav-btn.active { color: #ff9f0a !important; }
+        .nav-btn.active .icon { transform: translateY(-2px); }
         .nav-badge {
-            position: absolute; top: -2px; right: -6px; width: 9px; height: 9px;
-            border-radius: 50%; background: #ff453a; border: 2px solid #1c1c1e;
+            position: absolute; top: -2px; right: -6px; width: 10px; height: 10px;
+            border-radius: 50%; background: #ff453a; border: 2px solid #fff;
         }
 
-        /* СЕКЦИИ */
+        /* СЕКЦИИ И АНИМАЦИИ */
         .section { display: none; }
-        .section.active { display: block; }
+        .section.active { display: block; animation: slideUpFade 0.4s ease forwards; }
+        
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         /* ОВЕРЛЕИ (читалка / пост / чат / компоузер) */
         .reader-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: #0f0f0f; z-index: 10000;
+            background: #fdfbf7; z-index: 10000;
             display: none; flex-direction: column;
         }
-        .reader-overlay.active { display: flex; }
+        .reader-overlay.active { display: flex; animation: slideUpFade 0.3s ease forwards; }
 
         .reader-header {
-            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: #ffffff;
             display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
         .reader-content {
             flex: 1; overflow-y: auto; padding: 22px 20px 40px;
             font-size: 18px; line-height: 1.7; white-space: pre-wrap;
+            color: #333;
         }
         .reader-actions {
-            padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; gap: 8px; background: #1c1c1e; flex-shrink: 0;
+            padding: 16px; border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex; gap: 10px; background: #ffffff; flex-shrink: 0;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.03);
         }
 
         .progress-outer {
-            height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08);
+            height: 6px; border-radius: 4px; background: #e0e0e0;
             margin: 0 16px 12px; overflow: hidden; flex-shrink: 0;
         }
-        .progress-inner { height: 100%; background: #30d158; border-radius: 3px; transition: width .3s; }
+        .progress-inner { height: 100%; background: #30d158; border-radius: 4px; transition: width .3s ease; }
 
         .font-size-controls { display: flex; gap: 6px; flex-shrink: 0; }
         .font-size-btn {
-            width: 32px; height: 32px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.1);
-            background: #1c1c1e; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+            width: 36px; height: 36px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05);
+            background: #f0f0f0; color: #333; font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: all .2s;
         }
+        .font-size-btn:active { background: #e0e0e0; transform: scale(0.95); }
 
         .chapter-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 16px; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: transform .1s;
+            padding: 16px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04);
+            border-radius: 18px; margin-bottom: 10px; cursor: pointer; transition: all .2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
+        .chapter-item:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
         .chapter-item:active { transform: scale(0.98); }
-        .chapter-item.is-read { opacity: 0.55; }
-        .chapter-item-title { font-size: 15px; font-weight: 600; }
-        .chapter-item-check { color: #30d158; font-size: 16px; }
+        .chapter-item.is-read { opacity: 0.6; background: #fafafa; }
+        .chapter-item-title { font-size: 16px; font-weight: 600; color: #2c3e50; }
+        .chapter-item-check { color: #30d158; font-size: 18px; }
 
         /* Реакции и комментарии */
-        .reaction-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .reaction-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
         .reaction-btn {
-            display: flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 20px;
-            background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08); color: #8e8e93;
-            font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+            display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px;
+            background: #ffffff; border: 1px solid rgba(0,0,0,0.06); color: #555;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .reaction-btn.mine { background: rgba(10,132,255,0.16); border-color: #0a84ff; color: #0a84ff; }
+        .reaction-btn.mine { background: #fff3e0; border-color: #ff9f0a; color: #e65100; }
+        .reaction-btn:hover { transform: translateY(-2px); }
         .reaction-btn:active { transform: scale(0.92); }
 
         .comment-count-btn {
-            display: flex; align-items: center; gap: 6px; color: #8e8e93; font-size: 13px;
+            display: flex; align-items: center; gap: 6px; color: #7f8c8d; font-size: 14px;
             margin-top: 14px; background: none; border: none; cursor: pointer; font-weight: 600;
         }
 
-        .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
-        .comments-title { font-size: 14px; font-weight: 700; color: #8e8e93; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .comment-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .comment-item:last-child { border-bottom: none; }
-        .comment-author { font-weight: 700; font-size: 14px; }
-        .comment-meta { font-size: 11px; color: #636366; margin-left: 8px; font-weight: 400; }
-        .comment-text { font-size: 14.5px; line-height: 1.5; color: #e5e5e7; margin-top: 3px; }
-        .comment-delete { color: #ff453a; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 5px; font-weight: 600; padding: 0; }
+        .comments-block { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.06); }
+        .comments-title { font-size: 15px; font-weight: 800; color: #2c3e50; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .comment-item { padding: 14px 16px; background: #ffffff; border-radius: 20px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .comment-author { font-weight: 700; font-size: 15px; color: #2c3e50; }
+        .comment-meta { font-size: 12px; color: #95a5a6; margin-left: 8px; font-weight: 500; }
+        .comment-text { font-size: 15px; line-height: 1.5; color: #4a4a4a; margin-top: 6px; }
+        .comment-delete { color: #e74c3c; font-size: 13px; background: none; border: none; cursor: pointer; margin-top: 8px; font-weight: 600; padding: 0; }
 
         /* Автор поста */
-        .avatar-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #2c2c2e; }
-        .avatar-sm-fallback { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
-        .post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; cursor: pointer; width: fit-content; }
-        .post-author-name { font-size: 13px; font-weight: 700; color: #d1d1d6; }
+        .avatar-sm { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .avatar-sm-fallback { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .post-author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; width: fit-content; }
+        .post-author-name { font-size: 14px; font-weight: 700; color: #2c3e50; }
 
         /* Админка */
         .admin-item {
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-            background: #0f0f0f; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            background: #ffffff; border: 1px solid rgba(0,0,0,0.05); border-radius: 18px; margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .admin-item-thumb { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; background: #2c2c2e; flex-shrink: 0; }
+        .admin-item-thumb { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; background: #e0e0e0; flex-shrink: 0; }
         .admin-item-info { flex: 1; min-width: 0; }
-        .admin-item-title { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .admin-item-sub { font-size: 12px; color: #8e8e93; margin-top: 1px; }
-        .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
-        .icon-btn { width: 36px; height: 36px; border-radius: 9px; border: none; background: #2c2c2e; color: #fff; font-size: 15px; cursor: pointer; }
-        .icon-btn.danger { background: rgba(255,69,58,0.14); color: #ff453a; }
+        .admin-item-title { font-size: 15px; font-weight: 700; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .admin-item-sub { font-size: 13px; color: #7f8c8d; margin-top: 2px; }
+        .admin-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #f4f6f7; color: #2c3e50; font-size: 16px; cursor: pointer; transition: all .2s; }
+        .icon-btn.danger { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
         .icon-btn:active { transform: scale(0.9); }
 
         /* Профиль */
-        .profile-banner-wrap { position: relative; margin-bottom: 46px; }
-        .profile-banner { width: 100%; height: 120px; border-radius: 18px; object-fit: cover; display: none; }
-        .profile-banner-fallback { width: 100%; height: 120px; border-radius: 18px; }
-        .profile-avatar-wrap { position: absolute; left: 16px; bottom: -34px; }
-        .profile-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 4px solid #0f0f0f; background: #2c2c2e; display: none; }
-        .profile-avatar-fallback { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #0f0f0f; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #fff; }
-        .profile-name-row h2 { font-size: 21px; font-weight: 800; margin-bottom: 4px; }
-        .profile-bio { font-size: 13.5px; color: #8e8e93; margin-bottom: 4px; min-height: 4px; }
+        .profile-banner-wrap { position: relative; margin-bottom: 52px; }
+        .profile-banner { width: 100%; height: 140px; border-radius: 24px; object-fit: cover; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+        .profile-banner-fallback { width: 100%; height: 140px; border-radius: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+        .profile-avatar-wrap { position: absolute; left: 20px; bottom: -40px; }
+        .profile-avatar { width: 86px; height: 86px; border-radius: 50%; object-fit: cover; border: 5px solid #f4f7f6; background: #e0e0e0; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .profile-avatar-fallback { width: 86px; height: 86px; border-radius: 50%; border: 5px solid #f4f7f6; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .profile-name-row h2 { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: #2c3e50; }
+        .profile-bio { font-size: 15px; color: #7f8c8d; margin-bottom: 8px; min-height: 4px; line-height: 1.5; }
 
-        .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 22px 10px; }
-        .stats-num { font-size: 26px; font-weight: 800; }
-        .stats-label { font-size: 12px; color: #8e8e93; margin-top: 4px; }
-        .stats-divider { width: 1px; background: rgba(255,255,255,0.1); }
-        .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; }
+        .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 24px 12px; }
+        .stats-num { font-size: 28px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stats-label { font-size: 13px; font-weight: 600; color: #7f8c8d; margin-top: 6px; }
+        .stats-divider { width: 1px; background: rgba(0,0,0,0.06); }
+        .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 15px; font-weight: 500; color: #2c3e50; }
         .genre-stat-row:last-child { border-bottom: none; }
 
         /* Чаты */
-        .chat-list-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: transform .1s; }
-        .chat-list-item:active { transform: scale(0.98); }
+        .chat-list-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffffff; border: 1px solid rgba(0,0,0,0.04); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: all .2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .chat-list-item:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.04); }
+        .chat-list-item:active { transform: scale(0.97); }
         .chat-avatar-wrap { position: relative; flex-shrink: 0; }
-        .chat-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #2c2c2e; }
-        .chat-avatar-fallback { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; }
-        .mood-badge { position: absolute; bottom: -2px; right: -2px; font-size: 15px; background: #1c1c1e; border-radius: 50%; padding: 1px; }
+        .chat-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .chat-avatar-fallback { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .mood-badge { position: absolute; bottom: -2px; right: -2px; font-size: 16px; background: #ffffff; border-radius: 50%; padding: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .chat-info { flex: 1; min-width: 0; }
         .chat-info-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-        .chat-name { font-size: 15px; font-weight: 700; }
-        .chat-time { font-size: 11px; color: #636366; flex-shrink: 0; }
-        .chat-preview { font-size: 13px; color: #8e8e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-        .chat-unread-dot { width: 9px; height: 9px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; }
-        .online-dot-text { font-size: 12px; color: #8e8e93; }
+        .chat-name { font-size: 16px; font-weight: 700; color: #2c3e50; }
+        .chat-time { font-size: 12px; font-weight: 600; color: #95a5a6; flex-shrink: 0; }
+        .chat-preview { font-size: 14px; color: #7f8c8d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+        .chat-unread-dot { width: 10px; height: 10px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; box-shadow: 0 0 8px rgba(10,132,255,0.4); }
+        .online-dot-text { font-size: 13px; font-weight: 500; color: #16a085; }
 
-        .user-pick-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; cursor: pointer; transition: background .1s; }
-        .user-pick-item:active { background: rgba(255,255,255,0.05); }
+        .user-pick-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #ffffff; border-radius: 18px; margin-bottom: 8px; border: 1px solid rgba(0,0,0,0.04); cursor: pointer; transition: all .2s; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .user-pick-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
         .chat-quote-watermark {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             padding: 50px 34px; text-align: center; font-family: Georgia, 'Times New Roman', serif; font-style: italic;
-            font-size: 21px; line-height: 1.55; color: rgba(255,255,255,0.055); pointer-events: none; z-index: 0;
+            font-size: 24px; line-height: 1.55; color: rgba(0,0,0,0.03); pointer-events: none; z-index: 0;
         }
-        .chat-messages-list { position: relative; z-index: 1; }
-        .msg-row { display: flex; margin-bottom: 14px; }
+        
+        .chat-messages-list { position: relative; z-index: 1; padding-top: 10px; }
+        .msg-row { display: flex; margin-bottom: 16px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
-        .msg-bubble { max-width: 76%; padding: 10px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.45; position: relative; }
-        .msg-row:not(.mine) .msg-bubble { background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06); border-bottom-left-radius: 4px; }
-        .msg-row.mine .msg-bubble { background: #0a84ff; color: #fff; border-bottom-right-radius: 4px; }
-        .msg-time { font-size: 10px; opacity: 0.6; margin-top: 4px; display: block; text-align: right; }
-        .msg-pin-btn { position: absolute; top: -9px; right: -6px; background: #2c2c2e; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 22px; height: 22px; font-size: 11px; cursor: pointer; color: #ff9f0a; line-height: 1; }
+        
+        /* ЗАКРУГЛЕННЫЕ И ПРИЯТНЫЕ СООБЩЕНИЯ (ИСПРАВЛЕННЫЕ) */
+        .msg-bubble { 
+            max-width: 80%; width: fit-content; height: fit-content; padding: 10px 14px; border-radius: 20px; 
+            font-size: 15.5px; line-height: 1.4; position: relative; 
+            word-wrap: break-word; box-shadow: 0 4px 14px rgba(0,0,0,0.05); text-align: left;
+        }
+        .msg-row:not(.mine) .msg-bubble { 
+            background: #ffffff; color: #333; 
+            border-bottom-left-radius: 6px; 
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .msg-row.mine .msg-bubble { 
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); 
+            color: #fff; 
+            border-bottom-right-radius: 6px; 
+            border: none;
+        }
+        
+        .msg-time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; text-align: right; font-weight: 600; }
+        .msg-pin-btn { position: absolute; top: -10px; right: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; color: #ff9f0a; line-height: 1; transition: transform .2s; }
+        .msg-pin-btn:hover { transform: scale(1.1); }
 
-        .pinned-quote-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(255,159,10,0.08); border-bottom: 1px solid rgba(255,159,10,0.15); font-size: 12.5px; color: #ff9f0a; flex-shrink: 0; }
-        .pinned-quote-bar span.text { flex: 1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pinned-quote-bar button { background: none; border: none; color: #ff9f0a; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+        @keyframes msgPopIn {
+            0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
-        .chat-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); background: #1c1c1e; flex-shrink: 0; }
-        .chat-input-row input { flex: 1; margin-bottom: 0 !important; }
-        .chat-send-btn { width: 48px; height: 48px; border-radius: 12px; border: none; background: #0a84ff; color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+        .pinned-quote-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #fff3e0; border-bottom: 1px solid #ffe0b2; font-size: 13.5px; color: #e65100; flex-shrink: 0; box-shadow: 0 2px 10px rgba(230,81,0,0.05); z-index: 2;}
+        .pinned-quote-bar span.text { flex: 1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .pinned-quote-bar button { background: none; border: none; color: #e65100; cursor: pointer; font-size: 16px; flex-shrink: 0; font-weight: 700; transition: transform .2s; }
+        .pinned-quote-bar button:active { transform: scale(0.8); }
+
+        .chat-input-row { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid rgba(0,0,0,0.05); background: #ffffff; flex-shrink: 0; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); z-index: 2;}
+        .chat-input-row input { flex: 1; margin-bottom: 0 !important; background: #f4f6f7; border-color: transparent; }
+        .chat-send-btn { width: 52px; height: 52px; border-radius: 20px; border: none; background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 20px; cursor: pointer; flex-shrink: 0; transition: all .2s; box-shadow: 0 4px 12px rgba(237, 143, 3, 0.3); }
         .chat-send-btn:active { transform: scale(0.9); }
 
         /* Пустые состояния и скелетоны */
-        .empty-state { text-align: center; padding: 60px 20px; color: #8e8e93; }
-        .empty-state .icon { font-size: 46px; margin-bottom: 14px; display: block; }
-        .empty-state .title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-        .empty-state .sub { font-size: 13px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #7f8c8d; }
+        .empty-state .icon { font-size: 52px; margin-bottom: 16px; display: block; animation: float 3s ease-in-out infinite; }
+        .empty-state .title { font-size: 18px; font-weight: 800; color: #2c3e50; margin-bottom: 8px; }
+        .empty-state .sub { font-size: 14px; line-height: 1.5; }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
 
         .skeleton {
-            background: linear-gradient(90deg, #1c1c1e 25%, #2c2c2e 37%, #1c1c1e 63%);
+            background: linear-gradient(90deg, #ffffff 25%, #f0f0f0 37%, #ffffff 63%);
             background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite;
-            border-radius: 18px; height: 210px; margin-bottom: 14px;
+            border-radius: 24px; height: 210px; margin-bottom: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.03);
         }
         @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
         .hidden { display: none !important; }
-        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 22px 0; }
+        .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 24px 0; }
+        
+        /* Красивые скроллбары под летний стиль */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -386,7 +457,7 @@
                     <p>Общение с читателями</p>
                 </div>
                 <div class="fab-row">
-                    <button class="icon-btn-refresh" id="btn-new-chat" title="Новый чат">➕</button>
+                    <button class="icon-btn-refresh" id="btn-new-chat" title="Новый чат" style="background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; border:none; box-shadow: 0 4px 12px rgba(237, 143, 3, 0.3);">➕</button>
                 </div>
             </div>
             <div id="chats-container"><div class="empty-state"><span class="icon">💬</span><div class="title">Загрузка...</div></div></div>
@@ -440,34 +511,34 @@
 
             <div class="card stats-grid">
                 <div>
-                    <div class="stats-num" style="color:#30d158;" id="stats-read">0</div>
+                    <div class="stats-num" style="color:#2e7d32;" id="stats-read">0</div>
                     <div class="stats-label">Прочитано</div>
                 </div>
                 <div class="stats-divider"></div>
                 <div>
-                    <div class="stats-num" style="color:#0a84ff;" id="stats-bookmarks">0</div>
+                    <div class="stats-num" style="color:#1565c0;" id="stats-bookmarks">0</div>
                     <div class="stats-label">Закладки</div>
                 </div>
                 <div class="stats-divider"></div>
                 <div>
-                    <div class="stats-num" style="color:#ff9f0a;" id="stats-streak">0</div>
+                    <div class="stats-num" style="color:#e65100;" id="stats-streak">0</div>
                     <div class="stats-label">Дней подряд</div>
                 </div>
             </div>
-            <div class="card stats-grid" style="padding:16px 10px;">
+            <div class="card stats-grid" style="padding:20px 12px;">
                 <div>
-                    <div class="stats-num" style="color:#bf5af2;font-size:20px;" id="stats-posts">0</div>
+                    <div class="stats-num" style="color:#8e44ad;font-size:24px;" id="stats-posts">0</div>
                     <div class="stats-label">Постов</div>
                 </div>
                 <div class="stats-divider"></div>
                 <div>
-                    <div class="stats-num" style="color:#64d2ff;font-size:20px;" id="stats-chats">0</div>
+                    <div class="stats-num" style="color:#0097e6;font-size:24px;" id="stats-chats">0</div>
                     <div class="stats-label">Чатов</div>
                 </div>
             </div>
 
             <div class="card" id="genre-stats-card" style="display:none;">
-                <div class="comments-title" style="margin-bottom:4px;">По жанрам</div>
+                <div class="comments-title" style="margin-bottom:8px;">По жанрам</div>
                 <div id="genre-stats-container"></div>
             </div>
 
@@ -483,7 +554,7 @@
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
                 <div id="admin-tab-posts">
-                    <h3 style="margin-bottom:16px;" id="post-form-heading">Добавить новость</h3>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;" id="post-form-heading">Добавить новость</h3>
                     <input type="text" id="post-title" class="input" placeholder="Заголовок">
                     <div class="image-field-row">
                         <input type="text" id="post-img" class="input" placeholder="Ссылка на картинку">
@@ -495,13 +566,13 @@
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-post">Отменить редактирование</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px;">Управление новостями</h3>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление новостями</h3>
                     <div id="admin-posts-list"></div>
                 </div>
 
                 <!-- ВКЛАДКА: КНИГИ -->
                 <div id="admin-tab-books" class="hidden">
-                    <h3 style="margin-bottom:16px;" id="book-form-heading">Добавить книгу</h3>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;" id="book-form-heading">Добавить книгу</h3>
                     <input type="text" id="book-title" class="input" placeholder="Название">
                     <input type="text" id="book-author" class="input" placeholder="Автор">
                     <div class="image-field-row">
@@ -514,14 +585,14 @@
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px;">Добавить главу</h3>
-                    <select id="chapter-book-select" class="input"></select>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Добавить главу</h3>
+                    <select id="chapter-book-select" class="input" style="appearance: none;"></select>
                     <input type="text" id="chapter-title" class="input" placeholder="Название главы">
                     <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
                     <button class="btn" id="btn-add-chapter">Добавить главу</button>
 
                     <div class="divider"></div>
-                    <h3 style="margin-bottom:16px;">Управление книгами</h3>
+                    <h3 style="margin-bottom:16px; color:#2c3e50;">Управление книгами</h3>
                     <div id="admin-books-list"></div>
                 </div>
             </div>
@@ -531,14 +602,14 @@
     <!-- ОВЕРЛЕЙ ПОСТА (детали + реакции + комментарии) -->
     <div id="post-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-post-btn">← Назад</button>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-post-btn">← Назад</button>
             <div style="flex:1;min-width:0;">
-                <div id="post-overlay-title" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="post-overlay-title" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color:#2c3e50; font-size:18px;"></div>
             </div>
         </div>
         <div class="reader-content" id="post-overlay-content" style="white-space:normal;"></div>
         <div class="reader-actions" style="flex-direction:column;align-items:stretch;">
-            <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:8px;min-height:44px;"></textarea>
+            <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:10px;min-height:50px;"></textarea>
             <button class="btn" id="btn-send-comment" style="margin-top:0;">Отправить</button>
         </div>
     </div>
@@ -546,8 +617,8 @@
     <!-- КОМПОУЗЕР (написать / редактировать свой пост) -->
     <div id="compose-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-compose-btn">← Назад</button>
-            <div style="flex:1;"><div style="font-weight:700;" id="compose-heading">Написать в ленту</div></div>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-compose-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:18px;" id="compose-heading">Написать в ленту</div></div>
         </div>
         <div class="reader-content" style="white-space:normal;">
             <input type="text" id="compose-title" class="input" placeholder="Заголовок">
@@ -557,7 +628,7 @@
                 <input type="file" id="compose-img-file" accept="image/*" class="hidden">
             </div>
             <img id="compose-img-preview" class="image-preview" src="">
-            <textarea id="compose-text" class="input" placeholder="Что у вас нового?" style="min-height:140px;"></textarea>
+            <textarea id="compose-text" class="input" placeholder="Что у вас нового?" style="min-height:160px;"></textarea>
             <button class="btn" id="btn-submit-compose">Опубликовать</button>
         </div>
     </div>
@@ -565,10 +636,10 @@
     <!-- НОВЫЙ ЧАТ -->
     <div id="new-chat-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-new-chat-btn">← Назад</button>
-            <div style="flex:1;"><div style="font-weight:700;">Новый чат</div></div>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 18px;margin:0; border-radius:14px;" id="close-new-chat-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:#2c3e50; font-size:18px;">Новый чат</div></div>
         </div>
-        <div class="reader-content" style="white-space:normal;">
+        <div class="reader-content" style="white-space:normal; background: #fdfbf7;">
             <input type="text" id="user-search" class="input" placeholder="🔍 Найти читателя по имени...">
             <div id="user-pick-list"></div>
         </div>
@@ -577,10 +648,10 @@
     <!-- ОКНО ЧАТА -->
     <div id="chat-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-chat-btn">← Назад</button>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 16px;margin:0; border-radius:14px;" id="close-chat-btn">←</button>
             <div id="chat-partner-avatar-wrap" style="flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;">
-                <div id="chat-partner-name" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="chat-partner-name" style="font-weight:800; color:#2c3e50; font-size:16px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                 <div id="chat-partner-status" class="online-dot-text"></div>
             </div>
         </div>
@@ -588,7 +659,7 @@
             <span class="text" id="chat-pinned-text"></span>
             <button id="btn-unpin-quote">✕</button>
         </div>
-        <div class="reader-content" id="chat-body" style="position:relative;">
+        <div class="reader-content" id="chat-body" style="position:relative; background: #f4f7f6;">
             <div class="chat-quote-watermark" id="chat-quote-watermark"></div>
             <div class="chat-messages-list" id="chat-messages-list"></div>
         </div>
@@ -601,10 +672,10 @@
     <!-- ЧИТАЛКА -->
     <div id="reader-overlay" class="reader-overlay">
         <div class="reader-header">
-            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0;" id="close-reader-btn">← Назад</button>
+            <button class="btn btn-secondary" style="width:auto;padding:10px 16px;margin:0; border-radius:14px;" id="close-reader-btn">← Назад</button>
             <div style="flex:1;min-width:0;">
-                <div id="reader-title" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                <div id="reader-author" style="font-size:13px;color:#8e8e93;"></div>
+                <div id="reader-title" style="font-weight:800; color:#2c3e50; font-size:16px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                <div id="reader-author" style="font-size:13px;color:#7f8c8d; font-weight:500;"></div>
             </div>
             <div class="font-size-controls" id="reader-font-controls">
                 <button class="font-size-btn" id="font-dec">A-</button>
@@ -614,13 +685,13 @@
         <div class="progress-outer hidden" id="reader-progress-wrap" style="margin-top:12px;">
             <div class="progress-inner" id="reader-progress-inner" style="width:0%;"></div>
         </div>
-        <div id="reader-body" class="reader-content"></div>
+        <div id="reader-body" class="reader-content" style="background:#ffffff; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); line-height:1.8; color:#333;"></div>
         <div class="reader-actions hidden" id="reader-actions-chapter">
-            <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1;">←</button>
-            <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1;">📤</button>
-            <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1;">🔖</button>
-            <button class="btn" id="btn-read" style="margin:0;flex:1;">✅</button>
-            <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1;">→</button>
+            <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1; border-radius:16px;">←</button>
+            <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1; border-radius:16px;">📤</button>
+            <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1; border-radius:16px;">🔖</button>
+            <button class="btn" id="btn-read" style="margin:0;flex:1; border-radius:16px;">✅</button>
+            <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1; border-radius:16px;">→</button>
         </div>
     </div>
 
@@ -691,8 +762,8 @@
             currentUser = { id: guestId, name: 'Гость' };
         }
 
-        const EMOJIS = ['👍', '❤️', '🔥', '😢', '👏'];
-        const COVER_COLORS = ['#0a84ff', '#30d158', '#ff9f0a', '#ff453a', '#bf5af2', '#64d2ff'];
+        const EMOJIS = ['👍', '❤️', '🔥', '😂', '👏'];
+        const COVER_COLORS = ['#ff9f0a', '#30d158', '#0a84ff', '#ff453a', '#bf5af2', '#64d2ff'];
         function colorFor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -737,7 +808,7 @@
         let currentChapters = [];
         let currentChapterIndex = 0;
         let currentChatId = null;
-        let activeOverlay = null; // 'post' | 'reader' | 'chat' | 'newchat' | 'compose' | null
+        let activeOverlay = null;
 
         let feedSearchTerm = '';
         let bookSearchTerm = '';
@@ -751,7 +822,7 @@
 
         function saveLocal(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-        // === ГЛОБАЛЬНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ (РАБОТАЕТ ВСЕГДА) ===
+        // === ГЛОБАЛЬНАЯ ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ===
         window.switchTab = function(tabName) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + tabName).classList.add('active');
@@ -778,7 +849,6 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         };
 
-        // === ЗАГРУЗКА КАРТИНОК С УСТРОЙСТВА ===
         function withTimeout(promise, ms, timeoutMessage) {
             return Promise.race([
                 promise,
@@ -789,7 +859,7 @@
         function friendlyDbError(err) {
             const msg = (err && err.message) || String(err);
             if (msg.includes('PERMISSION_DENIED') || msg.includes('Permission denied')) {
-                return 'Нет доступа к базе данных. В консоли Firebase откройте Realtime Database → Rules и разрешите чтение/запись для узлов users и chats.';
+                return 'Нет доступа к базе данных. В консоли Firebase откройте Realtime Database → Rules и разрешите чтение/запись.';
             }
             return 'Ошибка: ' + msg;
         }
@@ -797,14 +867,11 @@
         function friendlyUploadError(err) {
             const msg = (err && err.message) || String(err);
             const code = (err && err.code) || '';
-            if (code.includes('unauthorized') || msg.includes('PERMISSION') || msg.includes('permission')) {
-                return 'Нет доступа к Firebase Storage. Проверьте правила доступа (Storage → Rules) в консоли Firebase.';
+            if (code.includes('unauthorized') || msg.includes('PERMISSION')) {
+                return 'Нет доступа к Firebase Storage. Проверьте правила доступа.';
             }
-            if (code.includes('unknown') || msg.includes('CORS') || msg.includes('таймаут') || msg.includes('timeout')) {
-                return 'Не удалось загрузить файл. Проверьте, что в проекте включён Firebase Storage (Build → Storage → Get started) и настроены правила доступа.';
-            }
-            if (code.includes('quota')) {
-                return 'Превышена квота хранилища Firebase Storage.';
+            if (code.includes('unknown') || msg.includes('таймаут') || msg.includes('timeout')) {
+                return 'Не удалось загрузить файл.';
             }
             return 'Ошибка загрузки: ' + msg;
         }
@@ -824,13 +891,12 @@
                 try {
                     const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
                     const sRef = storageRef(storage, path);
-                    await withTimeout(uploadBytes(sRef, file), 20000, 'Превышено время ожидания загрузки (таймаут)');
-                    const url = await withTimeout(getDownloadURL(sRef), 15000, 'Превышено время ожидания получения ссылки (таймаут)');
+                    await withTimeout(uploadBytes(sRef, file), 20000, 'Таймаут загрузки');
+                    const url = await withTimeout(getDownloadURL(sRef), 15000, 'Таймаут ссылки');
                     document.getElementById(textInputId).value = url;
                     if (onDone) onDone(url);
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 } catch (err) {
-                    console.error('Ошибка загрузки файла:', err);
                     tg.showAlert(friendlyUploadError(err));
                 } finally {
                     btn.classList.remove('uploading');
@@ -854,7 +920,7 @@
             else preview.classList.remove('show');
         });
 
-        // === FIREBASE: ПОЛЬЗОВАТЕЛЬСКИЙ ПРОФИЛЬ (heartbeat) ===
+        // === FIREBASE: ПОЛЬЗОВАТЕЛЬСКИЙ ПРОФИЛЬ ===
         function ensureUserProfile() {
             if (!db) return;
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, lastSeen: Date.now() }).catch(() => {});
@@ -876,9 +942,6 @@
                 renderProfileStats();
                 if (isAdmin) renderAdminPostsList();
                 if (activeOverlay === 'post') renderPostOverlay();
-            }, (error) => {
-                console.error('Ошибка чтения posts:', error);
-                document.getElementById('feed-container').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Ошибка загрузки</div><div class="sub">Проверьте правила доступа Firebase</div></div>';
             });
 
             onValue(ref(db, 'books'), (snapshot) => {
@@ -891,9 +954,6 @@
                     const book = booksData.find(b => b.id === currentBookId);
                     if (book) { currentChapters = getChapters(book); renderChapterListView(book); }
                 }
-            }, (error) => {
-                console.error('Ошибка чтения books:', error);
-                document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Ошибка загрузки</div></div>';
             });
 
             onValue(ref(db, 'users'), (snapshot) => {
@@ -918,9 +978,6 @@
                     if (chat) renderChatOverlay(chat);
                 }
             });
-        } else {
-            document.getElementById('feed-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
-            document.getElementById('books-container').innerHTML = '<div class="empty-state"><span class="icon">🔌</span><div class="title">Firebase не подключен</div></div>';
         }
 
         // === ЛЕНТА ===
@@ -947,7 +1004,7 @@
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
                         <span class="post-author-name">${escapeHtml(post.authorName)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
-                    </div>` : '<div style="color:#8e8e93;font-size:12px;margin-bottom:8px;">📰 Новость от редакции</div>';
+                    </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:10px;">📰 Новость от редакции</div>';
                 return `
                 <div class="card tappable" data-post-id="${post.id}">
                     ${authorRow}
@@ -1065,24 +1122,24 @@
             const isOwner = post.authorId && post.authorId === currentUser.id;
 
             const authorBlock = post.authorId ? `
-                <div class="post-author-row" style="margin-bottom:14px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
+                <div class="post-author-row" style="margin-bottom:16px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                     ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
                     <span class="post-author-name">${escapeHtml(post.authorName)}</span>
-                </div>` : '<div style="color:#8e8e93;font-size:12px;margin-bottom:10px;">📰 Новость от редакции</div>';
+                </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:14px;">📰 Новость от редакции</div>';
 
             document.getElementById('post-overlay-content').innerHTML = `
                 ${authorBlock}
-                ${post.image ? `<img src="${post.image}" class="card-image" style="margin-bottom:16px;" onerror="this.style.display='none'">` : ''}
-                <div style="font-size:16px;line-height:1.6;color:#e5e5e7;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
-                <div class="card-meta">${formatDate(post.createdAt)}</div>
-                ${isOwner ? `<div style="display:flex;gap:8px;margin-top:14px;">
-                    <button class="btn btn-secondary" style="margin:0;flex:1;" id="btn-edit-own-post">✏️ Изменить</button>
-                    <button class="btn btn-danger" style="margin:0;flex:1;" id="btn-delete-own-post">🗑 Удалить</button>
+                ${post.image ? `<img src="${post.image}" class="card-image" style="margin-bottom:20px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">` : ''}
+                <div style="font-size:16px;line-height:1.7;color:#333;white-space:pre-wrap;">${escapeHtml(post.text)}</div>
+                <div class="card-meta" style="margin-top: 16px;">${formatDate(post.createdAt)}</div>
+                ${isOwner ? `<div style="display:flex;gap:10px;margin-top:18px;">
+                    <button class="btn btn-secondary" style="margin:0;flex:1; border-radius:16px;" id="btn-edit-own-post">✏️ Изменить</button>
+                    <button class="btn btn-danger" style="margin:0;flex:1; border-radius:16px;" id="btn-delete-own-post">🗑 Удалить</button>
                 </div>` : ''}
                 <div class="reaction-bar">
                     ${EMOJIS.map(e => `<button class="reaction-btn ${myReaction === e ? 'mine' : ''}" data-emoji="${e}">${e} ${counts[e] || ''}</button>`).join('')}
                 </div>
-                <button class="btn btn-secondary" style="margin-top:14px;" id="btn-share-post">📤 Поделиться</button>
+                <button class="btn btn-secondary" style="margin-top:16px; border-radius:20px;" id="btn-share-post">📤 Поделиться</button>
                 <div class="comments-block">
                     <div class="comments-title">Комментарии (${comments.length})</div>
                     ${comments.length ? comments.map(c => `
@@ -1091,7 +1148,7 @@
                             <div class="comment-text">${escapeHtml(c.text)}</div>
                             ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
-                    `).join('') : '<div style="color:#8e8e93;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
+                    `).join('') : '<div style="color:#7f8c8d;font-size:14px;">Пока нет комментариев. Будьте первым!</div>'}
                 </div>
             `;
 
@@ -1221,7 +1278,7 @@
                     <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
                     ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''}
                     ${isBookmarked ? '<span class="badge badge-bookmark">🔖 Закладка</span>' : ''}
-                    ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:10px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
+                    ${prog.total > 1 && !isRead ? `<div class="progress-outer" style="margin:12px 0 0;"><div class="progress-inner" style="width:${prog.pct}%;"></div></div><div class="card-meta" style="margin-top:6px;">Прочитано ${prog.readCount} из ${prog.total} глав</div>` : ''}
                 </div>`;
             }).join('');
 
@@ -1259,11 +1316,11 @@
 
             const readIdx = (progressStore[book.id] && progressStore[book.id].readIdx) || [];
             document.getElementById('reader-body').innerHTML = `
-                <div style="margin-bottom:16px;color:#8e8e93;font-size:13px;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
+                <div style="margin-bottom:18px;color:#7f8c8d;font-size:14px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
                 ${currentChapters.map((ch, idx) => `
                     <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
                         <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
-                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#636366;">→</span>'}
+                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:#95a5a6; font-weight:800;">→</span>'}
                     </div>
                 `).join('')}
             `;
@@ -1456,13 +1513,9 @@
             const listEl = document.getElementById('chat-messages-list');
             listEl.innerHTML = messages.length ? messages.map(m => `
                 <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
-                    <div class="msg-bubble">
-                        ${escapeHtml(m.text)}
-                        <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
-                    </div>
+                    <div class="msg-bubble">${escapeHtml(m.text)}<span class="msg-time">${new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span><button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button></div>
                 </div>
-            `).join('') : '<div style="color:#8e8e93;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
+            `).join('') : '<div style="color:#95a5a6;font-size:14px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог первым сообщением</div>';
 
             listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
                 btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
@@ -1529,8 +1582,8 @@
                 <div class="user-pick-item" data-id="${u.id}" data-name="${escapeHtml(u.name || 'Читатель')}">
                     ${avatarHtml(u.name, u.avatar, 'avatar-sm')}
                     <div>
-                        <div style="font-weight:600;font-size:14px;">${escapeHtml(u.name || 'Читатель')}</div>
-                        <div style="font-size:12px;color:#8e8e93;">${lastSeenText(u.lastSeen)}</div>
+                        <div style="font-weight:700;font-size:15px;color:#2c3e50;">${escapeHtml(u.name || 'Читатель')}</div>
+                        <div style="font-size:12px;color:#95a5a6;margin-top:2px;">${lastSeenText(u.lastSeen)}</div>
                     </div>
                 </div>
             `).join('');
@@ -1574,7 +1627,7 @@
             const bannerImg = document.getElementById('profile-banner-img');
             const bannerFallback = document.getElementById('profile-banner-fallback');
             if (banner) { bannerImg.src = banner; bannerImg.style.display = 'block'; bannerFallback.style.display = 'none'; }
-            else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #1c1c1e)`; }
+            else { bannerImg.style.display = 'none'; bannerFallback.style.display = 'block'; bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; }
 
             if (!document.getElementById('profile-edit-panel').classList.contains('hidden')) return;
             document.getElementById('profile-name-input').value = (me && me.name) || '';
@@ -1619,7 +1672,7 @@
             if (entries.length) {
                 card.style.display = '';
                 document.getElementById('genre-stats-container').innerHTML = entries.map(([g, c]) => `
-                    <div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#8e8e93;">${c} ${c === 1 ? 'книга' : 'книг'}</span></div>
+                    <div class="genre-stat-row"><span>${escapeHtml(g)}</span><span style="color:#7f8c8d;">${c} ${c === 1 ? 'книга' : 'книг'}</span></div>
                 `).join('');
             } else {
                 card.style.display = 'none';
@@ -1664,7 +1717,7 @@
         function renderAdminPostsList() {
             const el = document.getElementById('admin-posts-list');
             if (!el) return;
-            if (!postsData.length) { el.innerHTML = '<div style="color:#8e8e93;font-size:13px;">Новостей пока нет</div>'; return; }
+            if (!postsData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Новостей пока нет</div>'; return; }
             el.innerHTML = postsData.map(post => `
                 <div class="admin-item">
                     ${post.image ? `<img src="${post.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
@@ -1734,7 +1787,7 @@
         function renderAdminBooksList() {
             const el = document.getElementById('admin-books-list');
             if (!el) return;
-            if (!booksData.length) { el.innerHTML = '<div style="color:#8e8e93;font-size:13px;">Книг пока нет</div>'; return; }
+            if (!booksData.length) { el.innerHTML = '<div style="color:#7f8c8d;font-size:14px;">Книг пока нет</div>'; return; }
             el.innerHTML = booksData.map(book => `
                 <div class="admin-item">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
