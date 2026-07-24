@@ -507,7 +507,7 @@
             <div class="profile-bio" id="profile-display-bio"></div>
 
             <button class="btn btn-secondary" id="btn-edit-profile">✏️ Редактировать профиль</button>
-            <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления в Telegram: ...</button>
+            <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления: ...</button>
             <div id="profile-edit-panel" class="hidden">
                 <div class="divider"></div>
                 <input type="text" id="profile-name-input" class="input" placeholder="Отображаемое имя">
@@ -812,25 +812,23 @@
 
     <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, update, remove, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, update, remove, set, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        // Firebase Storage больше не используется — фото грузятся на ImgBB (см. ниже), чтобы не требовать план Blaze.
 
         const firebaseConfig = {
             apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
             authDomain: "book-2b50d.firebaseapp.com",
             databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
             projectId: "book-2b50d",
-            storageBucket: "book-2b50d.firebasestorage.app",
             messagingSenderId: "461145405797",
             appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
         };
 
-        let db, storage;
+        let db;
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
-            storage = getStorage(app);
         } catch (e) {
             console.error('Firebase ошибка:', e);
         }
@@ -1024,11 +1022,15 @@
             return 'Ошибка: ' + msg;
         }
 
+        // Получи бесплатный ключ на https://api.imgbb.com/ (регистрация по email, карта не нужна)
+        // и вставь его сюда вместо строки ниже.
+        const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
+
         function friendlyUploadError(err) {
             const msg = (err && err.message) || String(err);
-            if (msg.includes('PERMISSION')) return 'Нет доступа к Firebase Storage.';
-            if (msg.includes('зависла') || msg.includes('canceled') || msg.includes('storage/canceled')) return 'Слабое соединение — загрузка прервана. Попробуйте ещё раз.';
-            if (msg.includes('storage/retry-limit-exceeded') || msg.includes('network')) return 'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.';
+            if (msg.includes('ключ ImgBB')) return msg;
+            if (msg.includes('зависла')) return 'Слабое соединение — загрузка прервана. Попробуйте ещё раз.';
+            if (msg.includes('Сетевая ошибка') || msg.includes('network')) return 'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.';
             return 'Ошибка загрузки: ' + msg;
         }
 
@@ -1065,37 +1067,51 @@
             });
         }
 
-        // Загрузка с отслеживанием реального прогресса. Таймаут срабатывает только если
-        // прогресс не двигается STALL_MS миллисекунд подряд — а не по общему жёсткому лимиту,
-        // поэтому крупные/медленные фото больше не обрываются раньше времени.
-        function uploadWithProgress(sRef, file, onProgress, stallMs = 25000) {
+        // Грузит файл на ImgBB через XHR (нужен именно XHR, а не fetch — чтобы получать
+        // реальный прогресс загрузки). Таймаут — только если прогресс завис на STALL_MS,
+        // а не по общему жёсткому лимиту.
+        function uploadToImgbb(file, onProgress, stallMs = 25000) {
             return new Promise((resolve, reject) => {
-                const task = uploadBytesResumable(sRef, file);
-                let lastBytes = -1;
-                let stallTimer = null;
+                if (!IMGBB_API_KEY || IMGBB_API_KEY.includes('ВСТАВЬ_СЮДА')) {
+                    reject(new Error('Не задан ключ ImgBB. Получи бесплатный ключ на api.imgbb.com и вставь в код (IMGBB_API_KEY).'));
+                    return;
+                }
 
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`);
+
+                let lastPct = -1;
+                let stallTimer = null;
                 const resetStallTimer = () => {
                     if (stallTimer) clearTimeout(stallTimer);
                     stallTimer = setTimeout(() => {
-                        task.cancel();
+                        xhr.abort();
                         reject(new Error('Загрузка зависла — нет соединения'));
                     }, stallMs);
                 };
-
                 resetStallTimer();
 
-                task.on('state_changed',
-                    (snapshot) => {
-                        if (snapshot.bytesTransferred !== lastBytes) {
-                            lastBytes = snapshot.bytesTransferred;
-                            resetStallTimer(); // есть прогресс — продлеваем таймаут
-                        }
-                        const pct = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
-                        if (onProgress) onProgress(pct);
-                    },
-                    (err) => { if (stallTimer) clearTimeout(stallTimer); reject(err); },
-                    () => { if (stallTimer) clearTimeout(stallTimer); resolve(task.snapshot.ref); }
-                );
+                xhr.upload.onprogress = (e) => {
+                    if (!e.lengthComputable) return;
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    if (pct !== lastPct) { lastPct = pct; resetStallTimer(); if (onProgress) onProgress(pct); }
+                };
+
+                xhr.onload = () => {
+                    if (stallTimer) clearTimeout(stallTimer);
+                    let res;
+                    try { res = JSON.parse(xhr.responseText); } catch (e) { reject(new Error('Некорректный ответ сервера')); return; }
+                    if (xhr.status >= 200 && xhr.status < 300 && res && res.success) {
+                        resolve(res.data.url);
+                    } else {
+                        reject(new Error((res && res.error && res.error.message) || ('Сервер вернул ошибку ' + xhr.status)));
+                    }
+                };
+                xhr.onerror = () => { if (stallTimer) clearTimeout(stallTimer); reject(new Error('Сетевая ошибка')); };
+                xhr.send(formData);
             });
         }
 
@@ -1104,19 +1120,14 @@
             fileInput.addEventListener('change', async (e) => {
                 let file = e.target.files[0];
                 if (!file) return;
-                
-                if (!storage) { 
-                    tg.showAlert('Firebase Storage не подключен'); 
-                    fileInput.value = ''; 
-                    return; 
-                }
+
                 if (!file.type.startsWith('image/')) { 
                     tg.showAlert('Выберите файл изображения'); 
                     fileInput.value = ''; 
                     return; 
                 }
-                if (file.size > 15 * 1024 * 1024) { 
-                    tg.showAlert('Файл слишком большой (максимум 15 МБ)'); 
+                if (file.size > 30 * 1024 * 1024) { 
+                    tg.showAlert('Файл слишком большой (максимум 30 МБ)'); 
                     fileInput.value = ''; 
                     return; 
                 }
@@ -1128,13 +1139,9 @@
                     try {
                         file = await compressImage(file);
 
-                        const path = `${pathPrefix}/${currentUser.id}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-                        const sRef = storageRef(storage, path);
-
-                        const uploadedRef = await uploadWithProgress(sRef, file, (pct) => {
+                        const url = await uploadToImgbb(file, (pct) => {
                             btn.textContent = pct < 100 ? pct + '%' : '⏳';
                         });
-                        const url = await withTimeout(getDownloadURL(uploadedRef), 15000, 'Таймаут получения ссылки');
 
                         if (textInput) textInput.value = url;
                         if (onDone) onDone(url);
@@ -1207,11 +1214,74 @@
                 name: currentUser.name, 
                 lastSeen: Date.now() 
             };
-            // telegramId нужен серверной функции, чтобы знать, кому слать сообщение через бота.
-            // Пишем только если пользователь реально зашёл через Telegram (а не через логин/пароль).
+            // telegramId сохраняем на будущее (например, если позже подключите push через бота на Blaze)
             if (tgUser && tgUser.id) payload.telegramId = tgUser.id;
             update(ref(db, 'users/' + currentUser.id), payload).catch(() => {});
         }
+
+        // === Браузерные уведомления (работают, пока приложение открыто/в фоновой вкладке) ===
+        // Всё, что случилось ДО открытия приложения, не уведомляем — только новое.
+        const sessionStartTime = Date.now();
+        const notifiedIds = new Set();
+
+        function truncateText(str, n) {
+            if (!str) return '';
+            const s = String(str);
+            return s.length > n ? s.slice(0, n) + '…' : s;
+        }
+
+        function notificationsAllowed() {
+            return ('Notification' in window) 
+                && Notification.permission === 'granted' 
+                && localStorage.getItem('sr_notifications_enabled') !== '0';
+        }
+
+        function showNotification(title, body, tag) {
+            if (!notificationsAllowed()) return;
+            // Не шлём, если вкладка и так открыта и активна — человек и так всё видит
+            if (document.visibilityState === 'visible' && document.hasFocus()) return;
+            try {
+                const n = new Notification(title, { body, tag });
+                n.onclick = () => { window.focus(); n.close(); };
+            } catch (e) { /* некоторые WebView могут блокировать Notification API — просто игнорируем */ }
+        }
+
+        function renderNotificationsToggle() {
+            const btn = document.getElementById('btn-toggle-notifications');
+            if (!('Notification' in window)) { btn.classList.add('hidden'); return; } // не поддерживается этим браузером/WebView
+            btn.classList.remove('hidden');
+
+            if (Notification.permission === 'denied') {
+                btn.textContent = '🔕 Уведомления заблокированы в браузере';
+                return;
+            }
+            if (Notification.permission === 'default') {
+                btn.textContent = '🔔 Включить уведомления';
+                return;
+            }
+            const enabled = localStorage.getItem('sr_notifications_enabled') !== '0';
+            btn.textContent = enabled ? '🔔 Уведомления: вкл' : '🔕 Уведомления: выкл';
+        }
+
+        document.getElementById('btn-toggle-notifications').onclick = function() {
+            if (!('Notification' in window)) return;
+
+            if (Notification.permission === 'denied') {
+                tg.showAlert('Уведомления заблокированы в настройках браузера для этого сайта. Разреши их вручную в настройках сайта, чтобы включить.');
+                return;
+            }
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().then((perm) => {
+                    if (perm === 'granted') localStorage.setItem('sr_notifications_enabled', '1');
+                    renderNotificationsToggle();
+                });
+                return;
+            }
+            const enabled = localStorage.getItem('sr_notifications_enabled') !== '0';
+            localStorage.setItem('sr_notifications_enabled', enabled ? '0' : '1');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            renderNotificationsToggle();
+        };
         
         function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
@@ -1223,6 +1293,25 @@
                 if (postsData.length > lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
                     document.getElementById('feed-nav-badge').classList.remove('hidden');
                 }
+
+                // Новые посты от других — уведомление
+                postsData.forEach(post => {
+                    if (post.createdAt > sessionStartTime && post.authorId !== currentUser.id && !notifiedIds.has('post:' + post.id)) {
+                        notifiedIds.add('post:' + post.id);
+                        const authorPart = post.authorName ? ` от ${post.authorName}` : '';
+                        showNotification(`📰 Новый пост${authorPart}`, truncateText(post.title || post.text, 150), 'post:' + post.id);
+                    }
+                    // Новые комментарии к МОИМ постам — уведомление
+                    if (post.authorId === currentUser.id && post.comments) {
+                        Object.entries(post.comments).forEach(([cid, c]) => {
+                            if (c.createdAt > sessionStartTime && c.userId !== currentUser.id && !notifiedIds.has('comment:' + cid)) {
+                                notifiedIds.add('comment:' + cid);
+                                const preview = c.sticker ? '🖼 стикер' : truncateText(c.text, 150);
+                                showNotification(`💭 ${c.author || 'Кто-то'} прокомментировал ваш пост`, preview, 'comment:' + cid);
+                            }
+                        });
+                    }
+                });
                 
                 renderFeed(); 
                 renderProfileStats();
@@ -1273,6 +1362,23 @@
             onValue(ref(db, 'chats'), (snapshot) => {
                 const data = snapshot.val();
                 chatsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+
+                // Новые сообщения в моих чатах — уведомление (кроме тех, что я сам сейчас открыл)
+                chatsData.forEach(chat => {
+                    if (!chat.participants || !chat.participants[currentUser.id]) return;
+                    if (!chat.messages) return;
+                    const isViewingThisChat = activeOverlay === 'chat' && currentChatId === chat.id
+                        && document.visibilityState === 'visible' && document.hasFocus();
+                    if (isViewingThisChat) return;
+
+                    Object.entries(chat.messages).forEach(([mid, m]) => {
+                        if (m.createdAt > sessionStartTime && m.senderId !== currentUser.id && !notifiedIds.has('msg:' + mid)) {
+                            notifiedIds.add('msg:' + mid);
+                            const preview = m.sticker ? '🖼 стикер' : truncateText(m.text, 150);
+                            showNotification(`💬 ${m.senderName || 'Сообщение'}`, preview, 'msg:' + mid);
+                        }
+                    });
+                });
                 
                 renderChatsList(); 
                 renderProfileStats();
@@ -2318,24 +2424,6 @@
             document.getElementById('profile-avatar-input').value = avatar; 
             document.getElementById('profile-banner-input').value = banner;
         }
-
-        function renderNotificationsToggle() {
-            const btn = document.getElementById('btn-toggle-notifications');
-            if (!tgUser || !tgUser.id) { btn.classList.add('hidden'); return; } // push через бота доступен только для Telegram-пользователей
-            btn.classList.remove('hidden');
-            const me = usersData.find(u => u.id === currentUser.id);
-            const enabled = !me || me.notificationsEnabled !== false; // включено по умолчанию
-            btn.textContent = enabled ? '🔔 Уведомления в Telegram: вкл' : '🔕 Уведомления в Telegram: выкл';
-        }
-
-        document.getElementById('btn-toggle-notifications').onclick = function() {
-            if (!db) return tg.showAlert('Firebase не подключен');
-            const me = usersData.find(u => u.id === currentUser.id);
-            const enabled = !me || me.notificationsEnabled !== false;
-            update(ref(db, 'users/' + currentUser.id), { notificationsEnabled: !enabled })
-                .then(() => { if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); })
-                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
-        };
 
         document.getElementById('btn-edit-profile').onclick = function() { 
             document.getElementById('profile-edit-panel').classList.toggle('hidden'); 
