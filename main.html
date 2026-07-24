@@ -327,15 +327,15 @@
             font-size: 20px; line-height: 1.5; color: rgba(0,0,0,0.03); pointer-events: none; z-index: 0;
         }
         
-        .chat-messages-list { position: relative; z-index: 1; padding-top: 8px; }
-        .msg-row { display: flex; margin-bottom: 8px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .chat-messages-list { position: relative; z-index: 1; padding-top: 10px; }
+        .msg-row { display: flex; margin-bottom: 6px; align-items: flex-end; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         
         /* ИСПРАВЛЕННЫЕ КОМПАКТНЫЕ ПУЗЫРИ СООБЩЕНИЙ */
         .msg-bubble { 
-            max-width: 75%; width: fit-content; height: fit-content; padding: 8px 12px; border-radius: 16px; 
-            font-size: 15.5px; line-height: 1.35; position: relative; 
-            word-wrap: break-word; word-break: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: left;
+            max-width: 75%; width: fit-content; height: fit-content; padding: 8px 12px; border-radius: 18px; 
+            font-size: 15px; line-height: 1.35; position: relative; white-space: normal;
+            word-wrap: break-word; word-break: break-word; box-shadow: 0 4px 14px rgba(0,0,0,0.05); text-align: left;
         }
         .msg-row:not(.mine) .msg-bubble { 
             background: #ffffff; color: #333; 
