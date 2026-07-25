@@ -54,6 +54,26 @@
             background: #e0e0e0;
         }
 
+        .banners-carousel {
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px;
+            scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+        }
+        .banners-carousel::-webkit-scrollbar { display: none; }
+        .banner-card {
+            position: relative; flex: 0 0 88%; scroll-snap-align: start; border-radius: 20px; overflow: hidden;
+            height: 150px; background: #e0e0e0 center/cover no-repeat; box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            cursor: pointer; display: flex; align-items: flex-end;
+        }
+        .banner-card-overlay {
+            width: 100%; padding: 14px; background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 70%);
+            color: #fff;
+        }
+        .banner-card-title { font-weight: 800; font-size: 16px; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        .banner-countdown {
+            display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 10px;
+            background: rgba(255,159,10,0.9); border-radius: 10px; font-size: 12px; font-weight: 700;
+        }
+
         .cover-fallback {
             width: 100%; height: 160px; border-radius: 16px; margin-bottom: 10px;
             display: flex; align-items: center; justify-content: center;
@@ -265,6 +285,9 @@
         .comment-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; margin-top: 4px; }
         .comment-delete { color: #e74c3c; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 6px; font-weight: 600; padding: 0; }
         .comment-sticker { max-width: 100px; height: auto; border-radius: 10px; object-fit: contain; margin-top: 6px; display: block; }
+        .attachment-img { max-width: 220px; width: 100%; height: auto; border-radius: 12px; margin-top: 6px; display: block; }
+        .attachment-video { max-width: 260px; width: 100%; border-radius: 12px; margin-top: 6px; display: block; }
+        .attachment-audio { margin-top: 6px; display: block; width: 220px; max-width: 100%; }
 
         .avatar-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .avatar-sm-fallback { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
@@ -439,6 +462,7 @@
             <div class="top-search">
                 <input type="text" class="input search-input" id="feed-search" placeholder="🔍 Поиск новостей...">
             </div>
+            <div id="banners-container"></div>
             <div id="feed-container"><div class="skeleton"></div><div class="skeleton"></div></div>
         </div>
     </div>
@@ -569,6 +593,7 @@
 
                 <div class="tab-mini">
                     <button class="tab-mini-btn active" id="admin-tab-btn-posts" onclick="switchAdminTab('posts')">📰 Новости</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-banners" onclick="switchAdminTab('banners')">🎯 Баннеры</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-books" onclick="switchAdminTab('books')">📚 Книги</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-stickers" onclick="switchAdminTab('stickers')">🖼 Стикеры</button>
                 </div>
@@ -588,6 +613,29 @@
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:#2c3e50;">Управление новостями</h3>
                     <div id="admin-posts-list"></div>
+                </div>
+
+                <!-- ВКЛАДКА: БАННЕРЫ -->
+                <div id="admin-tab-banners" class="hidden">
+                    <h3 style="margin-bottom:12px; color:#2c3e50;" id="banner-form-heading">Добавить баннер</h3>
+                    <input type="text" id="banner-title" class="input" placeholder="Заголовок баннера">
+                    <div class="image-field-row">
+                        <input type="text" id="banner-image" class="input" placeholder="Картинка баннера (URL)">
+                        <label class="upload-btn" for="banner-image-file" id="banner-image-upload-btn">📁</label>
+                        <input type="file" id="banner-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <input type="text" id="banner-link" class="input" placeholder="Ссылка при нажатии (необязательно)">
+                    <select id="banner-type" class="input" style="appearance:none;">
+                        <option value="simple">Обычный баннер</option>
+                        <option value="event">Баннер события (с таймером)</option>
+                    </select>
+                    <input type="datetime-local" id="banner-event-at" class="input hidden" placeholder="Дата и время события">
+                    <button class="btn" id="btn-add-banner">Опубликовать баннер</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-banner">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:#2c3e50;">Управление баннерами</h3>
+                    <div id="admin-banners-list"></div>
                 </div>
 
                 <!-- ВКЛАДКА: КНИГИ -->
@@ -658,6 +706,8 @@
             <div id="comment-sticker-picker" style="display:none; overflow-x:auto; padding-bottom:8px; border-bottom:1px solid #eee; margin-bottom:8px;"></div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <button class="sticker-toggle" id="btn-toggle-comment-stickers">🤩</button>
+                <label class="sticker-toggle" for="comment-attach-file" id="btn-comment-attach" style="display:flex;align-items:center;justify-content:center;">📎</label>
+                <input type="file" id="comment-attach-file" accept="image/*,video/*,audio/*" class="hidden">
                 <textarea id="comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px; padding: 10px;"></textarea>
                 <button class="chat-send-btn" id="btn-send-comment">➤</button>
             </div>
@@ -759,6 +809,8 @@
         
         <div class="chat-input-row">
             <button class="sticker-toggle" id="btn-toggle-stickers">🤩</button>
+            <label class="sticker-toggle" for="chat-attach-file" id="btn-chat-attach" style="display:flex;align-items:center;justify-content:center;">📎</label>
+            <input type="file" id="chat-attach-file" accept="image/*,video/*,audio/*" class="hidden">
             <input type="text" id="chat-message-input" class="input" placeholder="Сообщение...">
             <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
         </div>
@@ -945,6 +997,8 @@
         }
 
         let postsData = [];
+        let bannersData = [];
+        let editingBannerId = null;
         let booksData = [];
         let usersData = [];
         let chatsData = [];
@@ -1115,6 +1169,119 @@
             });
         }
 
+        // === Вложения в чат/комментарии (фото, видео, аудио через "скрепку") ===
+        // Фото по-прежнему грузятся на ImgBB. Видео и аудио — на Cloudinary (тоже бесплатно, без карты).
+        // Получить бесплатно: cloudinary.com → Dashboard (Cloud name) → Settings → Upload →
+        // Add upload preset → Signing Mode: Unsigned → сохранить и вписать имя пресета сюда.
+        const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
+        const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
+
+        function categoryForMime(mime) {
+            if (!mime) return null;
+            if (mime.startsWith('image/')) return 'image';
+            if (mime.startsWith('video/')) return 'video';
+            if (mime.startsWith('audio/')) return 'audio';
+            return null;
+        }
+
+        function uploadToCloudinary(file, onProgress, stallMs = 40000) {
+            return new Promise((resolve, reject) => {
+                if (!CLOUDINARY_CLOUD_NAME || CLOUDINARY_CLOUD_NAME.includes('ВСТАВЬ_СЮДА') || !CLOUDINARY_UPLOAD_PRESET || CLOUDINARY_UPLOAD_PRESET.includes('ВСТАВЬ_СЮДА')) {
+                    reject(new Error('Не задан Cloudinary (CLOUDINARY_CLOUD_NAME / CLOUDINARY_UPLOAD_PRESET). См. инструкцию в коде рядом с этими константами.'));
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`);
+
+                let lastPct = -1;
+                let stallTimer = null;
+                const resetStallTimer = () => {
+                    if (stallTimer) clearTimeout(stallTimer);
+                    stallTimer = setTimeout(() => {
+                        xhr.abort();
+                        reject(new Error('Загрузка зависла — нет соединения'));
+                    }, stallMs);
+                };
+                resetStallTimer();
+
+                xhr.upload.onprogress = (e) => {
+                    if (!e.lengthComputable) return;
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    if (pct !== lastPct) { lastPct = pct; resetStallTimer(); if (onProgress) onProgress(pct); }
+                };
+
+                xhr.onload = () => {
+                    if (stallTimer) clearTimeout(stallTimer);
+                    let res;
+                    try { res = JSON.parse(xhr.responseText); } catch (e) { reject(new Error('Некорректный ответ сервера')); return; }
+                    if (xhr.status >= 200 && xhr.status < 300 && res && res.secure_url) {
+                        resolve(res.secure_url);
+                    } else {
+                        reject(new Error((res && res.error && res.error.message) || ('Сервер вернул ошибку ' + xhr.status)));
+                    }
+                };
+                xhr.onerror = () => { if (stallTimer) clearTimeout(stallTimer); reject(new Error('Сетевая ошибка')); };
+                xhr.send(formData);
+            });
+        }
+
+        // Единая точка входа для вложений из "скрепки": сама решает, куда грузить — ImgBB или Cloudinary
+        async function uploadAttachmentFile(file, onProgress) {
+            const category = categoryForMime(file.type);
+            if (!category) throw new Error('Этот тип файла не поддерживается. Можно фото, видео или аудио.');
+
+            if (category === 'image') {
+                const compressed = await compressImage(file);
+                const url = await uploadToImgbb(compressed, onProgress);
+                return { url, type: 'image', mime: compressed.type };
+            }
+
+            const maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) throw new Error('Файл слишком большой (максимум 50 МБ)');
+
+            const url = await uploadToCloudinary(file, onProgress);
+            return { url, type: category, mime: file.type };
+        }
+
+        function setupAttachmentPicker(fileInputId, onUploaded) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput) return;
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const label = document.querySelector(`label[for="${fileInputId}"]`);
+                const originalContent = label ? label.textContent : '';
+                if (label) { label.style.pointerEvents = 'none'; label.textContent = '⏳'; }
+
+                try {
+                    const attachment = await uploadAttachmentFile(file, (pct) => {
+                        if (label) label.textContent = pct < 100 ? pct + '%' : '⏳';
+                    });
+                    await onUploaded(attachment);
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } catch (err) {
+                    tg.showAlert((err && err.message) || 'Ошибка загрузки вложения');
+                } finally {
+                    if (label) { label.style.pointerEvents = ''; label.textContent = originalContent; }
+                    fileInput.value = '';
+                }
+            });
+        }
+
+        function attachmentHtml(att) {
+            if (!att) return '';
+            if (att.type === 'image') return `<img src="${att.url}" class="attachment-img" onerror="this.style.display='none'">`;
+            if (att.type === 'video') return `<video src="${att.url}" class="attachment-video" controls playsinline></video>`;
+            if (att.type === 'audio') return `<audio src="${att.url}" class="attachment-audio" controls></audio>`;
+            return '';
+        }
+
         function setupImageUploadFlex(fileInput, textInput, btn, pathPrefix, onDone) {
             if (!fileInput || !btn) return;
             fileInput.addEventListener('change', async (e) => {
@@ -1177,6 +1344,7 @@
         }
 
         setupImageUpload('book-cover-file', 'book-cover', 'book-cover-upload-btn', 'books');
+        setupImageUpload('banner-image-file', 'banner-image', 'banner-image-upload-btn', 'banners');
         setupImageUpload('profile-avatar-file', 'profile-avatar-input', 'profile-avatar-upload-btn', 'avatars');
         setupImageUpload('profile-banner-file', 'profile-banner-input', 'profile-banner-upload-btn', 'banners');
         setupImageUpload('sticker-file', 'sticker-url-input', 'sticker-upload-btn', 'stickers');
@@ -1306,7 +1474,8 @@
                         Object.entries(post.comments).forEach(([cid, c]) => {
                             if (c.createdAt > sessionStartTime && c.userId !== currentUser.id && !notifiedIds.has('comment:' + cid)) {
                                 notifiedIds.add('comment:' + cid);
-                                const preview = c.sticker ? '🖼 стикер' : truncateText(c.text, 150);
+                                const attIcons = { image: '🖼 фото', video: '🎬 видео', audio: '🎧 аудио' };
+                                const preview = c.sticker ? '🖼 стикер' : (c.attachment ? attIcons[c.attachment.type] : truncateText(c.text, 150));
                                 showNotification(`💭 ${c.author || 'Кто-то'} прокомментировал ваш пост`, preview, 'comment:' + cid);
                             }
                         });
@@ -1319,6 +1488,16 @@
                 if (isAdmin) renderAdminPostsList();
                 if (activeOverlay === 'post') renderPostOverlay();
             });
+
+            onValue(ref(db, 'banners'), (snapshot) => {
+                const data = snapshot.val();
+                bannersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.createdAt||0) - (b.createdAt||0)) : [];
+                renderBanners();
+                if (isAdmin) renderAdminBannersList();
+            });
+
+            // Обновление таймеров обратного отсчёта у баннеров-событий раз в секунду
+            setInterval(updateBannerCountdowns, 1000);
 
             onValue(ref(db, 'books'), (snapshot) => {
                 const data = snapshot.val();
@@ -1374,7 +1553,8 @@
                     Object.entries(chat.messages).forEach(([mid, m]) => {
                         if (m.createdAt > sessionStartTime && m.senderId !== currentUser.id && !notifiedIds.has('msg:' + mid)) {
                             notifiedIds.add('msg:' + mid);
-                            const preview = m.sticker ? '🖼 стикер' : truncateText(m.text, 150);
+                            const attIcons2 = { image: '🖼 фото', video: '🎬 видео', audio: '🎧 аудио' };
+                            const preview = m.sticker ? '🖼 стикер' : (m.attachment ? attIcons2[m.attachment.type] : truncateText(m.text, 150));
                             showNotification(`💬 ${m.senderName || 'Сообщение'}`, preview, 'msg:' + mid);
                         }
                     });
@@ -1410,6 +1590,48 @@
         }
 
         // === ЛЕНТА ===
+        function formatCountdown(ms) {
+            if (ms <= 0) return 'Началось!';
+            const totalSec = Math.floor(ms / 1000);
+            const days = Math.floor(totalSec / 86400);
+            const hours = Math.floor((totalSec % 86400) / 3600);
+            const mins = Math.floor((totalSec % 3600) / 60);
+            const secs = totalSec % 60;
+            const pad = n => String(n).padStart(2, '0');
+            if (days > 0) return `${days}д ${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+            return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+        }
+
+        function updateBannerCountdowns() {
+            document.querySelectorAll('.banner-countdown[data-target]').forEach(el => {
+                const target = Number(el.getAttribute('data-target'));
+                el.textContent = '⏳ ' + formatCountdown(target - Date.now());
+            });
+        }
+
+        function renderBanners() {
+            const el = document.getElementById('banners-container');
+            if (!el) return;
+            if (!bannersData.length) { el.innerHTML = ''; return; }
+
+            el.innerHTML = `<div class="banners-carousel">${bannersData.map(b => `
+                <div class="banner-card" style="background-image:url('${b.image || ''}')" data-link="${escapeHtml(b.link || '')}">
+                    <div class="banner-card-overlay">
+                        <div class="banner-card-title">${escapeHtml(b.title || '')}</div>
+                        ${b.type === 'event' && b.eventAt ? `<div class="banner-countdown" data-target="${b.eventAt}">⏳ ${formatCountdown(b.eventAt - Date.now())}</div>` : ''}
+                    </div>
+                </div>
+            `).join('')}</div>`;
+
+            el.querySelectorAll('.banner-card').forEach(card => {
+                const link = card.getAttribute('data-link');
+                if (!link) return;
+                card.onclick = () => {
+                    if (tg.openLink) tg.openLink(link); else window.open(link, '_blank');
+                };
+            });
+        }
+
         function renderFeed() {
             const container = document.getElementById('feed-container');
             let list = postsData;
@@ -1625,7 +1847,7 @@
                                 <span class="comment-author">${escapeHtml(c.author)}</span>
                                 <span class="comment-meta">${formatDate(c.createdAt)}</span>
                             </div>
-                            ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : `<div class="comment-text">${escapeHtml(c.text)}</div>`}
+                            ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : (c.attachment ? attachmentHtml(c.attachment) : `<div class="comment-text">${escapeHtml(c.text)}</div>`)}
                             ${(c.userId === currentUser.id || isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
                     `).join('') : '<div style="color:#7f8c8d;font-size:13px;">Пока нет комментариев. Будьте первым!</div>'}
@@ -1696,6 +1918,17 @@
             const p = document.getElementById('comment-sticker-picker');
             p.style.display = p.style.display === 'none' ? 'flex' : 'none';
         };
+
+        setupAttachmentPicker('comment-attach-file', async (attachment) => {
+            if (!currentPostId || !db) return;
+            await push(ref(db, `posts/${currentPostId}/comments`), {
+                author: currentUser.name,
+                userId: currentUser.id,
+                text: '',
+                attachment,
+                createdAt: Date.now()
+            });
+        });
 
         window.sendCommentSticker = function(url) {
             if (!currentPostId || !db) return;
@@ -2100,6 +2333,18 @@
                         </div>
                     </div>`;
                 }
+
+                if (m.attachment) {
+                    return `
+                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                        <div class="msg-bubble">
+                            ${senderName}
+                            ${attachmentHtml(m.attachment)}
+                            ${m.text ? escapeHtml(m.text) : ''}
+                            <span class="msg-time">${timeStr}</span>
+                        </div>
+                    </div>`;
+                }
                 
                 return `
                 <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
@@ -2152,6 +2397,22 @@
         }
         
         document.getElementById('btn-send-chat-message').onclick = sendChatMessage;
+
+        setupAttachmentPicker('chat-attach-file', async (attachment) => {
+            if (!currentChatId || !db) return;
+            const captionByType = { image: '📎 Фото', video: '📎 Видео', audio: '📎 Аудио' };
+            await push(ref(db, 'chats/' + currentChatId + '/messages'), {
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                text: '',
+                attachment,
+                createdAt: Date.now()
+            });
+            update(ref(db, 'chats/' + currentChatId), {
+                lastMessage: captionByType[attachment.type] || '📎 Вложение',
+                lastMessageAt: Date.now()
+            });
+        });
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { 
             if (e.key === 'Enter') sendChatMessage(); 
         });
@@ -2497,6 +2758,7 @@
                 document.getElementById('admin-panel').classList.remove('hidden'); 
                 document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' }); 
                 renderAdminPostsList(); 
+                renderAdminBannersList();
                 renderAdminBooksList(); 
                 renderAdminStickersList(); 
                 populateChapterBookSelect(); 
@@ -2506,7 +2768,7 @@
         };
 
         window.switchAdminTab = function(tab) {
-            ['posts', 'books', 'stickers'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });
@@ -2673,6 +2935,97 @@
                     document.getElementById('btn-cancel-edit-post').click(); 
                     tg.showPopup({ title: 'Опубликовано!', message: 'Новость видна всем', buttons: [{ type: 'ok' }] }); 
                 }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err))); 
+            }
+        };
+
+        // АДМИН - БАННЕРЫ
+        function renderAdminBannersList() {
+            const el = document.getElementById('admin-banners-list');
+            if (!el) return;
+
+            if (!bannersData.length) {
+                el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;">Баннеров пока нет</div>';
+                return;
+            }
+
+            el.innerHTML = bannersData.map(b => `
+                <div class="admin-item">
+                    ${b.image ? `<img src="${b.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(b.title || '')}">${initialOf(b.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(b.title || '(без заголовка)')}</div>
+                        <div class="admin-item-sub">${b.type === 'event' ? '⏳ Событие · ' + formatDate(b.eventAt) : 'Обычный баннер'}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editBanner('${b.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="if(confirm('Удалить баннер?')) remove(ref(db, 'banners/${b.id}')).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)))">🗑</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        window.editBanner = function(id) {
+            const b = bannersData.find(x => x.id === id);
+            if (!b) return;
+
+            editingBannerId = id;
+            document.getElementById('banner-title').value = b.title || '';
+            document.getElementById('banner-image').value = b.image || '';
+            document.getElementById('banner-link').value = b.link || '';
+            document.getElementById('banner-type').value = b.type || 'simple';
+            document.getElementById('banner-event-at').classList.toggle('hidden', b.type !== 'event');
+            if (b.type === 'event' && b.eventAt) {
+                const d = new Date(b.eventAt);
+                const pad = n => String(n).padStart(2, '0');
+                document.getElementById('banner-event-at').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
+            document.getElementById('banner-form-heading').textContent = 'Редактировать баннер';
+            document.getElementById('btn-add-banner').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-banner').classList.remove('hidden');
+            document.getElementById('banner-title').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        document.getElementById('btn-cancel-edit-banner').onclick = function() {
+            editingBannerId = null;
+            document.getElementById('banner-title').value = '';
+            document.getElementById('banner-image').value = '';
+            document.getElementById('banner-link').value = '';
+            document.getElementById('banner-type').value = 'simple';
+            document.getElementById('banner-event-at').value = '';
+            document.getElementById('banner-event-at').classList.add('hidden');
+            document.getElementById('banner-form-heading').textContent = 'Добавить баннер';
+            document.getElementById('btn-add-banner').textContent = 'Опубликовать баннер';
+            document.getElementById('btn-cancel-edit-banner').classList.add('hidden');
+        };
+
+        document.getElementById('banner-type').addEventListener('change', function() {
+            document.getElementById('banner-event-at').classList.toggle('hidden', this.value !== 'event');
+        });
+
+        document.getElementById('btn-add-banner').onclick = function() {
+            const title = document.getElementById('banner-title').value.trim();
+            const image = document.getElementById('banner-image').value.trim();
+            const link = document.getElementById('banner-link').value.trim();
+            const type = document.getElementById('banner-type').value;
+            const eventAtRaw = document.getElementById('banner-event-at').value;
+
+            if (!image) return tg.showAlert('Добавь картинку баннера');
+            if (type === 'event' && !eventAtRaw) return tg.showAlert('Укажи дату и время события');
+
+            const data = {
+                title, image, link,
+                type,
+                eventAt: type === 'event' ? new Date(eventAtRaw).getTime() : null
+            };
+
+            if (editingBannerId) {
+                update(ref(db, 'banners/' + editingBannerId), data).then(() => {
+                    document.getElementById('btn-cancel-edit-banner').click();
+                    tg.showPopup({ title: 'Сохранено', message: 'Баннер обновлён', buttons: [{ type: 'ok' }] });
+                }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err)));
+            } else {
+                push(ref(db, 'banners'), { ...data, createdAt: Date.now() }).then(() => {
+                    document.getElementById('btn-cancel-edit-banner').click();
+                    tg.showPopup({ title: 'Опубликовано!', message: 'Баннер виден всем', buttons: [{ type: 'ok' }] });
+                }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err)));
             }
         };
 
