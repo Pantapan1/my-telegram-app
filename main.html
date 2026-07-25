@@ -293,6 +293,11 @@
         .avatar-sm-fallback { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; cursor: pointer; width: fit-content; }
         .post-author-name { font-size: 13px; font-weight: 700; color: #2c3e50; }
+        .verified-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; background: #1da1f2; border-radius: 50%; color: #fff;
+            font-size: 9px; margin-left: 3px; vertical-align: middle;
+        }
 
         .admin-item {
             display: flex; align-items: center; gap: 10px; padding: 10px;
@@ -523,15 +528,20 @@
                 <div class="profile-avatar-wrap">
                     <img id="profile-avatar-img" class="profile-avatar" src="">
                     <div id="profile-avatar-fallback" class="profile-avatar-fallback"></div>
+                    <img id="profile-frame-img" class="hidden" style="position:absolute;top:-8px;left:-8px;width:92px;height:92px;pointer-events:none;">
                 </div>
             </div>
             <div class="profile-name-row">
                 <h2 id="profile-display-name">Читатель</h2>
             </div>
             <div class="profile-bio" id="profile-display-bio"></div>
+            <div id="profile-decorations-row" style="display:flex;gap:6px;margin-bottom:10px;"></div>
 
             <button class="btn btn-secondary" id="btn-edit-profile">✏️ Редактировать профиль</button>
             <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления: ...</button>
+            <button class="btn btn-secondary" id="btn-open-shop">🛍 Магазин</button>
+            <button class="btn btn-secondary" id="btn-open-publisher-app">📝 Подать заявку на публикацию</button>
+            <button class="btn btn-secondary hidden" id="btn-open-book-editor">📚 Редактор моих книг</button>
             <div id="profile-edit-panel" class="hidden">
                 <div class="divider"></div>
                 <input type="text" id="profile-name-input" class="input" placeholder="Отображаемое имя">
@@ -579,6 +589,11 @@
                     <div class="stats-num" style="color:#0097e6;font-size:24px;" id="stats-chats">0</div>
                     <div class="stats-label">Чатов</div>
                 </div>
+            </div>
+
+            <div class="card" id="coins-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+                <div style="font-weight:700;color:#2c3e50;">🪙 Монеты</div>
+                <div id="stats-coins" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
             </div>
 
             <div class="card" id="genre-stats-card" style="display:none;">
@@ -712,6 +727,17 @@
                 <button class="chat-send-btn" id="btn-send-comment">➤</button>
             </div>
         </div>
+    </div>
+
+    <!-- ОВЕРЛЕЙ ПУБЛИЧНОГО ПРОФИЛЯ (просмотр чужого профиля) -->
+    <div id="user-profile-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-user-profile-btn">← Назад</button>
+            <div style="flex:1;min-width:0;">
+                <div id="user-profile-overlay-name" style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; color:#2c3e50; font-size:16px;"></div>
+            </div>
+        </div>
+        <div class="reader-content" id="user-profile-overlay-content" style="white-space:normal;"></div>
     </div>
 
     <!-- КОМПОУЗЕР (написать / редактировать свой пост) -->
@@ -976,6 +1002,12 @@
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
         }
+
+        // Значок-галочка рядом с именем одобренных издателей
+        function verifiedBadge(userId) {
+            const u = usersData.find(x => x.id === userId);
+            return (u && u.isPublisher) ? '<span class="verified-badge" title="Проверенный издатель">✓</span>' : '';
+        }
         
         function formatDate(ts) {
             if (!ts) return '';
@@ -998,6 +1030,7 @@
 
         let postsData = [];
         let bannersData = [];
+        let shopItemsData = [];
         let editingBannerId = null;
         let booksData = [];
         let usersData = [];
@@ -1014,6 +1047,8 @@
         let chatLastRead = JSON.parse(localStorage.getItem('sr_chat_last_read') || '{}');
 
         let currentPostId = null;
+        let viewingUserId = null;
+        let dailyRewardChecked = false;
         let currentBookId = null;
         let currentChapters = [];
         let currentChapterIndex = 0;
@@ -1450,6 +1485,103 @@
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             renderNotificationsToggle();
         };
+
+        // === Монеты за ежедневный вход ===
+        function checkDailyCoinReward() {
+            if (dailyRewardChecked) return;
+            const me = usersData.find(u => u.id === currentUser.id);
+            if (!me) return; // профиль ещё не создан в базе — подождём следующего обновления
+            dailyRewardChecked = true;
+
+            const today = new Date().toDateString();
+            const payload = {};
+            if (!me.joinedAt) payload.joinedAt = Date.now();
+            if (me.lastRewardDate !== today) {
+                payload.coins = (me.coins || 0) + 10;
+                payload.lastRewardDate = today;
+            }
+
+            if (Object.keys(payload).length) {
+                update(ref(db, 'users/' + currentUser.id), payload).then(() => {
+                    if (payload.coins !== undefined) {
+                        tg.showPopup({ title: '🪙 +10 монет!', message: 'Награда за ежедневный вход в приложение', buttons: [{ type: 'ok' }] });
+                    }
+                }).catch(() => {});
+            }
+        }
+
+        // === Публичный профиль пользователя ===
+        window.openUserProfile = function(userId) {
+            if (!userId) return;
+            if (userId === currentUser.id) {
+                window.switchTab('profile');
+                return;
+            }
+            viewingUserId = userId;
+            activeOverlay = 'userprofile';
+            renderUserProfileOverlay(userId);
+            document.getElementById('user-profile-overlay').classList.add('active');
+        };
+
+        document.getElementById('close-user-profile-btn').onclick = function() {
+            document.getElementById('user-profile-overlay').classList.remove('active');
+            activeOverlay = null;
+            viewingUserId = null;
+        };
+
+        function renderUserProfileOverlay(userId) {
+            const u = usersData.find(x => x.id === userId);
+            const content = document.getElementById('user-profile-overlay-content');
+            if (!u) { content.innerHTML = '<div class="empty-state"><span class="icon">🙈</span><div class="title">Пользователь не найден</div></div>'; return; }
+
+            document.getElementById('user-profile-overlay-name').innerHTML = escapeHtml(u.name || 'Без имени') + verifiedBadge(u.id);
+            const joined = u.joinedAt ? formatDate(u.joinedAt) : '—';
+            const frameItem = u.equipped && u.equipped.frame ? shopItemsData.find(i => i.id === u.equipped.frame) : null;
+            const decorIds = (u.equipped && u.equipped.decorations) ? Object.keys(u.equipped.decorations) : [];
+            const decorHtml = decorIds.map(id => {
+                const item = shopItemsData.find(i => i.id === id);
+                return item ? `<img src="${item.image}" title="${escapeHtml(item.name)}" style="width:26px;height:26px;object-fit:contain;">` : '';
+            }).join('');
+
+            content.innerHTML = `
+                <div style="border-radius:20px;overflow:hidden;background:#f4f6f7;margin-bottom:16px;">
+                    ${u.banner ? `<img src="${u.banner}" style="width:100%;height:110px;object-fit:cover;display:block;">` : `<div style="width:100%;height:60px;background:linear-gradient(135deg,#ffb75e,#ed8f03);"></div>`}
+                    <div style="padding:16px;text-align:center;margin-top:-38px;">
+                        <div style="position:relative;width:76px;margin:0 auto;">
+                            ${u.avatar ? `<img src="${u.avatar}" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);">` : `<div class="cover-fallback" style="width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:${colorFor(u.name || '')};font-size:28px;">${initialOf(u.name)}</div>`}
+                            ${frameItem ? `<img src="${frameItem.image}" style="position:absolute;top:-8px;left:-8px;width:92px;height:92px;pointer-events:none;">` : ''}
+                        </div>
+                        <div style="font-weight:800;font-size:18px;margin-top:10px;color:#2c3e50;">${escapeHtml(u.name || 'Без имени')}${verifiedBadge(u.id)}</div>
+                        ${u.bio ? `<div style="color:#7f8c8d;font-size:14px;margin-top:4px;">${escapeHtml(u.bio)}</div>` : ''}
+                        ${decorHtml ? `<div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">${decorHtml}</div>` : ''}
+                        <div style="color:#95a5a6;font-size:12px;margin-top:8px;">📅 С нами с ${joined}</div>
+                    </div>
+                </div>
+                <div class="card stats-grid">
+                    <div>
+                        <div class="stats-num" style="color:#2e7d32;">${u.booksReadCount || 0}</div>
+                        <div class="stats-label">Прочитано</div>
+                    </div>
+                    <div class="stats-divider"></div>
+                    <div>
+                        <div class="stats-num" style="color:#e65100;">${u.streak || 0}</div>
+                        <div class="stats-label">Дней подряд</div>
+                    </div>
+                    <div class="stats-divider"></div>
+                    <div>
+                        <div class="stats-num" style="color:#ed8f03;">${u.coins || 0}</div>
+                        <div class="stats-label">🪙 Монет</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="btn-message-user" style="margin-top:16px;">💬 Написать сообщение</button>
+            `;
+
+            document.getElementById('btn-message-user').onclick = function() {
+                document.getElementById('user-profile-overlay').classList.remove('active');
+                activeOverlay = null;
+                startChatWith(userId, u.name || 'Читатель');
+            };
+        }
         
         function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
@@ -1496,6 +1628,13 @@
                 if (isAdmin) renderAdminBannersList();
             });
 
+            onValue(ref(db, 'shopItems'), (snapshot) => {
+                const data = snapshot.val();
+                shopItemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                renderOwnProfileHeader();
+                if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
+            });
+
             // Обновление таймеров обратного отсчёта у баннеров-событий раз в секунду
             setInterval(updateBannerCountdowns, 1000);
 
@@ -1527,6 +1666,7 @@
                 renderChatsList(); 
                 renderOwnProfileHeader();
                 renderNotificationsToggle();
+                checkDailyCoinReward();
                 
                 if (activeOverlay === 'newchat' || activeOverlay === 'creategroup') {
                     renderUserPickList();
@@ -1535,6 +1675,9 @@
                 if (activeOverlay === 'chat' && currentChatId) {
                     const chat = chatsData.find(c => c.id === currentChatId);
                     if (chat) renderChatOverlay(chat);
+                }
+                if (activeOverlay === 'userprofile' && viewingUserId) {
+                    renderUserProfileOverlay(viewingUserId);
                 }
             });
 
@@ -1661,7 +1804,7 @@
                 const authorRow = post.authorId ? `
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
-                        <span class="post-author-name">${escapeHtml(post.authorName)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
+                        <span class="post-author-name">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
                     </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
                 
                 return `
@@ -1686,9 +1829,7 @@
                 row.onclick = (e) => {
                     e.stopPropagation();
                     const aid = row.getAttribute('data-author-id');
-                    if (aid && aid !== currentUser.id) {
-                        startChatWith(aid, row.getAttribute('data-author-name'));
-                    }
+                    if (aid) openUserProfile(aid);
                 };
             });
         }
@@ -1815,7 +1956,7 @@
             const authorBlock = post.authorId ? `
                 <div class="post-author-row" style="margin-bottom:12px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                     ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
-                    <span class="post-author-name">${escapeHtml(post.authorName)}</span>
+                    <span class="post-author-name">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}</span>
                 </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:10px;">📰 Новость от редакции</div>';
 
             const imagesArr = post.images || (post.image ? [post.image] : []);
@@ -1844,7 +1985,7 @@
                     ${comments.length ? comments.map(c => `
                         <div class="comment-item">
                             <div>
-                                <span class="comment-author">${escapeHtml(c.author)}</span>
+                                <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;">${escapeHtml(c.author)}${verifiedBadge(c.userId)}</span>
                                 <span class="comment-meta">${formatDate(c.createdAt)}</span>
                             </div>
                             ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : (c.attachment ? attachmentHtml(c.attachment) : `<div class="comment-text">${escapeHtml(c.text)}</div>`)}
@@ -1858,7 +1999,7 @@
             if (row) {
                 row.onclick = () => { 
                     const aid = row.getAttribute('data-author-id'); 
-                    if (aid !== currentUser.id) startChatWith(aid, row.getAttribute('data-author-name')); 
+                    if (aid) openUserProfile(aid);
                 };
             }
 
@@ -1868,6 +2009,10 @@
             
             document.querySelectorAll('#post-overlay-content .comment-delete').forEach(b => {
                 b.onclick = () => deleteComment(post.id, b.dataset.cid);
+            });
+
+            document.querySelectorAll('#post-overlay-content .comment-author').forEach(el => {
+                el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
             });
             
             if (document.getElementById('btn-share-post')) document.getElementById('btn-share-post').onclick = () => sharePost(post.id);
@@ -2189,6 +2334,12 @@
                 saveLocal('sr_read', readBooks); 
                 updateStreak(); 
                 renderProfileStats();
+                if (db) {
+                    update(ref(db, 'users/' + currentUser.id), {
+                        booksReadCount: readBooks.length,
+                        streak: streakStore.count || 0
+                    }).catch(() => {});
+                }
                 tg.showPopup({ title: 'Книга прочитана! 🎉', message: 'Поздравляем!', buttons: [{ type: 'ok' }] });
             } else {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -2320,7 +2471,7 @@
             listEl.innerHTML = messages.length ? messages.map(m => {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const senderName = (chat.type === 'group' && m.senderId !== currentUser.id) 
-                    ? `<div style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px;">${escapeHtml(m.senderName)}</div>` 
+                    ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px; cursor:pointer;">${escapeHtml(m.senderName)}${verifiedBadge(m.senderId)}</div>` 
                     : '';
                 
                 if (m.sticker) {
@@ -2359,6 +2510,10 @@
 
             listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
                 btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
+            });
+
+            listEl.querySelectorAll('.msg-sender-name').forEach(el => {
+                el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
             });
 
             chatLastRead[chat.id] = Date.now(); 
@@ -2648,7 +2803,7 @@
             const avatar = (me && me.avatar) || '';
             const banner = (me && me.banner) || '';
             
-            document.getElementById('profile-display-name').textContent = name; 
+            document.getElementById('profile-display-name').innerHTML = escapeHtml(name) + verifiedBadge(currentUser.id); 
             document.getElementById('profile-display-bio').textContent = bio;
             
             const avatarImg = document.getElementById('profile-avatar-img');
@@ -2678,6 +2833,19 @@
                 bannerFallback.style.background = `linear-gradient(135deg, ${colorFor(name)}, #ffe0b2)`; 
             }
 
+            document.getElementById('btn-open-book-editor').classList.toggle('hidden', !(me && me.isPublisher));
+
+            // Рамка аватара и декор из магазина
+            const frameImg = document.getElementById('profile-frame-img');
+            const frameItem = me && me.equipped && me.equipped.frame ? shopItemsData.find(i => i.id === me.equipped.frame) : null;
+            if (frameItem) { frameImg.src = frameItem.image; frameImg.classList.remove('hidden'); } else { frameImg.classList.add('hidden'); }
+
+            const decorIds = (me && me.equipped && me.equipped.decorations) ? Object.keys(me.equipped.decorations) : [];
+            document.getElementById('profile-decorations-row').innerHTML = decorIds.map(id => {
+                const item = shopItemsData.find(i => i.id === id);
+                return item ? `<img src="${item.image}" title="${escapeHtml(item.name)}" style="width:26px;height:26px;object-fit:contain;">` : '';
+            }).join('');
+
             if (!document.getElementById('profile-edit-panel').classList.contains('hidden')) return;
             
             document.getElementById('profile-name-input').value = (me && me.name) || ''; 
@@ -2689,6 +2857,16 @@
         document.getElementById('btn-edit-profile').onclick = function() { 
             document.getElementById('profile-edit-panel').classList.toggle('hidden'); 
         };
+
+        // Переход в отдельные страницы (магазин / заявка на публикацию / редактор книг),
+        // передаём id и имя пользователя, чтобы там не нужно было логиниться заново
+        function goToSubpage(pageName) {
+            const q = `?uid=${encodeURIComponent(currentUser.id)}&name=${encodeURIComponent(currentUser.name)}`;
+            window.location.href = pageName + q;
+        }
+        document.getElementById('btn-open-shop').onclick = () => goToSubpage('shop.html');
+        document.getElementById('btn-open-publisher-app').onclick = () => goToSubpage('publisher-application.html');
+        document.getElementById('btn-open-book-editor').onclick = () => goToSubpage('book-editor.html');
         
         document.getElementById('btn-save-profile').onclick = function() {
             if (!db) return tg.showAlert('Firebase не подключен');
@@ -2712,6 +2890,9 @@
             document.getElementById('stats-streak').textContent = streakStore.count || 0;
             document.getElementById('stats-posts').textContent = postsData.filter(p => p.authorId === currentUser.id).length; 
             document.getElementById('stats-chats').textContent = chatsData.filter(c => c.participants && c.participants[currentUser.id]).length;
+
+            const me = usersData.find(u => u.id === currentUser.id);
+            document.getElementById('stats-coins').textContent = (me && me.coins) || 0;
             
             const genreCounts = {}; 
             readBooks.forEach(id => { 
@@ -2743,6 +2924,7 @@
             else if (activeOverlay === 'creategroup') document.getElementById('close-create-group-btn').click();
             else if (activeOverlay === 'editgroup') document.getElementById('close-edit-group-btn').click();
             else if (activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
+            else if (activeOverlay === 'userprofile') document.getElementById('close-user-profile-btn').click();
         });
 
         // === АДМИН ===
