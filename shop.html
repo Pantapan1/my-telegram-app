@@ -77,6 +77,16 @@
         <div class="section-title">🎀 Декор профиля <span style="color:#95a5a6;font-weight:400;font-size:12px;">(до 5 одновременно)</span></div>
         <div class="grid" id="decor-grid"></div>
 
+        <div class="section-title">🎡 Колесо фортуны <span style="color:#95a5a6;font-weight:400;font-size:12px;">(20 🪙 за попытку)</span></div>
+        <div class="card" style="text-align:center;">
+            <div id="wheel-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
+                <div id="wheel" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:6px solid #fff;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
+                <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;">🔻</div>
+            </div>
+            <button class="btn" id="btn-spin-wheel">Крутить за 20 🪙</button>
+            <div id="wheel-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
+        </div>
+
         <div class="admin-toggle" id="admin-toggle">⚙ управление товарами</div>
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Добавить товар</h3>
@@ -87,6 +97,7 @@
                 <input type="file" id="item-image-file" accept="image/*" style="display:none;">
             </div>
             <input type="number" id="item-price" class="input" placeholder="Цена в монетах" min="1">
+            <input type="number" id="item-stock" class="input" placeholder="Количество в наличии (пусто = без ограничений)" min="0">
             <select id="item-category" class="input">
                 <option value="frame">Рамка аватара</option>
                 <option value="decoration">Декор профиля</option>
@@ -167,6 +178,7 @@
 
                 return items.map(item => {
                     const owned = !!inventory[item.id];
+                    const hasStock = item.stock === undefined || item.stock === null || item.stock > 0;
                     let isEquipped, btnLabel, btnClass;
 
                     if (category === 'frame') {
@@ -175,16 +187,22 @@
                         isEquipped = !!(equipped.decorations && equipped.decorations[item.id]);
                     }
 
-                    if (!owned) { btnLabel = `Купить за ${item.price}🪙`; btnClass = (myUser.coins || 0) >= item.price ? 'btn-buy' : 'btn-disabled'; }
+                    if (!owned) {
+                        if (!hasStock) { btnLabel = 'Раскуплено'; btnClass = 'btn-disabled'; }
+                        else { btnLabel = `Купить за ${item.price}🪙`; btnClass = (myUser.coins || 0) >= item.price ? 'btn-buy' : 'btn-disabled'; }
+                    }
                     else if (isEquipped) { btnLabel = 'Снять'; btnClass = 'btn-unequip'; }
                     else { btnLabel = 'Надеть'; btnClass = 'btn-equip'; }
+
+                    const stockLine = (item.stock !== undefined && item.stock !== null) ? `<div style="font-size:11px;color:#95a5a6;margin-bottom:4px;">${item.stock > 0 ? 'Осталось: ' + item.stock + ' шт.' : 'Раскуплено'}</div>` : '';
 
                     return `
                     <div class="item-card">
                         <img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">
                         <div class="item-name">${escapeHtml(item.name)}</div>
                         <div class="item-price">${owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : item.price + ' 🪙'}</div>
-                        <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}">${btnLabel}</button>
+                        ${stockLine}
+                        <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}" ${(!owned && !hasStock) ? 'disabled' : ''}>${btnLabel}</button>
                     </div>`;
                 }).join('');
             };
@@ -203,10 +221,18 @@
 
             if (!owned) {
                 if ((myUser.coins || 0) < item.price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
-                update(ref(db, 'users/' + myId), {
+                const hasStock = item.stock === undefined || item.stock === null || item.stock > 0;
+                if (!hasStock) { tg.showAlert ? tg.showAlert('Товар раскуплен') : alert('Товар раскуплен'); return; }
+
+                const updates = {
                     coins: (myUser.coins || 0) - item.price,
                     ['inventory/' + itemId]: true
-                }).catch(err => alert('Ошибка: ' + err.message));
+                };
+                update(ref(db, 'users/' + myId), updates).catch(err => alert('Ошибка: ' + err.message));
+
+                if (item.stock !== undefined && item.stock !== null) {
+                    update(ref(db, 'shopItems/' + itemId), { stock: item.stock - 1 }).catch(() => {});
+                }
                 return;
             }
 
@@ -242,15 +268,28 @@
         function renderAdminList() {
             const el = document.getElementById('admin-items-list');
             if (!itemsData.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:13px;">Товаров пока нет</div>'; return; }
-            el.innerHTML = itemsData.map(item => `
+            el.innerHTML = itemsData.map(item => {
+                const stockLabel = (item.stock === undefined || item.stock === null) ? '∞' : item.stock;
+                return `
                 <div class="admin-item">
                     <img src="${item.image}" onerror="this.style.opacity=0.2">
-                    <div class="admin-item-info">${escapeHtml(item.name)} · ${item.price}🪙 · ${item.category === 'frame' ? 'рамка' : 'декор'}</div>
-                    <button data-id="${item.id}">🗑</button>
-                </div>
-            `).join('');
+                    <div class="admin-item-info">${escapeHtml(item.name)} · ${item.price}🪙 · ${item.category === 'frame' ? 'рамка' : 'декор'} · шт: ${stockLabel}</div>
+                    <button data-id="${item.id}" data-action="stock" style="background:#eafaf1;color:#27ae60;">✏️</button>
+                    <button data-id="${item.id}" data-action="delete">🗑</button>
+                </div>`;
+            }).join('');
             el.querySelectorAll('button[data-id]').forEach(b => {
-                b.onclick = () => { if (confirm('Удалить товар?')) remove(ref(db, 'shopItems/' + b.dataset.id)); };
+                b.onclick = () => {
+                    if (b.dataset.action === 'delete') {
+                        if (confirm('Удалить товар?')) remove(ref(db, 'shopItems/' + b.dataset.id));
+                    } else {
+                        const item = itemsData.find(i => i.id === b.dataset.id);
+                        const current = (item.stock === undefined || item.stock === null) ? '' : item.stock;
+                        const val = prompt('Новое количество (пусто = без ограничений):', current);
+                        if (val === null) return;
+                        update(ref(db, 'shopItems/' + b.dataset.id), { stock: val.trim() === '' ? null : parseInt(val, 10) }).catch(err => alert('Ошибка: ' + err.message));
+                    }
+                };
             });
         }
 
@@ -271,17 +310,111 @@
             const name = document.getElementById('item-name').value.trim();
             const image = document.getElementById('item-image').value.trim();
             const price = parseInt(document.getElementById('item-price').value, 10);
+            const stockRaw = document.getElementById('item-stock').value.trim();
+            const stock = stockRaw === '' ? null : parseInt(stockRaw, 10);
             const category = document.getElementById('item-category').value;
 
             if (!name || !image || !price) return alert('Заполни все поля');
 
-            push(ref(db, 'shopItems'), { name, image, price, category, createdAt: Date.now() }).then(() => {
+            push(ref(db, 'shopItems'), { name, image, price, stock, category, createdAt: Date.now() }).then(() => {
                 document.getElementById('item-name').value = '';
                 document.getElementById('item-image').value = '';
                 document.getElementById('item-price').value = '';
+                document.getElementById('item-stock').value = '';
             }).catch(err => alert('Ошибка: ' + err.message));
         };
+
+        // === Колесо фортуны ===
+        const SPIN_COST = 20;
+        const wheelSegments = [
+            { label: '+50🪙', color: '#ffb75e', type: 'coins', value: 50, weight: 8 },
+            { label: '+10🪙', color: '#4fc3f7', type: 'coins', value: 10, weight: 22 },
+            { label: 'Пусто', color: '#b0bec5', type: 'nothing', value: 0, weight: 20 },
+            { label: '-10🪙', color: '#e57373', type: 'coins', value: -10, weight: 15 },
+            { label: '🖼 Рамка', color: '#ba68c8', type: 'frame', value: 0, weight: 10 },
+            { label: '+20🪙', color: '#81c784', type: 'coins', value: 20, weight: 18 },
+            { label: '🎀 Декор', color: '#f06292', type: 'decoration', value: 0, weight: 8 },
+            { label: '+100🪙', color: '#ffd54f', type: 'coins', value: 100, weight: 2 }
+        ];
+        const segAngle = 360 / wheelSegments.length;
+        let wheelRotation = 0;
+        let spinning = false;
+
+        function buildWheelFace() {
+            const wheel = document.getElementById('wheel');
+            const gradientParts = wheelSegments.map((s, i) => `${s.color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`).join(', ');
+            wheel.style.background = `conic-gradient(${gradientParts})`;
+            wheel.innerHTML = wheelSegments.map((s, i) => {
+                const mid = i * segAngle + segAngle / 2;
+                return `<div style="position:absolute;top:50%;left:50%;width:0;height:0;transform:rotate(${mid}deg) translate(0,-78px) rotate(${-mid}deg);transform-origin:0 0;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);white-space:nowrap;">${s.label}</div>`;
+            }).join('');
+        }
+        buildWheelFace();
+
+        function pickWeightedSegment() {
+            const total = wheelSegments.reduce((sum, s) => sum + s.weight, 0);
+            let r = Math.random() * total;
+            for (let i = 0; i < wheelSegments.length; i++) {
+                r -= wheelSegments[i].weight;
+                if (r <= 0) return i;
+            }
+            return wheelSegments.length - 1;
+        }
+
+        document.getElementById('btn-spin-wheel').onclick = function() {
+            if (spinning) return;
+            if ((myUser.coins || 0) < SPIN_COST) { tg.showAlert ? tg.showAlert('Недостаточно монет для вращения (нужно ' + SPIN_COST + ' 🪙)') : alert('Недостаточно монет'); return; }
+
+            spinning = true;
+            document.getElementById('wheel-result').textContent = '';
+            update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) - SPIN_COST }).catch(() => {});
+
+            const winIndex = pickWeightedSegment();
+            const winSegment = wheelSegments[winIndex];
+            const targetMid = winIndex * segAngle + segAngle / 2;
+            // 5 полных оборотов + доворот так, чтобы выигрышный сектор оказался под указателем (сверху, 0deg)
+            const extraTurns = 5 * 360;
+            wheelRotation = wheelRotation - (wheelRotation % 360) + extraTurns + (360 - targetMid);
+
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${wheelRotation}deg)`;
+
+            setTimeout(() => applySpinResult(winSegment), 4100);
+        };
+
+        function applySpinResult(segment) {
+            spinning = false;
+            const resultEl = document.getElementById('wheel-result');
+
+            if (segment.type === 'coins') {
+                const delta = segment.value;
+                update(ref(db, 'users/' + myId), { coins: Math.max(0, (myUser.coins || 0) + delta) }).catch(() => {});
+                resultEl.textContent = delta > 0 ? `🎉 Выигрыш: +${delta} монет!` : (delta < 0 ? `😬 Потеря: ${delta} монет` : '');
+                resultEl.style.color = delta > 0 ? '#27ae60' : (delta < 0 ? '#e74c3c' : '#95a5a6');
+            } else if (segment.type === 'nothing') {
+                resultEl.textContent = 'Пусто — повезёт в следующий раз!';
+                resultEl.style.color = '#95a5a6';
+            } else {
+                // Случайный неполученный предмет нужной категории
+                const inventory = myUser.inventory || {};
+                const candidates = itemsData.filter(i => i.category === segment.type && !inventory[i.id]);
+                if (candidates.length) {
+                    const won = candidates[Math.floor(Math.random() * candidates.length)];
+                    update(ref(db, 'users/' + myId + '/inventory/' + won.id), true).catch(() => {});
+                    resultEl.textContent = `🎁 Выпало: ${won.name}!`;
+                    resultEl.style.color = '#8e44ad';
+                } else {
+                    // Нечего выдавать — утешительный приз монетами
+                    update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + 15 }).catch(() => {});
+                    resultEl.textContent = '🎁 Все предметы этой категории уже у тебя — держи +15 🪙!';
+                    resultEl.style.color = '#8e44ad';
+                }
+            }
+
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
     }
 </script>
+
 </body>
 </html>
