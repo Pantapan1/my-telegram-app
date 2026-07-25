@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Заявка на публикацию</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    .card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    .input {
+        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
+        font-size: 14px; background: #f4f6f7; font-family: inherit;
+    }
+    textarea.input { min-height: 120px; resize: vertical; }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; font-weight: 700; cursor: pointer; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+    .status-pending { background: #fff4e0; color: #ed8f03; }
+    .status-approved { background: #eafaf1; color: #27ae60; }
+    .status-rejected { background: #fdecea; color: #e74c3c; }
+    .admin-toggle { text-align: center; margin-top: 30px; font-size: 12px; color: #bbb; cursor: pointer; }
+    .app-item { background: #f8f9fa; border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+    .app-item .name { font-weight: 700; margin-bottom: 4px; }
+    .app-item .msg { font-size: 13px; color: #555; margin-bottom: 10px; white-space: pre-wrap; }
+    .app-actions { display: flex; gap: 8px; }
+    .app-actions button { flex: 1; border: none; border-radius: 10px; padding: 8px 0; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .btn-approve { background: #eafaf1; color: #27ae60; }
+    .btn-reject { background: #fdecea; color: #e74c3c; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 20px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+        <a href="app.html" class="back-link">←</a>
+        <h1>📝 Публикация книг</h1>
+    </div>
+
+    <div id="no-session" class="card" style="display:none;">
+        Не удалось определить пользователя. Открой эту страницу из профиля в приложении.
+        <a href="app.html" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">← Вернуться в приложение</a>
+    </div>
+
+    <div id="app-root" style="display:none;">
+        <div class="card" id="status-card" style="display:none;"></div>
+
+        <div class="card" id="form-card">
+            <p style="margin-top:0;color:#7f8c8d;font-size:14px;">
+                Хочешь публиковать свои книги в приложении? Расскажи немного о себе и о том, что планируешь писать —
+                администратор рассмотрит заявку.
+            </p>
+            <textarea id="app-message" class="input" placeholder="Расскажи о себе и своих книгах..."></textarea>
+            <button class="btn" id="btn-submit-application">Отправить заявку</button>
+        </div>
+
+        <div class="admin-toggle" id="admin-toggle">⚙ рассмотрение заявок</div>
+        <div id="admin-panel" style="display:none;">
+            <div class="card">
+                <h3 style="margin-top:0;">Заявки на рассмотрении</h3>
+                <div id="admin-apps-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null, myName = null;
+    if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
+    else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
+    else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+    }
+
+    if (!myId) {
+        document.getElementById('no-session').style.display = 'block';
+    } else {
+        document.getElementById('app-root').style.display = 'block';
+        startPage();
+    }
+
+    function startPage() {
+        let isAdmin = false;
+
+        // Моя собственная заявка
+        onValue(ref(db, 'publisherApplications/' + myId), (snap) => {
+            const my = snap.val();
+            const statusCard = document.getElementById('status-card');
+            const formCard = document.getElementById('form-card');
+
+            if (!my || my.status === 'rejected') {
+                statusCard.style.display = my ? 'block' : 'none';
+                if (my && my.status === 'rejected') {
+                    statusCard.innerHTML = `<span class="status-badge status-rejected">❌ Заявка отклонена</span><div style="font-size:13px;color:#7f8c8d;">Можешь отправить новую заявку ниже.</div>`;
+                }
+                formCard.style.display = 'block';
+            } else if (my.status === 'pending') {
+                statusCard.style.display = 'block';
+                statusCard.innerHTML = `<span class="status-badge status-pending">⏳ На рассмотрении</span><div style="font-size:13px;color:#7f8c8d;">Мы сообщим, как только администратор примет решение.</div>`;
+                formCard.style.display = 'none';
+            } else if (my.status === 'approved') {
+                statusCard.style.display = 'block';
+                statusCard.innerHTML = `<span class="status-badge status-approved">✅ Заявка одобрена!</span><div style="font-size:13px;color:#7f8c8d;">Теперь тебе доступен редактор книг.</div><a href="book-editor.html?uid=${encodeURIComponent(myId)}&name=${encodeURIComponent(myName)}" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">📚 Открыть редактор книг →</a>`;
+                formCard.style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-submit-application').onclick = function() {
+            const message = document.getElementById('app-message').value.trim();
+            if (!message) { alert('Расскажи немного о себе перед отправкой'); return; }
+
+            set(ref(db, 'publisherApplications/' + myId), {
+                userName: myName,
+                message,
+                status: 'pending',
+                createdAt: Date.now()
+            }).then(() => {
+                document.getElementById('app-message').value = '';
+                tg.showPopup ? tg.showPopup({ title: 'Отправлено!', message: 'Заявка на рассмотрении у администратора', buttons: [{ type: 'ok' }] }) : alert('Заявка отправлена');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // === Админ: рассмотрение заявок ===
+        document.getElementById('admin-toggle').onclick = function() {
+            if (isAdmin) {
+                const p = document.getElementById('admin-panel');
+                p.style.display = p.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+            const pwd = prompt('Пароль:');
+            if (pwd === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-panel').style.display = 'block';
+                listenAllApplications();
+            } else if (pwd) {
+                alert('Неверный пароль');
+            }
+        };
+
+        function listenAllApplications() {
+            onValue(ref(db, 'publisherApplications'), (snap) => {
+                const data = snap.val();
+                const apps = data ? Object.entries(data).map(([uid, v]) => ({ uid, ...v })) : [];
+                const pending = apps.filter(a => a.status === 'pending');
+                const el = document.getElementById('admin-apps-list');
+
+                if (!pending.length) { el.innerHTML = '<div class="empty-state">Нет заявок на рассмотрении</div>'; return; }
+
+                el.innerHTML = pending.map(a => `
+                    <div class="app-item">
+                        <div class="name">${escapeHtml(a.userName)}</div>
+                        <div class="msg">${escapeHtml(a.message)}</div>
+                        <div class="app-actions">
+                            <button class="btn-approve" data-uid="${a.uid}" data-action="approve">✅ Одобрить</button>
+                            <button class="btn-reject" data-uid="${a.uid}" data-action="reject">❌ Отклонить</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                el.querySelectorAll('button[data-uid]').forEach(btn => {
+                    btn.onclick = () => {
+                        const uid = btn.dataset.uid;
+                        const approve = btn.dataset.action === 'approve';
+                        update(ref(db, 'publisherApplications/' + uid), { status: approve ? 'approved' : 'rejected', reviewedAt: Date.now() });
+                        if (approve) update(ref(db, 'users/' + uid), { isPublisher: true });
+                    };
+                });
+            });
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Магазин</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+    }
+    h1 { font-size: 20px; margin: 0; flex: 1; }
+    .coins-badge {
+        background: linear-gradient(135deg, #ffb75e, #ed8f03); color: #fff; font-weight: 800; padding: 8px 14px;
+        border-radius: 14px; font-size: 15px; box-shadow: 0 4px 12px rgba(237,143,3,0.3); flex-shrink: 0;
+    }
+    .section-title { font-weight: 800; font-size: 16px; margin: 22px 0 10px; color: #2c3e50; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .item-card {
+        background: #fff; border-radius: 18px; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .item-img { width: 84px; height: 84px; object-fit: contain; margin-bottom: 8px; }
+    .item-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .item-price { color: #ed8f03; font-weight: 800; font-size: 13px; margin-bottom: 10px; }
+    .item-btn {
+        border: none; border-radius: 12px; padding: 9px 0; width: 100%; font-weight: 700; font-size: 13px; cursor: pointer;
+    }
+    .btn-buy { background: linear-gradient(135deg, #ffb75e, #ed8f03); color: #fff; }
+    .btn-equip { background: #eafaf1; color: #27ae60; }
+    .btn-unequip { background: #fdecea; color: #e74c3c; }
+    .btn-disabled { background: #f1f2f6; color: #95a5a6; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 30px 0; font-size: 14px; }
+    .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    .input {
+        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
+        font-size: 14px; background: #f4f6f7;
+    }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .btn-secondary { background: #f1f2f6; color: #2c3e50; }
+    .admin-toggle { text-align: center; margin-top: 30px; font-size: 12px; color: #bbb; cursor: pointer; }
+    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; }
+    .admin-item img { width: 40px; height: 40px; object-fit: contain; }
+    .admin-item-info { flex: 1; font-size: 13px; }
+    .admin-item button { border: none; background: #fdecea; color: #e74c3c; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+    .upload-row { display: flex; gap: 8px; }
+    .upload-row .input { flex: 1; margin-bottom: 0; }
+    .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+        <a href="app.html" class="back-link">←</a>
+        <h1>🛍 Магазин</h1>
+        <div class="coins-badge">🪙 <span id="my-coins">0</span></div>
+    </div>
+
+    <div id="no-session" class="card" style="display:none;">
+        Не удалось определить пользователя. Открой магазин из профиля в приложении.
+        <a href="app.html" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">← Вернуться в приложение</a>
+    </div>
+
+    <div id="shop-root" style="display:none;">
+        <div class="section-title">🖼 Рамки аватара</div>
+        <div class="grid" id="frames-grid"></div>
+
+        <div class="section-title">🎀 Декор профиля <span style="color:#95a5a6;font-weight:400;font-size:12px;">(до 5 одновременно)</span></div>
+        <div class="grid" id="decor-grid"></div>
+
+        <div class="admin-toggle" id="admin-toggle">⚙ управление товарами</div>
+        <div class="card" id="admin-panel" style="display:none;">
+            <h3 style="margin-top:0;">Добавить товар</h3>
+            <input type="text" id="item-name" class="input" placeholder="Название">
+            <div class="upload-row">
+                <input type="text" id="item-image" class="input" placeholder="Картинка (URL)">
+                <label class="upload-btn" for="item-image-file">📁</label>
+                <input type="file" id="item-image-file" accept="image/*" style="display:none;">
+            </div>
+            <input type="number" id="item-price" class="input" placeholder="Цена в монетах" min="1">
+            <select id="item-category" class="input">
+                <option value="frame">Рамка аватара</option>
+                <option value="decoration">Декор профиля</option>
+            </select>
+            <button class="btn" id="btn-add-item">Добавить товар</button>
+            <div id="admin-items-list" style="margin-top:14px;"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    // === Определяем текущего пользователя (те же правила, что в app.html) ===
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null, myName = null;
+    if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
+    else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
+    else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    if (!myId) {
+        document.getElementById('no-session').style.display = 'block';
+    } else {
+        document.getElementById('shop-root').style.display = 'block';
+        startShop();
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+    }
+
+    function startShop() {
+        let itemsData = [];
+        let myUser = { coins: 0, inventory: {}, equipped: {} };
+        let isAdmin = false;
+
+        onValue(ref(db, 'shopItems'), (snap) => {
+            const data = snap.val();
+            itemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderShop();
+            if (isAdmin) renderAdminList();
+        });
+
+        onValue(ref(db, 'users/' + myId), (snap) => {
+            myUser = snap.val() || {};
+            document.getElementById('my-coins').textContent = myUser.coins || 0;
+            renderShop();
+        });
+
+        function renderShop() {
+            const inventory = myUser.inventory || {};
+            const equipped = myUser.equipped || {};
+            const equippedDecorCount = Object.keys(equipped.decorations || {}).length;
+
+            const renderGrid = (category) => {
+                const items = itemsData.filter(i => i.category === category);
+                if (!items.length) return '<div class="empty-state">Пока пусто</div>';
+
+                return items.map(item => {
+                    const owned = !!inventory[item.id];
+                    let isEquipped, btnLabel, btnClass;
+
+                    if (category === 'frame') {
+                        isEquipped = equipped.frame === item.id;
+                    } else {
+                        isEquipped = !!(equipped.decorations && equipped.decorations[item.id]);
+                    }
+
+                    if (!owned) { btnLabel = `Купить за ${item.price}🪙`; btnClass = (myUser.coins || 0) >= item.price ? 'btn-buy' : 'btn-disabled'; }
+                    else if (isEquipped) { btnLabel = 'Снять'; btnClass = 'btn-unequip'; }
+                    else { btnLabel = 'Надеть'; btnClass = 'btn-equip'; }
+
+                    return `
+                    <div class="item-card">
+                        <img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        <div class="item-price">${owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : item.price + ' 🪙'}</div>
+                        <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}">${btnLabel}</button>
+                    </div>`;
+                }).join('');
+            };
+
+            document.getElementById('frames-grid').innerHTML = renderGrid('frame');
+            document.getElementById('decor-grid').innerHTML = renderGrid('decoration');
+
+            document.querySelectorAll('.item-btn').forEach(btn => {
+                btn.onclick = () => handleItemClick(btn.dataset.id, btn.dataset.category, btn.dataset.owned === 'true', btn.dataset.equipped === 'true');
+            });
+        }
+
+        function handleItemClick(itemId, category, owned, isEquipped) {
+            const item = itemsData.find(i => i.id === itemId);
+            if (!item) return;
+
+            if (!owned) {
+                if ((myUser.coins || 0) < item.price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+                update(ref(db, 'users/' + myId), {
+                    coins: (myUser.coins || 0) - item.price,
+                    ['inventory/' + itemId]: true
+                }).catch(err => alert('Ошибка: ' + err.message));
+                return;
+            }
+
+            if (category === 'frame') {
+                update(ref(db, 'users/' + myId + '/equipped'), { frame: isEquipped ? null : itemId }).catch(err => alert('Ошибка: ' + err.message));
+                return;
+            }
+
+            // decoration — до 5 одновременно
+            const decorations = { ...(myUser.equipped && myUser.equipped.decorations) };
+            if (isEquipped) {
+                delete decorations[itemId];
+            } else {
+                if (Object.keys(decorations).length >= 5) { tg.showAlert ? tg.showAlert('Можно надеть не больше 5 украшений одновременно') : alert('Максимум 5 украшений'); return; }
+                decorations[itemId] = true;
+            }
+            update(ref(db, 'users/' + myId + '/equipped'), { decorations }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        // === Админ-режим (тот же пароль, что в основном приложении) ===
+        document.getElementById('admin-toggle').onclick = function() {
+            if (isAdmin) { document.getElementById('admin-panel').style.display = document.getElementById('admin-panel').style.display === 'none' ? 'block' : 'none'; return; }
+            const pwd = prompt('Пароль:');
+            if (pwd === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-panel').style.display = 'block';
+                renderAdminList();
+            } else if (pwd) {
+                alert('Неверный пароль');
+            }
+        };
+
+        function renderAdminList() {
+            const el = document.getElementById('admin-items-list');
+            if (!itemsData.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:13px;">Товаров пока нет</div>'; return; }
+            el.innerHTML = itemsData.map(item => `
+                <div class="admin-item">
+                    <img src="${item.image}" onerror="this.style.opacity=0.2">
+                    <div class="admin-item-info">${escapeHtml(item.name)} · ${item.price}🪙 · ${item.category === 'frame' ? 'рамка' : 'декор'}</div>
+                    <button data-id="${item.id}">🗑</button>
+                </div>
+            `).join('');
+            el.querySelectorAll('button[data-id]').forEach(b => {
+                b.onclick = () => { if (confirm('Удалить товар?')) remove(ref(db, 'shopItems/' + b.dataset.id)); };
+            });
+        }
+
+        document.getElementById('item-image-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.success) document.getElementById('item-image').value = json.data.url;
+                else alert('Ошибка загрузки: ' + (json.error?.message || 'неизвестная'));
+            } catch (err) { alert('Ошибка сети при загрузке фото'); }
+        });
+
+        document.getElementById('btn-add-item').onclick = function() {
+            const name = document.getElementById('item-name').value.trim();
+            const image = document.getElementById('item-image').value.trim();
+            const price = parseInt(document.getElementById('item-price').value, 10);
+            const category = document.getElementById('item-category').value;
+
+            if (!name || !image || !price) return alert('Заполни все поля');
+
+            push(ref(db, 'shopItems'), { name, image, price, category, createdAt: Date.now() }).then(() => {
+                document.getElementById('item-name').value = '';
+                document.getElementById('item-image').value = '';
+                document.getElementById('item-price').value = '';
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+    }
+</script>
+</body>
+</html>
