@@ -378,8 +378,26 @@
         }
         
         .msg-sticker-wrap {
-            display: inline-flex; flex-direction: column; align-items: center;
+            display: inline-flex; flex-direction: column; align-items: center; position: relative;
         }
+        .msg-avatar-click { cursor: pointer; flex-shrink: 0; margin: 0 6px; align-self: flex-end; }
+        .msg-avatar, .msg-avatar-fallback {
+            width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block;
+        }
+        .msg-avatar-fallback {
+            display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 11px;
+        }
+        .msg-reply-quote {
+            border-left: 3px solid rgba(0,0,0,0.15); padding: 3px 8px; margin-bottom: 5px; font-size: 12px;
+            opacity: 0.8; border-radius: 4px; background: rgba(0,0,0,0.04);
+        }
+        .msg-row.mine .msg-reply-quote { border-left-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.15); }
+        .msg-reply-btn {
+            position: absolute; top: -10px; left: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 12px;
+            cursor: pointer; line-height: 1; transition: transform .2s;
+        }
+        .msg-reply-btn:hover { transform: scale(1.1); }
         .msg-sticker {
             max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
             box-shadow: none; display: block;
@@ -832,6 +850,14 @@
         </div>
         
         <div id="chat-sticker-picker" style="display:none; overflow-x:auto; padding-bottom:8px; border-top:1px solid #eee; background:#fff;"></div>
+        <div id="chat-typing-indicator" class="hidden" style="padding:4px 16px;font-size:12px;color:#95a5a6;font-style:italic;background:#f4f7f6;"></div>
+        <div id="chat-reply-bar" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff3e0;border-top:1px solid #ffe0b2;">
+            <div style="flex:1;min-width:0;font-size:13px;color:#e65100;">
+                <div style="font-weight:700;" id="chat-reply-author"></div>
+                <div id="chat-reply-preview" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <button id="btn-cancel-reply" style="border:none;background:none;font-size:20px;color:#e65100;cursor:pointer;line-height:1;">×</button>
+        </div>
         
         <div class="chat-input-row">
             <button class="sticker-toggle" id="btn-toggle-stickers">🤩</button>
@@ -1004,9 +1030,10 @@
         }
 
         // Значок-галочка рядом с именем одобренных издателей
+        let badgeColor = '#1da1f2';
         function verifiedBadge(userId) {
             const u = usersData.find(x => x.id === userId);
-            return (u && u.isPublisher) ? '<span class="verified-badge" title="Проверенный издатель">✓</span>' : '';
+            return (u && u.isPublisher) ? `<span class="verified-badge" style="background:${badgeColor}" title="Проверенный издатель">✓</span>` : '';
         }
         
         function formatDate(ts) {
@@ -1633,6 +1660,19 @@
                 shopItemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
                 renderOwnProfileHeader();
                 if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
+            });
+
+            onValue(ref(db, 'settings/badgeColor'), (snapshot) => {
+                if (snapshot.val()) badgeColor = snapshot.val();
+                renderFeed();
+                renderOwnProfileHeader();
+                if (activeOverlay === 'post') renderPostOverlay();
+                if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
+                if (activeOverlay === 'chat' && currentChatId) {
+                    renderedChatState = { chatId: null, signature: null }; // цвет изменился — форсируем перерисовку списка
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if (chat) renderChatOverlay(chat);
+                }
             });
 
             // Обновление таймеров обратного отсчёта у баннеров-событий раз в секунду
@@ -2439,10 +2479,13 @@
             document.getElementById('chat-overlay').classList.add('active'); 
             tg.BackButton.show();
             document.getElementById('chat-sticker-picker').style.display = 'none';
+            renderedChatState = { chatId: null, signature: null }; // сбрасываем кэш, чтобы новый чат точно отрисовался и проскроллился вниз
             
             const chat = chatsData.find(c => c.id === chatId);
             if (chat) renderChatOverlay(chat);
         };
+
+        let renderedChatState = { chatId: null, signature: null };
 
         function renderChatOverlay(chat) {
             if (chat.type === 'group') {
@@ -2464,46 +2507,75 @@
                 document.getElementById('chat-pinned-text').textContent = '"' + pinned.text + '" — ' + pinned.author;
             }
             document.getElementById('chat-quote-watermark').textContent = pinned ? '"' + pinned.text + '"' : '';
+            updateTypingIndicator(chat);
 
             const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
             const listEl = document.getElementById('chat-messages-list');
+            const signature = messages.map(m => m.id).join(',') + '|' + (pinned ? pinned.pinnedAt : '');
+
+            // Ничего нового: пропускаем полную перерисовку сообщений, чтобы не моргали картинки/видео и не дёргался скролл
+            if (renderedChatState.chatId === chat.id && renderedChatState.signature === signature) {
+                chatLastRead[chat.id] = Date.now(); 
+                saveLocal('sr_chat_last_read', chatLastRead);
+                document.getElementById('chats-nav-badge').classList.add('hidden');
+                return;
+            }
+
+            const body = document.getElementById('chat-body');
+            const wasNearBottom = renderedChatState.chatId !== chat.id || (body.scrollHeight - body.scrollTop - body.clientHeight < 120);
             
             listEl.innerHTML = messages.length ? messages.map(m => {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const senderName = (chat.type === 'group' && m.senderId !== currentUser.id) 
+                const isMine = m.senderId === currentUser.id;
+                const senderName = (chat.type === 'group' && !isMine) 
                     ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px; cursor:pointer;">${escapeHtml(m.senderName)}${verifiedBadge(m.senderId)}</div>` 
                     : '';
+
+                const senderInfo = usersData.find(u => u.id === m.senderId);
+                const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(senderInfo ? senderInfo.name : m.senderName, senderInfo ? senderInfo.avatar : null, 'msg-avatar')}</div>` : '';
+
+                const replyPreview = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+                const replyBtn = `<button class="msg-reply-btn" data-id="${m.id}" data-author="${escapeHtml(m.senderName)}" data-text="${escapeHtml(m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text))}" title="Ответить">↩️</button>`;
                 
                 if (m.sticker) {
                     return `
-                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-row ${isMine ? 'mine' : ''}">
+                        ${avatarBlock}
                         <div class="msg-sticker-wrap">
                             ${senderName}
+                            ${replyPreview}
                             <img src="${m.sticker}" class="msg-sticker">
                             <span class="msg-time sticker-time">${timeStr}</span>
+                            ${replyBtn}
                         </div>
                     </div>`;
                 }
 
                 if (m.attachment) {
                     return `
-                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-row ${isMine ? 'mine' : ''}">
+                        ${avatarBlock}
                         <div class="msg-bubble">
                             ${senderName}
+                            ${replyPreview}
                             ${attachmentHtml(m.attachment)}
                             ${m.text ? escapeHtml(m.text) : ''}
                             <span class="msg-time">${timeStr}</span>
+                            ${replyBtn}
                         </div>
                     </div>`;
                 }
                 
                 return `
-                <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                <div class="msg-row ${isMine ? 'mine' : ''}">
+                    ${avatarBlock}
                     <div class="msg-bubble">
                         ${senderName}
+                        ${replyPreview}
                         ${escapeHtml(m.text)}
                         <span class="msg-time">${timeStr}</span>
                         <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
+                        ${replyBtn}
                     </div>
                 </div>`;
             }).join('') : '<div style="color:#95a5a6;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
@@ -2512,7 +2584,11 @@
                 btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
             });
 
-            listEl.querySelectorAll('.msg-sender-name').forEach(el => {
+            listEl.querySelectorAll('.msg-reply-btn').forEach(btn => {
+                btn.onclick = () => startReply(btn.getAttribute('data-id'), btn.getAttribute('data-author'), btn.getAttribute('data-text'));
+            });
+
+            listEl.querySelectorAll('.msg-sender-name, .msg-avatar-click').forEach(el => {
                 el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
             });
 
@@ -2520,8 +2596,8 @@
             saveLocal('sr_chat_last_read', chatLastRead);
             document.getElementById('chats-nav-badge').classList.add('hidden');
             
-            const body = document.getElementById('chat-body'); 
-            body.scrollTop = body.scrollHeight;
+            renderedChatState = { chatId: chat.id, signature };
+            if (wasNearBottom) body.scrollTop = body.scrollHeight;
         }
 
         function pinQuote(chatId, text, author) { 
@@ -2533,21 +2609,43 @@
             update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }); 
         };
         
+        // === Ответ на сообщение ===
+        let replyingTo = null;
+
+        function startReply(id, author, text) {
+            replyingTo = { id, author, text };
+            document.getElementById('chat-reply-author').textContent = author;
+            document.getElementById('chat-reply-preview').textContent = text;
+            document.getElementById('chat-reply-bar').classList.remove('hidden');
+            document.getElementById('chat-message-input').focus();
+        }
+
+        document.getElementById('btn-cancel-reply').onclick = function() {
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
+        };
+
         function sendChatMessage() {
             const input = document.getElementById('chat-message-input');
             if (!input.value.trim() || !currentChatId || !db) return;
             
-            push(ref(db, 'chats/' + currentChatId + '/messages'), { 
+            const payload = { 
                 senderId: currentUser.id, 
                 senderName: currentUser.name, 
                 text: input.value.trim(), 
                 createdAt: Date.now() 
-            }).then(() => {
+            };
+            if (replyingTo) payload.replyTo = { id: replyingTo.id, author: replyingTo.author, text: replyingTo.text };
+
+            push(ref(db, 'chats/' + currentChatId + '/messages'), payload).then(() => {
                 update(ref(db, 'chats/' + currentChatId), { 
                     lastMessage: input.value.trim(), 
                     lastMessageAt: Date.now() 
                 }); 
                 input.value = '';
+                clearTypingStatus();
+                replyingTo = null;
+                document.getElementById('chat-reply-bar').classList.add('hidden');
             });
         }
         
@@ -2556,23 +2654,75 @@
         setupAttachmentPicker('chat-attach-file', async (attachment) => {
             if (!currentChatId || !db) return;
             const captionByType = { image: '📎 Фото', video: '📎 Видео', audio: '📎 Аудио' };
-            await push(ref(db, 'chats/' + currentChatId + '/messages'), {
+            const payload = {
                 senderId: currentUser.id,
                 senderName: currentUser.name,
                 text: '',
                 attachment,
                 createdAt: Date.now()
-            });
+            };
+            if (replyingTo) payload.replyTo = { id: replyingTo.id, author: replyingTo.author, text: replyingTo.text };
+            await push(ref(db, 'chats/' + currentChatId + '/messages'), payload);
             update(ref(db, 'chats/' + currentChatId), {
                 lastMessage: captionByType[attachment.type] || '📎 Вложение',
                 lastMessageAt: Date.now()
             });
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
         });
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { 
             if (e.key === 'Enter') sendChatMessage(); 
         });
 
+        // === Индикатор "печатает..." ===
+        let lastTypingSent = 0;
+        let typingClearTimer = null;
+
+        function clearTypingStatus() {
+            if (typingClearTimer) { clearTimeout(typingClearTimer); typingClearTimer = null; }
+            if (currentChatId && db) remove(ref(db, 'chats/' + currentChatId + '/typing/' + currentUser.id)).catch(() => {});
+        }
+
+        document.getElementById('chat-message-input').addEventListener('input', function() {
+            if (!currentChatId || !db) return;
+            const now = Date.now();
+            if (now - lastTypingSent > 1500) {
+                lastTypingSent = now;
+                update(ref(db, 'chats/' + currentChatId + '/typing'), { [currentUser.id]: now }).catch(() => {});
+            }
+            if (typingClearTimer) clearTimeout(typingClearTimer);
+            typingClearTimer = setTimeout(clearTypingStatus, 3000);
+        });
+
+        function updateTypingIndicator(chat) {
+            const el = document.getElementById('chat-typing-indicator');
+            if (!el || !chat) return;
+            const now = Date.now();
+            const typerIds = chat.typing ? Object.entries(chat.typing).filter(([uid, ts]) => uid !== currentUser.id && (now - ts) < 5000).map(([uid]) => uid) : [];
+
+            if (!typerIds.length) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+
+            if (chat.type === 'group') {
+                const names = typerIds.map(uid => { const u = usersData.find(x => x.id === uid); return u ? u.name : 'Кто-то'; });
+                el.textContent = (names.length > 1 ? names.join(', ') + ' печатают...' : names[0] + ' печатает...');
+            } else {
+                el.textContent = 'печатает...';
+            }
+        }
+
+        // Проверяем актуальность статуса раз в 1.5с — чтобы индикатор пропадал сам по себе, даже без новых событий из базы
+        setInterval(() => {
+            if (activeOverlay === 'chat' && currentChatId) {
+                const chat = chatsData.find(c => c.id === currentChatId);
+                if (chat) updateTypingIndicator(chat);
+            }
+        }, 1500);
+
         document.getElementById('close-chat-btn').onclick = function() {
+            clearTypingStatus();
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
             document.getElementById('chat-overlay').classList.remove('active'); 
             activeOverlay = null; 
             currentChatId = null; 
@@ -2862,7 +3012,9 @@
         // передаём id и имя пользователя, чтобы там не нужно было логиниться заново
         function goToSubpage(pageName) {
             const q = `?uid=${encodeURIComponent(currentUser.id)}&name=${encodeURIComponent(currentUser.name)}`;
-            window.location.href = pageName + q;
+            // Убираем имя текущего файла из пути и схлопываем случайные двойные слэши в адресе
+            const dir = window.location.pathname.replace(/[^/]*$/, '').replace(/\/{2,}/g, '/');
+            window.location.href = window.location.origin + dir + pageName + q;
         }
         document.getElementById('btn-open-shop').onclick = () => goToSubpage('shop.html');
         document.getElementById('btn-open-publisher-app').onclick = () => goToSubpage('publisher-application.html');
