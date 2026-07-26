@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Reader App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :focus-visible { outline: 2px solid #ff9f0a; outline-offset: 2px; }
@@ -34,6 +37,113 @@
             --overlay-bg: #1a1c26;
         }
         body.theme-dark img { filter: brightness(0.92); }
+
+        /* ============================================================
+           ТЕМА «TERRARIA» — активируется через админ-панель (Оформление)
+           ============================================================ */
+        body.theme-terraria {
+            --bg-gradient: linear-gradient(180deg,
+                #7ec8f2 0%, #a3ddf5 14%,
+                #b9e77f 15%, #8bc34a 20%, #7cb342 30%,
+                #9c7148 31%, #7a5230 45%,
+                #5c3d21 65%, #402a15 85%, #2c1c0d 100%);
+            --text-primary: #ffe9b3;
+            --text-secondary: #c9a876;
+            --card-bg: #6b4726;
+            --card-border: #2c1c0d;
+            --card-shadow: rgba(0,0,0,0.5);
+            --input-bg: #4f3620;
+            --border-soft: #402a15;
+            --surface: #6b4726;
+            --overlay-bg: #3a2716;
+        }
+        body.theme-terraria,
+        body.theme-terraria input,
+        body.theme-terraria textarea,
+        body.theme-terraria select,
+        body.theme-terraria button {
+            font-family: 'VT323', 'Courier New', monospace;
+        }
+        body.theme-terraria { letter-spacing: 0.3px; }
+        body.theme-terraria img { filter: saturate(1.12) contrast(1.06); }
+
+        /* лёгкое тёплое свечение факела поверх всего фона */
+        body.theme-terraria::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(ellipse at 50% -10%, rgba(255,178,56,0.14), transparent 55%);
+            animation: terraria-glow 5s ease-in-out infinite;
+        }
+        @keyframes terraria-glow {
+            0%, 100% { opacity: .55; }
+            50% { opacity: 1; }
+        }
+        body.theme-terraria .container { position: relative; z-index: 1; }
+
+        body.theme-terraria .header h1 {
+            font-size: 36px; color: #ffd873; letter-spacing: 1px;
+            text-shadow: 2px 2px 0 #2c1c0d, 0 0 10px rgba(255,178,56,.65);
+            animation: terraria-torch 2.3s ease-in-out infinite;
+        }
+        @keyframes terraria-torch {
+            0%, 100% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 8px rgba(255,178,56,.55); }
+            50% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 15px rgba(255,178,56,.95); }
+        }
+        body.theme-terraria .header p { color: #c9a876; }
+
+        body.theme-terraria .card,
+        body.theme-terraria .banner-card,
+        body.theme-terraria .reader-header,
+        body.theme-terraria .reader-overlay,
+        body.theme-terraria .cover-fallback {
+            border-radius: 6px !important;
+            border: 3px solid var(--card-border) !important;
+            box-shadow: inset 0 0 0 2px #8a6236, 0 8px 18px var(--card-shadow) !important;
+        }
+        body.theme-terraria .banner-card { background-color: #6b4726; }
+        body.theme-terraria .card-title { color: #ffe9b3; text-shadow: 1px 1px 0 #2c1c0d; }
+        body.theme-terraria .card-text,
+        body.theme-terraria .comment-text { color: #eddcb8; }
+        body.theme-terraria .card-subtitle,
+        body.theme-terraria .card-meta { color: #b39868; }
+
+        body.theme-terraria .btn {
+            background: linear-gradient(180deg, #c17d33 0%, #8a5a24 100%);
+            border: 3px solid #2c1c0d; border-radius: 5px !important;
+            color: #fff1cf; text-shadow: 1px 1px 0 #2c1c0d;
+            box-shadow: inset 0 0 0 2px #e0a355, 0 4px 0 #201206, 0 6px 10px rgba(0,0,0,.35);
+            letter-spacing: 1px; font-size: 17px;
+        }
+        body.theme-terraria .btn:hover { box-shadow: inset 0 0 0 2px #e0a355, 0 4px 0 #201206, 0 8px 16px rgba(255,178,56,.3); }
+        body.theme-terraria .btn:active { transform: translateY(3px) scale(.98); box-shadow: inset 0 0 0 2px #e0a355, 0 1px 0 #201206; }
+        body.theme-terraria .btn-secondary { background: linear-gradient(180deg, #6b4726 0%, #4a3319 100%); color: #ffe9b3; }
+        body.theme-terraria .btn-danger { background: linear-gradient(180deg, #a83f2f 0%, #6e2318 100%); color: #ffe0d6; border-color: #2c1c0d; }
+
+        body.theme-terraria .genre-tag {
+            background: #3a5c1e; color: #d9f5b3; border: 2px solid #263e12; border-radius: 4px;
+        }
+        body.theme-terraria .badge-read { background: #2e5c2e; color: #cdf0cd; border: 2px solid #1c3d1c; border-radius: 4px; }
+        body.theme-terraria .badge-bookmark { background: #2e4a6b; color: #d2e8ff; border: 2px solid #1c3048; border-radius: 4px; }
+        body.theme-terraria .banner-countdown { background: rgba(193,125,51,.92); color: #2c1c0d; }
+
+        body.theme-terraria .input {
+            border: 2px solid #2c1c0d; border-radius: 5px; color: #ffe9b3;
+        }
+        body.theme-terraria .input::placeholder { color: #a98860; }
+        body.theme-terraria .input:focus { border-color: #ffb238; box-shadow: 0 0 0 3px rgba(255,178,56,.35); }
+        body.theme-terraria :focus-visible { outline-color: #ffb238; }
+
+        body.theme-terraria .icon-btn-refresh {
+            background: #6b4726; border-color: #2c1c0d; color: #ffe9b3;
+        }
+
+        body.theme-terraria .bottom-nav { border-top: 3px solid #2c1c0d !important; }
+        body.theme-terraria .nav-btn.active { color: #ffb238 !important; text-shadow: 0 0 8px rgba(255,178,56,.7); }
+        body.theme-terraria .nav-btn.active .icon { filter: drop-shadow(0 0 4px rgba(255,178,56,.85)); }
+
+        body.theme-terraria #reader-body { background: #4f3620 !important; color: #ffe9b3 !important; box-shadow: inset 0 2px 10px rgba(0,0,0,.35) !important; }
+
+        body.theme-terraria ::-webkit-scrollbar-thumb { background: #8a5a24; }
+        body.theme-terraria ::-webkit-scrollbar-thumb:hover { background: #b5762f; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -780,6 +890,7 @@
                     <select id="theme-select" class="input">
                         <option value="light">☀️ Светлая</option>
                         <option value="dark">🌙 Тёмная</option>
+                        <option value="terraria">⛏️ Террария</option>
                     </select>
                     <button class="btn" id="btn-save-theme">Применить всем</button>
 
@@ -1591,6 +1702,7 @@
         function applyTheme(theme) {
             currentTheme = theme || 'light';
             document.body.classList.toggle('theme-dark', currentTheme === 'dark');
+            document.body.classList.toggle('theme-terraria', currentTheme === 'terraria');
         }
 
         // === Звуковое сопровождение (URL-ы задаются админом) ===
