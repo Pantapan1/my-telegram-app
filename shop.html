@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Магазин</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -63,6 +66,113 @@
     body.theme-dark .back-link, body.theme-dark .input, body.theme-dark .upload-btn { background: #2a2d3a; color: #ecedf1; border-color: rgba(255,255,255,0.08); }
     body.theme-dark .btn-secondary { background: #2a2d3a; color: #ecedf1; }
     body.theme-dark .empty-state, body.theme-dark .admin-toggle { color: #7a8090; }
+
+    /* ============================================================
+       ТЕМА «TERRARIA» — синхронизирована с основным приложением
+       ============================================================ */
+    body.theme-terraria {
+        background: linear-gradient(180deg,
+            #7ec8f2 0%, #a3ddf5 10%,
+            #b9e77f 11%, #8bc34a 16%, #7cb342 24%,
+            #9c7148 25%, #7a5230 40%,
+            #5c3d21 60%, #402a15 82%, #2c1c0d 100%) fixed;
+        color: #ffe9b3;
+        font-family: 'Handjet', 'Courier New', monospace;
+        font-variation-settings: 'ELSH' 0, 'ELGR' 1;
+        font-weight: 700;
+        letter-spacing: 0.3px; font-size: 1.14em; line-height: 1.5;
+        position: relative;
+    }
+    body.theme-terraria .container { position: relative; z-index: 1; }
+    body.theme-terraria img { filter: saturate(1.12) contrast(1.06); }
+
+    /* тёплое пульсирующее свечение факела */
+    body.theme-terraria::before {
+        content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,178,56,0.20), transparent 60%);
+        animation: terraria-glow 4s ease-in-out infinite;
+    }
+    @keyframes terraria-glow {
+        0%, 100% { opacity: .5; }
+        50% { opacity: 1; }
+    }
+
+    /* парящие искры */
+    body.theme-terraria::after {
+        content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        background-image:
+            radial-gradient(2px 2px at 8% 30%, rgba(255,178,56,.95), transparent 60%),
+            radial-gradient(1.5px 1.5px at 22% 70%, rgba(255,210,110,.85), transparent 60%),
+            radial-gradient(2px 2px at 38% 15%, rgba(255,160,50,.9), transparent 60%),
+            radial-gradient(1.5px 1.5px at 55% 55%, rgba(255,200,90,.8), transparent 60%),
+            radial-gradient(2px 2px at 68% 85%, rgba(255,178,56,.9), transparent 60%),
+            radial-gradient(1.5px 1.5px at 82% 25%, rgba(255,210,110,.85), transparent 60%),
+            radial-gradient(2px 2px at 94% 65%, rgba(255,160,50,.9), transparent 60%);
+        background-size: 100% 200%;
+        background-repeat: repeat-y;
+        animation: terraria-embers 9s linear infinite;
+    }
+    @keyframes terraria-embers {
+        from { background-position: 0 0; }
+        to { background-position: 0 -200%; }
+    }
+
+    body.theme-terraria h1 {
+        color: #ffd873; text-shadow: 2px 2px 0 #2c1c0d, 0 0 8px rgba(255,178,56,.55);
+        animation: terraria-torch 2.2s ease-in-out infinite;
+    }
+    @keyframes terraria-torch {
+        0%, 100% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 7px rgba(255,178,56,.5); }
+        50% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 14px rgba(255,178,56,.95); }
+    }
+    body.theme-terraria .section-title { color: #ffe9b3; text-shadow: 1px 1px 0 #2c1c0d; }
+
+    body.theme-terraria .coins-badge {
+        background: linear-gradient(180deg, #c17d33 0%, #8a5a24 100%);
+        border: 3px solid #2c1c0d; border-radius: 5px;
+        color: #fff1cf; text-shadow: 1px 1px 0 #2c1c0d;
+        box-shadow: inset 0 0 0 2px #e0a355;
+    }
+
+    body.theme-terraria .card,
+    body.theme-terraria .item-card,
+    body.theme-terraria .admin-item {
+        background: #6b4726; border: 3px solid #2c1c0d; border-radius: 6px;
+        box-shadow: inset 0 0 0 2px #8a6236, 0 8px 18px rgba(0,0,0,.45);
+        color: #ffe9b3;
+    }
+    body.theme-terraria .item-name { color: #ffe9b3; text-shadow: 1px 1px 0 #2c1c0d; }
+    body.theme-terraria .item-price { color: #ffd873; }
+    body.theme-terraria .empty-state, body.theme-terraria .admin-toggle { color: #c9a876; }
+
+    body.theme-terraria .back-link, body.theme-terraria .upload-btn {
+        background: #6b4726; border: 3px solid #2c1c0d; color: #ffe9b3; border-radius: 5px;
+        box-shadow: inset 0 0 0 2px #8a6236;
+    }
+
+    body.theme-terraria .btn, body.theme-terraria .btn-buy {
+        background: linear-gradient(180deg, #c17d33 0%, #8a5a24 100%);
+        border: 3px solid #2c1c0d; border-radius: 5px;
+        color: #fff1cf; text-shadow: 1px 1px 0 #2c1c0d;
+        box-shadow: inset 0 0 0 2px #e0a355, 0 4px 0 #201206;
+    }
+    body.theme-terraria .btn:active, body.theme-terraria .btn-buy:active {
+        transform: translateY(3px); box-shadow: inset 0 0 0 2px #e0a355, 0 1px 0 #201206;
+    }
+    body.theme-terraria .btn-secondary {
+        background: linear-gradient(180deg, #6b4726 0%, #4a3319 100%);
+        border: 3px solid #2c1c0d; color: #ffe9b3;
+    }
+    body.theme-terraria .btn-equip { background: #2e5c2e; color: #cdf0cd; border: 2px solid #1c3d1c; border-radius: 5px; }
+    body.theme-terraria .btn-unequip { background: #6e2318; color: #ffe0d6; border: 2px solid #2c1c0d; border-radius: 5px; }
+    body.theme-terraria .btn-disabled { background: #4a3d33; color: #a1907c; border-radius: 5px; }
+
+    body.theme-terraria .input {
+        background: #4f3620; border: 2px solid #2c1c0d; color: #ffe9b3; border-radius: 5px;
+    }
+    body.theme-terraria .input::placeholder { color: #a98860; }
+
+    body.theme-terraria #wheel { border-color: #2c1c0d !important; box-shadow: inset 0 0 0 2px #8a6236, 0 6px 20px rgba(0,0,0,.45) !important; }
 
     @keyframes confettiFall {
         to { left: var(--end-x); top: 110%; transform: translate(-50%,-50%) rotate(var(--rotate)); opacity: 0; }
@@ -186,7 +296,9 @@
 
         // Применяем ту же тему и звуки/эффекты, что настроены в основном приложении
         onValue(ref(db, 'settings/theme'), (snap) => {
-            document.body.classList.toggle('theme-dark', snap.val() === 'dark');
+            const theme = snap.val();
+            document.body.classList.toggle('theme-dark', theme === 'dark');
+            document.body.classList.toggle('theme-terraria', theme === 'terraria');
         });
         onValue(ref(db, 'settings/sounds'), (snap) => { soundsData = snap.val() || {}; });
         onValue(ref(db, 'settings/effects'), (snap) => { effectsData = snap.val() || {}; });
@@ -236,7 +348,7 @@
             const equippedDecorCount = Object.keys(equipped.decorations || {}).length;
 
             const renderGrid = (category) => {
-                const items = itemsData.filter(i => i.category === category);
+                const items = itemsData.filter(i => i.category === category && (!i.hidden || inventory[i.id]));
                 if (!items.length) return '<div class="empty-state">Пока пусто</div>';
 
                 return items.map(item => {
@@ -258,11 +370,13 @@
                     else { btnLabel = 'Надеть'; btnClass = 'btn-equip'; }
 
                     const stockLine = (item.stock !== undefined && item.stock !== null) ? `<div style="font-size:11px;color:#95a5a6;margin-bottom:4px;">${item.stock > 0 ? 'Осталось: ' + item.stock + ' шт.' : 'Раскуплено'}</div>` : '';
+                    const exclusiveLine = item.hidden ? `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:4px;">🐲 Награда за босса</div>` : '';
 
                     return `
                     <div class="item-card">
                         <img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">
                         <div class="item-name">${escapeHtml(item.name)}</div>
+                        ${exclusiveLine}
                         <div class="item-price">${owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : item.price + ' 🪙'}</div>
                         ${stockLine}
                         <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}" ${(!owned && !hasStock) ? 'disabled' : ''}>${btnLabel}</button>
