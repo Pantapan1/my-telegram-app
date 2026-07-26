@@ -56,6 +56,17 @@
     .upload-row { display: flex; gap: 8px; }
     .upload-row .input { flex: 1; margin-bottom: 0; }
     .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    body.theme-dark {
+        background: linear-gradient(180deg, #14161f 0%, #1c1f2b 200px); color: #ecedf1;
+    }
+    body.theme-dark .card, body.theme-dark .item-card, body.theme-dark .admin-item { background: #232632; }
+    body.theme-dark .back-link, body.theme-dark .input, body.theme-dark .upload-btn { background: #2a2d3a; color: #ecedf1; border-color: rgba(255,255,255,0.08); }
+    body.theme-dark .btn-secondary { background: #2a2d3a; color: #ecedf1; }
+    body.theme-dark .empty-state, body.theme-dark .admin-toggle { color: #7a8090; }
+
+    @keyframes confettiFall {
+        to { left: var(--end-x); top: 110%; transform: translate(-50%,-50%) rotate(var(--rotate)); opacity: 0; }
+    }
 </style>
 </head>
 <body>
@@ -161,6 +172,41 @@
         let itemsData = [];
         let myUser = { coins: 0, inventory: {}, equipped: {} };
         let isAdmin = false;
+        let soundsData = {};
+        let effectsData = {};
+
+        // Применяем ту же тему и звуки/эффекты, что настроены в основном приложении
+        onValue(ref(db, 'settings/theme'), (snap) => {
+            document.body.classList.toggle('theme-dark', snap.val() === 'dark');
+        });
+        onValue(ref(db, 'settings/sounds'), (snap) => { soundsData = snap.val() || {}; });
+        onValue(ref(db, 'settings/effects'), (snap) => { effectsData = snap.val() || {}; });
+
+        function soundAllowed() { return localStorage.getItem('sr_sound_enabled') !== '0'; }
+        function playSound(key) {
+            if (!soundAllowed()) return;
+            const url = soundsData[key];
+            if (!url) return;
+            try { const a = new Audio(url); a.volume = 0.55; a.play().catch(() => {}); } catch (e) {}
+        }
+        function confettiBurst() {
+            if (!effectsData.confetti) return;
+            const colors = ['#ff9f0a', '#ed8f03', '#4fc3f7', '#81c784', '#ba68c8', '#f06292'];
+            const container = document.createElement('div');
+            container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999;overflow:hidden;';
+            document.body.appendChild(container);
+            for (let i = 0; i < 26; i++) {
+                const piece = document.createElement('div');
+                const size = 6 + Math.random() * 6;
+                const startX = 50 + (Math.random() * 30 - 15);
+                const endX = startX + (Math.random() * 40 - 20);
+                const rotate = Math.random() * 720 - 360;
+                const duration = 1.2 + Math.random() * 0.8;
+                piece.style.cssText = `position:absolute; top:35%; left:${startX}%; width:${size}px; height:${size * 1.4}px; background:${colors[i % colors.length]}; border-radius:2px; transform:translate(-50%,-50%); opacity:1; animation: confettiFall ${duration}s cubic-bezier(0.25,0.46,0.45,0.94) forwards; --end-x:${endX}%; --rotate:${rotate}deg;`;
+                container.appendChild(piece);
+            }
+            setTimeout(() => container.remove(), 2200);
+        }
 
         onValue(ref(db, 'shopItems'), (snap) => {
             const data = snap.val();
@@ -450,6 +496,7 @@
                 update(ref(db, 'users/' + myId), { coins: Math.max(0, (myUser.coins || 0) + delta) }).catch(() => {});
                 resultEl.textContent = delta > 0 ? `🎉 Выигрыш: +${delta} монет!` : (delta < 0 ? `😬 Потеря: ${delta} монет` : '');
                 resultEl.style.color = delta > 0 ? '#27ae60' : (delta < 0 ? '#e74c3c' : '#95a5a6');
+                if (delta > 0) { playSound('coin'); confettiBurst(); }
             } else if (segment.type === 'nothing') {
                 resultEl.textContent = 'Пусто — повезёт в следующий раз!';
                 resultEl.style.color = '#95a5a6';
@@ -462,6 +509,7 @@
                     update(ref(db, 'users/' + myId + '/inventory/' + won.id), true).catch(() => {});
                     resultEl.textContent = `🎁 Выпало: ${won.name}!`;
                     resultEl.style.color = '#8e44ad';
+                    playSound('coin'); confettiBurst();
                 } else {
                     // Нечего выдавать — утешительный приз монетами
                     update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + 15 }).catch(() => {});
