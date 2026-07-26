@@ -124,12 +124,21 @@
             <input type="text" id="coins-user-search" class="input" placeholder="🔍 Поиск по имени">
             <div id="admin-coins-list"></div>
         </div>
+
+        <div class="card" id="admin-wheel-panel" style="display:none;">
+            <h3 style="margin-top:0;">🎡 Настройка колеса фортуны</h3>
+            <p style="font-size:12px;color:#95a5a6;margin-bottom:10px;">
+                Шанс сектора = его вес ÷ сумма всех весов. Например, если у всех весов сумма 100, вес 10 = 10% шанс.
+            </p>
+            <div id="wheel-segments-form"></div>
+            <button class="btn" id="btn-save-wheel">Сохранить настройки колеса</button>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -312,6 +321,7 @@
                 const showing = document.getElementById('admin-panel').style.display !== 'none';
                 document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-coins-panel').style.display = showing ? 'none' : 'block';
+                document.getElementById('admin-wheel-panel').style.display = showing ? 'none' : 'block';
                 return;
             }
             const pwd = prompt('Пароль:');
@@ -319,8 +329,10 @@
                 isAdmin = true;
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('admin-coins-panel').style.display = 'block';
+                document.getElementById('admin-wheel-panel').style.display = 'block';
                 renderAdminList();
                 listenAllUsersForCoins();
+                populateWheelAdminForm();
             } else if (pwd) {
                 alert('Неверный пароль');
             }
@@ -431,7 +443,7 @@
 
         // === Колесо фортуны ===
         const SPIN_COST = 20;
-        const wheelSegments = [
+        const defaultWheelSegments = [
             { label: '+50🪙', color: '#ffb75e', type: 'coins', value: 50, weight: 8 },
             { label: '+10🪙', color: '#4fc3f7', type: 'coins', value: 10, weight: 22 },
             { label: 'Пусто', color: '#b0bec5', type: 'nothing', value: 0, weight: 20 },
@@ -441,9 +453,28 @@
             { label: '🎀 Декор', color: '#f06292', type: 'decoration', value: 0, weight: 8 },
             { label: '+100🪙', color: '#ffd54f', type: 'coins', value: 100, weight: 2 }
         ];
+        let wheelSegments = defaultWheelSegments.map(s => ({ ...s }));
         const segAngle = 360 / wheelSegments.length;
         let wheelRotation = 0;
         let spinning = false;
+
+        // Настройки колеса задаёт админ — берём из базы, цвет и позиция секторов всегда фиксированные
+        onValue(ref(db, 'settings/wheel/segments'), (snap) => {
+            const saved = snap.val();
+            if (Array.isArray(saved) && saved.length === defaultWheelSegments.length) {
+                wheelSegments = defaultWheelSegments.map((def, i) => ({
+                    ...def,
+                    label: saved[i].label ?? def.label,
+                    type: saved[i].type ?? def.type,
+                    value: saved[i].value ?? def.value,
+                    weight: saved[i].weight ?? def.weight
+                }));
+            } else {
+                wheelSegments = defaultWheelSegments.map(s => ({ ...s }));
+            }
+            buildWheelFace();
+            if (isAdmin) populateWheelAdminForm();
+        });
 
         function buildWheelFace() {
             const wheel = document.getElementById('wheel');
@@ -465,6 +496,47 @@
             }
             return wheelSegments.length - 1;
         }
+
+        // === Админ: настройка секторов колеса ===
+        const typeLabels = { coins: '🪙 Монеты', nothing: '🚫 Пусто', frame: '🖼 Рамка', decoration: '🎀 Декор' };
+
+        function populateWheelAdminForm() {
+            const total = wheelSegments.reduce((sum, s) => sum + s.weight, 0);
+            document.getElementById('wheel-segments-form').innerHTML = wheelSegments.map((s, i) => {
+                const pct = total ? Math.round((s.weight / total) * 1000) / 10 : 0;
+                return `
+                <div style="background:#f8f9fa;border-radius:12px;padding:10px;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <span style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
+                        <input type="text" class="input wheel-field" data-i="${i}" data-field="label" value="${s.label.replace(/"/g,'&quot;')}" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
+                        <span style="font-size:12px;color:#95a5a6;white-space:nowrap;">${pct}%</span>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <select class="input wheel-field" data-i="${i}" data-field="type" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
+                            ${Object.entries(typeLabels).map(([val, lbl]) => `<option value="${val}" ${s.type === val ? 'selected' : ''}>${lbl}</option>`).join('')}
+                        </select>
+                        <input type="number" class="input wheel-field" data-i="${i}" data-field="value" value="${s.value}" placeholder="Кол-во монет" style="margin-bottom:0;width:100px;font-size:13px;padding:8px;">
+                        <input type="number" class="input wheel-field" data-i="${i}" data-field="weight" value="${s.weight}" min="0" placeholder="Вес" style="margin-bottom:0;width:80px;font-size:13px;padding:8px;">
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('btn-save-wheel').onclick = function() {
+            const updated = wheelSegments.map(s => ({ ...s }));
+            document.querySelectorAll('.wheel-field').forEach(el => {
+                const i = parseInt(el.dataset.i, 10);
+                const field = el.dataset.field;
+                if (field === 'weight' || field === 'value') updated[i][field] = parseInt(el.value, 10) || 0;
+                else updated[i][field] = el.value;
+            });
+
+            if (updated.every(s => s.weight <= 0)) return alert('Хотя бы один сектор должен иметь вес больше нуля');
+
+            set(ref(db, 'settings/wheel/segments'), updated.map(({ label, type, value, weight }) => ({ label, type, value, weight })))
+                .then(() => alert('Настройки колеса сохранены'))
+                .catch(err => alert('Ошибка: ' + err.message));
+        };
 
         document.getElementById('btn-spin-wheel').onclick = function() {
             if (spinning) return;
