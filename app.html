@@ -1038,10 +1038,12 @@
         }
 
         // Значок-галочка рядом с именем одобренных издателей
-        let badgeColor = '#1da1f2';
+        let badgeColor = '#1da1f2'; // цвет по умолчанию для тех, у кого нет своего
         function verifiedBadge(userId) {
             const u = usersData.find(x => x.id === userId);
-            return (u && u.isPublisher) ? `<span class="verified-badge" style="background:${badgeColor}" title="Проверенный издатель">✓</span>` : '';
+            if (!u || !u.isPublisher) return '';
+            const color = u.badgeColor || badgeColor;
+            return `<span class="verified-badge" style="background:${color}" title="Проверенный издатель">✓</span>`;
         }
         
         function formatDate(ts) {
@@ -1717,6 +1719,8 @@
                 renderOwnProfileHeader();
                 renderNotificationsToggle();
                 checkDailyCoinReward();
+                renderFeed();
+                if (activeOverlay === 'post') renderPostOverlay();
                 
                 if (activeOverlay === 'newchat' || activeOverlay === 'creategroup') {
                     renderUserPickList();
