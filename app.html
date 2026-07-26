@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :focus-visible { outline: 2px solid #ff9f0a; outline-offset: 2px; }
@@ -62,31 +62,53 @@
         body.theme-terraria textarea,
         body.theme-terraria select,
         body.theme-terraria button {
-            font-family: 'VT323', 'Courier New', monospace;
+            font-family: 'Handjet', 'Courier New', monospace;
+            font-variation-settings: 'ELSH' 0, 'ELGR' 1;
+            font-weight: 700;
         }
-        body.theme-terraria { letter-spacing: 0.3px; }
+        body.theme-terraria { letter-spacing: 0.3px; font-size: 1.14em; line-height: 1.5; }
         body.theme-terraria img { filter: saturate(1.12) contrast(1.06); }
-
-        /* лёгкое тёплое свечение факела поверх всего фона */
-        body.theme-terraria::before {
-            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-            background: radial-gradient(ellipse at 50% -10%, rgba(255,178,56,0.14), transparent 55%);
-            animation: terraria-glow 5s ease-in-out infinite;
-        }
-        @keyframes terraria-glow {
-            0%, 100% { opacity: .55; }
-            50% { opacity: 1; }
-        }
         body.theme-terraria .container { position: relative; z-index: 1; }
 
+        /* тёплое пульсирующее свечение факела над всем фоном */
+        body.theme-terraria::before {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,178,56,0.20), transparent 60%);
+            animation: terraria-glow 4s ease-in-out infinite;
+        }
+        @keyframes terraria-glow {
+            0%, 100% { opacity: .5; }
+            50% { opacity: 1; }
+        }
+
+        /* парящие искры/светлячки, поднимающиеся снизу вверх */
+        body.theme-terraria::after {
+            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image:
+                radial-gradient(2px 2px at 8% 30%, rgba(255,178,56,.95), transparent 60%),
+                radial-gradient(1.5px 1.5px at 22% 70%, rgba(255,210,110,.85), transparent 60%),
+                radial-gradient(2px 2px at 38% 15%, rgba(255,160,50,.9), transparent 60%),
+                radial-gradient(1.5px 1.5px at 55% 55%, rgba(255,200,90,.8), transparent 60%),
+                radial-gradient(2px 2px at 68% 85%, rgba(255,178,56,.9), transparent 60%),
+                radial-gradient(1.5px 1.5px at 82% 25%, rgba(255,210,110,.85), transparent 60%),
+                radial-gradient(2px 2px at 94% 65%, rgba(255,160,50,.9), transparent 60%);
+            background-size: 100% 200%;
+            background-repeat: repeat-y;
+            animation: terraria-embers 9s linear infinite;
+        }
+        @keyframes terraria-embers {
+            from { background-position: 0 0; }
+            to { background-position: 0 -200%; }
+        }
+
         body.theme-terraria .header h1 {
-            font-size: 36px; color: #ffd873; letter-spacing: 1px;
-            text-shadow: 2px 2px 0 #2c1c0d, 0 0 10px rgba(255,178,56,.65);
-            animation: terraria-torch 2.3s ease-in-out infinite;
+            font-size: 34px; font-weight: 700; color: #ffd873; letter-spacing: 0.5px;
+            text-shadow: 2px 2px 0 #2c1c0d, 0 0 8px rgba(255,178,56,.55);
+            animation: terraria-torch 2.2s ease-in-out infinite;
         }
         @keyframes terraria-torch {
-            0%, 100% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 8px rgba(255,178,56,.55); }
-            50% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 15px rgba(255,178,56,.95); }
+            0%, 100% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 7px rgba(255,178,56,.5); }
+            50% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 14px rgba(255,178,56,.95); }
         }
         body.theme-terraria .header p { color: #c9a876; }
 
