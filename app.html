@@ -107,11 +107,11 @@
             width: 100%; padding: 14px; border: none; border-radius: 18px;
             background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
             color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
-            margin-top: 10px; transition: all .2s ease;
+            margin-top: 10px; transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .25s ease;
             box-shadow: 0 4px 14px rgba(237, 143, 3, 0.3);
         }
-        .btn:hover { box-shadow: 0 6px 20px rgba(237, 143, 3, 0.4); transform: translateY(-1px); }
-        .btn:active { transform: scale(0.97); }
+        .btn:hover { box-shadow: 0 6px 20px rgba(237, 143, 3, 0.4); transform: translateY(-2px); }
+        .btn:active { transform: scale(0.95); transition-duration: .1s; }
         .btn-secondary { background: #ffffff; color: #2c3e50; border: 1px solid #dfe6e9; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
         .btn-danger { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .btn:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
@@ -132,10 +132,11 @@
         .chip {
             padding: 6px 14px; border-radius: 16px; background: #ffffff;
             border: 1px solid rgba(0,0,0,0.06); color: #555; font-size: 12px; font-weight: 600;
-            cursor: pointer; white-space: nowrap; transition: all .2s ease;
+            cursor: pointer; white-space: nowrap; transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .2s ease, background .2s ease, color .2s ease;
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         .chip:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .chip:active { transform: scale(0.93); }
         .chip.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
         .tab-mini { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
@@ -143,9 +144,10 @@
         .tab-mini-btn {
             flex: 1; padding: 10px; border-radius: 14px; background: #ffffff;
             border: 1px solid rgba(0,0,0,0.05); color: #7f8c8d; font-size: 13px; font-weight: 700;
-            cursor: pointer; text-align: center; transition: all .2s ease;
+            cursor: pointer; text-align: center; transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1), background .2s ease, color .2s ease, box-shadow .2s ease;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02); white-space: nowrap;
         }
+        .tab-mini-btn:active { transform: scale(0.94); }
         .tab-mini-btn.active { background: #ff9f0a; color: #fff; border-color: #ff9f0a; box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
 
         .image-field-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-start; }
@@ -378,8 +380,26 @@
         }
         
         .msg-sticker-wrap {
-            display: inline-flex; flex-direction: column; align-items: center;
+            display: inline-flex; flex-direction: column; align-items: center; position: relative;
         }
+        .msg-avatar-click { cursor: pointer; flex-shrink: 0; margin: 0 6px; align-self: flex-end; }
+        .msg-avatar, .msg-avatar-fallback {
+            width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block;
+        }
+        .msg-avatar-fallback {
+            display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 11px;
+        }
+        .msg-reply-quote {
+            border-left: 3px solid rgba(0,0,0,0.15); padding: 3px 8px; margin-bottom: 5px; font-size: 12px;
+            opacity: 0.8; border-radius: 4px; background: rgba(0,0,0,0.04);
+        }
+        .msg-row.mine .msg-reply-quote { border-left-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.15); }
+        .msg-reply-btn {
+            position: absolute; top: -10px; left: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 12px;
+            cursor: pointer; line-height: 1; transition: transform .2s;
+        }
+        .msg-reply-btn:hover { transform: scale(1.1); }
         .msg-sticker {
             max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
             box-shadow: none; display: block;
@@ -419,6 +439,12 @@
             50% { transform: translateY(-8px); }
             100% { transform: translateY(0); }
         }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card-anim { animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 
         .skeleton {
             background: linear-gradient(90deg, #ffffff 25%, #f0f0f0 37%, #ffffff 63%);
@@ -832,6 +858,14 @@
         </div>
         
         <div id="chat-sticker-picker" style="display:none; overflow-x:auto; padding-bottom:8px; border-top:1px solid #eee; background:#fff;"></div>
+        <div id="chat-typing-indicator" class="hidden" style="padding:4px 16px;font-size:12px;color:#95a5a6;font-style:italic;background:#f4f7f6;"></div>
+        <div id="chat-reply-bar" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff3e0;border-top:1px solid #ffe0b2;">
+            <div style="flex:1;min-width:0;font-size:13px;color:#e65100;">
+                <div style="font-weight:700;" id="chat-reply-author"></div>
+                <div id="chat-reply-preview" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <button id="btn-cancel-reply" style="border:none;background:none;font-size:20px;color:#e65100;cursor:pointer;line-height:1;">×</button>
+        </div>
         
         <div class="chat-input-row">
             <button class="sticker-toggle" id="btn-toggle-stickers">🤩</button>
@@ -1004,9 +1038,10 @@
         }
 
         // Значок-галочка рядом с именем одобренных издателей
+        let badgeColor = '#1da1f2';
         function verifiedBadge(userId) {
             const u = usersData.find(x => x.id === userId);
-            return (u && u.isPublisher) ? '<span class="verified-badge" title="Проверенный издатель">✓</span>' : '';
+            return (u && u.isPublisher) ? `<span class="verified-badge" style="background:${badgeColor}" title="Проверенный издатель">✓</span>` : '';
         }
         
         function formatDate(ts) {
@@ -1386,7 +1421,7 @@
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
 
-        window.createPostImageField = function(containerId, url = '') {
+        function createPostImageField(containerId, url = '') {
             const id = 'img_' + Math.random().toString(36).substr(2, 9);
             const div = document.createElement('div');
             div.className = 'image-field-row dynamic-img-row';
@@ -1399,6 +1434,7 @@
             document.getElementById(containerId).appendChild(div);
             setupImageUploadFlex(div.querySelector(`#file_${id}`), div.querySelector('.post-image-input'), div.querySelector(`#btn_${id}`), 'posts');
         }
+        window.createPostImageField = createPostImageField;
 
         document.getElementById('btn-admin-add-image').onclick = () => createPostImageField('admin-post-images-container');
         document.getElementById('btn-compose-add-image').onclick = () => createPostImageField('compose-images-container');
@@ -1511,7 +1547,7 @@
         }
 
         // === Публичный профиль пользователя ===
-        window.openUserProfile = function(userId) {
+        function openUserProfile(userId) {
             if (!userId) return;
             if (userId === currentUser.id) {
                 window.switchTab('profile');
@@ -1521,7 +1557,8 @@
             activeOverlay = 'userprofile';
             renderUserProfileOverlay(userId);
             document.getElementById('user-profile-overlay').classList.add('active');
-        };
+        }
+        window.openUserProfile = openUserProfile;
 
         document.getElementById('close-user-profile-btn').onclick = function() {
             document.getElementById('user-profile-overlay').classList.remove('active');
@@ -1633,6 +1670,19 @@
                 shopItemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
                 renderOwnProfileHeader();
                 if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
+            });
+
+            onValue(ref(db, 'settings/badgeColor'), (snapshot) => {
+                if (snapshot.val()) badgeColor = snapshot.val();
+                renderFeed();
+                renderOwnProfileHeader();
+                if (activeOverlay === 'post') renderPostOverlay();
+                if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
+                if (activeOverlay === 'chat' && currentChatId) {
+                    renderedChatState = { chatId: null, signature: null }; // цвет изменился — форсируем перерисовку списка
+                    const chat = chatsData.find(c => c.id === currentChatId);
+                    if (chat) renderChatOverlay(chat);
+                }
             });
 
             // Обновление таймеров обратного отсчёта у баннеров-событий раз в секунду
@@ -1791,7 +1841,7 @@
                 return;
             }
             
-            container.innerHTML = list.map(post => {
+            container.innerHTML = list.map((post, idx) => {
                 const reactions = post.reactions || {};
                 const counts = {};
                 Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
@@ -1808,7 +1858,7 @@
                     </div>` : '<div style="color:#7f8c8d;font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
                 
                 return `
-                <div class="card tappable" data-post-id="${post.id}">
+                <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" data-post-id="${post.id}">
                     ${authorRow}
                     ${coverImage ? `<img src="${coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="card-title">${escapeHtml(post.title)}</div>
@@ -1867,7 +1917,7 @@
             tg.BackButton.hide();
         };
         
-        window.editOwnPost = function(id) {
+        function editOwnPost(id) {
             const post = postsData.find(p => p.id === id);
             if (!post) return;
             
@@ -1884,7 +1934,8 @@
             document.getElementById('compose-overlay').classList.add('active');
             activeOverlay = 'compose'; 
             tg.BackButton.show();
-        };
+        }
+        window.editOwnPost = editOwnPost;
         
         document.getElementById('btn-submit-compose').onclick = function() {
             const title = document.getElementById('compose-title').value.trim();
@@ -1920,7 +1971,7 @@
             }
         };
         
-        window.deleteOwnPost = function(id) {
+        function deleteOwnPost(id) {
             tg.showConfirm('Удалить этот пост?', (ok) => { 
                 if (ok) {
                     remove(ref(db, 'posts/' + id))
@@ -1928,17 +1979,19 @@
                         .catch(err => tg.showAlert('Ошибка удаления: ' + friendlyDbError(err)));
                 } 
             });
-        };
+        }
+        window.deleteOwnPost = deleteOwnPost;
 
         // === ОВЕРЛЕЙ ПОСТА ===
-        window.openPost = function(id) {
+        function openPost(id) {
             currentPostId = id; 
             activeOverlay = 'post';
             document.getElementById('comment-sticker-picker').style.display = 'none';
             renderPostOverlay();
             document.getElementById('post-overlay').classList.add('active'); 
             tg.BackButton.show();
-        };
+        }
+        window.openPost = openPost;
 
         function renderPostOverlay() {
             const post = postsData.find(p => p.id === currentPostId);
@@ -2185,13 +2238,13 @@
                 return; 
             }
             
-            container.innerHTML = list.map(book => {
+            container.innerHTML = list.map((book, idx) => {
                 const isRead = readBooks.includes(book.id);
                 const isBookmarked = bookmarkedBooks.includes(book.id);
                 const prog = bookProgress(book);
                 
                 return `
-                <div class="card tappable" onclick="openBook('${book.id}')">
+                <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" onclick="openBook('${book.id}')">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
                     ${book.genre ? `<div class="genre-tag">${escapeHtml(book.genre)}</div>` : ''}
                     <div class="card-title">${escapeHtml(book.title)}</div>
@@ -2246,7 +2299,7 @@
             `;
         }
         
-        window.openChapter = function(bookId, idx) {
+        function openChapter(bookId, idx) {
             const book = booksData.find(b => b.id === bookId); 
             if (!book) return;
             
@@ -2275,7 +2328,8 @@
             document.getElementById('btn-prev-chapter').disabled = idx === 0; 
             document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
             document.getElementById('btn-bookmark').textContent = bookmarkedBooks.includes(bookId) ? '🔖✓' : '🔖';
-        };
+        }
+        window.openChapter = openChapter;
 
         document.getElementById('btn-prev-chapter').onclick = () => { 
             if (currentChapterIndex > 0) openChapter(currentBookId, currentChapterIndex - 1); 
@@ -2396,7 +2450,7 @@
             myChats.sort((a, b) => (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0));
             let anyUnread = false;
             
-            container.innerHTML = myChats.map(chat => {
+            container.innerHTML = myChats.map((chat, idx) => {
                 const lastReadTime = chatLastRead[chat.id] || 0;
                 const unread = chat.messages ? Object.values(chat.messages).filter(m => m.senderId !== currentUser.id && m.createdAt > lastReadTime).length : 0;
                 if (unread > 0) anyUnread = true;
@@ -2414,7 +2468,7 @@
                 }
 
                 return `
-                <div class="chat-list-item" data-chat-id="${chat.id}">
+                <div class="chat-list-item card-anim" style="animation-delay:${Math.min(idx, 8) * 30}ms" data-chat-id="${chat.id}">
                     <div class="chat-avatar-wrap">${avatarHTML}${moodStr}</div>
                     <div class="chat-info">
                         <div class="chat-info-top">
@@ -2433,16 +2487,20 @@
             document.getElementById('chats-nav-badge').classList.toggle('hidden', !anyUnread);
         }
 
-        window.openChat = function(chatId) {
+        function openChat(chatId) {
             currentChatId = chatId; 
             activeOverlay = 'chat';
             document.getElementById('chat-overlay').classList.add('active'); 
             tg.BackButton.show();
             document.getElementById('chat-sticker-picker').style.display = 'none';
+            renderedChatState = { chatId: null, signature: null }; // сбрасываем кэш, чтобы новый чат точно отрисовался и проскроллился вниз
             
             const chat = chatsData.find(c => c.id === chatId);
             if (chat) renderChatOverlay(chat);
-        };
+        }
+        window.openChat = openChat;
+
+        let renderedChatState = { chatId: null, signature: null };
 
         function renderChatOverlay(chat) {
             if (chat.type === 'group') {
@@ -2464,46 +2522,75 @@
                 document.getElementById('chat-pinned-text').textContent = '"' + pinned.text + '" — ' + pinned.author;
             }
             document.getElementById('chat-quote-watermark').textContent = pinned ? '"' + pinned.text + '"' : '';
+            updateTypingIndicator(chat);
 
             const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
             const listEl = document.getElementById('chat-messages-list');
+            const signature = messages.map(m => m.id).join(',') + '|' + (pinned ? pinned.pinnedAt : '');
+
+            // Ничего нового: пропускаем полную перерисовку сообщений, чтобы не моргали картинки/видео и не дёргался скролл
+            if (renderedChatState.chatId === chat.id && renderedChatState.signature === signature) {
+                chatLastRead[chat.id] = Date.now(); 
+                saveLocal('sr_chat_last_read', chatLastRead);
+                document.getElementById('chats-nav-badge').classList.add('hidden');
+                return;
+            }
+
+            const body = document.getElementById('chat-body');
+            const wasNearBottom = renderedChatState.chatId !== chat.id || (body.scrollHeight - body.scrollTop - body.clientHeight < 120);
             
             listEl.innerHTML = messages.length ? messages.map(m => {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const senderName = (chat.type === 'group' && m.senderId !== currentUser.id) 
+                const isMine = m.senderId === currentUser.id;
+                const senderName = (chat.type === 'group' && !isMine) 
                     ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px; cursor:pointer;">${escapeHtml(m.senderName)}${verifiedBadge(m.senderId)}</div>` 
                     : '';
+
+                const senderInfo = usersData.find(u => u.id === m.senderId);
+                const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(senderInfo ? senderInfo.name : m.senderName, senderInfo ? senderInfo.avatar : null, 'msg-avatar')}</div>` : '';
+
+                const replyPreview = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+                const replyBtn = `<button class="msg-reply-btn" data-id="${m.id}" data-author="${escapeHtml(m.senderName)}" data-text="${escapeHtml(m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text))}" title="Ответить">↩️</button>`;
                 
                 if (m.sticker) {
                     return `
-                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-row ${isMine ? 'mine' : ''}">
+                        ${avatarBlock}
                         <div class="msg-sticker-wrap">
                             ${senderName}
+                            ${replyPreview}
                             <img src="${m.sticker}" class="msg-sticker">
                             <span class="msg-time sticker-time">${timeStr}</span>
+                            ${replyBtn}
                         </div>
                     </div>`;
                 }
 
                 if (m.attachment) {
                     return `
-                    <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                    <div class="msg-row ${isMine ? 'mine' : ''}">
+                        ${avatarBlock}
                         <div class="msg-bubble">
                             ${senderName}
+                            ${replyPreview}
                             ${attachmentHtml(m.attachment)}
                             ${m.text ? escapeHtml(m.text) : ''}
                             <span class="msg-time">${timeStr}</span>
+                            ${replyBtn}
                         </div>
                     </div>`;
                 }
                 
                 return `
-                <div class="msg-row ${m.senderId === currentUser.id ? 'mine' : ''}">
+                <div class="msg-row ${isMine ? 'mine' : ''}">
+                    ${avatarBlock}
                     <div class="msg-bubble">
                         ${senderName}
+                        ${replyPreview}
                         ${escapeHtml(m.text)}
                         <span class="msg-time">${timeStr}</span>
                         <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
+                        ${replyBtn}
                     </div>
                 </div>`;
             }).join('') : '<div style="color:#95a5a6;font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
@@ -2512,7 +2599,11 @@
                 btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
             });
 
-            listEl.querySelectorAll('.msg-sender-name').forEach(el => {
+            listEl.querySelectorAll('.msg-reply-btn').forEach(btn => {
+                btn.onclick = () => startReply(btn.getAttribute('data-id'), btn.getAttribute('data-author'), btn.getAttribute('data-text'));
+            });
+
+            listEl.querySelectorAll('.msg-sender-name, .msg-avatar-click').forEach(el => {
                 el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
             });
 
@@ -2520,8 +2611,8 @@
             saveLocal('sr_chat_last_read', chatLastRead);
             document.getElementById('chats-nav-badge').classList.add('hidden');
             
-            const body = document.getElementById('chat-body'); 
-            body.scrollTop = body.scrollHeight;
+            renderedChatState = { chatId: chat.id, signature };
+            if (wasNearBottom) body.scrollTop = body.scrollHeight;
         }
 
         function pinQuote(chatId, text, author) { 
@@ -2533,21 +2624,43 @@
             update(ref(db, 'chats/' + currentChatId), { pinnedQuote: null }); 
         };
         
+        // === Ответ на сообщение ===
+        let replyingTo = null;
+
+        function startReply(id, author, text) {
+            replyingTo = { id, author, text };
+            document.getElementById('chat-reply-author').textContent = author;
+            document.getElementById('chat-reply-preview').textContent = text;
+            document.getElementById('chat-reply-bar').classList.remove('hidden');
+            document.getElementById('chat-message-input').focus();
+        }
+
+        document.getElementById('btn-cancel-reply').onclick = function() {
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
+        };
+
         function sendChatMessage() {
             const input = document.getElementById('chat-message-input');
             if (!input.value.trim() || !currentChatId || !db) return;
             
-            push(ref(db, 'chats/' + currentChatId + '/messages'), { 
+            const payload = { 
                 senderId: currentUser.id, 
                 senderName: currentUser.name, 
                 text: input.value.trim(), 
                 createdAt: Date.now() 
-            }).then(() => {
+            };
+            if (replyingTo) payload.replyTo = { id: replyingTo.id, author: replyingTo.author, text: replyingTo.text };
+
+            push(ref(db, 'chats/' + currentChatId + '/messages'), payload).then(() => {
                 update(ref(db, 'chats/' + currentChatId), { 
                     lastMessage: input.value.trim(), 
                     lastMessageAt: Date.now() 
                 }); 
                 input.value = '';
+                clearTypingStatus();
+                replyingTo = null;
+                document.getElementById('chat-reply-bar').classList.add('hidden');
             });
         }
         
@@ -2556,23 +2669,75 @@
         setupAttachmentPicker('chat-attach-file', async (attachment) => {
             if (!currentChatId || !db) return;
             const captionByType = { image: '📎 Фото', video: '📎 Видео', audio: '📎 Аудио' };
-            await push(ref(db, 'chats/' + currentChatId + '/messages'), {
+            const payload = {
                 senderId: currentUser.id,
                 senderName: currentUser.name,
                 text: '',
                 attachment,
                 createdAt: Date.now()
-            });
+            };
+            if (replyingTo) payload.replyTo = { id: replyingTo.id, author: replyingTo.author, text: replyingTo.text };
+            await push(ref(db, 'chats/' + currentChatId + '/messages'), payload);
             update(ref(db, 'chats/' + currentChatId), {
                 lastMessage: captionByType[attachment.type] || '📎 Вложение',
                 lastMessageAt: Date.now()
             });
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
         });
         document.getElementById('chat-message-input').addEventListener('keydown', (e) => { 
             if (e.key === 'Enter') sendChatMessage(); 
         });
 
+        // === Индикатор "печатает..." ===
+        let lastTypingSent = 0;
+        let typingClearTimer = null;
+
+        function clearTypingStatus() {
+            if (typingClearTimer) { clearTimeout(typingClearTimer); typingClearTimer = null; }
+            if (currentChatId && db) remove(ref(db, 'chats/' + currentChatId + '/typing/' + currentUser.id)).catch(() => {});
+        }
+
+        document.getElementById('chat-message-input').addEventListener('input', function() {
+            if (!currentChatId || !db) return;
+            const now = Date.now();
+            if (now - lastTypingSent > 1500) {
+                lastTypingSent = now;
+                update(ref(db, 'chats/' + currentChatId + '/typing'), { [currentUser.id]: now }).catch(() => {});
+            }
+            if (typingClearTimer) clearTimeout(typingClearTimer);
+            typingClearTimer = setTimeout(clearTypingStatus, 3000);
+        });
+
+        function updateTypingIndicator(chat) {
+            const el = document.getElementById('chat-typing-indicator');
+            if (!el || !chat) return;
+            const now = Date.now();
+            const typerIds = chat.typing ? Object.entries(chat.typing).filter(([uid, ts]) => uid !== currentUser.id && (now - ts) < 5000).map(([uid]) => uid) : [];
+
+            if (!typerIds.length) { el.classList.add('hidden'); return; }
+            el.classList.remove('hidden');
+
+            if (chat.type === 'group') {
+                const names = typerIds.map(uid => { const u = usersData.find(x => x.id === uid); return u ? u.name : 'Кто-то'; });
+                el.textContent = (names.length > 1 ? names.join(', ') + ' печатают...' : names[0] + ' печатает...');
+            } else {
+                el.textContent = 'печатает...';
+            }
+        }
+
+        // Проверяем актуальность статуса раз в 1.5с — чтобы индикатор пропадал сам по себе, даже без новых событий из базы
+        setInterval(() => {
+            if (activeOverlay === 'chat' && currentChatId) {
+                const chat = chatsData.find(c => c.id === currentChatId);
+                if (chat) updateTypingIndicator(chat);
+            }
+        }, 1500);
+
         document.getElementById('close-chat-btn').onclick = function() {
+            clearTypingStatus();
+            replyingTo = null;
+            document.getElementById('chat-reply-bar').classList.add('hidden');
             document.getElementById('chat-overlay').classList.remove('active'); 
             activeOverlay = null; 
             currentChatId = null; 
@@ -2666,6 +2831,7 @@
             }
             openChat(chatId);
         }
+        window.startChatWith = startChatWith;
 
         // Логика создания группы
         document.getElementById('btn-submit-group').onclick = function() {
@@ -2862,7 +3028,9 @@
         // передаём id и имя пользователя, чтобы там не нужно было логиниться заново
         function goToSubpage(pageName) {
             const q = `?uid=${encodeURIComponent(currentUser.id)}&name=${encodeURIComponent(currentUser.name)}`;
-            window.location.href = pageName + q;
+            // Убираем имя текущего файла из пути и схлопываем случайные двойные слэши в адресе
+            const dir = window.location.pathname.replace(/[^/]*$/, '').replace(/\/{2,}/g, '/');
+            window.location.href = window.location.origin + dir + pageName + q;
         }
         document.getElementById('btn-open-shop').onclick = () => goToSubpage('shop.html');
         document.getElementById('btn-open-publisher-app').onclick = () => goToSubpage('publisher-application.html');
