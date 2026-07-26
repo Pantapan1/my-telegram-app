@@ -75,7 +75,8 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">Цвет галочки издателя</h3>
+                <h3 style="margin-top:0;">Цвет галочки по умолчанию</h3>
+                <p style="margin:0 0 10px;font-size:12px;color:#95a5a6;">Применяется ко всем, кому не задан свой цвет ниже, в списке «Действующие издатели»</p>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <input type="color" id="badge-color-input" value="#1da1f2" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;">
                     <button class="btn" id="btn-save-badge-color" style="margin:0;">Сохранить цвет</button>
@@ -213,12 +214,22 @@
 
                 el.innerHTML = publishers.map(u => `
                     <div class="app-item">
-                        <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
-                        <div class="app-actions">
+                        <div class="name" style="display:flex;align-items:center;gap:8px;">
+                            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:${u.badgeColor || '#1da1f2'};border-radius:50%;color:#fff;font-size:10px;">✓</span>
+                            ${escapeHtml(u.name || u.uid)}
+                        </div>
+                        <div class="app-actions" style="align-items:center;">
+                            <input type="color" data-uid="${u.uid}" class="badge-color-per-user" value="${u.badgeColor || '#1da1f2'}" style="width:44px;height:36px;border:none;border-radius:8px;padding:0;background:none;flex:0 0 auto;">
                             <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
                         </div>
                     </div>
                 `).join('');
+
+                el.querySelectorAll('.badge-color-per-user').forEach(input => {
+                    input.onchange = () => {
+                        update(ref(db, 'users/' + input.dataset.uid), { badgeColor: input.value }).catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
 
                 el.querySelectorAll('button[data-uid]').forEach(btn => {
                     btn.onclick = () => {
