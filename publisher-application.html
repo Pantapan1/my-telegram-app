@@ -29,7 +29,9 @@
     .status-pending { background: #fff4e0; color: #ed8f03; }
     .status-approved { background: #eafaf1; color: #27ae60; }
     .status-rejected { background: #fdecea; color: #e74c3c; }
-    .admin-toggle { text-align: center; margin-top: 30px; font-size: 12px; color: #bbb; cursor: pointer; }
+    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #b0b0b0; cursor: pointer; transition: color .2s ease, transform .2s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 10px; }
+    .admin-toggle:hover { color: #ed8f03; }
+    .admin-toggle:active { transform: scale(0.95); }
     .app-item { background: #f8f9fa; border-radius: 14px; padding: 12px; margin-bottom: 10px; }
     .app-item .name { font-weight: 700; margin-bottom: 4px; }
     .app-item .msg { font-size: 13px; color: #555; margin-bottom: 10px; white-space: pre-wrap; }
@@ -70,6 +72,19 @@
             <div class="card">
                 <h3 style="margin-top:0;">Заявки на рассмотрении</h3>
                 <div id="admin-apps-list"></div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Цвет галочки издателя</h3>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="color" id="badge-color-input" value="#1da1f2" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;">
+                    <button class="btn" id="btn-save-badge-color" style="margin:0;">Сохранить цвет</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Действующие издатели</h3>
+                <div id="admin-publishers-list"></div>
             </div>
         </div>
     </div>
@@ -166,10 +181,54 @@
                 isAdmin = true;
                 document.getElementById('admin-panel').style.display = 'block';
                 listenAllApplications();
+                listenPublishers();
+                listenBadgeColor();
             } else if (pwd) {
                 alert('Неверный пароль');
             }
         };
+
+        function listenBadgeColor() {
+            onValue(ref(db, 'settings/badgeColor'), (snap) => {
+                const color = snap.val();
+                if (color) document.getElementById('badge-color-input').value = color;
+            });
+        }
+
+        document.getElementById('btn-save-badge-color').onclick = function() {
+            const color = document.getElementById('badge-color-input').value;
+            set(ref(db, 'settings/badgeColor'), color).then(() => {
+                alert('Цвет галочки обновлён у всех');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        function listenPublishers() {
+            onValue(ref(db, 'users'), (snap) => {
+                const data = snap.val();
+                const users = data ? Object.entries(data).map(([uid, v]) => ({ uid, ...v })) : [];
+                const publishers = users.filter(u => u.isPublisher);
+                const el = document.getElementById('admin-publishers-list');
+
+                if (!publishers.length) { el.innerHTML = '<div class="empty-state">Пока нет ни одного одобренного издателя</div>'; return; }
+
+                el.innerHTML = publishers.map(u => `
+                    <div class="app-item">
+                        <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
+                        <div class="app-actions">
+                            <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                el.querySelectorAll('button[data-uid]').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!confirm('Забрать статус издателя у этого пользователя?')) return;
+                        update(ref(db, 'users/' + btn.dataset.uid), { isPublisher: false });
+                        update(ref(db, 'publisherApplications/' + btn.dataset.uid), { status: 'rejected' });
+                    };
+                });
+            });
+        }
 
         function listenAllApplications() {
             onValue(ref(db, 'publisherApplications'), (snap) => {
