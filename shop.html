@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Магазин</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
@@ -214,6 +215,13 @@
 
     <div id="shop-root" style="display:none;">
         <div id="deal-of-day-wrap"></div>
+
+        <div class="section-title">📺 Реклама за монеты</div>
+        <div class="card" style="text-align:center;">
+            <div style="font-size:13px;color:var(--text-secondary,#95a5a6);margin-bottom:12px;">Посмотри короткую рекламу и получи монеты</div>
+            <button class="btn" id="btn-watch-ad">Смотреть рекламу (+10 🪙)</button>
+            <div id="ad-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
+        </div>
 
         <div class="section-title">🖼 Рамки аватара</div>
         <div class="grid" id="frames-grid"></div>
@@ -440,6 +448,64 @@
             document.getElementById('my-coins').textContent = myUser.coins || 0;
             renderShop();
         });
+
+        // === Реклама за монеты (AdsGram) ===
+        const AD_BLOCK_ID = '39983';
+        const AD_REWARD = 10;
+        const AD_COOLDOWN_MS = 30000; // защита от спам-кликов, чтобы не звать show() слишком часто
+
+        let adController = null;
+        try {
+            if (window.Adsgram) adController = window.Adsgram.init({ blockId: AD_BLOCK_ID });
+        } catch (e) { console.warn('Adsgram init error', e); }
+
+        const btnWatchAd = document.getElementById('btn-watch-ad');
+        const adResultEl = document.getElementById('ad-result');
+        let adBusy = false;
+        let lastAdShownAt = 0;
+
+        if (btnWatchAd) {
+            btnWatchAd.onclick = function () {
+                if (adBusy) return;
+                if (!adController) {
+                    adResultEl.textContent = 'Реклама сейчас недоступна, попробуй позже';
+                    adResultEl.style.color = '#95a5a6';
+                    return;
+                }
+                if (Date.now() - lastAdShownAt < AD_COOLDOWN_MS) {
+                    adResultEl.textContent = 'Подожди немного перед следующим просмотром';
+                    adResultEl.style.color = '#95a5a6';
+                    return;
+                }
+
+                adBusy = true;
+                btnWatchAd.disabled = true;
+                adResultEl.textContent = 'Загружаем рекламу…';
+                adResultEl.style.color = '#95a5a6';
+
+                adController.show().then(() => {
+                    // Реклама досмотрена до конца — начисляем монеты
+                    lastAdShownAt = Date.now();
+                    update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + AD_REWARD }).then(() => {
+                        adResultEl.textContent = `🎉 +${AD_REWARD} монет за просмотр!`;
+                        adResultEl.style.color = '#27ae60';
+                        playSound('coin'); confettiBurst();
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    }).catch(() => {
+                        adResultEl.textContent = 'Ошибка начисления монет, попробуй ещё раз';
+                        adResultEl.style.color = '#e74c3c';
+                    });
+                }).catch((result) => {
+                    // Пользователь закрыл рекламу раньше времени, либо реклама не найдена
+                    const reason = result && result.description ? result.description : 'Реклама не досмотрена — монеты не начислены';
+                    adResultEl.textContent = reason;
+                    adResultEl.style.color = '#95a5a6';
+                }).finally(() => {
+                    adBusy = false;
+                    btnWatchAd.disabled = false;
+                });
+            };
+        }
 
         function effectivePrice(item) {
             const onSale = item.saleUntil && Date.now() < item.saleUntil && item.salePrice;
