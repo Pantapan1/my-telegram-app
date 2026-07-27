@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Reader App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
@@ -386,6 +387,30 @@
         .upload-btn.uploading { opacity: 0.5; pointer-events: none; }
         .image-preview { width: 100%; max-height: 140px; object-fit: cover; border-radius: 14px; margin: -4px 0 10px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .image-preview.show { display: block; }
+
+        /* === РЕКЛАМНЫЙ БАННЕР ADSGRAM (низ экрана, все страницы) === */
+        .ad-banner-bottom {
+            position: fixed !important;
+            left: 0 !important; right: 0 !important;
+            z-index: 9998 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: var(--surface) !important;
+            padding: 6px 12px !important;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.05) !important;
+            transition: background .4s ease !important;
+        }
+        .ad-banner-bottom adsgram-task { width: 100%; max-width: 600px; }
+
+        /* === РЕКЛАМНЫЙ БАННЕР ADSGRAM (верх экрана чата) === */
+        .ad-banner-top {
+            padding: 8px 16px !important;
+            background: var(--surface) !important;
+            border-bottom: 1px solid var(--border-soft) !important;
+            flex-shrink: 0 !important;
+        }
+        .ad-banner-top adsgram-task { width: 100%; display: block; }
 
         .bottom-nav {
             position: fixed !important;
@@ -1315,6 +1340,9 @@
             </div>
             <button class="btn btn-secondary hidden" id="chat-edit-group-btn" style="width:auto; margin:0; padding:8px 10px; border-radius:12px;">⚙️</button>
         </div>
+        <div class="ad-banner-top" id="chat-ad-banner">
+            <adsgram-task data-block-id="task-39987" data-debug="false" data-debug-console="false" class="task"></adsgram-task>
+        </div>
         <div class="pinned-quote-bar hidden" id="chat-pinned-bar">
             <span class="text" id="chat-pinned-text"></span>
             <button id="btn-unpin-quote">✕</button>
@@ -1373,6 +1401,11 @@
         </div>
     </div>
 
+    <!-- === РЕКЛАМНЫЙ БАННЕР ADSGRAM (низ экрана, все страницы) === -->
+    <div class="ad-banner-bottom" id="global-ad-banner">
+        <adsgram-task data-block-id="task-39987" data-debug="false" data-debug-console="false" class="task"></adsgram-task>
+    </div>
+
     <!-- === ЯКОРНАЯ НАВИГАЦИЯ === -->
     <nav class="bottom-nav">
         <button class="nav-btn active" onclick="switchTab('feed')">
@@ -1392,6 +1425,28 @@
             <span>Профиль</span>
         </button>
     </nav>
+
+    <!-- ПОЗИЦИОНИРОВАНИЕ РЕКЛАМНОГО БАННЕРА НАД НИЖНЕЙ НАВИГАЦИЕЙ -->
+    <script>
+        (function () {
+            function layoutAdBanner() {
+                var nav = document.querySelector('.bottom-nav');
+                var banner = document.getElementById('global-ad-banner');
+                if (!nav || !banner) return;
+                var navHeight = nav.offsetHeight || 70;
+                banner.style.bottom = navHeight + 'px';
+                var bannerHeight = banner.offsetHeight || 0;
+                document.body.style.paddingBottom = (navHeight + bannerHeight + 16) + 'px';
+            }
+            window.addEventListener('load', layoutAdBanner);
+            window.addEventListener('resize', layoutAdBanner);
+            document.addEventListener('DOMContentLoaded', layoutAdBanner);
+            // adsgram может подгрузить баннер асинхронно — пересчитываем через паузу
+            setTimeout(layoutAdBanner, 500);
+            setTimeout(layoutAdBanner, 1500);
+            setTimeout(layoutAdBanner, 3000);
+        })();
+    </script>
 
     <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
