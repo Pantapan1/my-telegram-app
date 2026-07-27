@@ -59,6 +59,25 @@
     .upload-row { display: flex; gap: 8px; }
     .upload-row .input { flex: 1; margin-bottom: 0; }
     .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+    .deal-card {
+        background: linear-gradient(135deg,#ffe0b2,#fff3e0); border: 2px solid #ed8f03; border-radius: 18px;
+        padding: 14px; margin-bottom: 18px; display: flex; align-items: center; gap: 14px;
+    }
+    .deal-card img { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+    .deal-badge { display:inline-block; background:#ed8f03; color:#fff; font-size:11px; font-weight:800; padding:2px 8px; border-radius:8px; margin-bottom:4px; }
+    .deal-old-price { text-decoration: line-through; color: #95a5a6; font-size: 12px; margin-right: 6px; }
+    .item-price .old-price { text-decoration: line-through; color: #95a5a6; font-weight: 500; margin-right: 5px; }
+    .urgent-stock { color: #e74c3c !important; font-weight: 800 !important; }
+    .nickcolor-swatch { width: 84px; height: 84px; border-radius: 50%; margin-bottom: 8px; box-shadow: inset 0 0 0 3px rgba(0,0,0,0.08); }
+    .gift-btn {
+        position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: none; border-radius: 50%;
+        width: 26px; height: 26px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .item-card { position: relative; }
+    .trophy-empty { grid-column: 1 / -1; }
+    body.theme-dark .deal-card { background: linear-gradient(135deg,#3a2e1a,#2a2416); border-color: #ed8f03; }
+    body.theme-dark .gift-btn { background: rgba(40,42,54,0.9); color: #ecedf1; }
     body.theme-dark {
         background: linear-gradient(180deg, #14161f 0%, #1c1f2b 200px); color: #ecedf1;
     }
@@ -194,37 +213,75 @@
     </div>
 
     <div id="shop-root" style="display:none;">
+        <div id="deal-of-day-wrap"></div>
+
         <div class="section-title">🖼 Рамки аватара</div>
         <div class="grid" id="frames-grid"></div>
 
         <div class="section-title">🎀 Декор профиля <span style="color:#95a5a6;font-weight:400;font-size:12px;">(до 5 одновременно)</span></div>
         <div class="grid" id="decor-grid"></div>
 
-        <div class="section-title">🎡 Колесо фортуны <span style="color:#95a5a6;font-weight:400;font-size:12px;">(20 🪙 за попытку)</span></div>
+        <div class="section-title">🏅 Значки у ника</div>
+        <div class="grid" id="badges-grid"></div>
+
+        <div class="section-title">🎨 Цвет ника</div>
+        <div class="grid" id="nickcolor-grid"></div>
+
+        <div class="section-title">⚡ Баффы</div>
+        <div class="grid" id="buffs-grid"></div>
+
+        <div class="section-title">🎡 Колесо фортуны <span style="color:#95a5a6;font-weight:400;font-size:12px;" id="wheel-cost-label">(20 🪙 за попытку)</span></div>
         <div class="card" style="text-align:center;">
             <div id="wheel-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
                 <div id="wheel" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:6px solid #fff;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
                 <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;">🔻</div>
             </div>
-            <button class="btn" id="btn-spin-wheel">Крутить за 20 🪙</button>
+            <button class="btn" id="btn-spin-wheel">Крутить</button>
             <div id="wheel-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
         </div>
+
+        <div id="wheel2-section" style="display:none;">
+            <div class="section-title">🌟 Ивентовое колесо <span style="color:#95a5a6;font-weight:400;font-size:12px;" id="wheel2-cost-label"></span></div>
+            <div class="card" style="text-align:center;">
+                <div id="wheel2-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
+                    <div id="wheel2" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(237,143,3,0.35);border:6px solid #ffd873;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
+                    <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;">🔻</div>
+                </div>
+                <button class="btn" id="btn-spin-wheel2">Крутить</button>
+                <div id="wheel2-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
+            </div>
+        </div>
+
+        <div class="section-title">🏆 Мои трофеи</div>
+        <div class="grid" id="trophies-grid"></div>
 
         <div class="admin-toggle" id="admin-toggle">⚙ управление товарами</div>
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Добавить товар</h3>
+            <select id="item-category" class="input">
+                <option value="frame">🖼 Рамка аватара</option>
+                <option value="decoration">🎀 Декор профиля</option>
+                <option value="badge">🏅 Значок у ника</option>
+                <option value="nickcolor">🎨 Цвет ника</option>
+                <option value="buff_daily">⚡ Бафф x2 монет на N часов</option>
+            </select>
             <input type="text" id="item-name" class="input" placeholder="Название">
-            <div class="upload-row">
+
+            <div class="upload-row" id="item-image-row">
                 <input type="text" id="item-image" class="input" placeholder="Картинка (URL)">
                 <label class="upload-btn" for="item-image-file">📁</label>
                 <input type="file" id="item-image-file" accept="image/*" style="display:none;">
             </div>
+            <input type="color" id="item-color" class="input" style="display:none;height:46px;padding:4px;" value="#ed8f03">
+
             <input type="number" id="item-price" class="input" placeholder="Цена в монетах" min="1">
             <input type="number" id="item-stock" class="input" placeholder="Количество в наличии (пусто = без ограничений)" min="0">
-            <select id="item-category" class="input">
-                <option value="frame">Рамка аватара</option>
-                <option value="decoration">Декор профиля</option>
-            </select>
+
+            <div id="item-buff-row" style="display:none;">
+                <input type="number" id="item-buff-mult" class="input" placeholder="Множитель монет (напр. 2)" min="1" step="0.5">
+                <input type="number" id="item-buff-hours" class="input" placeholder="Длительность, часов (напр. 24)" min="1">
+            </div>
+
             <button class="btn" id="btn-add-item">Добавить товар</button>
             <div id="admin-items-list" style="margin-top:14px;"></div>
         </div>
@@ -240,15 +297,30 @@
             <p style="font-size:12px;color:#95a5a6;margin-bottom:10px;">
                 Шанс сектора = его вес ÷ сумма всех весов. Например, если у всех весов сумма 100, вес 10 = 10% шанс.
             </p>
+            <input type="number" id="wheel-cost" class="input" placeholder="Стоимость прокрутки" min="1">
             <div id="wheel-segments-form"></div>
             <button class="btn" id="btn-save-wheel">Сохранить настройки колеса</button>
+        </div>
+
+        <div class="card" id="admin-wheel2-panel" style="display:none;">
+            <h3 style="margin-top:0;">🌟 Ивентовое колесо (редкое)</h3>
+            <p style="font-size:12px;color:#95a5a6;margin-bottom:10px;">
+                Отдельное, более дорогое колесо с более крутыми призами. Можно включать только на время ивента.
+            </p>
+            <label style="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer;">
+                <input type="checkbox" id="wheel2-enabled" style="width:20px;height:20px;">
+                <span>Показывать игрокам</span>
+            </label>
+            <input type="number" id="wheel2-cost" class="input" placeholder="Стоимость прокрутки" min="1">
+            <div id="wheel2-segments-form"></div>
+            <button class="btn" id="btn-save-wheel2">Сохранить настройки ивент-колеса</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, push, update, remove, set, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -293,6 +365,10 @@
         let isAdmin = false;
         let soundsData = {};
         let effectsData = {};
+        let dealOfDayId = null;
+        let wheelCost = 20;
+        let wheel2Cost = 50;
+        let wheel2Enabled = false;
 
         // Применяем ту же тему и звуки/эффекты, что настроены в основном приложении
         onValue(ref(db, 'settings/theme'), (snap) => {
@@ -336,16 +412,69 @@
             if (isAdmin) renderAdminList();
         });
 
+        onValue(ref(db, 'settings/shop/dealItemId'), (snap) => {
+            dealOfDayId = snap.val() || null;
+            renderShop();
+            if (isAdmin) renderAdminList();
+        });
+
+        onValue(ref(db, 'settings/wheel/cost'), (snap) => {
+            wheelCost = snap.val() || 20;
+            document.getElementById('wheel-cost-label').textContent = `(${wheelCost} 🪙 за попытку)`;
+            document.getElementById('btn-spin-wheel').textContent = `Крутить за ${wheelCost} 🪙`;
+        });
+
+        onValue(ref(db, 'settings/wheel2/cost'), (snap) => {
+            wheel2Cost = snap.val() || 50;
+            document.getElementById('wheel2-cost-label').textContent = `(${wheel2Cost} 🪙 за попытку)`;
+            document.getElementById('btn-spin-wheel2').textContent = `Крутить за ${wheel2Cost} 🪙`;
+        });
+
+        onValue(ref(db, 'settings/wheel2/enabled'), (snap) => {
+            wheel2Enabled = !!snap.val();
+            document.getElementById('wheel2-section').style.display = wheel2Enabled ? 'block' : 'none';
+        });
+
         onValue(ref(db, 'users/' + myId), (snap) => {
             myUser = snap.val() || {};
             document.getElementById('my-coins').textContent = myUser.coins || 0;
             renderShop();
         });
 
+        function effectivePrice(item) {
+            const onSale = item.saleUntil && Date.now() < item.saleUntil && item.salePrice;
+            return onSale ? item.salePrice : item.price;
+        }
+
+        function renderDealOfDay() {
+            const wrap = document.getElementById('deal-of-day-wrap');
+            if (!wrap) return;
+            const item = dealOfDayId ? itemsData.find(i => i.id === dealOfDayId) : null;
+            if (!item) { wrap.innerHTML = ''; return; }
+            const price = effectivePrice(item);
+            const owned = !!(myUser.inventory && myUser.inventory[item.id]);
+            wrap.innerHTML = `
+                <div class="deal-card">
+                    ${item.category === 'nickcolor'
+                        ? `<span class="nickcolor-swatch" style="width:56px;height:56px;background:${item.color || '#ccc'};"></span>`
+                        : `<img src="${item.image}" onerror="this.style.opacity=0.2">`}
+                    <div style="flex:1;">
+                        <div class="deal-badge">🔥 ТОВАР ДНЯ</div>
+                        <div style="font-weight:800;font-size:15px;">${escapeHtml(item.name)}</div>
+                        <div style="font-weight:800;color:#ed8f03;">
+                            ${(price !== item.price) ? `<span class="deal-old-price">${item.price}🪙</span>` : ''}${price} 🪙
+                        </div>
+                    </div>
+                    ${owned ? '' : `<button class="btn" style="width:auto;padding:10px 16px;margin:0;" data-deal-buy="${item.id}">Купить</button>`}
+                </div>
+            `;
+            const buyBtn = wrap.querySelector('[data-deal-buy]');
+            if (buyBtn) buyBtn.onclick = () => handleItemClick(item.id, item.category, false, false);
+        }
+
         function renderShop() {
             const inventory = myUser.inventory || {};
             const equipped = myUser.equipped || {};
-            const equippedDecorCount = Object.keys(equipped.decorations || {}).length;
 
             const renderGrid = (category) => {
                 const items = itemsData.filter(i => i.category === category && (!i.hidden || inventory[i.id]));
@@ -354,55 +483,97 @@
                 return items.map(item => {
                     const owned = !!inventory[item.id];
                     const hasStock = item.stock === undefined || item.stock === null || item.stock > 0;
+                    const price = effectivePrice(item);
+                    const onSale = price !== item.price;
                     let isEquipped, btnLabel, btnClass;
 
-                    if (category === 'frame') {
-                        isEquipped = equipped.frame === item.id;
-                    } else {
-                        isEquipped = !!(equipped.decorations && equipped.decorations[item.id]);
-                    }
+                    if (category === 'frame') isEquipped = equipped.frame === item.id;
+                    else if (category === 'decoration') isEquipped = !!(equipped.decorations && equipped.decorations[item.id]);
+                    else if (category === 'badge') isEquipped = equipped.badge === item.id;
+                    else if (category === 'nickcolor') isEquipped = equipped.nickColor === item.id;
 
-                    if (!owned) {
+                    if (category === 'buff_daily') {
+                        const active = myUser.buffUntil && Date.now() < myUser.buffUntil && myUser.buffItemId === item.id;
+                        btnLabel = active ? `Активен ещё ${Math.ceil((myUser.buffUntil - Date.now()) / 3600000)}ч (продлить: ${price}🪙)` : `Купить за ${price}🪙`;
+                        btnClass = (myUser.coins || 0) >= price ? 'btn-buy' : 'btn-disabled';
+                    } else if (!owned) {
                         if (!hasStock) { btnLabel = 'Раскуплено'; btnClass = 'btn-disabled'; }
-                        else { btnLabel = `Купить за ${item.price}🪙`; btnClass = (myUser.coins || 0) >= item.price ? 'btn-buy' : 'btn-disabled'; }
-                    }
-                    else if (isEquipped) { btnLabel = 'Снять'; btnClass = 'btn-unequip'; }
+                        else { btnLabel = `Купить за ${price}🪙`; btnClass = (myUser.coins || 0) >= price ? 'btn-buy' : 'btn-disabled'; }
+                    } else if (isEquipped) { btnLabel = 'Снять'; btnClass = 'btn-unequip'; }
                     else { btnLabel = 'Надеть'; btnClass = 'btn-equip'; }
 
-                    const stockLine = (item.stock !== undefined && item.stock !== null) ? `<div style="font-size:11px;color:#95a5a6;margin-bottom:4px;">${item.stock > 0 ? 'Осталось: ' + item.stock + ' шт.' : 'Раскуплено'}</div>` : '';
+                    const stockNum = item.stock;
+                    const lowStock = (stockNum !== undefined && stockNum !== null && stockNum > 0 && stockNum <= 3);
+                    const stockLine = (category !== 'buff_daily' && stockNum !== undefined && stockNum !== null)
+                        ? `<div class="${lowStock ? 'urgent-stock' : ''}" style="font-size:11px;margin-bottom:4px;color:#95a5a6;">${stockNum > 0 ? (lowStock ? '🔥 Осталось всего ' + stockNum + ' шт.!' : 'Осталось: ' + stockNum + ' шт.') : 'Раскуплено'}</div>`
+                        : '';
                     const exclusiveLine = item.hidden ? `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:4px;">🐲 Награда за босса</div>` : '';
+                    const priceLine = category === 'buff_daily'
+                        ? `x${item.buffMultiplier} на ${item.buffHours}ч`
+                        : (owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : (onSale ? `<span class="old-price">${item.price}</span>${price} 🪙` : price + ' 🪙'));
+
+                    const giftBtn = (!owned && category !== 'buff_daily' && hasStock) ? `<button class="gift-btn" title="Подарить другу" data-gift="${item.id}">🎁</button>` : '';
+
+                    const imageBlock = category === 'nickcolor'
+                        ? `<span class="nickcolor-swatch" style="background:${item.color || '#ccc'};"></span>`
+                        : `<img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">`;
 
                     return `
                     <div class="item-card">
-                        <img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">
+                        ${giftBtn}
+                        ${imageBlock}
                         <div class="item-name">${escapeHtml(item.name)}</div>
                         ${exclusiveLine}
-                        <div class="item-price">${owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : item.price + ' 🪙'}</div>
+                        <div class="item-price">${priceLine}</div>
                         ${stockLine}
-                        <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}" ${(!owned && !hasStock) ? 'disabled' : ''}>${btnLabel}</button>
+                        <button class="item-btn ${btnClass}" data-id="${item.id}" data-category="${category}" data-owned="${owned}" data-equipped="${isEquipped}" ${(!owned && category !== 'buff_daily' && !hasStock) ? 'disabled' : ''}>${btnLabel}</button>
                     </div>`;
                 }).join('');
             };
 
             document.getElementById('frames-grid').innerHTML = renderGrid('frame');
             document.getElementById('decor-grid').innerHTML = renderGrid('decoration');
+            document.getElementById('badges-grid').innerHTML = renderGrid('badge');
+            document.getElementById('nickcolor-grid').innerHTML = renderGrid('nickcolor');
+            document.getElementById('buffs-grid').innerHTML = renderGrid('buff_daily');
 
             document.querySelectorAll('.item-btn').forEach(btn => {
                 btn.onclick = () => handleItemClick(btn.dataset.id, btn.dataset.category, btn.dataset.owned === 'true', btn.dataset.equipped === 'true');
             });
+            document.querySelectorAll('[data-gift]').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); giftItem(btn.getAttribute('data-gift')); };
+            });
+
+            renderDealOfDay();
+            renderTrophies();
         }
 
         function handleItemClick(itemId, category, owned, isEquipped) {
             const item = itemsData.find(i => i.id === itemId);
             if (!item) return;
+            const price = effectivePrice(item);
+
+            if (category === 'buff_daily') {
+                if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+                update(ref(db, 'users/' + myId), {
+                    coins: (myUser.coins || 0) - price,
+                    buffUntil: Date.now() + item.buffHours * 3600000,
+                    buffMultiplier: item.buffMultiplier,
+                    buffItemId: item.id
+                }).then(() => {
+                    tg.showPopup ? tg.showPopup({ title: '⚡ Бафф активирован!', message: `x${item.buffMultiplier} монет на ${item.buffHours}ч`, buttons: [{ type: 'ok' }] }) : alert('Бафф активирован');
+                    playSound('coin'); confettiBurst();
+                }).catch(err => alert('Ошибка: ' + err.message));
+                return;
+            }
 
             if (!owned) {
-                if ((myUser.coins || 0) < item.price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+                if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
                 const hasStock = item.stock === undefined || item.stock === null || item.stock > 0;
                 if (!hasStock) { tg.showAlert ? tg.showAlert('Товар раскуплен') : alert('Товар раскуплен'); return; }
 
                 const updates = {
-                    coins: (myUser.coins || 0) - item.price,
+                    coins: (myUser.coins || 0) - price,
                     ['inventory/' + itemId]: true
                 };
                 update(ref(db, 'users/' + myId), updates).catch(err => alert('Ошибка: ' + err.message));
@@ -415,6 +586,14 @@
 
             if (category === 'frame') {
                 update(ref(db, 'users/' + myId + '/equipped'), { frame: isEquipped ? null : itemId }).catch(err => alert('Ошибка: ' + err.message));
+                return;
+            }
+            if (category === 'badge') {
+                update(ref(db, 'users/' + myId + '/equipped'), { badge: isEquipped ? null : itemId }).catch(err => alert('Ошибка: ' + err.message));
+                return;
+            }
+            if (category === 'nickcolor') {
+                update(ref(db, 'users/' + myId + '/equipped'), { nickColor: isEquipped ? null : itemId }).catch(err => alert('Ошибка: ' + err.message));
                 return;
             }
 
@@ -436,6 +615,7 @@
                 document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-coins-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-wheel-panel').style.display = showing ? 'none' : 'block';
+                document.getElementById('admin-wheel2-panel').style.display = showing ? 'none' : 'block';
                 return;
             }
             const pwd = prompt('Пароль:');
@@ -444,9 +624,11 @@
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('admin-coins-panel').style.display = 'block';
                 document.getElementById('admin-wheel-panel').style.display = 'block';
+                document.getElementById('admin-wheel2-panel').style.display = 'block';
                 renderAdminList();
                 listenAllUsersForCoins();
-                populateWheelAdminForm();
+                wheel1Controller.populateForm();
+                wheel2Controller.populateForm();
             } else if (pwd) {
                 alert('Неверный пароль');
             }
@@ -496,33 +678,74 @@
 
         document.getElementById('coins-user-search').addEventListener('input', renderCoinsAdminList);
 
+        const categoryLabels = { frame: 'рамка', decoration: 'декор', badge: 'значок', nickcolor: 'цвет ника', buff_daily: 'бафф' };
+
         function renderAdminList() {
             const el = document.getElementById('admin-items-list');
             if (!itemsData.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:13px;">Товаров пока нет</div>'; return; }
             el.innerHTML = itemsData.map(item => {
                 const stockLabel = (item.stock === undefined || item.stock === null) ? '∞' : item.stock;
+                const isBuff = item.category === 'buff_daily';
+                const saleActive = item.saleUntil && Date.now() < item.saleUntil && item.salePrice;
+                const preview = item.category === 'nickcolor'
+                    ? `<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:${item.color || '#ccc'};flex-shrink:0;"></span>`
+                    : `<img src="${item.image}" onerror="this.style.opacity=0.2">`;
+                const priceLine = isBuff
+                    ? `x${item.buffMultiplier} на ${item.buffHours}ч · ${item.price}🪙`
+                    : (saleActive ? `<s>${item.price}</s> 🔥${item.salePrice}🪙` : `${item.price}🪙`);
                 return `
                 <div class="admin-item">
-                    <img src="${item.image}" onerror="this.style.opacity=0.2">
-                    <div class="admin-item-info">${escapeHtml(item.name)} · ${item.price}🪙 · ${item.category === 'frame' ? 'рамка' : 'декор'} · шт: ${stockLabel}</div>
-                    <button data-id="${item.id}" data-action="stock" style="background:#eafaf1;color:#27ae60;">✏️</button>
+                    ${preview}
+                    <div class="admin-item-info">${escapeHtml(item.name)} · ${priceLine} · ${categoryLabels[item.category] || item.category}${isBuff ? '' : ' · шт: ' + stockLabel}${dealOfDayId === item.id ? ' · ⭐ товар дня' : ''}</div>
+                    ${isBuff ? '' : `<button data-id="${item.id}" data-action="stock" title="Изменить количество" style="background:#eafaf1;color:#27ae60;">✏️</button>`}
+                    ${(!isBuff && item.category !== 'nickcolor') ? `<button data-id="${item.id}" data-action="sale" title="Скидка" style="background:#fff3e0;color:#ed8f03;">🔥</button>` : ''}
+                    ${(!isBuff) ? `<button data-id="${item.id}" data-action="deal" title="Товар дня" style="background:#fff9e6;color:#f0a500;">⭐</button>` : ''}
                     <button data-id="${item.id}" data-action="delete">🗑</button>
                 </div>`;
             }).join('');
             el.querySelectorAll('button[data-id]').forEach(b => {
                 b.onclick = () => {
+                    const item = itemsData.find(i => i.id === b.dataset.id);
                     if (b.dataset.action === 'delete') {
                         if (confirm('Удалить товар?')) remove(ref(db, 'shopItems/' + b.dataset.id));
-                    } else {
-                        const item = itemsData.find(i => i.id === b.dataset.id);
+                    } else if (b.dataset.action === 'stock') {
                         const current = (item.stock === undefined || item.stock === null) ? '' : item.stock;
                         const val = prompt('Новое количество (пусто = без ограничений):', current);
                         if (val === null) return;
                         update(ref(db, 'shopItems/' + b.dataset.id), { stock: val.trim() === '' ? null : parseInt(val, 10) }).catch(err => alert('Ошибка: ' + err.message));
+                    } else if (b.dataset.action === 'sale') {
+                        if (item.saleUntil && Date.now() < item.saleUntil) {
+                            if (confirm('Скидка уже активна. Убрать её?')) {
+                                update(ref(db, 'shopItems/' + b.dataset.id), { salePrice: null, saleUntil: null }).catch(err => alert('Ошибка: ' + err.message));
+                            }
+                            return;
+                        }
+                        const priceRaw = prompt(`Цена по скидке (сейчас ${item.price}🪙):`);
+                        if (!priceRaw) return;
+                        const salePrice = parseInt(priceRaw, 10);
+                        if (!salePrice || salePrice <= 0 || salePrice >= item.price) return alert('Цена скидки должна быть меньше обычной и больше нуля');
+                        const hoursRaw = prompt('На сколько часов включить скидку?', '24');
+                        if (!hoursRaw) return;
+                        const hours = parseInt(hoursRaw, 10);
+                        if (!hours || hours < 1) return alert('Укажи положительное число часов');
+                        update(ref(db, 'shopItems/' + b.dataset.id), { salePrice, saleUntil: Date.now() + hours * 3600000 }).catch(err => alert('Ошибка: ' + err.message));
+                    } else if (b.dataset.action === 'deal') {
+                        const newDealId = (dealOfDayId === item.id) ? null : item.id;
+                        set(ref(db, 'settings/shop/dealItemId'), newDealId).catch(err => alert('Ошибка: ' + err.message));
                     }
                 };
             });
         }
+
+        function updateItemFormFields() {
+            const cat = document.getElementById('item-category').value;
+            document.getElementById('item-image-row').style.display = (cat === 'nickcolor') ? 'none' : 'flex';
+            document.getElementById('item-color').style.display = (cat === 'nickcolor') ? 'block' : 'none';
+            document.getElementById('item-buff-row').style.display = (cat === 'buff_daily') ? 'block' : 'none';
+            document.getElementById('item-stock').style.display = (cat === 'buff_daily') ? 'none' : 'block';
+        }
+        document.getElementById('item-category').addEventListener('change', updateItemFormFields);
+        updateItemFormFields();
 
         document.getElementById('item-image-file').addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -539,173 +762,287 @@
 
         document.getElementById('btn-add-item').onclick = function() {
             const name = document.getElementById('item-name').value.trim();
-            const image = document.getElementById('item-image').value.trim();
-            const price = parseInt(document.getElementById('item-price').value, 10);
-            const stockRaw = document.getElementById('item-stock').value.trim();
-            const stock = stockRaw === '' ? null : parseInt(stockRaw, 10);
             const category = document.getElementById('item-category').value;
+            const price = parseInt(document.getElementById('item-price').value, 10);
+            if (!name || !price) return alert('Заполни название и цену');
 
-            if (!name || !image || !price) return alert('Заполни все поля');
+            const payload = { name, price, category, createdAt: Date.now() };
 
-            push(ref(db, 'shopItems'), { name, image, price, stock, category, createdAt: Date.now() }).then(() => {
+            if (category === 'nickcolor') {
+                payload.color = document.getElementById('item-color').value;
+                payload.image = ''; // у цвета ника нет картинки, только образец цвета
+            } else {
+                const image = document.getElementById('item-image').value.trim();
+                if (!image) return alert('Укажи картинку');
+                payload.image = image;
+            }
+
+            if (category === 'buff_daily') {
+                const mult = parseFloat(document.getElementById('item-buff-mult').value);
+                const hours = parseInt(document.getElementById('item-buff-hours').value, 10);
+                if (!mult || mult <= 1) return alert('Укажи множитель больше 1');
+                if (!hours || hours < 1) return alert('Укажи длительность в часах');
+                payload.buffMultiplier = mult;
+                payload.buffHours = hours;
+                payload.stock = null;
+            } else {
+                const stockRaw = document.getElementById('item-stock').value.trim();
+                payload.stock = stockRaw === '' ? null : parseInt(stockRaw, 10);
+            }
+
+            push(ref(db, 'shopItems'), payload).then(() => {
                 document.getElementById('item-name').value = '';
                 document.getElementById('item-image').value = '';
                 document.getElementById('item-price').value = '';
                 document.getElementById('item-stock').value = '';
+                document.getElementById('item-buff-mult').value = '';
+                document.getElementById('item-buff-hours').value = '';
             }).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // === Колесо фортуны ===
-        const SPIN_COST = 20;
-        const defaultWheelSegments = [
-            { label: '+50🪙', color: '#ffb75e', type: 'coins', value: 50, weight: 8 },
-            { label: '+10🪙', color: '#4fc3f7', type: 'coins', value: 10, weight: 22 },
-            { label: 'Пусто', color: '#b0bec5', type: 'nothing', value: 0, weight: 20 },
-            { label: '-10🪙', color: '#e57373', type: 'coins', value: -10, weight: 15 },
-            { label: '🖼 Рамка', color: '#ba68c8', type: 'frame', value: 0, weight: 10 },
-            { label: '+20🪙', color: '#81c784', type: 'coins', value: 20, weight: 18 },
-            { label: '🎀 Декор', color: '#f06292', type: 'decoration', value: 0, weight: 8 },
-            { label: '+100🪙', color: '#ffd54f', type: 'coins', value: 100, weight: 2 }
-        ];
-        let wheelSegments = defaultWheelSegments.map(s => ({ ...s }));
-        const segAngle = 360 / wheelSegments.length;
-        let wheelRotation = 0;
-        let spinning = false;
+        // === Колесо фортуны (обычное + ивентовое, оба настраиваются в админке) ===
+        function createWheelController(cfg) {
+            let segments = cfg.defaultSegments.map(s => ({ ...s }));
+            const segAngle = 360 / segments.length;
+            let rotation = 0;
+            let spinning = false;
+            let cost = cfg.defaultCost;
 
-        // Настройки колеса задаёт админ — берём из базы, цвет и позиция секторов всегда фиксированные
-        onValue(ref(db, 'settings/wheel/segments'), (snap) => {
-            const saved = snap.val();
-            if (Array.isArray(saved) && saved.length === defaultWheelSegments.length) {
-                wheelSegments = defaultWheelSegments.map((def, i) => ({
-                    ...def,
-                    label: saved[i].label ?? def.label,
-                    type: saved[i].type ?? def.type,
-                    value: saved[i].value ?? def.value,
-                    weight: saved[i].weight ?? def.weight
-                }));
-            } else {
-                wheelSegments = defaultWheelSegments.map(s => ({ ...s }));
-            }
-            buildWheelFace();
-            if (isAdmin) populateWheelAdminForm();
-        });
-
-        function buildWheelFace() {
-            const wheel = document.getElementById('wheel');
-            const gradientParts = wheelSegments.map((s, i) => `${s.color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`).join(', ');
-            wheel.style.background = `conic-gradient(${gradientParts})`;
-            wheel.innerHTML = wheelSegments.map((s, i) => {
-                const mid = i * segAngle + segAngle / 2;
-                return `<div style="position:absolute;top:50%;left:50%;width:0;height:0;transform:rotate(${mid}deg) translate(0,-78px) rotate(${-mid}deg);transform-origin:0 0;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);white-space:nowrap;">${s.label}</div>`;
-            }).join('');
-        }
-        buildWheelFace();
-
-        function pickWeightedSegment() {
-            const total = wheelSegments.reduce((sum, s) => sum + s.weight, 0);
-            let r = Math.random() * total;
-            for (let i = 0; i < wheelSegments.length; i++) {
-                r -= wheelSegments[i].weight;
-                if (r <= 0) return i;
-            }
-            return wheelSegments.length - 1;
-        }
-
-        // === Админ: настройка секторов колеса ===
-        const typeLabels = { coins: '🪙 Монеты', nothing: '🚫 Пусто', frame: '🖼 Рамка', decoration: '🎀 Декор' };
-
-        function populateWheelAdminForm() {
-            const total = wheelSegments.reduce((sum, s) => sum + s.weight, 0);
-            document.getElementById('wheel-segments-form').innerHTML = wheelSegments.map((s, i) => {
-                const pct = total ? Math.round((s.weight / total) * 1000) / 10 : 0;
-                return `
-                <div style="background:#f8f9fa;border-radius:12px;padding:10px;margin-bottom:8px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <span style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
-                        <input type="text" class="input wheel-field" data-i="${i}" data-field="label" value="${s.label.replace(/"/g,'&quot;')}" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
-                        <span style="font-size:12px;color:#95a5a6;white-space:nowrap;">${pct}%</span>
-                    </div>
-                    <div style="display:flex;gap:6px;">
-                        <select class="input wheel-field" data-i="${i}" data-field="type" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
-                            ${Object.entries(typeLabels).map(([val, lbl]) => `<option value="${val}" ${s.type === val ? 'selected' : ''}>${lbl}</option>`).join('')}
-                        </select>
-                        <input type="number" class="input wheel-field" data-i="${i}" data-field="value" value="${s.value}" placeholder="Кол-во монет" style="margin-bottom:0;width:100px;font-size:13px;padding:8px;">
-                        <input type="number" class="input wheel-field" data-i="${i}" data-field="weight" value="${s.weight}" min="0" placeholder="Вес" style="margin-bottom:0;width:80px;font-size:13px;padding:8px;">
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        document.getElementById('btn-save-wheel').onclick = function() {
-            const updated = wheelSegments.map(s => ({ ...s }));
-            document.querySelectorAll('.wheel-field').forEach(el => {
-                const i = parseInt(el.dataset.i, 10);
-                const field = el.dataset.field;
-                if (field === 'weight' || field === 'value') updated[i][field] = parseInt(el.value, 10) || 0;
-                else updated[i][field] = el.value;
+            onValue(ref(db, cfg.segmentsPath), (snap) => {
+                const saved = snap.val();
+                if (Array.isArray(saved) && saved.length === cfg.defaultSegments.length) {
+                    segments = cfg.defaultSegments.map((def, i) => ({
+                        ...def,
+                        label: saved[i].label ?? def.label,
+                        type: saved[i].type ?? def.type,
+                        value: saved[i].value ?? def.value,
+                        weight: saved[i].weight ?? def.weight
+                    }));
+                } else {
+                    segments = cfg.defaultSegments.map(s => ({ ...s }));
+                }
+                buildFace();
+                if (isAdmin) populateForm();
             });
 
-            if (updated.every(s => s.weight <= 0)) return alert('Хотя бы один сектор должен иметь вес больше нуля');
+            function buildFace() {
+                const wheel = document.getElementById(cfg.wheelElId);
+                if (!wheel) return;
+                const gradientParts = segments.map((s, i) => `${s.color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`).join(', ');
+                wheel.style.background = `conic-gradient(${gradientParts})`;
+                wheel.innerHTML = segments.map((s, i) => {
+                    const mid = i * segAngle + segAngle / 2;
+                    return `<div style="position:absolute;top:50%;left:50%;width:0;height:0;transform:rotate(${mid}deg) translate(0,-78px) rotate(${-mid}deg);transform-origin:0 0;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.3);white-space:nowrap;">${s.label}</div>`;
+                }).join('');
+            }
+            buildFace();
 
-            set(ref(db, 'settings/wheel/segments'), updated.map(({ label, type, value, weight }) => ({ label, type, value, weight })))
-                .then(() => alert('Настройки колеса сохранены'))
-                .catch(err => alert('Ошибка: ' + err.message));
-        };
-
-        document.getElementById('btn-spin-wheel').onclick = function() {
-            if (spinning) return;
-            if ((myUser.coins || 0) < SPIN_COST) { tg.showAlert ? tg.showAlert('Недостаточно монет для вращения (нужно ' + SPIN_COST + ' 🪙)') : alert('Недостаточно монет'); return; }
-
-            spinning = true;
-            document.getElementById('wheel-result').textContent = '';
-            update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) - SPIN_COST }).catch(() => {});
-
-            const winIndex = pickWeightedSegment();
-            const winSegment = wheelSegments[winIndex];
-            const targetMid = winIndex * segAngle + segAngle / 2;
-            // 5 полных оборотов + доворот так, чтобы выигрышный сектор оказался под указателем (сверху, 0deg)
-            const extraTurns = 5 * 360;
-            wheelRotation = wheelRotation - (wheelRotation % 360) + extraTurns + (360 - targetMid);
-
-            const wheel = document.getElementById('wheel');
-            wheel.style.transform = `rotate(${wheelRotation}deg)`;
-
-            setTimeout(() => applySpinResult(winSegment), 4100);
-        };
-
-        function applySpinResult(segment) {
-            spinning = false;
-            const resultEl = document.getElementById('wheel-result');
-
-            if (segment.type === 'coins') {
-                const delta = segment.value;
-                update(ref(db, 'users/' + myId), { coins: Math.max(0, (myUser.coins || 0) + delta) }).catch(() => {});
-                resultEl.textContent = delta > 0 ? `🎉 Выигрыш: +${delta} монет!` : (delta < 0 ? `😬 Потеря: ${delta} монет` : '');
-                resultEl.style.color = delta > 0 ? '#27ae60' : (delta < 0 ? '#e74c3c' : '#95a5a6');
-                if (delta > 0) { playSound('coin'); confettiBurst(); }
-            } else if (segment.type === 'nothing') {
-                resultEl.textContent = 'Пусто — повезёт в следующий раз!';
-                resultEl.style.color = '#95a5a6';
-            } else {
-                // Случайный неполученный предмет нужной категории
-                const inventory = myUser.inventory || {};
-                const candidates = itemsData.filter(i => i.category === segment.type && !inventory[i.id]);
-                if (candidates.length) {
-                    const won = candidates[Math.floor(Math.random() * candidates.length)];
-                    update(ref(db, 'users/' + myId + '/inventory/' + won.id), true).catch(() => {});
-                    resultEl.textContent = `🎁 Выпало: ${won.name}!`;
-                    resultEl.style.color = '#8e44ad';
-                    playSound('coin'); confettiBurst();
-                } else {
-                    // Нечего выдавать — утешительный приз монетами
-                    update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + 15 }).catch(() => {});
-                    resultEl.textContent = '🎁 Все предметы этой категории уже у тебя — держи +15 🪙!';
-                    resultEl.style.color = '#8e44ad';
+            function pickWeighted() {
+                const total = segments.reduce((sum, s) => sum + s.weight, 0);
+                let r = Math.random() * total;
+                for (let i = 0; i < segments.length; i++) {
+                    r -= segments[i].weight;
+                    if (r <= 0) return i;
                 }
+                return segments.length - 1;
             }
 
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            const typeLabels = { coins: '🪙 Монеты', nothing: '🚫 Пусто', frame: '🖼 Рамка', decoration: '🎀 Декор' };
+
+            function populateForm() {
+                const formEl = document.getElementById(cfg.formElId);
+                if (!formEl) return;
+                const total = segments.reduce((sum, s) => sum + s.weight, 0);
+                formEl.innerHTML = segments.map((s, i) => {
+                    const pct = total ? Math.round((s.weight / total) * 1000) / 10 : 0;
+                    return `
+                    <div style="background:#f8f9fa;border-radius:12px;padding:10px;margin-bottom:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <span style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
+                            <input type="text" class="input ${cfg.key}-field" data-i="${i}" data-field="label" value="${s.label.replace(/"/g,'&quot;')}" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
+                            <span style="font-size:12px;color:#95a5a6;white-space:nowrap;">${pct}%</span>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <select class="input ${cfg.key}-field" data-i="${i}" data-field="type" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
+                                ${Object.entries(typeLabels).map(([val, lbl]) => `<option value="${val}" ${s.type === val ? 'selected' : ''}>${lbl}</option>`).join('')}
+                            </select>
+                            <input type="number" class="input ${cfg.key}-field" data-i="${i}" data-field="value" value="${s.value}" placeholder="Кол-во монет" style="margin-bottom:0;width:100px;font-size:13px;padding:8px;">
+                            <input type="number" class="input ${cfg.key}-field" data-i="${i}" data-field="weight" value="${s.weight}" min="0" placeholder="Вес" style="margin-bottom:0;width:80px;font-size:13px;padding:8px;">
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            document.getElementById(cfg.saveBtnId).onclick = function() {
+                const updated = segments.map(s => ({ ...s }));
+                document.querySelectorAll('.' + cfg.key + '-field').forEach(el => {
+                    const i = parseInt(el.dataset.i, 10);
+                    const field = el.dataset.field;
+                    if (field === 'weight' || field === 'value') updated[i][field] = parseInt(el.value, 10) || 0;
+                    else updated[i][field] = el.value;
+                });
+                if (updated.every(s => s.weight <= 0)) return alert('Хотя бы один сектор должен иметь вес больше нуля');
+
+                const costEl = document.getElementById(cfg.costInputId);
+                const newCost = costEl ? parseInt(costEl.value, 10) : null;
+                const tasks = [set(ref(db, cfg.segmentsPath), updated.map(({ label, type, value, weight }) => ({ label, type, value, weight })))];
+                if (newCost && newCost > 0) tasks.push(set(ref(db, cfg.costPath), newCost));
+                if (cfg.enabledCheckboxId) {
+                    tasks.push(set(ref(db, cfg.enabledPath), document.getElementById(cfg.enabledCheckboxId).checked));
+                }
+
+                Promise.all(tasks)
+                    .then(() => alert('Настройки колеса сохранены'))
+                    .catch(err => alert('Ошибка: ' + err.message));
+            };
+
+            onValue(ref(db, cfg.costPath), (snap) => {
+                cost = snap.val() || cfg.defaultCost;
+                const label = document.getElementById(cfg.costLabelId);
+                if (label) label.textContent = `(${cost} 🪙 за попытку)`;
+                const btn = document.getElementById(cfg.spinBtnId);
+                if (btn) btn.textContent = `Крутить за ${cost} 🪙`;
+                const costInput = document.getElementById(cfg.costInputId);
+                if (costInput) costInput.value = cost;
+            });
+
+            document.getElementById(cfg.spinBtnId).onclick = function() {
+                if (spinning) return;
+                if ((myUser.coins || 0) < cost) { tg.showAlert ? tg.showAlert('Недостаточно монет для вращения (нужно ' + cost + ' 🪙)') : alert('Недостаточно монет'); return; }
+
+                spinning = true;
+                document.getElementById(cfg.resultElId).textContent = '';
+                update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) - cost }).catch(() => {});
+
+                const winIndex = pickWeighted();
+                const winSegment = segments[winIndex];
+                const targetMid = winIndex * segAngle + segAngle / 2;
+                const extraTurns = 5 * 360;
+                rotation = rotation - (rotation % 360) + extraTurns + (360 - targetMid);
+
+                const wheel = document.getElementById(cfg.wheelElId);
+                wheel.style.transform = `rotate(${rotation}deg)`;
+
+                setTimeout(() => applyResult(winSegment), 4100);
+            };
+
+            function applyResult(segment) {
+                spinning = false;
+                const resultEl = document.getElementById(cfg.resultElId);
+
+                if (segment.type === 'coins') {
+                    const delta = segment.value;
+                    update(ref(db, 'users/' + myId), { coins: Math.max(0, (myUser.coins || 0) + delta) }).catch(() => {});
+                    resultEl.textContent = delta > 0 ? `🎉 Выигрыш: +${delta} монет!` : (delta < 0 ? `😬 Потеря: ${delta} монет` : '');
+                    resultEl.style.color = delta > 0 ? '#27ae60' : (delta < 0 ? '#e74c3c' : '#95a5a6');
+                    if (delta > 0) { playSound('coin'); confettiBurst(); }
+                } else if (segment.type === 'nothing') {
+                    resultEl.textContent = 'Пусто — повезёт в следующий раз!';
+                    resultEl.style.color = '#95a5a6';
+                } else {
+                    const inventory = myUser.inventory || {};
+                    const candidates = itemsData.filter(i => i.category === segment.type && (!i.hidden) && !inventory[i.id]);
+                    if (candidates.length) {
+                        const won = candidates[Math.floor(Math.random() * candidates.length)];
+                        update(ref(db, 'users/' + myId + '/inventory/' + won.id), true).catch(() => {});
+                        resultEl.textContent = `🎁 Выпало: ${won.name}!`;
+                        resultEl.style.color = '#8e44ad';
+                        playSound('coin'); confettiBurst();
+                    } else {
+                        update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + 15 }).catch(() => {});
+                        resultEl.textContent = '🎁 Все предметы этой категории уже у тебя — держи +15 🪙!';
+                        resultEl.style.color = '#8e44ad';
+                    }
+                }
+
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+
+            return { populateForm };
         }
+
+        const wheel1Controller = createWheelController({
+            key: 'wheel', wheelElId: 'wheel', resultElId: 'wheel-result', spinBtnId: 'btn-spin-wheel',
+            saveBtnId: 'btn-save-wheel', formElId: 'wheel-segments-form', costLabelId: 'wheel-cost-label',
+            costInputId: 'wheel-cost', segmentsPath: 'settings/wheel/segments', costPath: 'settings/wheel/cost',
+            defaultCost: 20,
+            defaultSegments: [
+                { label: '+50🪙', color: '#ffb75e', type: 'coins', value: 50, weight: 8 },
+                { label: '+10🪙', color: '#4fc3f7', type: 'coins', value: 10, weight: 22 },
+                { label: 'Пусто', color: '#b0bec5', type: 'nothing', value: 0, weight: 20 },
+                { label: '-10🪙', color: '#e57373', type: 'coins', value: -10, weight: 15 },
+                { label: '🖼 Рамка', color: '#ba68c8', type: 'frame', value: 0, weight: 10 },
+                { label: '+20🪙', color: '#81c784', type: 'coins', value: 20, weight: 18 },
+                { label: '🎀 Декор', color: '#f06292', type: 'decoration', value: 0, weight: 8 },
+                { label: '+100🪙', color: '#ffd54f', type: 'coins', value: 100, weight: 2 }
+            ]
+        });
+
+        const wheel2Controller = createWheelController({
+            key: 'wheel2', wheelElId: 'wheel2', resultElId: 'wheel2-result', spinBtnId: 'btn-spin-wheel2',
+            saveBtnId: 'btn-save-wheel2', formElId: 'wheel2-segments-form', costLabelId: 'wheel2-cost-label',
+            costInputId: 'wheel2-cost', segmentsPath: 'settings/wheel2/segments', costPath: 'settings/wheel2/cost',
+            defaultCost: 50, enabledCheckboxId: 'wheel2-enabled', enabledPath: 'settings/wheel2/enabled',
+            defaultSegments: [
+                { label: '+150🪙', color: '#ffd54f', type: 'coins', value: 150, weight: 10 },
+                { label: '+50🪙', color: '#4fc3f7', type: 'coins', value: 50, weight: 25 },
+                { label: 'Пусто', color: '#b0bec5', type: 'nothing', value: 0, weight: 15 },
+                { label: '🖼 Рамка', color: '#ba68c8', type: 'frame', value: 0, weight: 20 },
+                { label: '+80🪙', color: '#81c784', type: 'coins', value: 80, weight: 15 },
+                { label: '🎀 Декор', color: '#f06292', type: 'decoration', value: 0, weight: 15 }
+            ]
+        });
+
+        onValue(ref(db, 'settings/wheel2/enabled'), (snap) => {
+            document.getElementById('wheel2-enabled').checked = !!snap.val();
+        });
+
+        // === Мои трофеи ===
+        function renderTrophies() {
+            const el = document.getElementById('trophies-grid');
+            if (!el) return;
+            const inventory = myUser.inventory || {};
+            const owned = itemsData.filter(i => inventory[i.id]);
+            if (!owned.length) { el.innerHTML = '<div class="empty-state trophy-empty">Пока нет трофеев — заходи в колесо фортуны или бей боссов ⚔️</div>'; return; }
+            el.innerHTML = owned.map(item => `
+                <div class="item-card">
+                    ${item.category === 'nickcolor'
+                        ? `<span class="nickcolor-swatch" style="background:${item.color || '#ccc'};"></span>`
+                        : `<img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">`}
+                    <div class="item-name">${escapeHtml(item.name)}</div>
+                    ${item.hidden ? '<div style="font-size:11px;color:#ed8f03;font-weight:700;">🐲 Награда за босса</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // === Подарить предмет другу ===
+        window.giftItem = async function(itemId) {
+            const item = itemsData.find(i => i.id === itemId);
+            if (!item) return;
+            if ((myUser.coins || 0) < item.price) { tg.showAlert ? tg.showAlert('Недостаточно монет, чтобы подарить этот предмет') : alert('Недостаточно монет'); return; }
+
+            const friendName = prompt('Точное имя друга в приложении (как в профиле):');
+            if (!friendName) return;
+
+            try {
+                const snap = await get(ref(db, 'users'));
+                const users = snap.val() || {};
+                const entry = Object.entries(users).find(([uid, u]) => u.name && u.name.trim().toLowerCase() === friendName.trim().toLowerCase());
+                if (!entry) { tg.showAlert ? tg.showAlert('Пользователь с таким именем не найден') : alert('Не найден'); return; }
+                const [friendUid, friendData] = entry;
+                if (friendUid === myId) { tg.showAlert ? tg.showAlert('Себе дарить не обязательно — просто купи 🙂') : alert('Это ты'); return; }
+                if (friendData.inventory && friendData.inventory[itemId]) { tg.showAlert ? tg.showAlert('У друга уже есть этот предмет') : alert('Уже есть'); return; }
+
+                if (!confirm(`Подарить «${item.name}» пользователю ${friendData.name} за ${item.price}🪙?`)) return;
+
+                await update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) - item.price });
+                await update(ref(db, 'users/' + friendUid + '/inventory'), { [itemId]: true });
+                tg.showPopup ? tg.showPopup({ title: 'Подарок отправлен! 🎁', message: `${friendData.name} получит «${item.name}»`, buttons: [{ type: 'ok' }] }) : alert('Подарок отправлен!');
+                playSound('coin'); confettiBurst();
+            } catch (err) {
+                alert('Ошибка: ' + (err.message || err));
+            }
+        };
     }
 </script>
 
