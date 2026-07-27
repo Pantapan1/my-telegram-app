@@ -277,6 +277,24 @@
         .btn:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
 
         /* ============================================================
+           МИНИ-ПЛЕЕР YOUTUBE (плавающее окно)
+           ============================================================ */
+        #yt-mini-player {
+            position: fixed; right: 12px; bottom: 90px; width: 260px; z-index: 9500;
+            background: #000; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: ytPopIn .25s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #yt-mini-player.hidden { display: none; }
+        #yt-mini-header {
+            display: flex; align-items: center; justify-content: space-between; padding: 6px 10px;
+            background: #1a1a1a; color: #fff; font-size: 12px; font-weight: 700; cursor: grab; user-select: none;
+        }
+        #btn-close-yt { background: none; border: none; color: #fff; font-size: 15px; cursor: pointer; padding: 2px 6px; }
+        #yt-mini-frame-wrap { position: relative; width: 100%; padding-top: 56.25%; }
+        #yt-mini-frame-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+        @keyframes ytPopIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        /* ============================================================
            БОСС-ИВЕНТ (главная страница)
            ============================================================ */
         .boss-card {
@@ -700,6 +718,14 @@
 <body>
 
     <!-- AUTH OVERLAY -->
+    <div id="yt-mini-player" class="hidden">
+        <div id="yt-mini-header">
+            <span>📺 Видео</span>
+            <button id="btn-close-yt">✕</button>
+        </div>
+        <div id="yt-mini-frame-wrap"></div>
+    </div>
+
     <div id="auth-overlay" style="position:fixed; inset:0; background:linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%); z-index:20000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
         <div class="card" style="width:100%; max-width:320px;">
             <h2 style="text-align:center; margin-bottom:20px; color:var(--text-primary); font-weight: 800;">Авторизация</h2>
@@ -858,6 +884,13 @@
                 <div id="stats-coins" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
             </div>
 
+            <div class="card" id="time-spent-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+                <div style="font-weight:700;color:var(--text-primary);">⏱ Время на сайте</div>
+                <div id="stats-time-spent" style="font-weight:800;font-size:16px;color:var(--text-primary);">—</div>
+            </div>
+
+            <button class="btn hidden" id="btn-open-yt" style="display:flex;align-items:center;justify-content:center;gap:8px;">📺 Отдохнуть — смотреть видео</button>
+
             <div id="event-multiplier-banner" class="hidden" style="text-align:center;font-weight:800;color:#ed8f03;font-size:13px;margin-bottom:12px;"></div>
 
             <div id="quests-card-wrap">
@@ -986,6 +1019,13 @@
                         <option value="terraria">⛏️ Террария</option>
                     </select>
                     <button class="btn" id="btn-save-theme">Применить всем</button>
+
+                    <div class="divider"></div>
+
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">📺 Мини-плеер YouTube</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Видео, которое откроется по кнопке «Отдохнуть» в профиле игрока.</p>
+                    <input type="text" id="yt-video-id" class="input" placeholder="Ссылка на видео или ID (напр. dQw4w9WgXcQ)">
+                    <button class="btn" id="btn-save-yt">Сохранить видео</button>
 
                     <div class="divider"></div>
 
@@ -1476,11 +1516,91 @@
             const color = u.badgeColor || badgeColor;
             return `<span class="verified-badge" style="background:${color}" title="Проверенный издатель">✓</span>`;
         }
+
+        // === Значок и цвет ника из магазина ===
+        function shopBadgeHtml(userId) {
+            const u = usersData.find(x => x.id === userId);
+            const badgeId = u && u.equipped && u.equipped.badge;
+            if (!badgeId) return '';
+            const item = shopItemsData.find(i => i.id === badgeId);
+            if (!item) return '';
+            return `<img src="${item.image}" alt="" title="${escapeHtml(item.name)}" style="width:14px;height:14px;object-fit:contain;vertical-align:-2px;margin-left:2px;">`;
+        }
+
+        function nickColorStyle(userId) {
+            const u = usersData.find(x => x.id === userId);
+            const colorId = u && u.equipped && u.equipped.nickColor;
+            if (!colorId) return '';
+            const item = shopItemsData.find(i => i.id === colorId);
+            if (!item || !item.color) return '';
+            return `color:${item.color};`;
+        }
+
+        // === Мини-плеер YouTube («отдохнуть», удержание пользователей) ===
+        function extractYoutubeId(input) {
+            if (!input) return null;
+            const trimmed = input.trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+            ];
+            for (const re of patterns) {
+                const m = trimmed.match(re);
+                if (m) return m[1];
+            }
+            return null;
+        }
+
+        document.getElementById('btn-open-yt').onclick = function() {
+            if (!youtubeVideoId) return;
+            document.getElementById('yt-mini-frame-wrap').innerHTML =
+                `<iframe src="https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+            document.getElementById('yt-mini-player').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-close-yt').onclick = function() {
+            document.getElementById('yt-mini-player').classList.add('hidden');
+            document.getElementById('yt-mini-frame-wrap').innerHTML = ''; // сброс iframe останавливает видео
+        };
         
         function formatDate(ts) {
             if (!ts) return '';
             const d = new Date(ts);
             return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // === Время на сайте ===
+        function formatTimeSpent(ms) {
+            if (!ms || ms < 60000) return 'меньше минуты';
+            const totalMin = Math.floor(ms / 60000);
+            const h = Math.floor(totalMin / 60);
+            const m = totalMin % 60;
+            if (h <= 0) return `${m} мин`;
+            return `${h} ч ${m} мин`;
+        }
+
+        let timeTrackingStarted = false;
+        let sessionStartedAt = 0;
+        let lastFlushedAt = 0;
+
+        function flushTimeSpent() {
+            if (!sessionStartedAt || !db || !currentUser) return;
+            const now = Date.now();
+            const delta = now - lastFlushedAt;
+            lastFlushedAt = now;
+            if (delta <= 0) return;
+            update(ref(db, 'users/' + currentUser.id), { totalTimeSpent: increment(delta) }).catch(() => {});
+        }
+
+        function startTimeTracking() {
+            sessionStartedAt = Date.now();
+            lastFlushedAt = sessionStartedAt;
+            setInterval(() => { if (document.visibilityState === 'visible') flushTimeSpent(); }, 30000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') flushTimeSpent();
+                else lastFlushedAt = Date.now(); // не считаем время, пока вкладка была свёрнута
+            });
+            window.addEventListener('beforeunload', flushTimeSpent);
         }
         
         function lastSeenText(ts) {
@@ -1507,6 +1627,7 @@
         let stickerPacksData = [];
         let bossData = null;
         let bossParticipantsData = {};
+        let youtubeVideoId = null;
         
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
@@ -1953,10 +2074,15 @@
         let streakRewardStore = JSON.parse(localStorage.getItem('sr_streak_reward') || '{}');
 
         function currentMultiplier() {
+            let mult = 1;
             if (economyData.eventMultiplierUntil && Date.now() < economyData.eventMultiplierUntil) {
-                return economyData.eventMultiplier || 1;
+                mult *= (economyData.eventMultiplier || 1);
             }
-            return 1;
+            const me = usersData.find(u => u.id === currentUser.id);
+            if (me && me.buffUntil && Date.now() < me.buffUntil) {
+                mult *= (me.buffMultiplier || 1);
+            }
+            return mult;
         }
 
         function renderEventMultiplierBanner() {
@@ -2254,6 +2380,13 @@
                 if (isAdmin) renderBossParticipantsList();
             });
 
+            onValue(ref(db, 'settings/youtubeVideoId'), (snapshot) => {
+                youtubeVideoId = snapshot.val() || null;
+                const btn = document.getElementById('btn-open-yt');
+                if (btn) btn.classList.toggle('hidden', !youtubeVideoId);
+                if (isAdmin) document.getElementById('yt-video-id').value = youtubeVideoId || '';
+            });
+
             onValue(ref(db, 'settings/badgeColor'), (snapshot) => {
                 if (snapshot.val()) badgeColor = snapshot.val();
                 renderFeed();
@@ -2332,6 +2465,7 @@
                 renderNotificationsToggle();
                     renderSoundToggle();
                 checkDailyCoinReward();
+                if (!timeTrackingStarted) { timeTrackingStarted = true; startTimeTracking(); }
                 renderQuestsList();
                 renderFeed();
                 if (activeOverlay === 'post') renderPostOverlay();
@@ -2826,7 +2960,7 @@
                     ${comments.length ? comments.map(c => `
                         <div class="comment-item">
                             <div>
-                                <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;">${escapeHtml(c.author)}${verifiedBadge(c.userId)}</span>
+                                <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;${nickColorStyle(c.userId)}">${escapeHtml(c.author)}${verifiedBadge(c.userId)}${shopBadgeHtml(c.userId)}</span>
                                 <span class="comment-meta">${formatDate(c.createdAt)}</span>
                             </div>
                             ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : (c.attachment ? attachmentHtml(c.attachment) : `<div class="comment-text">${escapeHtml(c.text)}</div>`)}
@@ -3385,7 +3519,7 @@
                 const isMine = m.senderId === currentUser.id;
                 const canModify = isMine || isAdmin;
                 const senderName = (chat.type === 'group' && !isMine) 
-                    ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; color:#ff9f0a; margin-bottom:2px; cursor:pointer;">${escapeHtml(m.senderName)}${verifiedBadge(m.senderId)}</div>` 
+                    ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; ${nickColorStyle(m.senderId) || 'color:#ff9f0a;'} margin-bottom:2px; cursor:pointer;">${escapeHtml(m.senderName)}${verifiedBadge(m.senderId)}${shopBadgeHtml(m.senderId)}</div>` 
                     : '';
 
                 const senderInfo = usersData.find(u => u.id === m.senderId);
@@ -4124,6 +4258,7 @@
 
             const me = usersData.find(u => u.id === currentUser.id);
             document.getElementById('stats-coins').textContent = (me && me.coins) || 0;
+            document.getElementById('stats-time-spent').textContent = formatTimeSpent((me && me.totalTimeSpent) || 0);
             
             const genreCounts = {}; 
             readBooks.forEach(id => { 
@@ -4455,7 +4590,17 @@
             document.getElementById('sound-coin').value = soundsData.coin || '';
             document.getElementById('effect-confetti').checked = !!effectsData.confetti;
             document.getElementById('effect-particles').checked = !!effectsData.particles;
+            document.getElementById('yt-video-id').value = youtubeVideoId || '';
         }
+
+        document.getElementById('btn-save-yt').onclick = function() {
+            const raw = document.getElementById('yt-video-id').value.trim();
+            const id = extractYoutubeId(raw);
+            if (raw && !id) return tg.showAlert('Не получилось распознать ссылку/ID видео');
+            set(ref(db, 'settings/youtubeVideoId'), id || null).then(() => {
+                tg.showPopup({ title: 'Готово', message: 'Видео сохранено', buttons: [{ type: 'ok' }] });
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
 
         document.getElementById('btn-save-theme').onclick = function() {
             const theme = document.getElementById('theme-select').value;
