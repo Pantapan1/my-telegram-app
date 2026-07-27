@@ -263,6 +263,30 @@
             font-size: 11px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.2px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
+        .type-tag {
+            display: inline-block; padding: 4px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; margin-bottom: 8px; margin-right: 6px; letter-spacing: 0.2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+        .type-tag.type-book { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+        .type-tag.type-manga { background: #fdecff; color: #9c27b0; border: 1px solid #f3c6ff; }
+        .type-tag.type-manhwa { background: #e3f2ff; color: #1565c0; border: 1px solid #bbdefb; }
+
+        .new-feature-banner {
+            display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px;
+            background: linear-gradient(135deg, #f3c6ff 0%, #bbdefb 100%); color: #3a2d55; margin-bottom: 14px;
+            box-shadow: 0 6px 16px rgba(156,39,176,0.15); position: relative;
+        }
+        .new-feature-banner .nfb-icon { font-size: 24px; flex-shrink: 0; }
+        .new-feature-banner .nfb-text { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.4; }
+        .new-feature-banner .nfb-close {
+            border: none; background: rgba(255,255,255,0.5); color: #3a2d55; width: 24px; height: 24px;
+            border-radius: 50%; cursor: pointer; flex-shrink: 0; font-size: 13px; line-height: 1;
+        }
+
+        /* постраничный (мангa/манхва) режим читалки — растягиваем на всю ширину, без внутренних отступов */
+        .manga-pages { display: flex; flex-direction: column; gap: 2px; margin: -16px -16px -24px; }
+        .manga-pages img { width: 100%; display: block; background: #eee; }
 
         .btn {
             width: 100%; padding: 14px; border: none; border-radius: 18px;
@@ -844,8 +868,19 @@
                     <p>Твоя коллекция</p>
                 </div>
             </div>
+            <div id="manga-announce-banner" class="new-feature-banner" style="display:none;">
+                <span class="nfb-icon">🎉</span>
+                <span class="nfb-text">Теперь в библиотеке доступны не только книги, но и 🇯🇵 манга и 🇰🇷 манхва! Переключайся между типами контента ниже.</span>
+                <button class="nfb-close" id="manga-announce-close">✕</button>
+            </div>
             <div class="top-search">
                 <input type="text" class="input search-input" id="book-search" placeholder="🔍 Поиск книг...">
+            </div>
+            <div class="chip-row" id="type-filter-row">
+                <button class="chip active" data-type="all" onclick="setTypeFilter('all')">Всё</button>
+                <button class="chip" data-type="book" onclick="setTypeFilter('book')">📖 Книги</button>
+                <button class="chip" data-type="manga" onclick="setTypeFilter('manga')">🇯🇵 Манга</button>
+                <button class="chip" data-type="manhwa" onclick="setTypeFilter('manhwa')">🇰🇷 Манхва</button>
             </div>
             <div class="chip-row" id="genre-filter-row"></div>
             <div class="chip-row">
@@ -1755,6 +1790,7 @@
         let feedSearchTerm = '';
         let bookSearchTerm = '';
         let activeGenre = 'Все';
+        let activeType = 'all';
         let sortMode = 'new';
         let isAdmin = false;
         let editingPostId = null;
@@ -2547,6 +2583,7 @@
                 
                 renderBooks(); 
                 renderGenreFilterRow();
+                maybeShowMangaAnnouncement();
                 
                 if (isAdmin) { 
                     renderAdminBooksList(); 
@@ -3233,6 +3270,24 @@
             });
         }
         
+        window.setTypeFilter = function(type) {
+            activeType = type;
+            document.querySelectorAll('#type-filter-row .chip').forEach(c => {
+                c.classList.toggle('active', c.dataset.type === type);
+            });
+            renderBooks();
+        };
+
+        function maybeShowMangaAnnouncement() {
+            const hasManga = booksData.some(b => b.type === 'manga' || b.type === 'manhwa');
+            const dismissed = localStorage.getItem('sr_manga_announce_dismissed') === '1';
+            document.getElementById('manga-announce-banner').style.display = (hasManga && !dismissed) ? 'flex' : 'none';
+        }
+        document.getElementById('manga-announce-close').onclick = function() {
+            localStorage.setItem('sr_manga_announce_dismissed', '1');
+            document.getElementById('manga-announce-banner').style.display = 'none';
+        };
+
         window.setSort = function(mode) {
             sortMode = mode; 
             document.querySelectorAll('#section-books .chip[data-sort]').forEach(c => {
@@ -3258,6 +3313,10 @@
             if (activeGenre !== 'Все') {
                 list = list.filter(b => b.genre === activeGenre);
             }
+
+            if (activeType !== 'all') {
+                list = list.filter(b => (b.type || 'book') === activeType);
+            }
             
             if (sortMode === 'unread') list = list.filter(b => !readBooks.includes(b.id));
             if (sortMode === 'read') list = list.filter(b => readBooks.includes(b.id));
@@ -3268,15 +3327,17 @@
                 return; 
             }
             
+            const typeLabels = { book: '📖 Книга', manga: '🇯🇵 Манга', manhwa: '🇰🇷 Манхва' };
             container.innerHTML = list.map((book, idx) => {
                 const isRead = readBooks.includes(book.id);
                 const isBookmarked = bookmarkedBooks.includes(book.id);
                 const prog = bookProgress(book);
+                const type = book.type || 'book';
                 
                 return `
                 <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" onclick="openBook('${book.id}')">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
-                    ${book.genre ? `<div class="genre-tag">${escapeHtml(book.genre)}</div>` : ''}
+                    <div><span class="type-tag type-${type}">${typeLabels[type]}</span>${book.genre ? `<span class="genre-tag" style="margin-left:6px;">${escapeHtml(book.genre)}</span>` : ''}</div>
                     <div class="card-title">${escapeHtml(book.title)}</div>
                     <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
                     ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''} 
@@ -3344,11 +3405,20 @@
             saveLocal('sr_progress', progressStore);
 
             const chapter = currentChapters[idx];
+            const isPaged = !!(chapter && chapter.pages && chapter.pages.length);
             document.getElementById('reader-title').textContent = book.title + (currentChapters.length > 1 ? ' · ' + (chapter.title || ('Глава ' + (idx + 1))) : '');
             document.getElementById('reader-author').textContent = book.author || '';
-            document.getElementById('reader-font-controls').classList.remove('hidden');
-            document.getElementById('reader-body').style.fontSize = readerFontSize + 'px';
-            document.getElementById('reader-body').textContent = chapter.text;
+
+            const readerBody = document.getElementById('reader-body');
+            if (isPaged) {
+                document.getElementById('reader-font-controls').classList.add('hidden');
+                readerBody.style.fontSize = '';
+                readerBody.innerHTML = `<div class="manga-pages">${chapter.pages.map(url => `<img src="${url}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>`;
+            } else {
+                document.getElementById('reader-font-controls').classList.remove('hidden');
+                readerBody.style.fontSize = readerFontSize + 'px';
+                readerBody.textContent = chapter.text;
+            }
             document.getElementById('reader-actions-chapter').classList.remove('hidden');
 
             const readIdx = progressStore[bookId].readIdx || [];
@@ -5092,4 +5162,4 @@
         
     </script>
 </body>
-                        </html>
+    </html>
