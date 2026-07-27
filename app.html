@@ -276,6 +276,52 @@
         .btn-danger { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .btn:disabled { opacity: 0.5; pointer-events: none; box-shadow: none; }
 
+        /* ============================================================
+           БОСС-ИВЕНТ (главная страница)
+           ============================================================ */
+        .boss-card {
+            position: relative; border-radius: 22px; overflow: hidden; margin-bottom: 14px;
+            background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border); box-shadow: 0 10px 26px var(--card-shadow);
+            padding: 18px; text-align: center;
+        }
+        .boss-name { font-size: 19px; font-weight: 800; color: var(--text-primary); }
+        .boss-sub { font-size: 12px; color: var(--text-secondary); margin: 2px 0 12px; }
+        .boss-image-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 14px; }
+        .boss-image {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.25));
+        }
+        .boss-image.hit { animation: boss-hit-shake .4s ease; }
+        @keyframes boss-hit-shake {
+            0% { transform: translate(0,0) rotate(0); }
+            20% { transform: translate(-7px,3px) rotate(-5deg); }
+            40% { transform: translate(6px,-3px) rotate(5deg); }
+            60% { transform: translate(-5px,2px) rotate(-3deg); }
+            80% { transform: translate(4px,-1px) rotate(2deg); }
+            100% { transform: translate(0,0) rotate(0); }
+        }
+        .boss-dmg-popup {
+            position: absolute; left: 50%; top: 14px; transform: translate(-50%,0);
+            font-size: 22px; font-weight: 900; color: #ff3b30; text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            pointer-events: none; animation: boss-dmg-float .8s ease forwards; z-index: 2;
+        }
+        @keyframes boss-dmg-float {
+            0% { transform: translate(-50%, 0); opacity: 1; }
+            100% { transform: translate(-50%, -46px); opacity: 0; }
+        }
+        .boss-hp-bar {
+            width: 100%; height: 16px; background: rgba(0,0,0,0.08); border-radius: 10px;
+            overflow: hidden; margin-bottom: 6px;
+        }
+        .boss-hp-fill {
+            height: 100%; background: linear-gradient(90deg, #ff5f6d, #ff9f0a);
+            transition: width .5s ease;
+        }
+        .boss-hp-text { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+
+        body.theme-terraria .boss-hp-fill { background: linear-gradient(90deg, #a83f2f, #ff9f0a); }
+
         .input {
             width: 100%; padding: 14px; border-radius: 18px; border: 1px solid var(--border-soft);
             background: var(--input-bg); color: var(--text-primary); font-size: 14px; margin-bottom: 10px;
@@ -556,12 +602,8 @@
             opacity: 0.8; border-radius: 4px; background: rgba(0,0,0,0.04);
         }
         .msg-row.mine .msg-reply-quote { border-left-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.15); }
-        .msg-reply-btn {
-            position: absolute; top: -10px; left: -8px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 12px;
-            cursor: pointer; line-height: 1; transition: transform .2s;
-        }
-        .msg-reply-btn:hover { transform: scale(1.1); }
+        .msg-row { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+        .msg-bubble, .msg-sticker-wrap { transition: transform .2s ease; will-change: transform; }
         .msg-sticker {
             max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
             box-shadow: none; display: block;
@@ -571,20 +613,36 @@
         
         .msg-time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; text-align: right; font-weight: 600; }
         .msg-time.sticker-time { text-align: center; background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 10px; display: inline-block; margin: 4px auto 0; font-size: 10px;}
-        .msg-pin-btn { position: absolute; top: -10px; right: -8px; background: var(--surface); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; color: #ff9f0a; line-height: 1; transition: transform .2s; }
-        .msg-edit-btn, .msg-delete-btn {
-            position: absolute; top: -10px; background: var(--surface); border: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 50%; width: 26px; height: 26px; font-size: 12px;
-            cursor: pointer; line-height: 1; transition: transform .2s;
-        }
-        .msg-edit-btn:hover, .msg-delete-btn:hover { transform: scale(1.1); }
-        .msg-edit-btn { right: 22px; }
-        .msg-delete-btn { right: 52px; }
-        .msg-pin-btn:hover { transform: scale(1.1); }
         @keyframes msgPopIn {
             0% { opacity: 0; transform: translateY(10px) scale(0.95); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        /* Свайп-влево (ответ) и долгое нажатие (меню действий) на сообщении */
+        .msg-context-backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500;
+            display: flex; align-items: flex-end; justify-content: center;
+            animation: msgCtxFadeIn .15s ease;
+        }
+        .msg-context-sheet {
+            background: var(--surface); width: 100%; max-width: 480px;
+            border-radius: 20px 20px 0 0; padding: 6px 0 max(10px, env(safe-area-inset-bottom));
+            animation: msgCtxSlideUp .2s cubic-bezier(0.17,0.67,0.12,0.99);
+            box-shadow: 0 -8px 30px rgba(0,0,0,0.15);
+        }
+        .msg-context-quote {
+            padding: 10px 20px 6px; font-size: 12px; color: var(--text-secondary); font-style: italic;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid rgba(0,0,0,0.06); margin-bottom: 4px; padding-bottom: 10px;
+        }
+        .msg-context-item {
+            display: flex; align-items: center; gap: 14px; padding: 14px 20px; font-size: 15px; font-weight: 700;
+            color: var(--text-primary); cursor: pointer; transition: background .15s;
+        }
+        .msg-context-item:active { background: var(--input-bg); }
+        .msg-context-item.danger { color: #e74c3c; }
+        .msg-context-item .ico { font-size: 18px; width: 22px; text-align: center; }
+        @keyframes msgCtxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes msgCtxSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .pinned-quote-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fff3e0; border-bottom: 1px solid #ffe0b2; font-size: 12.5px; color: #e65100; flex-shrink: 0; box-shadow: 0 2px 8px rgba(230,81,0,0.05); z-index: 2;}
         .pinned-quote-bar span.text { flex: 1; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
@@ -667,6 +725,7 @@
             <div class="top-search">
                 <input type="text" class="input search-input" id="feed-search" placeholder="🔍 Поиск новостей...">
             </div>
+            <div id="boss-container"></div>
             <div id="banners-container"></div>
             <div id="feed-container"><div class="skeleton"></div><div class="skeleton"></div></div>
         </div>
@@ -820,6 +879,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-books" onclick="switchAdminTab('books')">📚 Книги</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-stickers" onclick="switchAdminTab('stickers')">🖼 Стикеры</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-theme" onclick="switchAdminTab('theme')">🎨 Оформление</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-boss" onclick="switchAdminTab('boss')">🐲 Босс</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-economy" onclick="switchAdminTab('economy')">💰 Экономика</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-quests" onclick="switchAdminTab('quests')">🎯 Задания</button>
                 </div>
@@ -965,6 +1025,56 @@
                         <span>✨ Плавающие частицы на фоне</span>
                     </label>
                     <button class="btn" id="btn-save-effects">Сохранить эффекты</button>
+                </div>
+
+                <!-- ВКЛАДКА: БОСС-ИВЕНТ -->
+                <div id="admin-tab-boss" class="hidden">
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">🐲 Босс-ивент</h3>
+                    <div id="boss-admin-status" style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">⚪ Не запущен</div>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Имя босса</label>
+                    <input type="text" id="boss-name" class="input" placeholder="Например: Король Слизней">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Картинка босса</label>
+                    <div class="image-field-row">
+                        <input type="text" id="boss-image" class="input" placeholder="Ссылка на картинку (URL)">
+                        <label class="upload-btn" for="boss-image-file" id="boss-image-upload-btn">📁</label>
+                        <input type="file" id="boss-image-file" accept="image/*" class="hidden">
+                    </div>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Максимальное HP</label>
+                    <input type="number" id="boss-maxhp" class="input" placeholder="Например: 1000" min="1">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Стоимость 1 удара, монет</label>
+                    <input type="number" id="boss-hitcost" class="input" placeholder="Например: 5" min="1">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Урон за удар (мин / макс)</label>
+                    <div class="image-field-row">
+                        <input type="number" id="boss-dmg-min" class="input" placeholder="Мин. урон" min="1">
+                        <input type="number" id="boss-dmg-max" class="input" placeholder="Макс. урон" min="1">
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">🎁 Уникальная награда за победу</h3>
+                    <select id="boss-reward-type" class="input">
+                        <option value="frame">🖼 Рамка аватара</option>
+                        <option value="decoration">🎀 Декор профиля</option>
+                    </select>
+                    <input type="text" id="boss-reward-name" class="input" placeholder="Название награды">
+                    <div class="image-field-row">
+                        <input type="text" id="boss-reward-image" class="input" placeholder="Картинка награды (URL)">
+                        <label class="upload-btn" for="boss-reward-image-file" id="boss-reward-image-upload-btn">📁</label>
+                        <input type="file" id="boss-reward-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Награда уникальна и не появляется в обычном магазине — получат её только те, кто бил босса, когда его победят (или когда ты остановишь ивент вручную).</p>
+
+                    <button class="btn" id="btn-boss-launch">🚀 Запустить босса</button>
+                    <button class="btn btn-danger" id="btn-boss-stop">⏹ Остановить и выдать награды</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:8px; color:var(--text-primary);">⚔️ Участники</h3>
+                    <div id="boss-participants-list" style="font-size:13px;color:var(--text-secondary);">Пока никто не бил босса</div>
                 </div>
 
                 <!-- ВКЛАДКА: ЭКОНОМИКА (заработок монет) -->
@@ -1244,7 +1354,7 @@
     <!-- FIREBASE + ЛОГИКА -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, update, remove, set, get, child } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update, remove, set, get, child, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
         // Firebase Storage больше не используется — фото грузятся на ImgBB (см. ниже), чтобы не требовать план Blaze.
 
         const firebaseConfig = {
@@ -1393,6 +1503,8 @@
         let chatsData = [];
         let stickersData = [];
         let stickerPacksData = [];
+        let bossData = null;
+        let bossParticipantsData = {};
         
         let readBooks = JSON.parse(localStorage.getItem('sr_read') || '[]');
         let bookmarkedBooks = JSON.parse(localStorage.getItem('sr_bookmarks') || '[]');
@@ -1739,6 +1851,8 @@
         setupImageUpload('profile-avatar-file', 'profile-avatar-input', 'profile-avatar-upload-btn', 'avatars');
         setupImageUpload('profile-banner-file', 'profile-banner-input', 'profile-banner-upload-btn', 'banners');
         setupImageUpload('sticker-file', 'sticker-url-input', 'sticker-upload-btn', 'stickers');
+        setupImageUpload('boss-image-file', 'boss-image', 'boss-image-upload-btn', 'boss');
+        setupImageUpload('boss-reward-image-file', 'boss-reward-image', 'boss-reward-image-upload-btn', 'boss');
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
 
@@ -2118,6 +2232,26 @@
                 if (activeOverlay === 'userprofile' && viewingUserId) renderUserProfileOverlay(viewingUserId);
             });
 
+            onValue(ref(db, 'settings/boss'), (snapshot) => {
+                bossData = snapshot.val();
+                renderBossCard();
+                if (isAdmin) populateBossAdminForm();
+
+                // Автоматическая выдача наград, когда игроки добивают босса до 0 HP
+                if (bossData && bossData.enabled && !bossData.defeated && (bossData.hp || 0) <= 0) {
+                    update(ref(db, 'settings/boss'), { defeated: true }).then(() => {
+                        distributeBossRewards(bossData, () => {
+                            update(ref(db, 'settings/boss'), { enabled: false }).catch(() => {});
+                        });
+                    }).catch(() => {});
+                }
+            });
+
+            onValue(ref(db, 'bossParticipants'), (snapshot) => {
+                bossParticipantsData = snapshot.val() || {};
+                if (isAdmin) renderBossParticipantsList();
+            });
+
             onValue(ref(db, 'settings/badgeColor'), (snapshot) => {
                 if (snapshot.val()) badgeColor = snapshot.val();
                 renderFeed();
@@ -2284,6 +2418,175 @@
                 el.textContent = '⏳ ' + formatCountdown(target - Date.now());
             });
         }
+
+        // ============================================================
+        // БОСС-ИВЕНТ
+        // ============================================================
+        function renderBossCard() {
+            const container = document.getElementById('boss-container');
+            if (!container) return;
+            if (!bossData || !bossData.enabled) { container.innerHTML = ''; return; }
+
+            const hp = Math.max(0, bossData.hp || 0);
+            const maxHp = bossData.maxHp || 1;
+            const pct = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
+            const defeated = hp <= 0;
+
+            container.innerHTML = `
+                <div class="boss-card">
+                    <div class="boss-name">🐲 ${escapeHtml(bossData.name || 'Босс')}</div>
+                    <div class="boss-sub">${defeated ? 'Повержен! Награды уже разлетелись победителям 🎉' : 'Бей босса и получи уникальную награду'}</div>
+                    <div class="boss-image-wrap">
+                        <img src="${escapeHtml(bossData.image || '')}" class="boss-image" alt="${escapeHtml(bossData.name || 'Босс')}">
+                    </div>
+                    <div class="boss-hp-bar"><div class="boss-hp-fill" style="width:${pct}%"></div></div>
+                    <div class="boss-hp-text">${hp} / ${maxHp} HP</div>
+                    ${defeated
+                        ? `<button class="btn" disabled>Босс повержен</button>`
+                        : `<button class="btn" onclick="hitBoss()">⚔️ Ударить (-${bossData.hitCost} 🪙)</button>`
+                    }
+                </div>
+            `;
+        }
+
+        window.hitBoss = function() {
+            if (!bossData || !bossData.enabled || (bossData.hp || 0) <= 0) return;
+
+            const me = usersData.find(u => u.id === currentUser.id);
+            const coins = (me && me.coins) || 0;
+            if (coins < bossData.hitCost) {
+                tg.showAlert('Недостаточно монет для удара (нужно ' + bossData.hitCost + ' 🪙)');
+                return;
+            }
+
+            const dmg = Math.floor(Math.random() * (bossData.dmgMax - bossData.dmgMin + 1)) + bossData.dmgMin;
+
+            update(ref(db, 'users/' + currentUser.id), { coins: increment(-bossData.hitCost) }).catch(() => {});
+            update(ref(db, 'settings/boss'), { hp: increment(-dmg) }).catch(() => {});
+            update(ref(db, 'bossParticipants/' + currentUser.id), {
+                name: currentUser.name || 'Игрок',
+                hits: increment(1),
+                damage: increment(dmg)
+            }).catch(() => {});
+
+            playSound('coin');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            showBossHitFeedback(dmg);
+        };
+
+        function showBossHitFeedback(dmg) {
+            const img = document.querySelector('#boss-container .boss-image');
+            const wrap = document.querySelector('#boss-container .boss-image-wrap');
+            if (img) { img.classList.remove('hit'); void img.offsetWidth; img.classList.add('hit'); }
+            if (wrap) {
+                const popup = document.createElement('div');
+                popup.className = 'boss-dmg-popup';
+                popup.textContent = '-' + dmg;
+                wrap.appendChild(popup);
+                setTimeout(() => popup.remove(), 800);
+            }
+        }
+
+        function distributeBossRewards(boss, cb) {
+            get(ref(db, 'bossParticipants')).then(snap => {
+                const participants = snap.val() || {};
+                const ids = Object.keys(participants);
+                if (!ids.length || !boss.rewardItemId) { remove(ref(db, 'bossParticipants')).catch(()=>{}); if (cb) cb(); return; }
+
+                const updates = {};
+                ids.forEach(uid => { updates['users/' + uid + '/inventory/' + boss.rewardItemId] = true; });
+
+                update(ref(db), updates)
+                    .then(() => remove(ref(db, 'bossParticipants')))
+                    .then(() => {
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        confettiBurst();
+                        if (cb) cb();
+                    })
+                    .catch(err => { tg.showAlert('Ошибка выдачи наград: ' + friendlyDbError(err)); if (cb) cb(); });
+            }).catch(() => { if (cb) cb(); });
+        }
+
+        function populateBossAdminForm() {
+            const b = bossData;
+            const statusEl = document.getElementById('boss-admin-status');
+            if (statusEl) {
+                statusEl.textContent = (b && b.enabled)
+                    ? `🟢 Активен — HP ${Math.max(0, b.hp || 0)}/${b.maxHp}`
+                    : '⚪ Не запущен';
+            }
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            setVal('boss-name', b ? (b.name || '') : '');
+            setVal('boss-image', b ? (b.image || '') : '');
+            setVal('boss-maxhp', b ? (b.maxHp || '') : '');
+            setVal('boss-hitcost', b ? (b.hitCost || '') : '');
+            setVal('boss-dmg-min', b ? (b.dmgMin || '') : '');
+            setVal('boss-dmg-max', b ? (b.dmgMax || '') : '');
+            setVal('boss-reward-type', b ? (b.rewardType || 'frame') : 'frame');
+            setVal('boss-reward-name', b ? (b.rewardName || '') : '');
+            setVal('boss-reward-image', b ? (b.rewardImage || '') : '');
+        }
+
+        function renderBossParticipantsList() {
+            const el = document.getElementById('boss-participants-list');
+            if (!el) return;
+            const arr = Object.entries(bossParticipantsData || {}).map(([id, v]) => ({ id, ...v }))
+                .sort((a, b) => (b.damage || 0) - (a.damage || 0));
+
+            el.innerHTML = arr.length
+                ? arr.map(p => `
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-soft);">
+                        <span>${escapeHtml(p.name || p.id)}</span>
+                        <span>${p.damage || 0} урона · ${p.hits || 0} ударов</span>
+                    </div>`).join('')
+                : 'Пока никто не бил босса';
+        }
+
+        document.getElementById('btn-boss-launch').onclick = function() {
+            const name = document.getElementById('boss-name').value.trim();
+            const image = document.getElementById('boss-image').value.trim();
+            const maxHp = parseInt(document.getElementById('boss-maxhp').value, 10);
+            const hitCost = parseInt(document.getElementById('boss-hitcost').value, 10);
+            const dmgMin = parseInt(document.getElementById('boss-dmg-min').value, 10);
+            const dmgMax = parseInt(document.getElementById('boss-dmg-max').value, 10);
+            const rewardType = document.getElementById('boss-reward-type').value;
+            const rewardName = document.getElementById('boss-reward-name').value.trim();
+            const rewardImage = document.getElementById('boss-reward-image').value.trim();
+
+            if (!name || !image) return tg.showAlert('Укажи имя и картинку босса');
+            if (!maxHp || maxHp < 1) return tg.showAlert('Укажи корректное HP');
+            if (!hitCost || hitCost < 1) return tg.showAlert('Укажи стоимость удара');
+            if (!dmgMin || !dmgMax || dmgMin < 1 || dmgMin > dmgMax) return tg.showAlert('Проверь урон за удар (мин ≤ макс)');
+            if (!rewardName || !rewardImage) return tg.showAlert('Укажи название и картинку награды');
+
+            const rewardItemId = 'boss_' + Date.now();
+            const bossPayload = {
+                name, image, maxHp, hp: maxHp, hitCost, dmgMin, dmgMax,
+                rewardType, rewardName, rewardImage, rewardItemId,
+                enabled: true, defeated: false, startedAt: Date.now()
+            };
+
+            remove(ref(db, 'bossParticipants')).catch(() => {});
+            set(ref(db, 'settings/boss'), bossPayload)
+                .then(() => set(ref(db, 'shopItems/' + rewardItemId), {
+                    name: rewardName, image: rewardImage, category: rewardType,
+                    price: 0, hidden: true, createdAt: Date.now()
+                }))
+                .then(() => tg.showPopup({ title: 'Босс запущен!', message: 'Он появился на главной странице', buttons: [{ type: 'ok' }] }))
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        document.getElementById('btn-boss-stop').onclick = function() {
+            if (!bossData || !bossData.enabled) return tg.showAlert('Босс сейчас не запущен');
+            tg.showConfirm('Остановить босса и выдать награду всем, кто его бил?', (ok) => {
+                if (!ok) return;
+                distributeBossRewards(bossData, () => {
+                    update(ref(db, 'settings/boss'), { enabled: false, defeated: true })
+                        .then(() => tg.showPopup({ title: 'Готово', message: 'Награды выданы, босс остановлен', buttons: [{ type: 'ok' }] }))
+                        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                });
+            });
+        };
 
         function renderBanners() {
             const el = document.getElementById('banners-container');
@@ -3087,9 +3390,6 @@
                 const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(senderInfo ? senderInfo.name : m.senderName, senderInfo ? senderInfo.avatar : null, 'msg-avatar')}</div>` : '';
 
                 const replyPreview = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
-                const replyBtn = `<button class="msg-reply-btn" data-id="${m.id}" data-author="${escapeHtml(m.senderName)}" data-text="${escapeHtml(m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text))}" title="Ответить">↩️</button>`;
-                const isTextMsg = !m.sticker && !m.attachment;
-                const deleteBtn = canModify ? `<button class="msg-delete-btn" data-id="${m.id}" title="Удалить" style="right:${isTextMsg ? '52px' : '-8px'};">🗑</button>` : '';
                 const editedMark = m.edited ? '<span style="opacity:0.6;font-size:10px;"> (изменено)</span>' : '';
                 
                 if (m.sticker) {
@@ -3101,8 +3401,6 @@
                             ${replyPreview}
                             <img src="${m.sticker}" class="msg-sticker">
                             <span class="msg-time sticker-time">${timeStr}</span>
-                            ${replyBtn}
-                            ${deleteBtn}
                         </div>
                     </div>`;
                 }
@@ -3117,13 +3415,10 @@
                             ${attachmentHtml(m.attachment)}
                             ${m.text ? escapeHtml(m.text) : ''}
                             <span class="msg-time">${timeStr}${editedMark}</span>
-                            ${replyBtn}
-                            ${deleteBtn}
                         </div>
                     </div>`;
                 }
                 
-                const editBtn = canModify ? `<button class="msg-edit-btn" data-id="${m.id}" data-text="${escapeHtml(m.text)}" title="Редактировать">✏️</button>` : '';
                 return `
                 <div class="msg-row ${isMine ? 'mine' : ''}">
                     ${avatarBlock}
@@ -3132,35 +3427,11 @@
                         ${replyPreview}
                         ${escapeHtml(m.text)}
                         <span class="msg-time">${timeStr}${editedMark}</span>
-                        <button class="msg-pin-btn" data-text="${escapeHtml(m.text)}" data-author="${escapeHtml(m.senderName)}" title="Закрепить как цитату">📌</button>
-                        ${replyBtn}
-                        ${editBtn}
-                        ${deleteBtn}
                     </div>
                 </div>`;
             }).join('') : '<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
 
-            listEl.querySelectorAll('.msg-pin-btn').forEach(btn => {
-                btn.onclick = () => pinQuote(chat.id, btn.getAttribute('data-text'), btn.getAttribute('data-author'));
-            });
-
-            listEl.querySelectorAll('.msg-reply-btn').forEach(btn => {
-                btn.onclick = () => startReply(btn.getAttribute('data-id'), btn.getAttribute('data-author'), btn.getAttribute('data-text'));
-            });
-
-            listEl.querySelectorAll('.msg-edit-btn').forEach(btn => {
-                btn.onclick = () => startEditMessage(btn.getAttribute('data-id'), btn.getAttribute('data-text'));
-            });
-
-            listEl.querySelectorAll('.msg-delete-btn').forEach(btn => {
-                btn.onclick = () => {
-                    tg.showConfirm('Удалить это сообщение?', (ok) => {
-                        if (!ok) return;
-                        remove(ref(db, 'chats/' + chat.id + '/messages/' + btn.getAttribute('data-id')))
-                            .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
-                    });
-                };
-            });
+            attachMessageGestures(listEl, messages, chat, currentUser.id, isAdmin);
 
             listEl.querySelectorAll('.msg-sender-name, .msg-avatar-click').forEach(el => {
                 el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
@@ -3177,6 +3448,114 @@
         function pinQuote(chatId, text, author) { 
             update(ref(db, 'chats/' + chatId), { pinnedQuote: { text, author, pinnedAt: Date.now() } }); 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); 
+        }
+
+        // === Жесты сообщений: свайп влево = ответить, долгое нажатие = меню (удалить/закрепить/изменить) ===
+        function deleteMessageWithConfirm(chatId, id) {
+            tg.showConfirm('Удалить это сообщение?', (ok) => {
+                if (!ok) return;
+                remove(ref(db, 'chats/' + chatId + '/messages/' + id))
+                    .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
+        }
+
+        function closeMessageContextMenu() {
+            const el = document.getElementById('msg-context-backdrop');
+            if (el) el.remove();
+        }
+
+        function openMessageContextMenu(chat, m, canModify) {
+            closeMessageContextMenu();
+            const isTextMsg = !m.sticker && !m.attachment;
+            const replyText = m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text);
+
+            const items = [];
+            items.push({ ico: '↩️', label: 'Ответить', action: () => startReply(m.id, m.senderName, replyText) });
+            if (isTextMsg) items.push({ ico: '📌', label: 'Закрепить как цитату', action: () => pinQuote(chat.id, m.text, m.senderName) });
+            if (isTextMsg && canModify) items.push({ ico: '✏️', label: 'Редактировать', action: () => startEditMessage(m.id, m.text) });
+            if (canModify) items.push({ ico: '🗑', label: 'Удалить', danger: true, action: () => deleteMessageWithConfirm(chat.id, m.id) });
+
+            const backdrop = document.createElement('div');
+            backdrop.className = 'msg-context-backdrop';
+            backdrop.id = 'msg-context-backdrop';
+            backdrop.innerHTML = `
+                <div class="msg-context-sheet">
+                    <div class="msg-context-quote">${escapeHtml(replyText).slice(0, 80)}</div>
+                    ${items.map((it, i) => `<div class="msg-context-item ${it.danger ? 'danger' : ''}" data-i="${i}"><span class="ico">${it.ico}</span>${escapeHtml(it.label)}</div>`).join('')}
+                </div>
+            `;
+            backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeMessageContextMenu(); });
+            backdrop.querySelectorAll('.msg-context-item').forEach(el => {
+                el.onclick = () => {
+                    const it = items[parseInt(el.getAttribute('data-i'), 10)];
+                    closeMessageContextMenu();
+                    if (it) it.action();
+                };
+            });
+            document.body.appendChild(backdrop);
+        }
+
+        function attachMessageGestures(listEl, messages, chat, myId, adminFlag) {
+            const rows = listEl.querySelectorAll('.msg-row');
+            rows.forEach((row, i) => {
+                const m = messages[i];
+                if (!m) return;
+                const isMine = m.senderId === myId;
+                const canModify = isMine || adminFlag;
+                const content = row.querySelector('.msg-bubble, .msg-sticker-wrap');
+                if (!content) return;
+
+                let startX = 0, startY = 0, active = false, moved = false, swiped = false, longPressTimer = null;
+
+                function clearLongPress() { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }
+
+                function reset() {
+                    content.style.transition = 'transform .2s ease';
+                    content.style.transform = 'translateX(0)';
+                }
+
+                row.addEventListener('pointerdown', (e) => {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    startX = e.clientX; startY = e.clientY;
+                    active = true; moved = false; swiped = false;
+                    content.style.transition = 'none';
+                    clearLongPress();
+                    longPressTimer = setTimeout(() => {
+                        if (active && !moved) {
+                            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                            openMessageContextMenu(chat, m, canModify);
+                            active = false;
+                            reset();
+                        }
+                    }, 450);
+                });
+
+                row.addEventListener('pointermove', (e) => {
+                    if (!active) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) { moved = true; clearLongPress(); return; }
+                    if (Math.abs(dx) > 8) moved = true;
+                    if (moved) clearLongPress();
+                    if (dx < 0) {
+                        const clamped = Math.max(dx, -64);
+                        content.style.transform = `translateX(${clamped}px)`;
+                        if (clamped <= -56 && !swiped) { swiped = true; if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
+                        else if (clamped > -56 && swiped) { swiped = false; }
+                    }
+                });
+
+                function endHandler() {
+                    clearLongPress();
+                    const wasActive = active;
+                    active = false;
+                    if (wasActive && swiped) startReply(m.id, m.senderName, m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text));
+                    reset();
+                }
+                row.addEventListener('pointerup', endHandler);
+                row.addEventListener('pointercancel', endHandler);
+                row.addEventListener('pointerleave', () => { if (active) endHandler(); });
+            });
         }
         
         document.getElementById('btn-unpin-quote').onclick = function() { 
@@ -3795,6 +4174,8 @@
                 renderAdminStickersList(); 
                 populateChapterBookSelect(); 
                 populateThemeAdminForm();
+                populateBossAdminForm();
+                renderBossParticipantsList();
                 populateEconomyAdminForm();
                 renderAdminQuestsList();
             } else if (pwd) { 
@@ -3803,7 +4184,7 @@
         };
 
         window.switchAdminTab = function(tab) {
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'economy', 'quests'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });
