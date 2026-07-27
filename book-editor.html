@@ -42,6 +42,18 @@
     .admin-item-actions button.danger { background: #fdecea; color: #e74c3c; }
     .empty-state { text-align: center; color: #95a5a6; padding: 20px 0; font-size: 14px; }
     .locked { text-align: center; padding: 40px 20px; }
+    .type-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+    .type-tab {
+        flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; background: #f4f6f7;
+        font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid transparent; color: #7f8c8d;
+    }
+    .type-tab.active { background: #fff4e0; border-color: #ffb75e; color: #ed8f03; }
+    .pages-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .page-thumb { position: relative; width: 60px; height: 84px; border-radius: 8px; overflow: hidden; background: #f1f2f6; flex-shrink: 0; }
+    .page-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .page-thumb .num { position: absolute; top: 2px; left: 3px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 6px; }
+    .page-thumb .rm { position: absolute; top: 2px; right: 2px; background: rgba(231,76,60,0.9); color: #fff; border: none; border-radius: 6px; width: 18px; height: 18px; font-size: 11px; line-height: 1; cursor: pointer; }
+    .page-thumb.uploading { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #95a5a6; }
 </style>
 </head>
 <body>
@@ -67,6 +79,11 @@
     <div id="editor-root" style="display:none;">
         <div class="card">
             <h3 style="margin-top:0;" id="book-form-heading">Добавить книгу</h3>
+            <div class="type-tabs" id="book-type-tabs">
+                <div class="type-tab active" data-type="book">📖 Книга</div>
+                <div class="type-tab" data-type="manga">🇯🇵 Манга</div>
+                <div class="type-tab" data-type="manhwa">🇰🇷 Манхва</div>
+            </div>
             <input type="text" id="book-title" class="input" placeholder="Название">
             <div class="upload-row">
                 <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
@@ -84,7 +101,21 @@
             <div id="chapters-list"></div>
             <div class="divider"></div>
             <input type="text" id="chapter-title" class="input" placeholder="Название главы">
-            <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
+
+            <div id="chapter-text-wrap">
+                <textarea id="chapter-text" class="input" placeholder="Текст главы..."></textarea>
+            </div>
+
+            <div id="chapter-pages-wrap" style="display:none;">
+                <div class="pages-grid" id="chapter-pages-grid"></div>
+                <div class="upload-row">
+                    <input type="text" id="chapter-page-url" class="input" placeholder="Ссылка на страницу (URL)">
+                    <label class="upload-btn" for="chapter-page-file">📁</label>
+                    <input type="file" id="chapter-page-file" accept="image/*" multiple style="display:none;">
+                </div>
+                <button class="btn btn-secondary" id="btn-add-page-url">➕ Добавить страницу по ссылке</button>
+            </div>
+
             <button class="btn" id="btn-add-chapter">Опубликовать главу</button>
         </div>
 
@@ -147,9 +178,12 @@
             const allowed = !!(me && me.isPublisher);
             document.getElementById(allowed ? 'editor-root' : 'locked-view').style.display = 'block';
             document.getElementById(allowed ? 'locked-view' : 'editor-root').style.display = 'none';
+            allowedContentTypes = (me && me.publisherContentTypes && me.publisherContentTypes.length) ? me.publisherContentTypes : ['book'];
             if (allowed) startEditor();
         });
     }
+
+    let allowedContentTypes = ['book'];
 
     let editorStarted = false;
     function startEditor() {
@@ -158,6 +192,24 @@
 
         let booksData = [];
         let editingBookId = null;
+        let selectedBookType = 'book';
+        let chapterPages = []; // страницы (URL картинок) для текущей главы манги/манхвы
+
+        // Скрываем вкладки типов, недоступные этому автору, и выставляем первую доступную активной
+        const typeTabs = Array.from(document.querySelectorAll('#book-type-tabs .type-tab'));
+        typeTabs.forEach(tab => {
+            if (!allowedContentTypes.includes(tab.dataset.type)) tab.style.display = 'none';
+        });
+        const firstAllowedTab = typeTabs.find(t => allowedContentTypes.includes(t.dataset.type));
+        if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
+
+        function selectBookType(type) {
+            selectedBookType = type;
+            typeTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.type === type));
+        }
+        typeTabs.forEach(tab => {
+            tab.onclick = () => selectBookType(tab.dataset.type);
+        });
 
         onValue(ref(db, 'books'), (snap) => {
             const data = snap.val();
@@ -171,11 +223,12 @@
             const el = document.getElementById('my-books-list');
             if (!booksData.length) { el.innerHTML = '<div class="empty-state">Ты пока не добавил ни одной книги</div>'; return; }
 
+            const typeIcons = { book: '📖', manga: '🇯🇵', manhwa: '🇰🇷' };
             el.innerHTML = booksData.map(book => `
                 <div class="admin-item">
                     ${book.coverImage ? `<img src="${book.coverImage}" onerror="this.style.display='none'">` : `<div class="cover-fallback-sm" style="background:${colorFor(book.title)}">${initialOf(book.title)}</div>`}
                     <div class="admin-item-info">
-                        <div class="t">${escapeHtml(book.title)}</div>
+                        <div class="t">${typeIcons[book.type] || '📖'} ${escapeHtml(book.title)}</div>
                         <div class="s">${getChapters(book).length} гл.</div>
                     </div>
                     <div class="admin-item-actions">
@@ -200,17 +253,20 @@
             document.getElementById('book-title').value = book.title || '';
             document.getElementById('book-cover').value = book.coverImage || '';
             document.getElementById('book-genre').value = book.genre || '';
+            selectBookType(book.type || 'book');
             document.getElementById('book-form-heading').textContent = 'Редактировать книгу';
             document.getElementById('btn-add-book').textContent = 'Сохранить изменения';
             document.getElementById('btn-cancel-edit-book').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+
         document.getElementById('btn-cancel-edit-book').onclick = function() {
             editingBookId = null;
             document.getElementById('book-title').value = '';
             document.getElementById('book-cover').value = '';
             document.getElementById('book-genre').value = '';
+            if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
             document.getElementById('book-form-heading').textContent = 'Добавить книгу';
             document.getElementById('btn-add-book').textContent = 'Добавить книгу';
             document.getElementById('btn-cancel-edit-book').style.display = 'none';
@@ -240,6 +296,7 @@
 
             const data = {
                 title,
+                type: selectedBookType,
                 author: myName,
                 authorId: myId,
                 coverImage: document.getElementById('book-cover').value.trim(),
@@ -265,9 +322,75 @@
                 : '<option value="">Сначала добавь книгу</option>';
             if (booksData.some(b => b.id === prev)) sel.value = prev;
             renderChaptersList();
+            updateChapterFormMode();
         }
 
-        document.getElementById('chapter-book-select').addEventListener('change', renderChaptersList);
+        document.getElementById('chapter-book-select').addEventListener('change', () => {
+            renderChaptersList();
+            updateChapterFormMode();
+        });
+
+        // Переключаем форму главы: текст (книга) или страницы-картинки (манга/манхва)
+        function updateChapterFormMode() {
+            const bookId = document.getElementById('chapter-book-select').value;
+            const book = booksData.find(b => b.id === bookId);
+            const isPaged = !!(book && (book.type === 'manga' || book.type === 'manhwa'));
+            document.getElementById('chapter-text-wrap').style.display = isPaged ? 'none' : 'block';
+            document.getElementById('chapter-pages-wrap').style.display = isPaged ? 'block' : 'none';
+            chapterPages = [];
+            renderChapterPagesGrid();
+        }
+
+        function renderChapterPagesGrid() {
+            const grid = document.getElementById('chapter-pages-grid');
+            grid.innerHTML = chapterPages.map((url, i) => `
+                <div class="page-thumb">
+                    <span class="num">${i + 1}</span>
+                    <img src="${url}" onerror="this.style.opacity=0.2">
+                    <button class="rm" data-i="${i}">✕</button>
+                </div>
+            `).join('');
+            grid.querySelectorAll('button[data-i]').forEach(btn => {
+                btn.onclick = () => { chapterPages.splice(parseInt(btn.dataset.i, 10), 1); renderChapterPagesGrid(); };
+            });
+        }
+
+        document.getElementById('chapter-page-file').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (!files.length) return;
+
+            const grid = document.getElementById('chapter-pages-grid');
+            for (const file of files) {
+                const placeholderIdx = chapterPages.length;
+                chapterPages.push(null);
+                renderChapterPagesGrid();
+                grid.children[placeholderIdx].classList.add('uploading');
+                grid.children[placeholderIdx].innerHTML = '⏳';
+
+                const formData = new FormData();
+                formData.append('image', file);
+                try {
+                    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                    const json = await res.json();
+                    if (json.success) chapterPages[placeholderIdx] = json.data.url;
+                    else { chapterPages.splice(placeholderIdx, 1); alert('Ошибка загрузки страницы: ' + (json.error?.message || 'неизвестная')); }
+                } catch (err) {
+                    chapterPages.splice(placeholderIdx, 1);
+                    alert('Ошибка сети при загрузке страницы');
+                }
+                renderChapterPagesGrid();
+            }
+        });
+
+        document.getElementById('btn-add-page-url').onclick = function() {
+            const input = document.getElementById('chapter-page-url');
+            const url = input.value.trim();
+            if (!url) return alert('Вставь ссылку на изображение страницы');
+            chapterPages.push(url);
+            input.value = '';
+            renderChapterPagesGrid();
+        };
 
         function renderChaptersList() {
             const bookId = document.getElementById('chapter-book-select').value;
@@ -279,7 +402,7 @@
             container.innerHTML = chapters.length
                 ? chapters.map((ch, idx) => `
                     <div class="admin-item" style="padding:8px;">
-                        <div class="admin-item-info"><div class="t">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div></div>
+                        <div class="admin-item-info"><div class="t">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</div>${ch.pages ? `<div class="s">${ch.pages.length} стр.</div>` : ''}</div>
                         <div class="admin-item-actions"><button class="danger" data-cid="${ch.id}">🗑</button></div>
                     </div>
                 `).join('')
@@ -297,15 +420,29 @@
         document.getElementById('btn-add-chapter').onclick = function() {
             const bookId = document.getElementById('chapter-book-select').value;
             const title = document.getElementById('chapter-title').value.trim();
-            const text = document.getElementById('chapter-text').value.trim();
             if (!bookId) return alert('Сначала добавь книгу');
-            if (!text) return alert('Введи текст главы');
 
-            push(ref(db, 'books/' + bookId + '/chapters'), { title, text, createdAt: Date.now() }).then(() => {
-                document.getElementById('chapter-title').value = '';
-                document.getElementById('chapter-text').value = '';
-                tg.showPopup ? tg.showPopup({ title: 'Готово', message: 'Глава опубликована', buttons: [{ type: 'ok' }] }) : alert('Глава добавлена');
-            }).catch(err => alert('Ошибка: ' + err.message));
+            const book = booksData.find(b => b.id === bookId);
+            const isPaged = !!(book && (book.type === 'manga' || book.type === 'manhwa'));
+
+            if (isPaged) {
+                const pages = chapterPages.filter(Boolean);
+                if (!pages.length) return alert('Добавь хотя бы одну страницу главы');
+                push(ref(db, 'books/' + bookId + '/chapters'), { title, pages, createdAt: Date.now() }).then(() => {
+                    document.getElementById('chapter-title').value = '';
+                    chapterPages = [];
+                    renderChapterPagesGrid();
+                    tg.showPopup ? tg.showPopup({ title: 'Готово', message: 'Глава опубликована', buttons: [{ type: 'ok' }] }) : alert('Глава добавлена');
+                }).catch(err => alert('Ошибка: ' + err.message));
+            } else {
+                const text = document.getElementById('chapter-text').value.trim();
+                if (!text) return alert('Введи текст главы');
+                push(ref(db, 'books/' + bookId + '/chapters'), { title, text, createdAt: Date.now() }).then(() => {
+                    document.getElementById('chapter-title').value = '';
+                    document.getElementById('chapter-text').value = '';
+                    tg.showPopup ? tg.showPopup({ title: 'Готово', message: 'Глава опубликована', buttons: [{ type: 'ok' }] }) : alert('Глава добавлена');
+                }).catch(err => alert('Ошибка: ' + err.message));
+            }
         };
     }
 </script>
