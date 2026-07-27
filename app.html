@@ -2257,7 +2257,7 @@
             const content = document.getElementById('user-profile-overlay-content');
             if (!u) { content.innerHTML = '<div class="empty-state"><span class="icon">🙈</span><div class="title">Пользователь не найден</div></div>'; return; }
 
-            document.getElementById('user-profile-overlay-name').innerHTML = escapeHtml(u.name || 'Без имени') + verifiedBadge(u.id);
+            document.getElementById('user-profile-overlay-name').innerHTML = `<span style="${nickColorStyle(u.id)}">${escapeHtml(u.name || 'Без имени')}</span>` + verifiedBadge(u.id) + shopBadgeHtml(u.id);
             const joined = u.joinedAt ? formatDate(u.joinedAt) : '—';
             const frameItem = u.equipped && u.equipped.frame ? shopItemsData.find(i => i.id === u.equipped.frame) : null;
             const decorIds = (u.equipped && u.equipped.decorations) ? Object.keys(u.equipped.decorations) : [];
@@ -2274,7 +2274,7 @@
                             ${u.avatar ? `<img src="${u.avatar}" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);">` : `<div class="cover-fallback" style="width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:${colorFor(u.name || '')};font-size:28px;">${initialOf(u.name)}</div>`}
                             ${frameItem ? `<img src="${frameItem.image}" style="position:absolute;top:-8px;left:-8px;width:92px;height:92px;pointer-events:none;">` : ''}
                         </div>
-                        <div style="font-weight:800;font-size:18px;margin-top:10px;color:var(--text-primary);">${escapeHtml(u.name || 'Без имени')}${verifiedBadge(u.id)}</div>
+                        <div style="font-weight:800;font-size:18px;margin-top:10px;color:var(--text-primary);"><span style="${nickColorStyle(u.id)}">${escapeHtml(u.name || 'Без имени')}</span>${verifiedBadge(u.id)}${shopBadgeHtml(u.id)}</div>
                         ${u.bio ? `<div style="color:var(--text-secondary);font-size:14px;margin-top:4px;">${escapeHtml(u.bio)}</div>` : ''}
                         ${decorHtml ? `<div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">${decorHtml}</div>` : ''}
                         <div style="color:var(--text-secondary);font-size:12px;margin-top:8px;">📅 С нами с ${joined}</div>
@@ -2776,7 +2776,7 @@
                 const authorRow = post.authorId ? `
                     <div class="post-author-row" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                         ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
-                        <span class="post-author-name">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
+                        <span class="post-author-name" style="${nickColorStyle(post.authorId)}">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}${shopBadgeHtml(post.authorId)}${post.authorId === currentUser.id ? ' (вы)' : ''}</span>
                     </div>` : '<div style="color:var(--text-secondary);font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
                 
                 return `
@@ -2931,7 +2931,7 @@
             const authorBlock = post.authorId ? `
                 <div class="post-author-row" style="margin-bottom:12px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
                     ${avatarHtml(post.authorName, post.authorAvatar, 'avatar-sm')}
-                    <span class="post-author-name">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}</span>
+                    <span class="post-author-name" style="${nickColorStyle(post.authorId)}">${escapeHtml(post.authorName)}${verifiedBadge(post.authorId)}${shopBadgeHtml(post.authorId)}</span>
                 </div>` : '<div style="color:var(--text-secondary);font-size:13px;font-weight:600;margin-bottom:10px;">📰 Новость от редакции</div>';
 
             const imagesArr = post.images || (post.image ? [post.image] : []);
@@ -4094,7 +4094,7 @@
             const avatar = (me && me.avatar) || '';
             const banner = (me && me.banner) || '';
             
-            document.getElementById('profile-display-name').innerHTML = escapeHtml(name) + verifiedBadge(currentUser.id); 
+            document.getElementById('profile-display-name').innerHTML = `<span style="${nickColorStyle(currentUser.id)}">${escapeHtml(name)}</span>` + verifiedBadge(currentUser.id) + shopBadgeHtml(currentUser.id); 
             document.getElementById('profile-display-bio').textContent = bio;
             
             const avatarImg = document.getElementById('profile-avatar-img');
