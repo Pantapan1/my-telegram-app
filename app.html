@@ -427,6 +427,8 @@
             display: none; flex-direction: column; transition: background .4s ease;
         }
         .reader-overlay.active { display: flex; animation: slideUpFade 0.3s ease forwards; }
+        /* Профиль пользователя может открываться поверх чата/постов/читалки — всегда должен быть сверху */
+        #user-profile-overlay.active { z-index: 10010; }
 
         .reader-header {
             padding: 10px 16px; border-bottom: 1px solid var(--border-soft);
@@ -620,7 +622,7 @@
 
         /* Свайп-влево (ответ) и долгое нажатие (меню действий) на сообщении */
         .msg-context-backdrop {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10050;
             display: flex; align-items: flex-end; justify-content: center;
             animation: msgCtxFadeIn .15s ease;
         }
