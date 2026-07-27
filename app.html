@@ -388,29 +388,80 @@
         .image-preview { width: 100%; max-height: 140px; object-fit: cover; border-radius: 14px; margin: -4px 0 10px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .image-preview.show { display: block; }
 
-        /* === РЕКЛАМНЫЙ БАННЕР ADSGRAM (низ экрана, все страницы) === */
+        /* === РЕКЛАМНЫЙ БАННЕР ADSGRAM: компактная анимированная плашка === */
+        .ad-banner-bottom,
+        .ad-banner-top {
+            position: relative !important;
+            overflow: hidden !important;
+            isolation: isolate;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 58px !important;
+            padding: 0 10px !important;
+            border-radius: 16px !important;
+            background: var(--surface) !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+        }
+        /* вращающийся цветной "прожектор" под содержимым — создаёт эффект живого, анимированного баннера */
+        .ad-banner-bottom::before,
+        .ad-banner-top::before {
+            content: '' !important;
+            position: absolute !important;
+            inset: -120% -40% !important;
+            background: conic-gradient(from 0deg,
+                #ffb75e, #ed8f03, #ff9f0a, #ffd873, #ff7043, #ed8f03, #ffb75e) !important;
+            animation: ad-banner-spin 7s linear infinite !important;
+            opacity: .55 !important;
+            z-index: 0 !important;
+        }
+        /* лёгкая "плёнка" поверх вращения, чтобы контент виджета читался поверх анимации */
+        .ad-banner-bottom::after,
+        .ad-banner-top::after {
+            content: '' !important;
+            position: absolute !important;
+            inset: 2px !important;
+            border-radius: 14px !important;
+            background: var(--surface) !important;
+            opacity: .82 !important;
+            z-index: 0 !important;
+        }
+        @keyframes ad-banner-spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        /* Сам виджет AdsGram — поверх анимации, компактно сжат под высоту баннера */
+        .ad-banner-bottom adsgram-task,
+        .ad-banner-top adsgram-task {
+            position: relative !important;
+            z-index: 1 !important;
+            width: 100% !important;
+            max-width: 600px !important;
+            display: block !important;
+            --adsgram-task-font-size: 12px;
+            --adsgram-task-icon-size: 30px;
+            --adsgram-task-icon-title-gap: 8px;
+            --adsgram-task-icon-border-radius: 8px;
+            --adsgram-task-button-width: 64px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ad-banner-bottom::before, .ad-banner-top::before { animation: none !important; }
+        }
+        /* нижний баннер — закреплён над навигацией на всех страницах */
         .ad-banner-bottom {
             position: fixed !important;
-            left: 0 !important; right: 0 !important;
+            left: 10px !important; right: 10px !important;
             z-index: 9998 !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            background: var(--surface) !important;
-            padding: 6px 12px !important;
-            box-shadow: 0 -2px 12px rgba(0,0,0,0.05) !important;
+            margin: 0 auto !important;
+            max-width: 600px !important;
             transition: background .4s ease !important;
         }
-        .ad-banner-bottom adsgram-task { width: 100%; max-width: 600px; }
-
-        /* === РЕКЛАМНЫЙ БАННЕР ADSGRAM (верх экрана чата) === */
+        /* верхний баннер — встроен в шапку чата, во всю ширину без внешних отступов */
         .ad-banner-top {
-            padding: 8px 16px !important;
-            background: var(--surface) !important;
-            border-bottom: 1px solid var(--border-soft) !important;
+            margin: 8px 16px !important;
+            width: auto !important;
             flex-shrink: 0 !important;
         }
-        .ad-banner-top adsgram-task { width: 100%; display: block; }
 
         .bottom-nav {
             position: fixed !important;
@@ -5041,4 +5092,4 @@
         
     </script>
 </body>
-    </html>
+                        </html>
