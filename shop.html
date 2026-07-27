@@ -1040,8 +1040,48 @@
                 tg.showPopup ? tg.showPopup({ title: 'Подарок отправлен! 🎁', message: `${friendData.name} получит «${item.name}»`, buttons: [{ type: 'ok' }] }) : alert('Подарок отправлен!');
                 playSound('coin'); confettiBurst();
             } catch (err) {
-                alert('Ошибка: ' + (err.message || err));
+                alert('Ошибка: ' + (err.message || err));        const AD_REWARD = 10;
+        let AdController = null;
+        try {
+            AdController = window.Adsgram.init({ blockId: "39983" });
+        } catch (e) {
+            console.warn('AdsGram не инициализирован:', e);
+        }
+
+        let watchingAd = false;
+        const btnWatchAd = document.getElementById('btn-watch-ad');
+        const adResultEl = document.getElementById('ad-result');
+
+        btnWatchAd.onclick = function() {
+            if (watchingAd) return;
+            if (!AdController) {
+                adResultEl.textContent = 'Реклама сейчас недоступна, попробуй позже';
+                adResultEl.style.color = '#e74c3c';
+                return;
             }
+
+            watchingAd = true;
+            btnWatchAd.disabled = true;
+            btnWatchAd.textContent = 'Загрузка рекламы...';
+            adResultEl.textContent = '';
+
+            AdController.show()
+                .then(() => {
+                    update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + AD_REWARD }).catch(() => {});
+                    adResultEl.textContent = `🎉 +${AD_REWARD} монет за просмотр!`;
+                    adResultEl.style.color = '#27ae60';
+                    playSound('coin'); confettiBurst();
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                })
+                .catch(() => {
+                    adResultEl.textContent = 'Реклама не досмотрена — монеты не начислены';
+                    adResultEl.style.color = '#95a5a6';
+                })
+                .finally(() => {
+                    watchingAd = false;
+                    btnWatchAd.disabled = false;
+                    btnWatchAd.textContent = `Смотреть рекламу за ${AD_REWARD} 🪙`;
+                });
         };
     }
 </script>
