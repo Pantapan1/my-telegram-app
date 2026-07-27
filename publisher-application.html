@@ -40,6 +40,35 @@
     .btn-approve { background: #eafaf1; color: #27ae60; }
     .btn-reject { background: #fdecea; color: #e74c3c; }
     .empty-state { text-align: center; color: #95a5a6; padding: 20px 0; font-size: 14px; }
+
+    /* === Правила публикации + согласие === */
+    .rules-box {
+        background: #f8f9fa; border-radius: 14px; padding: 14px; margin-bottom: 14px;
+        font-size: 13px; line-height: 1.55; color: #444; white-space: pre-wrap;
+        max-height: 220px; overflow-y: auto; border: 1px solid #eee;
+    }
+    .rules-box.empty { color: #95a5a6; text-align: center; }
+    .agree-row {
+        display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px;
+        background: #fff4e0; border-radius: 12px; padding: 12px; cursor: pointer;
+        user-select: none;
+    }
+    .agree-row input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; accent-color: #ed8f03; }
+    .agree-row span { font-size: 13px; color: #7a5a1a; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .content-types { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .content-type-chip {
+        display: flex; align-items: center; gap: 6px; background: #f4f6f7; border-radius: 12px;
+        padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none;
+        border: 2px solid transparent;
+    }
+    .content-type-chip input { accent-color: #ed8f03; }
+    .content-type-chip.checked { background: #fff4e0; border-color: #ffb75e; color: #ed8f03; }
+    .field-label { font-size: 13px; font-weight: 700; color: #7f8c8d; margin: 4px 0 8px; }
+    .type-badge {
+        display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px;
+        background: #eef2f7; color: #5c6b7a; margin-right: 6px; margin-top: 4px;
+    }
 </style>
 </head>
 <body>
@@ -63,8 +92,25 @@
                 Хочешь публиковать свои книги в приложении? Расскажи немного о себе и о том, что планируешь писать —
                 администратор рассмотрит заявку.
             </p>
+
+            <div class="field-label">📜 Правила подачи и публикации контента</div>
+            <div class="rules-box" id="rules-box">Правила пока не заполнены администратором.</div>
+
+            <div class="field-label">Что планируешь публиковать?</div>
+            <div class="content-types" id="content-types">
+                <label class="content-type-chip" data-type="book"><input type="checkbox" value="book" checked> 📖 Книги</label>
+                <label class="content-type-chip" data-type="manga"><input type="checkbox" value="manga"> 🇯🇵 Манга</label>
+                <label class="content-type-chip" data-type="manhwa"><input type="checkbox" value="manhwa"> 🇰🇷 Манхва</label>
+            </div>
+
             <textarea id="app-message" class="input" placeholder="Расскажи о себе и своих книгах..."></textarea>
-            <button class="btn" id="btn-submit-application">Отправить заявку</button>
+
+            <label class="agree-row" id="agree-row">
+                <input type="checkbox" id="agree-checkbox">
+                <span>Я прочитал(а) и согласен(на) с правилами подачи и публикации контента</span>
+            </label>
+
+            <button class="btn" id="btn-submit-application" disabled>Отправить заявку</button>
         </div>
 
         <div class="admin-toggle" id="admin-toggle">⚙ рассмотрение заявок</div>
@@ -75,8 +121,14 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">Цвет галочки по умолчанию</h3>
-                <p style="margin:0 0 10px;font-size:12px;color:#95a5a6;">Применяется ко всем, кому не задан свой цвет ниже, в списке «Действующие издатели»</p>
+                <h3 style="margin-top:0;">📜 Правила подачи и публикации контента</h3>
+                <p style="margin-top:0;color:#7f8c8d;font-size:13px;">Этот текст увидит каждый пользователь перед подачей заявки. Он должен будет согласиться с ним.</p>
+                <textarea id="rules-editor" class="input" placeholder="Например: 1. Запрещён плагиат чужих произведений...&#10;2. Контент 18+ публикуется с пометкой...&#10;3. Администрация вправе отклонить заявку без объяснения причин..."></textarea>
+                <button class="btn" id="btn-save-rules" style="margin:0;">Сохранить правила</button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Цвет галочки издателя</h3>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <input type="color" id="badge-color-input" value="#1da1f2" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;">
                     <button class="btn" id="btn-save-badge-color" style="margin:0;">Сохранить цвет</button>
@@ -132,6 +184,40 @@
     function startPage() {
         let isAdmin = false;
 
+        // Правила подачи и публикации — показываем всем перед формой
+        onValue(ref(db, 'settings/publicationRules'), (snap) => {
+            const rules = snap.val();
+            const box = document.getElementById('rules-box');
+            if (rules && rules.trim()) {
+                box.textContent = rules;
+                box.classList.remove('empty');
+            } else {
+                box.textContent = 'Правила пока не заполнены администратором.';
+                box.classList.add('empty');
+            }
+        });
+
+        // Чипы выбора типа публикуемого контента (книги / манга / манхва)
+        const typeChips = Array.from(document.querySelectorAll('#content-types .content-type-chip'));
+        function refreshChipStyles() {
+            typeChips.forEach(chip => {
+                const checked = chip.querySelector('input').checked;
+                chip.classList.toggle('checked', checked);
+            });
+        }
+        typeChips.forEach(chip => {
+            const input = chip.querySelector('input');
+            input.addEventListener('change', refreshChipStyles);
+        });
+        refreshChipStyles();
+
+        // Чекбокс согласия с правилами — блокирует кнопку отправки, пока не отмечен
+        const agreeCheckbox = document.getElementById('agree-checkbox');
+        const submitBtn = document.getElementById('btn-submit-application');
+        agreeCheckbox.addEventListener('change', () => {
+            submitBtn.disabled = !agreeCheckbox.checked;
+        });
+
         // Моя собственная заявка
         onValue(ref(db, 'publisherApplications/' + myId), (snap) => {
             const my = snap.val();
@@ -158,14 +244,25 @@
         document.getElementById('btn-submit-application').onclick = function() {
             const message = document.getElementById('app-message').value.trim();
             if (!message) { alert('Расскажи немного о себе перед отправкой'); return; }
+            if (!agreeCheckbox.checked) { alert('Нужно согласиться с правилами подачи и публикации контента'); return; }
+
+            const contentTypes = typeChips
+                .filter(chip => chip.querySelector('input').checked)
+                .map(chip => chip.dataset.type);
+            if (!contentTypes.length) { alert('Выбери хотя бы один тип контента, который планируешь публиковать'); return; }
 
             set(ref(db, 'publisherApplications/' + myId), {
                 userName: myName,
                 message,
+                contentTypes,
+                agreedToRules: true,
+                agreedAt: Date.now(),
                 status: 'pending',
                 createdAt: Date.now()
             }).then(() => {
                 document.getElementById('app-message').value = '';
+                agreeCheckbox.checked = false;
+                submitBtn.disabled = true;
                 tg.showPopup ? tg.showPopup({ title: 'Отправлено!', message: 'Заявка на рассмотрении у администратора', buttons: [{ type: 'ok' }] }) : alert('Заявка отправлена');
             }).catch(err => alert('Ошибка: ' + err.message));
         };
@@ -184,9 +281,26 @@
                 listenAllApplications();
                 listenPublishers();
                 listenBadgeColor();
+                listenRulesEditor();
             } else if (pwd) {
                 alert('Неверный пароль');
             }
+        };
+
+        function listenRulesEditor() {
+            onValue(ref(db, 'settings/publicationRules'), (snap) => {
+                const rules = snap.val();
+                const editor = document.getElementById('rules-editor');
+                // не перетираем то, что админ уже печатает, если поле в фокусе
+                if (document.activeElement !== editor) editor.value = rules || '';
+            });
+        }
+
+        document.getElementById('btn-save-rules').onclick = function() {
+            const text = document.getElementById('rules-editor').value.trim();
+            set(ref(db, 'settings/publicationRules'), text).then(() => {
+                alert('Правила обновлены. Их увидит каждый пользователь перед подачей заявки.');
+            }).catch(err => alert('Ошибка: ' + err.message));
         };
 
         function listenBadgeColor() {
@@ -214,22 +328,12 @@
 
                 el.innerHTML = publishers.map(u => `
                     <div class="app-item">
-                        <div class="name" style="display:flex;align-items:center;gap:8px;">
-                            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:${u.badgeColor || '#1da1f2'};border-radius:50%;color:#fff;font-size:10px;">✓</span>
-                            ${escapeHtml(u.name || u.uid)}
-                        </div>
-                        <div class="app-actions" style="align-items:center;">
-                            <input type="color" data-uid="${u.uid}" class="badge-color-per-user" value="${u.badgeColor || '#1da1f2'}" style="width:44px;height:36px;border:none;border-radius:8px;padding:0;background:none;flex:0 0 auto;">
+                        <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
+                        <div class="app-actions">
                             <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
                         </div>
                     </div>
                 `).join('');
-
-                el.querySelectorAll('.badge-color-per-user').forEach(input => {
-                    input.onchange = () => {
-                        update(ref(db, 'users/' + input.dataset.uid), { badgeColor: input.value }).catch(err => alert('Ошибка: ' + err.message));
-                    };
-                });
 
                 el.querySelectorAll('button[data-uid]').forEach(btn => {
                     btn.onclick = () => {
@@ -250,23 +354,29 @@
 
                 if (!pending.length) { el.innerHTML = '<div class="empty-state">Нет заявок на рассмотрении</div>'; return; }
 
-                el.innerHTML = pending.map(a => `
+                el.innerHTML = pending.map(a => {
+                    const typeLabels = { book: '📖 Книги', manga: '🇯🇵 Манга', manhwa: '🇰🇷 Манхва' };
+                    const types = (a.contentTypes || []).map(t => `<span class="type-badge">${typeLabels[t] || t}</span>`).join('');
+                    return `
                     <div class="app-item">
                         <div class="name">${escapeHtml(a.userName)}</div>
+                        <div style="margin-bottom:6px;">${types || '<span class="type-badge">📖 Книги</span>'}</div>
                         <div class="msg">${escapeHtml(a.message)}</div>
                         <div class="app-actions">
                             <button class="btn-approve" data-uid="${a.uid}" data-action="approve">✅ Одобрить</button>
                             <button class="btn-reject" data-uid="${a.uid}" data-action="reject">❌ Отклонить</button>
                         </div>
                     </div>
-                `).join('');
+                `;
+                }).join('');
 
                 el.querySelectorAll('button[data-uid]').forEach(btn => {
                     btn.onclick = () => {
                         const uid = btn.dataset.uid;
                         const approve = btn.dataset.action === 'approve';
+                        const app = pending.find(a => a.uid === uid);
                         update(ref(db, 'publisherApplications/' + uid), { status: approve ? 'approved' : 'rejected', reviewedAt: Date.now() });
-                        if (approve) update(ref(db, 'users/' + uid), { isPublisher: true });
+                        if (approve) update(ref(db, 'users/' + uid), { isPublisher: true, publisherContentTypes: (app && app.contentTypes) || ['book'] });
                     };
                 });
             });
