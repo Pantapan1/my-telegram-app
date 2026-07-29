@@ -79,11 +79,13 @@
     <div id="editor-root" style="display:none;">
         <div class="card">
             <h3 style="margin-top:0;" id="book-form-heading">Добавить книгу</h3>
+            <label style="display:block;font-size:13px;font-weight:700;color:#7f8c8d;margin-bottom:6px;">Тип публикации</label>
             <div class="type-tabs" id="book-type-tabs">
                 <div class="type-tab active" data-type="book">📖 Книга</div>
                 <div class="type-tab" data-type="manga">🇯🇵 Манга</div>
                 <div class="type-tab" data-type="manhwa">🇰🇷 Манхва</div>
             </div>
+            <div id="book-type-hint" style="font-size:12px;color:#e67e22;background:#fff4e0;border-radius:10px;padding:8px 10px;margin-bottom:12px;"></div>
             <input type="text" id="book-title" class="input" placeholder="Название">
             <div class="upload-row">
                 <input type="text" id="book-cover" class="input" placeholder="Обложка (URL)">
@@ -98,6 +100,7 @@
         <div class="card">
             <h3 style="margin-top:0;">Главы</h3>
             <select id="chapter-book-select" class="input"></select>
+            <div id="chapter-mode-badge" style="font-size:13px;font-weight:700;padding:8px 10px;border-radius:10px;margin-bottom:10px;"></div>
             <div id="chapters-list"></div>
             <div class="divider"></div>
             <input type="text" id="chapter-title" class="input" placeholder="Название главы">
@@ -178,7 +181,9 @@
             const allowed = !!(me && me.isPublisher);
             document.getElementById(allowed ? 'editor-root' : 'locked-view').style.display = 'block';
             document.getElementById(allowed ? 'locked-view' : 'editor-root').style.display = 'none';
-            allowedContentTypes = (me && me.publisherContentTypes && me.publisherContentTypes.length) ? me.publisherContentTypes : ['book'];
+            // Если у издателя ещё не проставлены разрешённые типы (например, он одобрен до появления
+            // манги/манхвы) — не ограничиваем его только книгами, даём доступ ко всем типам контента.
+            allowedContentTypes = (me && me.publisherContentTypes && me.publisherContentTypes.length) ? me.publisherContentTypes : ['book', 'manga', 'manhwa'];
             if (allowed) startEditor();
         });
     }
@@ -203,9 +208,16 @@
         const firstAllowedTab = typeTabs.find(t => allowedContentTypes.includes(t.dataset.type));
         if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
 
+        const TYPE_HINTS = {
+            book: '📖 Обычная книга — главы состоят из текста.',
+            manga: '🇯🇵 Манга — главы состоят из картинок-страниц (загружаются файлом или по ссылке), без текстового поля.',
+            manhwa: '🇰🇷 Манхва — так же, как манга: главы состоят из картинок-страниц.'
+        };
+
         function selectBookType(type) {
             selectedBookType = type;
             typeTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.type === type));
+            document.getElementById('book-type-hint').textContent = TYPE_HINTS[type] || '';
         }
         typeTabs.forEach(tab => {
             tab.onclick = () => selectBookType(tab.dataset.type);
@@ -317,8 +329,9 @@
         function populateChapterSelect() {
             const sel = document.getElementById('chapter-book-select');
             const prev = sel.value;
+            const typeIcons = { book: '📖', manga: '🇯🇵', manhwa: '🇰🇷' };
             sel.innerHTML = booksData.length
-                ? booksData.map(b => `<option value="${b.id}">${escapeHtml(b.title)}</option>`).join('')
+                ? booksData.map(b => `<option value="${b.id}">${typeIcons[b.type] || '📖'} ${escapeHtml(b.title)}</option>`).join('')
                 : '<option value="">Сначала добавь книгу</option>';
             if (booksData.some(b => b.id === prev)) sel.value = prev;
             renderChaptersList();
@@ -339,6 +352,22 @@
             document.getElementById('chapter-pages-wrap').style.display = isPaged ? 'block' : 'none';
             chapterPages = [];
             renderChapterPagesGrid();
+
+            const badge = document.getElementById('chapter-mode-badge');
+            if (!book) {
+                badge.style.display = 'none';
+            } else if (isPaged) {
+                const typeLabel = book.type === 'manhwa' ? 'Манхва' : 'Манга';
+                badge.style.display = 'block';
+                badge.style.background = '#fdecff';
+                badge.style.color = '#9c27b0';
+                badge.textContent = `🖼 ${typeLabel} — ниже загружаются картинки-страницы главы, текстовое поле скрыто`;
+            } else {
+                badge.style.display = 'block';
+                badge.style.background = '#fff4e0';
+                badge.style.color = '#e67e22';
+                badge.textContent = '📝 Книга — глава пишется текстом';
+            }
         }
 
         function renderChapterPagesGrid() {
@@ -447,4 +476,4 @@
     }
 </script>
 </body>
-</html>
+   </html>
