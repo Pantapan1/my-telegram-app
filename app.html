@@ -1860,6 +1860,7 @@
         }
 
         let timeTrackingStarted = false;
+        let streakCheckedThisSession = false;
         let sessionStartedAt = 0;
         let lastFlushedAt = 0;
 
@@ -2704,7 +2705,6 @@
         
         function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
-            updateStreak(); // фиксируем стрик чтения сразу при заходе, а не только при дочтении книги
 
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
@@ -2829,6 +2829,9 @@
                 renderEventMultiplierBanner();
                 renderQuestsList();
                 if (isAdmin) populateEconomyAdminForm();
+                // Фиксируем стрик чтения один раз при заходе — обязательно после загрузки economyData,
+                // иначе поймаем ошибку обращения к economyData до её инициализации
+                if (!streakCheckedThisSession) { streakCheckedThisSession = true; updateStreak(); }
             });
 
             onValue(ref(db, 'quests'), (snapshot) => {
@@ -5520,4 +5523,4 @@
         
     </script>
 </body>
-    </html>
+                        </html>
