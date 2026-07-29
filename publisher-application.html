@@ -329,13 +329,37 @@
                 el.innerHTML = publishers.map(u => `
                     <div class="app-item">
                         <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <input type="color" class="publisher-color-input" data-uid="${u.uid}" value="${u.badgeColor || '#1da1f2'}" style="width:44px;height:36px;border:none;border-radius:10px;padding:0;background:none;flex-shrink:0;">
+                            <span style="font-size:12px;color:#95a5a6;flex:1;">${u.badgeColor ? 'Свой цвет галочки' : 'Используется общий цвет по умолчанию'}</span>
+                            <button class="publisher-color-save" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;background:#eafaf1;color:#27ae60;cursor:pointer;">Сохранить</button>
+                            ${u.badgeColor ? `<button class="publisher-color-reset" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;background:#f1f2f6;color:#7f8c8d;cursor:pointer;">Сбросить</button>` : ''}
+                        </div>
                         <div class="app-actions">
                             <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
                         </div>
                     </div>
                 `).join('');
 
-                el.querySelectorAll('button[data-uid]').forEach(btn => {
+                el.querySelectorAll('.publisher-color-save').forEach(btn => {
+                    btn.onclick = () => {
+                        const uid = btn.dataset.uid;
+                        const input = el.querySelector(`.publisher-color-input[data-uid="${uid}"]`);
+                        update(ref(db, 'users/' + uid), { badgeColor: input.value }).then(() => {
+                            alert('Индивидуальный цвет галочки сохранён для этого издателя');
+                        }).catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('.publisher-color-reset').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!confirm('Убрать индивидуальный цвет? Будет использоваться общий цвет по умолчанию.')) return;
+                        update(ref(db, 'users/' + btn.dataset.uid), { badgeColor: null })
+                            .catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('button[data-uid]:not(.publisher-color-save):not(.publisher-color-reset)').forEach(btn => {
                     btn.onclick = () => {
                         if (!confirm('Забрать статус издателя у этого пользователя?')) return;
                         update(ref(db, 'users/' + btn.dataset.uid), { isPublisher: false });
