@@ -168,6 +168,90 @@
         body.theme-terraria ::-webkit-scrollbar-thumb { background: #8a5a24; }
         body.theme-terraria ::-webkit-scrollbar-thumb:hover { background: #b5762f; }
 
+        /* ==================================================================
+           ДОПОЛНИТЕЛЬНЫЕ ФИЧИ ТЕМЫ TERRARIA — управляются из админ-панели
+           ================================================================== */
+
+        /* --- 1. Смена дня/ночи --- */
+        #terraria-daynight-overlay {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: linear-gradient(180deg, rgba(8,10,32,0.88) 0%, rgba(22,16,48,0.55) 45%, rgba(22,16,48,0.12) 100%);
+            opacity: 0; transition: opacity 5s ease;
+        }
+        #terraria-daynight-stars {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 5s ease;
+            background-image:
+                radial-gradient(1.4px 1.4px at 10% 10%, #fff, transparent 60%),
+                radial-gradient(1px 1px at 25% 18%, #fff, transparent 60%),
+                radial-gradient(1.4px 1.4px at 42% 8%, #fff, transparent 60%),
+                radial-gradient(1px 1px at 58% 20%, #fff, transparent 60%),
+                radial-gradient(1.4px 1.4px at 74% 12%, #fff, transparent 60%),
+                radial-gradient(1px 1px at 88% 24%, #fff, transparent 60%),
+                radial-gradient(1.4px 1.4px at 18% 32%, #fff, transparent 60%),
+                radial-gradient(1px 1px at 66% 30%, #fff, transparent 60%),
+                radial-gradient(1.4px 1.4px at 95% 8%, #fff, transparent 60%);
+        }
+
+        /* --- 2. Полоса чтения в стиле Boss HP --- */
+        #reader-boss-label {
+            display: none; justify-content: space-between; align-items: center; gap: 8px;
+            font-size: 12px; font-weight: 700; color: #ffd873; text-shadow: 1px 1px 0 #2c1c0d;
+            margin: 6px 16px 4px;
+        }
+        body.theme-terraria #reader-progress-wrap.terraria-questhp-bar {
+            height: 14px !important; border: 2px solid #2c1c0d !important; border-radius: 4px !important;
+            background: #241708 !important; box-shadow: inset 0 0 0 1px #000 !important; overflow: hidden;
+        }
+        body.theme-terraria #reader-progress-wrap.terraria-questhp-bar .progress-inner {
+            background: linear-gradient(90deg, #a83f2f, #ff9f0a) !important; height: 100% !important;
+            box-shadow: inset 0 4px 6px rgba(255,255,255,.25);
+        }
+
+        /* --- 3. Пиксельные иконки навигации --- */
+        body.theme-terraria .nav-btn .icon svg { width: 22px; height: 22px; image-rendering: pixelated; vertical-align: middle; }
+
+        /* --- 4. Тосты ачивок в стиле игры --- */
+        .terraria-toast {
+            position: fixed; top: 14px; right: 14px; z-index: 100000; max-width: 270px;
+            background: linear-gradient(180deg, #c17d33 0%, #6b4726 100%);
+            border: 3px solid #2c1c0d; border-radius: 6px;
+            box-shadow: inset 0 0 0 2px #e0a355, 0 8px 20px rgba(0,0,0,.5);
+            padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+            color: #ffe9b3; font-family: 'Handjet','Courier New',monospace; font-weight: 700;
+            transform: translateX(140%); transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        .terraria-toast.show { transform: translateX(0); }
+        .terraria-toast .tt-icon { font-size: 26px; flex-shrink: 0; filter: drop-shadow(0 0 4px rgba(255,178,56,.8)); }
+        .terraria-toast .tt-title { font-size: 10px; color: #ffd873; text-transform: uppercase; letter-spacing: 1px; }
+        .terraria-toast .tt-text { font-size: 14px; line-height: 1.25; }
+
+        /* --- 5. Трава на карточках --- */
+        body.theme-terraria.terraria-grass-on .card::before,
+        body.theme-terraria.terraria-grass-on .banner-card::before {
+            content: ''; display: block; height: 7px; margin: -14px -14px 10px;
+            background-image: repeating-linear-gradient(115deg, #4a7c1f 0 3px, #6bab2c 3px 6px, transparent 6px 9px);
+            background-size: 12px 7px; background-repeat: repeat-x;
+            border-bottom: 2px solid #2c1c0d;
+        }
+
+        /* --- 6. Кастомный курсор (только устройства с мышью) --- */
+        @media (pointer: fine) {
+            body.theme-terraria.terraria-cursor-on .tappable,
+            body.theme-terraria.terraria-cursor-on .btn,
+            body.theme-terraria.terraria-cursor-on button {
+                cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text y="22" font-size="22">%E2%9B%8F%EF%B8%8F</text></svg>') 4 24, pointer;
+            }
+        }
+
+        /* --- 7. Свечение галочки издателя как руда --- */
+        body.theme-terraria.terraria-oreglow-on .verified-badge {
+            animation: terraria-ore-glow 1.8s ease-in-out infinite;
+        }
+        @keyframes terraria-ore-glow {
+            0%, 100% { box-shadow: 0 0 4px 1px rgba(255,178,56,.5); filter: brightness(1); }
+            50% { box-shadow: 0 0 10px 4px rgba(255,210,110,.9); filter: brightness(1.35); }
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-gradient);
@@ -817,6 +901,10 @@
 </head>
 <body>
 
+    <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
+    <div id="terraria-daynight-overlay"></div>
+    <div id="terraria-daynight-stars"></div>
+
     <!-- AUTH OVERLAY -->
     <div id="yt-mini-player" class="hidden">
         <div id="yt-mini-header">
@@ -1178,6 +1266,43 @@
                         <span>✨ Плавающие частицы на фоне</span>
                     </label>
                     <button class="btn" id="btn-save-effects">Сохранить эффекты</button>
+
+                    <div class="divider"></div>
+
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">⛏️ Тема Terraria — доп. фичи</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Работают только когда выбрана тема «Террария». Каждую можно включить/выключить отдельно.</p>
+
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-daynight" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>🌗 Смена дня и ночи (по реальному времени)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-questhp" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>🐲 Прогресс чтения в стиле «Boss HP»</span>
+                    </label>
+                    <input type="text" id="terraria-questhp-label" class="input" placeholder="Имя босса (напр. Стена Плоти)" style="margin-left:30px;width:calc(100% - 30px);">
+
+                    <label style="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer;">
+                        <input type="checkbox" id="terraria-pixelicons" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>🕹️ Пиксельные иконки навигации</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-achievements" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>🏆 Тосты ачивок в стиле игры</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-grass" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>🌱 Трава на карточках</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-cursor" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>⛏️ Курсор-кирка (только на ПК)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
+                        <input type="checkbox" id="terraria-oreglow" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>✨ Свечение галочки издателя как руда</span>
+                    </label>
+                    <button class="btn" id="btn-save-terraria">Сохранить фичи Terraria</button>
                 </div>
 
                 <!-- ВКЛАДКА: БОСС-ИВЕНТ -->
@@ -1474,6 +1599,7 @@
                 <button class="font-size-btn" id="font-inc">A+</button>
             </div>
         </div>
+        <div id="reader-boss-label"></div>
         <div class="progress-outer hidden" id="reader-progress-wrap" style="margin-top:10px;">
             <div class="progress-inner" id="reader-progress-inner" style="width:0%;"></div>
         </div>
@@ -2191,6 +2317,7 @@
             currentTheme = theme || 'light';
             document.body.classList.toggle('theme-dark', currentTheme === 'dark');
             document.body.classList.toggle('theme-terraria', currentTheme === 'terraria');
+            applyTerrariaFeatures();
         }
 
         // === Звуковое сопровождение (URL-ы задаются админом) ===
@@ -2211,6 +2338,7 @@
 
         // === Спецэффекты (включаются админом) ===
         let effectsData = {};
+        let terrariaData = {}; // доп. фичи темы Terraria (день/ночь, boss hp, пиксель-иконки и т.д.)
         let economyData = { dailyEnabled: true, dailyAmount: 10, chapterEnabled: false, chapterAmount: 0, bookEnabled: false, bookAmount: 0, streakEnabled: false, streakAmount: 0, streakEvery: 1, streakMax: 0, eventMultiplier: 1, eventMultiplierUntil: null };
         let questsData = [];
         let streakRewardStore = JSON.parse(localStorage.getItem('sr_streak_reward') || '{}');
@@ -2289,6 +2417,119 @@
                 container.appendChild(p);
             }
             document.body.appendChild(container);
+        }
+
+        // ==================================================================
+        // ДОПОЛНИТЕЛЬНЫЕ ФИЧИ ТЕМЫ TERRARIA (управляются из админ-панели)
+        // ==================================================================
+        let terrariaDayNightTimer = null;
+
+        function applyTerrariaFeatures() {
+            const active = currentTheme === 'terraria';
+
+            // 5. Трава на карточках / 6. курсор-кирка / 7. свечение галочки — простые CSS-классы на body
+            document.body.classList.toggle('terraria-grass-on', active && !!terrariaData.grass);
+            document.body.classList.toggle('terraria-cursor-on', active && !!terrariaData.cursor);
+            document.body.classList.toggle('terraria-oreglow-on', active && !!terrariaData.oreGlow);
+
+            // 1. День/ночь
+            const dayNightOn = active && !!terrariaData.dayNight;
+            if (dayNightOn) {
+                updateTerrariaDayNight();
+                if (!terrariaDayNightTimer) terrariaDayNightTimer = setInterval(updateTerrariaDayNight, 5 * 60 * 1000);
+            } else {
+                if (terrariaDayNightTimer) { clearInterval(terrariaDayNightTimer); terrariaDayNightTimer = null; }
+                document.getElementById('terraria-daynight-overlay').style.opacity = 0;
+                document.getElementById('terraria-daynight-stars').style.opacity = 0;
+            }
+
+            // 2. Прогресс чтения как Boss HP — просто переключаем класс, содержимое обновляется в openChapter/renderChapterListView
+            const questHpOn = active && !!terrariaData.questHp;
+            document.getElementById('reader-progress-wrap').classList.toggle('terraria-questhp-bar', questHpOn);
+            if (!questHpOn) document.getElementById('reader-boss-label').style.display = 'none';
+
+            // 3. Пиксельные иконки навигации
+            applyTerrariaPixelIcons(active && !!terrariaData.pixelIcons);
+        }
+
+        function updateTerrariaDayNight() {
+            const hour = new Date().getHours() + new Date().getMinutes() / 60;
+            // ночь 22:00–5:00 (макс.), плавные переходы рассвет 5–8 и закат 18–22
+            let factor = 0;
+            if (hour >= 22 || hour < 5) factor = 1;
+            else if (hour >= 5 && hour < 8) factor = 1 - (hour - 5) / 3;
+            else if (hour >= 8 && hour < 18) factor = 0;
+            else if (hour >= 18 && hour < 22) factor = (hour - 18) / 4;
+            document.getElementById('terraria-daynight-overlay').style.opacity = (factor * 0.88).toFixed(2);
+            document.getElementById('terraria-daynight-stars').style.opacity = (factor * 0.9).toFixed(2);
+        }
+
+        // Генератор простых пиксельных SVG-иконок из битовой карты
+        function pixelSvg(bitmap, cell) {
+            cell = cell || 4;
+            const dim = bitmap.length * cell;
+            let rects = '';
+            bitmap.forEach((row, y) => {
+                for (let x = 0; x < row.length; x++) {
+                    if (row[x] === '1') rects += `<rect x="${x * cell}" y="${y * cell}" width="${cell}" height="${cell}" fill="currentColor"/>`;
+                }
+            });
+            return `<svg viewBox="0 0 ${dim} ${dim}">${rects}</svg>`;
+        }
+        const TERRARIA_PIXEL_BITMAPS = [
+            ['00100', '01110', '11111', '10101', '11111'], // 🏠 Лента
+            ['11011', '10001', '10001', '10001', '11111'], // 📚 Книги
+            ['11111', '10001', '10001', '11101', '00100'], // 💬 Чаты
+            ['01110', '01110', '00000', '11111', '11111']  // 👤 Профиль
+        ];
+
+        function applyTerrariaPixelIcons(enable) {
+            const iconEls = document.querySelectorAll('.bottom-nav .nav-btn .icon');
+            iconEls.forEach((iconEl, idx) => {
+                const textNode = Array.from(iconEl.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
+                if (!textNode) return;
+                if (enable) {
+                    if (!iconEl.dataset.pixelApplied) {
+                        iconEl.dataset.originalEmoji = textNode.textContent;
+                        const span = document.createElement('span');
+                        span.className = 'pixel-icon-svg';
+                        span.innerHTML = pixelSvg(TERRARIA_PIXEL_BITMAPS[idx] || TERRARIA_PIXEL_BITMAPS[0]);
+                        textNode.parentNode.insertBefore(span, textNode);
+                        textNode.textContent = '';
+                        iconEl.dataset.pixelApplied = '1';
+                    }
+                } else if (iconEl.dataset.pixelApplied) {
+                    const span = iconEl.querySelector('.pixel-icon-svg');
+                    if (span) span.remove();
+                    textNode.textContent = iconEl.dataset.originalEmoji || '';
+                    delete iconEl.dataset.pixelApplied;
+                }
+            });
+        }
+
+        // 4. Тосты ачивок в стиле игры
+        function showTerrariaToast(title, text, icon) {
+            if (!(currentTheme === 'terraria' && terrariaData.achievements)) return;
+            const el = document.createElement('div');
+            el.className = 'terraria-toast';
+            el.innerHTML = `<span class="tt-icon">${icon || '🏆'}</span><div><div class="tt-title">${escapeHtml(title)}</div><div class="tt-text">${escapeHtml(text)}</div></div>`;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 600);
+            }, 3800);
+        }
+
+        // Обновляет подпись Boss HP над прогресс-баром читалки (вызывается из openChapter/renderChapterListView)
+        function updateReaderBossLabel(readCount, total) {
+            const label = document.getElementById('reader-boss-label');
+            const on = currentTheme === 'terraria' && !!terrariaData.questHp;
+            if (!on || !total) { label.style.display = 'none'; return; }
+            const bossName = terrariaData.questHpLabel || 'Виверна Бездны';
+            const remaining = Math.max(0, total - readCount);
+            label.style.display = 'flex';
+            label.innerHTML = `<span>🐲 ${escapeHtml(bossName)}</span><span>${remaining} / ${total} HP</span>`;
         }
 
         function renderNotificationsToggle() {
@@ -2553,6 +2794,11 @@
             onValue(ref(db, 'settings/effects'), (snapshot) => {
                 effectsData = snapshot.val() || {};
                 renderAmbientParticles();
+            });
+
+            onValue(ref(db, 'settings/terrariaTheme'), (snapshot) => {
+                terrariaData = snapshot.val() || {};
+                applyTerrariaFeatures();
             });
 
             onValue(ref(db, 'settings/economy'), (snapshot) => {
@@ -3379,6 +3625,7 @@
             const readIdx = progressStore[book.id]?.readIdx || [];
             
             document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
+            updateReaderBossLabel(prog.readCount, prog.total);
             document.getElementById('reader-body').innerHTML = `
                 <div style="margin-bottom:14px;color:var(--text-secondary);font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
                 ${currentChapters.map((ch, idx) => `
@@ -3424,6 +3671,7 @@
             const readIdx = progressStore[bookId].readIdx || [];
             document.getElementById('reader-progress-wrap').classList.remove('hidden');
             document.getElementById('reader-progress-inner').style.width = Math.round((readIdx.length / currentChapters.length) * 100) + '%';
+            updateReaderBossLabel(readIdx.length, currentChapters.length);
             
             document.getElementById('btn-prev-chapter').disabled = idx === 0; 
             document.getElementById('btn-next-chapter').disabled = idx === currentChapters.length - 1;
@@ -3546,12 +3794,15 @@
             if (bookJustCompleted) {
                 const msg = bookCoins > 0 ? `Поздравляем! +${bookCoins} 🪙` : 'Поздравляем!';
                 tg.showPopup({ title: 'Книга прочитана! 🎉', message: msg, buttons: [{ type: 'ok' }] });
+                const finishedBook = booksData.find(b => b.id === currentBookId);
+                showTerrariaToast('Победа!', (finishedBook ? finishedBook.title : 'Книга') + ' прочитана', '🐉');
             } else {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
             
             const percent = Math.round((progressStore[currentBookId].readIdx.length / currentChapters.length) * 100);
             document.getElementById('reader-progress-inner').style.width = percent + '%';
+            updateReaderBossLabel(progressStore[currentBookId].readIdx.length, currentChapters.length);
         };
         
         document.getElementById('btn-bookmark').onclick = function() {
@@ -4420,6 +4671,7 @@
 
             update(ref(db, 'users/' + currentUser.id), payload).then(() => {
                 tg.showPopup({ title: '🏆 Задание выполнено!', message: `+${amount} монет`, buttons: [{ type: 'ok' }] });
+                showTerrariaToast('Задание выполнено', (q.title || '') + ` · +${amount} монет`, '🏆');
                 playSound('coin');
                 confettiBurst();
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
@@ -4767,6 +5019,14 @@
             document.getElementById('effect-confetti').checked = !!effectsData.confetti;
             document.getElementById('effect-particles').checked = !!effectsData.particles;
             document.getElementById('yt-video-id').value = youtubeVideoId || '';
+            document.getElementById('terraria-daynight').checked = !!terrariaData.dayNight;
+            document.getElementById('terraria-questhp').checked = !!terrariaData.questHp;
+            document.getElementById('terraria-questhp-label').value = terrariaData.questHpLabel || '';
+            document.getElementById('terraria-pixelicons').checked = !!terrariaData.pixelIcons;
+            document.getElementById('terraria-achievements').checked = !!terrariaData.achievements;
+            document.getElementById('terraria-grass').checked = !!terrariaData.grass;
+            document.getElementById('terraria-cursor').checked = !!terrariaData.cursor;
+            document.getElementById('terraria-oreglow').checked = !!terrariaData.oreGlow;
         }
 
         document.getElementById('btn-save-yt').onclick = function() {
@@ -4803,6 +5063,22 @@
             };
             update(ref(db, 'settings/effects'), data).then(() => {
                 tg.showPopup({ title: 'Готово', message: 'Эффекты сохранены', buttons: [{ type: 'ok' }] });
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        document.getElementById('btn-save-terraria').onclick = function() {
+            const data = {
+                dayNight: document.getElementById('terraria-daynight').checked,
+                questHp: document.getElementById('terraria-questhp').checked,
+                questHpLabel: document.getElementById('terraria-questhp-label').value.trim(),
+                pixelIcons: document.getElementById('terraria-pixelicons').checked,
+                achievements: document.getElementById('terraria-achievements').checked,
+                grass: document.getElementById('terraria-grass').checked,
+                cursor: document.getElementById('terraria-cursor').checked,
+                oreGlow: document.getElementById('terraria-oreglow').checked
+            };
+            update(ref(db, 'settings/terrariaTheme'), data).then(() => {
+                tg.showPopup({ title: 'Готово', message: 'Фичи темы Terraria сохранены для всех', buttons: [{ type: 'ok' }] });
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
