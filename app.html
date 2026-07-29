@@ -318,6 +318,9 @@
             display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 10px;
             background: rgba(255,159,10,0.9); border-radius: 10px; font-size: 12px; font-weight: 700;
         }
+        .banner-card.banner-solid { align-items: center; justify-content: center; text-align: center; }
+        .banner-card.banner-solid .banner-card-overlay { background: none; }
+        .banner-card.banner-solid .banner-card-title { font-size: 19px; }
 
         .cover-fallback {
             width: 100%; height: 160px; border-radius: 16px; margin-bottom: 10px;
@@ -725,6 +728,7 @@
         .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
         .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.05); background:var(--input-bg); color:var(--text-primary); font-size: 14px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
         .icon-btn.danger { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
+        .icon-btn.active { background: #fff4e0; color: #ed8f03; border-color: #ffd8a8; }
         .icon-btn:active { transform: scale(0.9); }
 
         .profile-banner-wrap { position: relative; margin-bottom: 44px; }
@@ -1139,17 +1143,26 @@
                 <div id="admin-tab-banners" class="hidden">
                     <h3 style="margin-bottom:12px; color:var(--text-primary);" id="banner-form-heading">Добавить баннер</h3>
                     <input type="text" id="banner-title" class="input" placeholder="Заголовок баннера">
-                    <div class="image-field-row">
+                    <div class="image-field-row" id="banner-image-row">
                         <input type="text" id="banner-image" class="input" placeholder="Картинка баннера (URL)">
                         <label class="upload-btn" for="banner-image-file" id="banner-image-upload-btn">📁</label>
                         <input type="file" id="banner-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <div id="banner-color-row" class="hidden" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <input type="color" id="banner-color" value="#ed8f03" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;flex-shrink:0;">
+                        <span style="font-size:13px;color:var(--text-secondary);">Цвет фона сплошного баннера</span>
                     </div>
                     <input type="text" id="banner-link" class="input" placeholder="Ссылка при нажатии (необязательно)">
                     <select id="banner-type" class="input" style="appearance:none;">
                         <option value="simple">Обычный баннер</option>
                         <option value="event">Баннер события (с таймером)</option>
+                        <option value="solid">Сплошной баннер (без картинки)</option>
                     </select>
                     <input type="datetime-local" id="banner-event-at" class="input hidden" placeholder="Дата и время события">
+                    <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+                        <input type="checkbox" id="banner-pinned" style="width:20px;height:20px;flex-shrink:0;">
+                        <span>📌 Закрепить баннер первым в карусели</span>
+                    </label>
                     <button class="btn" id="btn-add-banner">Опубликовать баннер</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-banner">Отменить редактирование</button>
 
@@ -2691,10 +2704,14 @@
         
         function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
+            updateStreak(); // фиксируем стрик чтения сразу при заходе, а не только при дочтении книги
 
             onValue(ref(db, 'posts'), (snapshot) => {
                 const data = snapshot.val();
-                postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.createdAt - a.createdAt) : [];
+                postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
+                    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                    return b.createdAt - a.createdAt;
+                }) : [];
                 
                 if (postsData.length > lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
                     document.getElementById('feed-nav-badge').classList.remove('hidden');
@@ -2731,7 +2748,10 @@
 
             onValue(ref(db, 'banners'), (snapshot) => {
                 const data = snapshot.val();
-                bannersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.createdAt||0) - (b.createdAt||0)) : [];
+                bannersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
+                    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                    return (a.createdAt||0) - (b.createdAt||0);
+                }) : [];
                 renderBanners();
                 if (isAdmin) renderAdminBannersList();
             });
@@ -3119,8 +3139,9 @@
             if (!bannersData.length) { el.innerHTML = ''; return; }
 
             el.innerHTML = `<div class="banners-carousel">${bannersData.map(b => `
-                <div class="banner-card" style="background-image:url('${b.image || ''}')" data-link="${escapeHtml(b.link || '')}">
+                <div class="banner-card ${b.type === 'solid' ? 'banner-solid' : ''}" style="${b.type === 'solid' ? `background-image:none;background-color:${b.color || '#ed8f03'};` : `background-image:url('${b.image || ''}')`}" data-link="${escapeHtml(b.link || '')}">
                     <div class="banner-card-overlay">
+                        ${b.pinned ? `<div style="font-size:11px;font-weight:700;opacity:.85;margin-bottom:4px;">📌 ЗАКРЕПЛЕНО</div>` : ''}
                         <div class="banner-card-title">${escapeHtml(b.title || '')}</div>
                         ${b.type === 'event' && b.eventAt ? `<div class="banner-countdown" data-target="${b.eventAt}">⏳ ${formatCountdown(b.eventAt - Date.now())}</div>` : ''}
                     </div>
@@ -3170,6 +3191,7 @@
                 
                 return `
                 <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" data-post-id="${post.id}">
+                    ${post.pinned ? `<div style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#ed8f03;background:#fff4e0;padding:3px 9px;border-radius:10px;margin-bottom:8px;">📌 Закреплено</div>` : ''}
                     ${authorRow}
                     ${coverImage ? `<img src="${coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="card-title">${escapeHtml(post.title)}</div>
@@ -3420,8 +3442,8 @@
                 createdAt: Date.now() 
             }).then(() => { 
                 input.value = ''; 
-                const me = usersData.find(u => u.id === currentUser.id);
-                update(ref(db, 'users/' + currentUser.id), { commentsMade: ((me && me.commentsMade) || 0) + 1 }).catch(() => {});
+                update(ref(db, 'users/' + currentUser.id), { commentsMade: increment(1) })
+                    .catch(err => console.error('Не удалось обновить счётчик комментариев:', err));
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
@@ -3720,6 +3742,11 @@
             streakStore.count = (streakStore.lastDate === yesterday) ? streakStore.count + 1 : 1;
             streakStore.lastDate = today; 
             saveLocal('sr_streak', streakStore);
+            // Пишем стрик в Firebase сразу — иначе задания типа "дней подряд" никогда не увидят актуальное значение
+            if (db && currentUser) {
+                update(ref(db, 'users/' + currentUser.id), { streak: streakStore.count })
+                    .catch(err => console.error('Не удалось обновить стрик:', err));
+            }
             maybeRewardStreak();
         }
 
@@ -3767,7 +3794,8 @@
             let bookCoins = 0;
 
             const payload = {};
-            if (isNewChapter) payload.chaptersReadCount = ((me && me.chaptersReadCount) || 0) + 1;
+            // increment() — атомарное изменение на сервере, без риска потерять счётчик из-за устаревшего локального значения me
+            if (isNewChapter) payload.chaptersReadCount = increment(1);
 
             if (bookJustCompleted) {
                 readBooks.push(currentBookId); 
@@ -3783,12 +3811,15 @@
             }
 
             const totalCoins = chapterCoins + bookCoins;
-            if (totalCoins > 0) payload.coins = ((me && me.coins) || 0) + totalCoins;
+            if (totalCoins > 0) payload.coins = increment(totalCoins);
 
             if ((isNewChapter || bookJustCompleted) && db) {
                 update(ref(db, 'users/' + currentUser.id), payload).then(() => {
                     if (totalCoins > 0) { playSound('coin'); confettiBurst(); }
-                }).catch(() => {});
+                }).catch(err => {
+                    console.error('Не удалось обновить прогресс чтения (задания/монеты):', err);
+                    tg.showAlert && tg.showAlert('Не удалось сохранить прогресс: ' + friendlyDbError(err));
+                });
             }
 
             if (bookJustCompleted) {
@@ -4815,7 +4846,7 @@
                 html += `
                     <div style="width:100%; font-weight:bold; font-size:14px; margin-top:10px;">
                         ${escapeHtml(pack.name)} 
-                        <button class="icon-btn danger" style="display:inline-block; width:24px; height:24px; font-size:12px; margin-left:10px;" onclick="if(confirm('Удалить весь пак?')) remove(ref(db, 'sticker_packs/${pack.id}'))">🗑</button>
+                        <button class="icon-btn danger" style="display:inline-block; width:24px; height:24px; font-size:12px; margin-left:10px;" onclick="deleteStickerPack('${pack.id}')">🗑</button>
                     </div>`;
                     
                 if (pack.stickers) {
@@ -4823,7 +4854,7 @@
                         html += `
                             <div style="position:relative; width:48px; height:48px; background:var(--input-bg); border-radius:10px; padding:4px; display:inline-block; margin-right:8px; margin-top:8px;">
                                 <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
-                                <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'sticker_packs/${pack.id}/stickers/${sid}'))">✕</button>
+                                <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="deletePackSticker('${pack.id}','${sid}')">✕</button>
                             </div>`;
                     });
                 }
@@ -4835,13 +4866,26 @@
                       html += `
                         <div style="position:relative; width:48px; height:48px; background:var(--input-bg); border-radius:10px; padding:4px; display:inline-block; margin-right:8px; margin-top:8px;">
                             <img src="${s.url}" style="width:100%; height:100%; object-fit:contain;">
-                            <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="if(confirm('Удалить стикер?')) remove(ref(db, 'stickers/${s.id}'))">✕</button>
+                            <button class="icon-btn danger" style="position:absolute; top:-6px; right:-6px; width:18px; height:18px; font-size:9px;" onclick="deleteLooseSticker('${s.id}')">✕</button>
                         </div>`;
                  });
             }
             
             el.innerHTML = html;
         }
+
+        window.deleteStickerPack = function(id) {
+            if (!confirm('Удалить весь пак?')) return;
+            remove(ref(db, 'sticker_packs/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+        window.deletePackSticker = function(packId, stickerId) {
+            if (!confirm('Удалить стикер?')) return;
+            remove(ref(db, 'sticker_packs/' + packId + '/stickers/' + stickerId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+        window.deleteLooseSticker = function(id) {
+            if (!confirm('Удалить стикер?')) return;
+            remove(ref(db, 'stickers/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
 
         // АДМИН - ПОСТЫ
         function renderAdminPostsList() {
@@ -4859,16 +4903,27 @@
                 <div class="admin-item">
                     ${cover ? `<img src="${cover}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
                     <div class="admin-item-info">
-                        <div class="admin-item-title">${escapeHtml(post.title)}</div>
+                        <div class="admin-item-title">${post.pinned ? '📌 ' : ''}${escapeHtml(post.title)}</div>
                         <div class="admin-item-sub">${post.authorId ? '👤 ' + escapeHtml(post.authorName) : formatDate(post.createdAt)}</div>
                     </div>
                     <div class="admin-item-actions">
+                        <button class="icon-btn ${post.pinned ? 'active' : ''}" title="${post.pinned ? 'Открепить' : 'Закрепить'}" onclick="togglePinPost('${post.id}', ${!post.pinned})">📌</button>
                         <button class="icon-btn" onclick="editPost('${post.id}')">✏️</button>
-                        <button class="icon-btn danger" onclick="if(confirm('Удалить новость?')) remove(ref(db, 'posts/${post.id}')).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)))">🗑</button>
+                        <button class="icon-btn danger" onclick="deletePost('${post.id}')">🗑</button>
                     </div>
                 </div>`;
             }).join('');
         }
+
+        window.deletePost = function(id) {
+            if (!confirm('Удалить новость?')) return;
+            remove(ref(db, 'posts/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        window.togglePinPost = function(id, pinned) {
+            update(ref(db, 'posts/' + id), { pinned: pinned, pinnedAt: pinned ? Date.now() : null })
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
         
         window.editPost = function(id) {
             const post = postsData.find(p => p.id === id); 
@@ -4931,17 +4986,23 @@
 
             el.innerHTML = bannersData.map(b => `
                 <div class="admin-item">
-                    ${b.image ? `<img src="${b.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(b.title || '')}">${initialOf(b.title)}</div>`}
+                    ${b.type === 'solid' ? `<div class="admin-item-thumb" style="background:${b.color || '#ed8f03'};"></div>` : (b.image ? `<img src="${b.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(b.title || '')}">${initialOf(b.title)}</div>`)}
                     <div class="admin-item-info">
-                        <div class="admin-item-title">${escapeHtml(b.title || '(без заголовка)')}</div>
-                        <div class="admin-item-sub">${b.type === 'event' ? '⏳ Событие · ' + formatDate(b.eventAt) : 'Обычный баннер'}</div>
+                        <div class="admin-item-title">${b.pinned ? '📌 ' : ''}${escapeHtml(b.title || '(без заголовка)')}</div>
+                        <div class="admin-item-sub">${b.type === 'event' ? '⏳ Событие · ' + formatDate(b.eventAt) : (b.type === 'solid' ? '🟧 Сплошной баннер' : 'Обычный баннер')}</div>
                     </div>
                     <div class="admin-item-actions">
+                        <button class="icon-btn ${b.pinned ? 'active' : ''}" title="${b.pinned ? 'Открепить' : 'Закрепить'}" onclick="togglePinBanner('${b.id}', ${!b.pinned})">📌</button>
                         <button class="icon-btn" onclick="editBanner('${b.id}')">✏️</button>
-                        <button class="icon-btn danger" onclick="if(confirm('Удалить баннер?')) remove(ref(db, 'banners/${b.id}')).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)))">🗑</button>
+                        <button class="icon-btn danger" onclick="deleteBanner('${b.id}')">🗑</button>
                     </div>
                 </div>`).join('');
         }
+
+        window.togglePinBanner = function(id, pinned) {
+            update(ref(db, 'banners/' + id), { pinned: pinned, pinnedAt: pinned ? Date.now() : null })
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
 
         window.editBanner = function(id) {
             const b = bannersData.find(x => x.id === id);
@@ -4950,9 +5011,13 @@
             editingBannerId = id;
             document.getElementById('banner-title').value = b.title || '';
             document.getElementById('banner-image').value = b.image || '';
+            document.getElementById('banner-color').value = b.color || '#ed8f03';
             document.getElementById('banner-link').value = b.link || '';
             document.getElementById('banner-type').value = b.type || 'simple';
+            document.getElementById('banner-pinned').checked = !!b.pinned;
             document.getElementById('banner-event-at').classList.toggle('hidden', b.type !== 'event');
+            document.getElementById('banner-image-row').classList.toggle('hidden', b.type === 'solid');
+            document.getElementById('banner-color-row').classList.toggle('hidden', b.type !== 'solid');
             if (b.type === 'event' && b.eventAt) {
                 const d = new Date(b.eventAt);
                 const pad = n => String(n).padStart(2, '0');
@@ -4968,10 +5033,14 @@
             editingBannerId = null;
             document.getElementById('banner-title').value = '';
             document.getElementById('banner-image').value = '';
+            document.getElementById('banner-color').value = '#ed8f03';
             document.getElementById('banner-link').value = '';
             document.getElementById('banner-type').value = 'simple';
+            document.getElementById('banner-pinned').checked = false;
             document.getElementById('banner-event-at').value = '';
             document.getElementById('banner-event-at').classList.add('hidden');
+            document.getElementById('banner-image-row').classList.remove('hidden');
+            document.getElementById('banner-color-row').classList.add('hidden');
             document.getElementById('banner-form-heading').textContent = 'Добавить баннер';
             document.getElementById('btn-add-banner').textContent = 'Опубликовать баннер';
             document.getElementById('btn-cancel-edit-banner').classList.add('hidden');
@@ -4979,21 +5048,29 @@
 
         document.getElementById('banner-type').addEventListener('change', function() {
             document.getElementById('banner-event-at').classList.toggle('hidden', this.value !== 'event');
+            document.getElementById('banner-image-row').classList.toggle('hidden', this.value === 'solid');
+            document.getElementById('banner-color-row').classList.toggle('hidden', this.value !== 'solid');
         });
 
         document.getElementById('btn-add-banner').onclick = function() {
             const title = document.getElementById('banner-title').value.trim();
             const image = document.getElementById('banner-image').value.trim();
+            const color = document.getElementById('banner-color').value;
             const link = document.getElementById('banner-link').value.trim();
             const type = document.getElementById('banner-type').value;
+            const pinned = document.getElementById('banner-pinned').checked;
             const eventAtRaw = document.getElementById('banner-event-at').value;
 
-            if (!image) return tg.showAlert('Добавь картинку баннера');
+            if (type !== 'solid' && !image) return tg.showAlert('Добавь картинку баннера');
+            if (type === 'solid' && !title) return tg.showAlert('Укажи заголовок сплошного баннера');
             if (type === 'event' && !eventAtRaw) return tg.showAlert('Укажи дату и время события');
 
             const data = {
-                title, image, link,
+                title, image: type === 'solid' ? '' : image, link,
                 type,
+                color: type === 'solid' ? color : null,
+                pinned,
+                pinnedAt: pinned ? Date.now() : null,
                 eventAt: type === 'event' ? new Date(eventAtRaw).getTime() : null
             };
 
@@ -5008,6 +5085,11 @@
                     tg.showPopup({ title: 'Опубликовано!', message: 'Баннер виден всем', buttons: [{ type: 'ok' }] });
                 }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err)));
             }
+        };
+
+        window.deleteBanner = function(id) {
+            if (!confirm('Удалить баннер?')) return;
+            remove(ref(db, 'banners/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
         // АДМИН - ОФОРМЛЕНИЕ (тема, звуки, эффекты)
