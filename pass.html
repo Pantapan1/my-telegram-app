@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Сезонный пасс</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #1b1030 0%, #2a1750 220px, #f7f5fb 220px); color: #2c3e50; padding-bottom: 50px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #fff; background: rgba(255,255,255,0.14); width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .topbar h1 { font-size: 18px; margin: 0; flex: 1; color: #fff; }
+    .currency-badges { display: flex; gap: 6px; flex-shrink: 0; }
+    .cur-badge { background: rgba(255,255,255,0.16); color: #fff; font-weight: 800; padding: 7px 10px; border-radius: 12px; font-size: 13px; white-space: nowrap; }
+
+    .season-card {
+        background: linear-gradient(135deg, #6a3de8, #a239ff);
+        border-radius: 22px; padding: 18px; color: #fff; margin-bottom: 16px;
+        box-shadow: 0 10px 30px rgba(106,61,232,0.35);
+    }
+    .season-name { font-weight: 900; font-size: 19px; margin-bottom: 2px; }
+    .season-countdown { font-size: 12px; opacity: .85; margin-bottom: 14px; }
+    .season-level-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .season-level-badge { background: rgba(255,255,255,0.22); border-radius: 14px; padding: 8px 12px; font-weight: 900; font-size: 15px; flex-shrink: 0; }
+    .xp-bar-outer { flex: 1; height: 10px; border-radius: 6px; background: rgba(255,255,255,0.22); overflow: hidden; }
+    .xp-bar-inner { height: 100%; background: linear-gradient(90deg,#ffe27a,#ffb300); border-radius: 6px; transition: width .4s ease; }
+    .xp-caption { font-size: 11px; opacity: .85; margin-top: 6px; }
+    .premium-row { margin-top: 14px; display: flex; gap: 8px; align-items: center; }
+    .premium-btn { flex: 1; border: none; border-radius: 14px; padding: 12px; font-weight: 800; font-size: 14px; cursor: pointer; background: linear-gradient(135deg,#ffe27a,#ffb300); color: #4a2c00; }
+    .premium-active { background: rgba(46,204,113,0.25); color: #eafaf1; border-radius: 14px; padding: 12px; text-align: center; font-weight: 800; flex: 1; }
+
+    .section-title { font-weight: 800; font-size: 16px; margin: 22px 0 10px; color: #2c3e50; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tab-btn { flex: 1; border: none; border-radius: 12px; padding: 10px 0; font-weight: 700; font-size: 13px; background: #efeaf9; color: #6a3de8; cursor: pointer; }
+    .tab-btn.active { background: #6a3de8; color: #fff; }
+
+    .pass-track { display: flex; flex-direction: column; gap: 10px; }
+    .level-row { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; padding: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .level-num-col { width: 42px; text-align: center; font-weight: 900; color: #95a5a6; font-size: 13px; flex-shrink: 0; }
+    .level-num-col.reached { color: #6a3de8; }
+    .reward-cell { flex: 1; border-radius: 12px; padding: 8px; text-align: center; background: #f7f5fb; position: relative; }
+    .reward-cell.premium { background: #fff8e6; }
+    .reward-icon { font-size: 24px; }
+    .reward-label { font-size: 10.5px; font-weight: 700; color: #6a5a7a; margin-top: 2px; line-height: 1.2; min-height: 24px; }
+    .reward-claim-btn { margin-top: 6px; width: 100%; border: none; border-radius: 9px; padding: 6px 0; font-weight: 800; font-size: 11px; cursor: pointer; background: #6a3de8; color: #fff; }
+    .reward-claim-btn.done { background: #eafaf1; color: #27ae60; }
+    .reward-claim-btn.locked { background: #f1f2f6; color: #b0b0b0; }
+    .reward-cell.locked-premium::after {
+        content: '🔒'; position: absolute; top: 6px; right: 8px; font-size: 12px;
+    }
+
+    .quest-card { background: #fff; border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .quest-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .quest-title { font-weight: 800; font-size: 14px; }
+    .quest-xp { font-weight: 800; color: #6a3de8; font-size: 12px; white-space: nowrap; }
+    .progress-outer { height: 8px; border-radius: 5px; background: #eee; overflow: hidden; }
+    .progress-inner { height: 100%; background: linear-gradient(90deg,#a239ff,#6a3de8); border-radius: 5px; }
+    .quest-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .quest-meta { font-size: 12px; color: #95a5a6; }
+    .btn-claim-small { border: none; border-radius: 10px; padding: 8px 16px; font-weight: 800; font-size: 12px; cursor: pointer; background: #6a3de8; color: #fff; }
+
+    .inv-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .inv-card { background: #fff; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .inv-icon { font-size: 30px; margin-bottom: 6px; }
+    .inv-name { font-size: 12px; font-weight: 700; margin-bottom: 8px; min-height: 30px; }
+    .inv-btn { border: none; border-radius: 10px; padding: 7px 0; width: 100%; font-weight: 800; font-size: 12px; cursor: pointer; }
+    .inv-equip { background: #eafaf1; color: #27ae60; }
+    .inv-unequip { background: #fdecea; color: #e74c3c; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 30px 0; font-size: 14px; }
+    .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+
+    body.theme-dark { background: linear-gradient(180deg, #1b1030 0%, #2a1750 220px, #14161f 220px); color: #ecedf1; }
+    body.theme-dark .card, body.theme-dark .level-row, body.theme-dark .quest-card, body.theme-dark .inv-card { background: #232632; }
+    body.theme-dark .reward-cell { background: #2a2d3a; }
+    body.theme-dark .reward-cell.premium { background: #3a3320; }
+    body.theme-dark .section-title { color: #ecedf1; }
+    body.theme-dark .tab-btn { background: #2a2d3a; color: #c9b6ff; }
+    body.theme-dark .reward-label { color: #b8aed0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+        <a href="app.html" class="back-link">←</a>
+        <h1>🎫 Сезонный пасс</h1>
+        <div class="currency-badges">
+            <div class="cur-badge">🪙 <span id="my-coins">0</span></div>
+            <div class="cur-badge">💎 <span id="my-gems">0</span></div>
+        </div>
+    </div>
+
+    <div id="no-session" class="card" style="display:none;">
+        Не удалось определить пользователя. Открой пасс из профиля в приложении.
+        <a href="app.html" style="display:block;margin-top:10px;color:#6a3de8;font-weight:700;">← Вернуться в приложение</a>
+    </div>
+
+    <div id="pass-root" style="display:none;">
+
+        <div class="season-card">
+            <div class="season-name" id="pc-season-name">Сезонный пасс</div>
+            <div class="season-countdown" id="pc-countdown">—</div>
+            <div class="season-level-row">
+                <div class="season-level-badge" id="pc-level">Ур. 0</div>
+                <div class="xp-bar-outer"><div class="xp-bar-inner" id="pc-xp-bar" style="width:0%;"></div></div>
+            </div>
+            <div class="xp-caption" id="pc-xp-caption">0 / 0 XP до след. уровня</div>
+            <div class="premium-row" id="pc-premium-row"></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-btn-levels" onclick="switchPassTab('levels')">🎁 Уровни</button>
+            <button class="tab-btn" id="tab-btn-quests" onclick="switchPassTab('quests')">🎯 Задания</button>
+            <button class="tab-btn" id="tab-btn-inv" onclick="switchPassTab('inv')">🎒 Инвентарь</button>
+        </div>
+
+        <div id="tab-levels">
+            <div class="pass-track" id="pass-levels-list"></div>
+        </div>
+
+        <div id="tab-quests" style="display:none;">
+            <p style="font-size:12px;color:#95a5a6;margin:0 0 12px;">Обновляются каждую неделю. Прогресс копится, пока идёт сезон.</p>
+            <div id="pass-quests-list"></div>
+        </div>
+
+        <div id="tab-inv" style="display:none;">
+            <p style="font-size:12px;color:#95a5a6;margin:0 0 12px;">Открытые титулы, питомцы, оверлеи и другие косметические награды пасса. Рамки, значки, декор и цвет ника — в разделе «🛍 Магазин», там же можно их надеть.</p>
+            <div class="inv-grid" id="pass-inv-grid"></div>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    // === Определяем текущего пользователя (те же правила, что в app.html/shop.html) ===
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null, myName = null;
+    if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
+    else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
+    else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    if (!myId) {
+        document.getElementById('no-session').style.display = 'block';
+    } else {
+        document.getElementById('pass-root').style.display = 'block';
+        startPass();
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+    }
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function currentSeasonId() {
+        const d = new Date();
+        return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+    }
+
+    const QUEST_TYPE_LABEL = { chapters: 'глав прочитано', books: 'книг дочитано', comments: 'комментариев', messages: 'сообщений', reactions: 'реакций', boss: 'ударов по боссу' };
+    const REWARD_ICON_FALLBACK = { coins: '🪙', gems: '💎', frame: '🖼', decoration: '🎀', badge: '🏅', nickcolor: '🎨', buff: '⚡', title: '🏷', vip: '✨', overlay: '👑', pet: '🐾', chatbg: '🖼', reaction: '😄', sound: '🔊', chest: '🎁', exclusive: '🔒' };
+
+    function startPass() {
+        let myUser = {};
+        let shopItemsData = [];
+        let seasonPassData = { name: 'Сезонный пасс', endsAt: null, premiumPrice: 300, levels: {}, weeklyQuests: {} };
+        let currentTab = 'levels';
+        const season = currentSeasonId();
+
+        // Синхронизация темы с основным приложением
+        onValue(ref(db, 'settings/theme'), (snap) => {
+            const theme = snap.val();
+            document.body.classList.toggle('theme-dark', theme === 'dark');
+        });
+
+        onValue(ref(db, 'shopItems'), (snap) => {
+            const data = snap.val();
+            shopItemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        });
+
+        onValue(ref(db, 'seasonPass/' + season), (snap) => {
+            seasonPassData = snap.val() || { name: 'Сезонный пасс', endsAt: null, premiumPrice: 300, levels: {}, weeklyQuests: {} };
+            renderAll();
+        });
+
+        onValue(ref(db, 'users/' + myId), (snap) => {
+            myUser = snap.val() || {};
+            document.getElementById('my-coins').textContent = myUser.coins || 0;
+            document.getElementById('my-gems').textContent = myUser.gems || 0;
+            ensureSeason();
+            renderAll();
+        });
+
+        // Гарантируем актуальный сезон в профиле игрока
+        function ensureSeason() {
+            const p = myUser.pass;
+            if (!p || p.season !== season) {
+                const fresh = { season, xp: 0, level: 0, premium: false, claimed: {}, weeklyProgress: {}, weeklyClaimed: {} };
+                update(ref(db, 'users/' + myId), { pass: fresh }).catch(() => {});
+                myUser.pass = fresh;
+            }
+        }
+
+        function sortedLevels() {
+            return Object.entries(seasonPassData.levels || {})
+                .map(([lvl, v]) => ({ level: parseInt(lvl, 10), ...v }))
+                .sort((a, b) => a.level - b.level);
+        }
+
+        function levelForXp(xp) {
+            let lvl = 0;
+            sortedLevels().forEach(l => { if (xp >= (l.xpRequired || 0)) lvl = l.level; });
+            return lvl;
+        }
+
+        function renderAll() {
+            const disabled = seasonPassData.enabled === false;
+            document.getElementById('pass-root').style.opacity = disabled ? '0.5' : '1';
+            document.getElementById('pass-root').style.pointerEvents = disabled ? 'none' : 'auto';
+            let noticeEl = document.getElementById('pass-disabled-notice');
+            if (disabled && !noticeEl) {
+                noticeEl = document.createElement('div');
+                noticeEl.id = 'pass-disabled-notice';
+                noticeEl.className = 'card';
+                noticeEl.style.textAlign = 'center';
+                noticeEl.textContent = 'Сезонный пасс сейчас недоступен — загляни позже';
+                document.getElementById('pass-root').parentNode.insertBefore(noticeEl, document.getElementById('pass-root'));
+            } else if (!disabled && noticeEl) {
+                noticeEl.remove();
+            }
+            renderSeasonHeader();
+            if (currentTab === 'levels') renderLevels();
+            if (currentTab === 'quests') renderQuests();
+            if (currentTab === 'inv') renderInventory();
+        }
+
+        function applyDynamicPassTheme() {
+            const theme = seasonPassData.theme || {};
+            const c1 = theme.color1 || '#6a3de8';
+            const c2 = theme.color2 || '#a239ff';
+            const accent = theme.accent || '#ffb300';
+            const seasonCardEl = document.querySelector('.season-card');
+            if (seasonCardEl) seasonCardEl.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+            document.querySelectorAll('.xp-bar-inner').forEach(elx => elx.style.background = `linear-gradient(90deg, ${accent}, ${c2})`);
+            document.querySelectorAll('.tab-btn.active').forEach(elx => elx.style.background = c1);
+            document.querySelectorAll('.reward-claim-btn:not(.done):not(.locked)').forEach(elx => elx.style.background = c1);
+            document.querySelectorAll('.btn-claim-small').forEach(elx => elx.style.background = c1);
+            document.querySelectorAll('.progress-inner').forEach(elx => elx.style.background = `linear-gradient(90deg, ${c2}, ${c1})`);
+            document.querySelectorAll('.level-num-col.reached').forEach(elx => elx.style.color = c1);
+            const premiumBtnStyleEl = document.getElementById('btn-buy-premium');
+            if (premiumBtnStyleEl) premiumBtnStyleEl.style.background = `linear-gradient(135deg, ${accent}, ${c2})`;
+        }
+
+        function renderSeasonHeader() {
+            const numberPrefix = seasonPassData.seasonNumber ? escapeHtml(seasonPassData.seasonNumber) + ' — ' : '';
+            document.getElementById('pc-season-name').textContent = numberPrefix + (seasonPassData.name || 'Сезонный пасс');
+
+            applyDynamicPassTheme();
+
+            const ends = seasonPassData.endsAt;
+            const countdownEl = document.getElementById('pc-countdown');
+            if (ends) {
+                const ms = ends - Date.now();
+                if (ms > 0) {
+                    const d = Math.floor(ms / 86400000);
+                    const h = Math.floor((ms % 86400000) / 3600000);
+                    countdownEl.textContent = `Сезон закончится через ${d} дн. ${h} ч.`;
+                } else {
+                    countdownEl.textContent = 'Сезон завершается...';
+                }
+            } else {
+                countdownEl.textContent = 'Бессрочный сезон';
+            }
+
+            const p = myUser.pass || { xp: 0, level: 0, premium: false };
+            const levels = sortedLevels();
+            const lvl = levelForXp(p.xp || 0);
+            document.getElementById('pc-level').textContent = 'Ур. ' + lvl;
+
+            const nextLevel = levels.find(l => l.level > lvl);
+            const curLevelData = levels.find(l => l.level === lvl);
+            const base = curLevelData ? curLevelData.xpRequired : 0;
+            const target = nextLevel ? nextLevel.xpRequired : base;
+            const span = Math.max(1, target - base);
+            const progressed = Math.max(0, Math.min(span, (p.xp || 0) - base));
+            const pct = nextLevel ? Math.round((progressed / span) * 100) : 100;
+            document.getElementById('pc-xp-bar').style.width = pct + '%';
+            document.getElementById('pc-xp-caption').textContent = nextLevel
+                ? `${p.xp || 0} / ${target} XP до уровня ${nextLevel.level}`
+                : `${p.xp || 0} XP · макс. уровень достигнут`;
+
+            const premiumRow = document.getElementById('pc-premium-row');
+            if (p.premium) {
+                premiumRow.innerHTML = `<div class="premium-active">💎 Премиум-пасс активен</div>`;
+            } else {
+                const price = seasonPassData.premiumPrice || 300;
+                premiumRow.innerHTML = `<button class="premium-btn" id="btn-buy-premium">Купить премиум-пасс · ${price} 🪙</button>`;
+                document.getElementById('btn-buy-premium').onclick = () => buyPremium(price);
+            }
+        }
+
+        function buyPremium(price) {
+            if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+            tg.showConfirm ? tg.showConfirm(`Купить премиум-пасс за ${price} 🪙?`, (ok) => { if (ok) doBuyPremium(price); }) : (confirm('Купить премиум-пасс за ' + price + ' 🪙?') && doBuyPremium(price));
+        }
+        function doBuyPremium(price) {
+            update(ref(db, 'users/' + myId), { coins: increment(-price), 'pass/premium': true }).then(() => {
+                tg.showPopup ? tg.showPopup({ title: '💎 Готово!', message: 'Премиум-пасс активирован', buttons: [{ type: 'ok' }] }) : alert('Премиум-пасс активирован');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function rewardIcon(r) { return (r && r.icon) || REWARD_ICON_FALLBACK[r && r.type] || '🎁'; }
+        function rewardLabel(r) {
+            if (!r) return '';
+            if (r.label) return r.label;
+            if (r.type === 'coins') return (r.value || 0) + ' монет';
+            if (r.type === 'gems') return (r.value || 0) + ' кристаллов';
+            return r.type;
+        }
+
+        function renderLevels() {
+            const el = document.getElementById('pass-levels-list');
+            const levels = sortedLevels();
+            if (!levels.length) { el.innerHTML = '<div class="empty-state">Уровни пасса ещё не настроены администратором</div>'; return; }
+            const p = myUser.pass || { xp: 0, claimed: {}, premium: false };
+            const xp = p.xp || 0;
+            const claimed = p.claimed || {};
+
+            el.innerHTML = levels.map(l => {
+                const reached = xp >= (l.xpRequired || 0);
+                const freeKey = l.level + '_free';
+                const premKey = l.level + '_premium';
+                const freeDone = !!claimed[freeKey];
+                const premDone = !!claimed[premKey];
+
+                const freeBtn = freeDone
+                    ? `<div class="reward-claim-btn done">✓ Получено</div>`
+                    : (reached ? `<button class="reward-claim-btn" onclick="window.claimPassReward(${l.level},'free')">Забрать</button>` : `<div class="reward-claim-btn locked">🔒 ${l.xpRequired} XP</div>`);
+
+                const premLocked = !p.premium;
+                const premBtn = premDone
+                    ? `<div class="reward-claim-btn done">✓ Получено</div>`
+                    : (premLocked ? `<div class="reward-claim-btn locked">💎 Нужен премиум</div>` : (reached ? `<button class="reward-claim-btn" onclick="window.claimPassReward(${l.level},'premium')">Забрать</button>` : `<div class="reward-claim-btn locked">🔒 ${l.xpRequired} XP</div>`));
+
+                return `
+                <div class="level-row">
+                    <div class="level-num-col ${reached ? 'reached' : ''}">${l.level}</div>
+                    <div class="reward-cell">
+                        <div class="reward-icon">${rewardIcon(l.free)}</div>
+                        <div class="reward-label">${escapeHtml(rewardLabel(l.free))}</div>
+                        ${freeBtn}
+                    </div>
+                    <div class="reward-cell premium ${premLocked ? 'locked-premium' : ''}">
+                        <div class="reward-icon">${rewardIcon(l.premium)}</div>
+                        <div class="reward-label">${escapeHtml(rewardLabel(l.premium))}</div>
+                        ${premBtn}
+                    </div>
+                </div>`;
+            }).join('');
+            applyDynamicPassTheme();
+        }
+
+        window.claimPassReward = function(levelNum, track) {
+            const l = (seasonPassData.levels || {})[levelNum];
+            if (!l) return;
+            const p = myUser.pass || {};
+            const xp = p.xp || 0;
+            if (xp < (l.xpRequired || 0)) return;
+            if (track === 'premium' && !p.premium) return;
+            const key = levelNum + '_' + track;
+            if (p.claimed && p.claimed[key]) return;
+
+            const reward = l[track];
+            grantReward(reward).then(() => {
+                update(ref(db, 'users/' + myId), { ['pass/claimed/' + key]: true }).catch(() => {});
+                tg.showPopup ? tg.showPopup({ title: '🎁 Награда получена!', message: rewardLabel(reward), buttons: [{ type: 'ok' }] }) : alert('Награда получена: ' + rewardLabel(reward));
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            });
+        };
+
+        // Выдача награды по типу. Для frame/decoration/badge/nickcolor использует
+        // тот же users/{uid}/inventory, что и обычный магазин.
+        function grantReward(r) {
+            if (!r || !r.type) return Promise.resolve();
+            const updates = {};
+            switch (r.type) {
+                case 'coins':
+                    updates.coins = increment(parseInt(r.value, 10) || 0);
+                    break;
+                case 'gems':
+                    updates.gems = increment(parseInt(r.value, 10) || 0);
+                    break;
+                case 'frame': case 'decoration': case 'badge': case 'nickcolor':
+                    if (r.itemId) updates['inventory/' + r.itemId] = true;
+                    break;
+                case 'buff': {
+                    const [mult, hours] = String(r.value || '2,24').split(',').map(x => parseFloat(x.trim()));
+                    updates.buffUntil = Date.now() + (hours || 24) * 3600000;
+                    updates.buffMultiplier = mult || 2;
+                    updates.buffItemId = 'pass';
+                    break;
+                }
+                case 'title':
+                    updates['pass/unlocked/titles/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'vip': {
+                    const days = parseInt(r.value, 10) || 1;
+                    const base = (myUser.pass && myUser.pass.vipUntil && myUser.pass.vipUntil > Date.now()) ? myUser.pass.vipUntil : Date.now();
+                    updates['pass/vipUntil'] = base + days * 86400000;
+                    break;
+                }
+                case 'overlay':
+                    updates['pass/unlocked/overlays/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'pet':
+                    updates['pass/unlocked/pets/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'chatbg':
+                    updates['pass/unlocked/chatbgs/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'reaction':
+                    updates['pass/unlocked/reactions/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'sound':
+                    updates['pass/unlocked/sounds/' + safeKey(r.value)] = r.value;
+                    break;
+                case 'chest': {
+                    const options = String(r.value || '50').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n));
+                    const picked = options.length ? options[Math.floor(Math.random() * options.length)] : 0;
+                    updates.coins = increment(picked);
+                    r._pickedChest = picked;
+                    break;
+                }
+                case 'exclusive':
+                    updates['pass/unlocked/exclusive/' + safeKey(r.label || r.value)] = { label: r.label || '', value: r.value || '' };
+                    break;
+            }
+            if (!Object.keys(updates).length) return Promise.resolve();
+            return update(ref(db, 'users/' + myId), updates).catch(() => {});
+        }
+
+        function safeKey(str) {
+            return String(str || 'x').replace(/[.#$/\[\]\s]/g, '_').slice(0, 60) + '_' + Date.now().toString(36).slice(-4);
+        }
+
+        // === Ивентовые задания пасса ===
+        function questsList() {
+            return Object.entries(seasonPassData.weeklyQuests || {}).map(([id, v]) => ({ id, ...v }));
+        }
+
+        function renderQuests() {
+            const el = document.getElementById('pass-quests-list');
+            const list = questsList();
+            if (!list.length) { el.innerHTML = '<div class="empty-state">Заданий пока нет — загляни позже</div>'; return; }
+            const p = myUser.pass || {};
+            const progressMap = p.weeklyProgress || {};
+            const claimedMap = p.weeklyClaimed || {};
+
+            el.innerHTML = list.map(q => {
+                const progress = progressMap[q.type] || 0;
+                const goal = q.goal || 1;
+                const done = progress >= goal;
+                const claimed = !!claimedMap[q.id];
+                const pct = Math.min(100, Math.round((progress / goal) * 100));
+                return `
+                <div class="quest-card">
+                    <div class="quest-top">
+                        <div class="quest-title">${escapeHtml(q.title || '')}</div>
+                        <div class="quest-xp">+${q.xp || 0} XP</div>
+                    </div>
+                    <div class="progress-outer"><div class="progress-inner" style="width:${pct}%;"></div></div>
+                    <div class="quest-bottom">
+                        <div class="quest-meta">${Math.min(progress, goal)} / ${goal} · ${QUEST_TYPE_LABEL[q.type] || q.type}</div>
+                        ${claimed ? '<span style="color:#27ae60;font-weight:800;font-size:12px;">✓ Получено</span>' : (done ? `<button class="btn-claim-small" onclick="window.claimPassQuest('${q.id}')">Забрать</button>` : '')}
+                    </div>
+                </div>`;
+            }).join('');
+            applyDynamicPassTheme();
+        }
+
+        window.claimPassQuest = function(id) {
+            const q = (seasonPassData.weeklyQuests || {})[id];
+            if (!q) return;
+            const p = myUser.pass || {};
+            const progress = (p.weeklyProgress || {})[q.type] || 0;
+            if (progress < (q.goal || 1)) return;
+            if (p.weeklyClaimed && p.weeklyClaimed[id]) return;
+
+            const xpGain = q.xp || 0;
+            update(ref(db, 'users/' + myId), {
+                'pass/xp': increment(xpGain),
+                ['pass/weeklyClaimed/' + id]: true
+            }).then(() => {
+                tg.showPopup ? tg.showPopup({ title: '🏆 Задание выполнено!', message: `+${xpGain} XP`, buttons: [{ type: 'ok' }] }) : alert('+' + xpGain + ' XP');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // === Инвентарь пасс-эксклюзивных косметик ===
+        function renderInventory() {
+            const el = document.getElementById('pass-inv-grid');
+            const p = myUser.pass || {};
+            const eq = myUser.equipped || {};
+            const unlocked = p.unlocked || {};
+            const cards = [];
+
+            Object.entries(unlocked.titles || {}).forEach(([key, val]) => {
+                const isEq = eq.passTitle === val;
+                cards.push(invCard('🏷', val, isEq, () => toggleEquip('passTitle', val, isEq)));
+            });
+            Object.entries(unlocked.pets || {}).forEach(([key, val]) => {
+                const isEq = eq.passPet === val;
+                cards.push(invCard(val, 'Питомец', isEq, () => toggleEquip('passPet', val, isEq)));
+            });
+            Object.entries(unlocked.overlays || {}).forEach(([key, val]) => {
+                const isEq = eq.passOverlay === val;
+                cards.push(invCardImg(val, 'Оверлей аватара', isEq, () => toggleEquip('passOverlay', val, isEq)));
+            });
+            Object.entries(unlocked.chatbgs || {}).forEach(([key, val]) => {
+                const isEq = eq.passChatBg === val;
+                cards.push(invCardImg(val, 'Фон чата', isEq, () => toggleEquip('passChatBg', val, isEq)));
+            });
+            Object.entries(unlocked.reactions || {}).forEach(([key, val]) => {
+                const looksUrl = /^https?:\/\//.test(val);
+                cards.push(looksUrl ? invCardImg(val, 'Реакция', false, null) : invCard(val, 'Реакция', false, null));
+            });
+            Object.entries(unlocked.sounds || {}).forEach(([key, val]) => {
+                cards.push(invSoundCard(val));
+            });
+            Object.entries(unlocked.exclusive || {}).forEach(([key, val]) => {
+                cards.push(`<div class="inv-card" style="text-align:left;"><div class="inv-icon">🔒</div><div class="inv-name" style="min-height:auto;">${escapeHtml(val.label || 'Эксклюзив')}</div><div style="font-size:11px;color:#95a5a6;">${escapeHtml(val.value || '')}</div></div>`);
+            });
+            if (p.vipUntil && p.vipUntil > Date.now()) {
+                const days = Math.ceil((p.vipUntil - Date.now()) / 86400000);
+                cards.push(`<div class="inv-card"><div class="inv-icon">✨</div><div class="inv-name">VIP-статус активен ещё ${days} дн.</div></div>`);
+            }
+
+            el.innerHTML = cards.length ? cards.join('') : '<div class="empty-state" style="grid-column:1/-1;">Пока нечего показать — забирай награды на вкладке «Уровни»</div>';
+        }
+
+        function invCard(icon, name, isEq, onClick) {
+            const id = 'invbtn_' + Math.random().toString(36).slice(2);
+            setTimeout(() => { const b = document.getElementById(id); if (b && onClick) b.onclick = onClick; }, 0);
+            return `<div class="inv-card"><div class="inv-icon">${escapeHtml(icon)}</div><div class="inv-name">${escapeHtml(name)}</div>${onClick ? `<button class="inv-btn ${isEq ? 'inv-unequip' : 'inv-equip'}" id="${id}">${isEq ? 'Снять' : 'Надеть'}</button>` : ''}</div>`;
+        }
+        function invCardImg(url, name, isEq, onClick) {
+            const id = 'invbtn_' + Math.random().toString(36).slice(2);
+            setTimeout(() => { const b = document.getElementById(id); if (b && onClick) b.onclick = onClick; }, 0);
+            return `<div class="inv-card"><img src="${url}" style="width:60px;height:60px;object-fit:contain;margin-bottom:6px;"><div class="inv-name">${escapeHtml(name)}</div>${onClick ? `<button class="inv-btn ${isEq ? 'inv-unequip' : 'inv-equip'}" id="${id}">${isEq ? 'Снять' : 'Надеть'}</button>` : ''}</div>`;
+        }
+        function invSoundCard(url) {
+            const id = 'sndbtn_' + Math.random().toString(36).slice(2);
+            setTimeout(() => {
+                const b = document.getElementById(id);
+                if (b) b.onclick = () => { try { new Audio(url).play().catch(() => {}); } catch (e) {} };
+            }, 0);
+            return `<div class="inv-card"><div class="inv-icon">🔊</div><div class="inv-name">Звуковой стикер</div><button class="inv-btn inv-equip" id="${id}">▶ Играть</button></div>`;
+        }
+
+        function toggleEquip(field, value, isEq) {
+            update(ref(db, 'users/' + myId + '/equipped'), { [field]: isEq ? null : value }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        window.switchPassTab = function(tab) {
+            currentTab = tab;
+            ['levels', 'quests', 'inv'].forEach(t => {
+                document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+                document.getElementById('tab-btn-' + t).classList.toggle('active', t === tab);
+            });
+            renderAll();
+        };
+
+        setInterval(renderSeasonHeader, 60000);
+    }
+</script>
+</body>
+</html>
