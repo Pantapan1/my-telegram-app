@@ -54,6 +54,9 @@
     .page-thumb .num { position: absolute; top: 2px; left: 3px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 6px; }
     .page-thumb .rm { position: absolute; top: 2px; right: 2px; background: rgba(231,76,60,0.9); color: #fff; border: none; border-radius: 6px; width: 18px; height: 18px; font-size: 11px; line-height: 1; cursor: pointer; }
     .page-thumb.uploading { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #95a5a6; }
+    .page-move { position: absolute; bottom: 2px; left: 2px; right: 2px; display: flex; justify-content: space-between; gap: 2px; }
+    .page-move button { flex: 1; border: none; border-radius: 5px; background: rgba(0,0,0,0.55); color: #fff; font-size: 10px; padding: 2px 0; cursor: pointer; }
+    .page-move button:disabled { opacity: 0.3; cursor: default; }
 </style>
 </head>
 <body>
@@ -265,6 +268,10 @@
             document.getElementById('book-title').value = book.title || '';
             document.getElementById('book-cover').value = book.coverImage || '';
             document.getElementById('book-genre').value = book.genre || '';
+            // На случай если у книги стоит тип, который сейчас скрыт у автора (например, права поменялись) —
+            // временно показываем нужную вкладку, чтобы переключение типа не терялось при редактировании.
+            const ownTab = typeTabs.find(t => t.dataset.type === (book.type || 'book'));
+            if (ownTab) ownTab.style.display = '';
             selectBookType(book.type || 'book');
             document.getElementById('book-form-heading').textContent = 'Редактировать книгу';
             document.getElementById('btn-add-book').textContent = 'Сохранить изменения';
@@ -285,8 +292,10 @@
         };
 
         function deleteBook(id) {
-            if (!confirm('Удалить книгу безвозвратно? Все главы будут стёрты.')) return;
-            remove(ref(db, 'books/' + id)).catch(err => alert('Ошибка: ' + err.message));
+            tg.showConfirm('Удалить книгу безвозвратно? Все главы будут стёрты.', (ok) => {
+                if (!ok) return;
+                remove(ref(db, 'books/' + id)).catch(err => tg.showAlert('Ошибка: ' + err.message));
+            });
         }
 
         document.getElementById('book-cover-file').addEventListener('change', async (e) => {
@@ -298,13 +307,13 @@
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                 const json = await res.json();
                 if (json.success) document.getElementById('book-cover').value = json.data.url;
-                else alert('Ошибка загрузки: ' + (json.error?.message || 'неизвестная'));
-            } catch (err) { alert('Ошибка сети при загрузке обложки'); }
+                else tg.showAlert('Ошибка загрузки: ' + (json.error?.message || 'неизвестная'));
+            } catch (err) { tg.showAlert('Ошибка сети при загрузке обложки'); }
         });
 
         document.getElementById('btn-add-book').onclick = function() {
             const title = document.getElementById('book-title').value.trim();
-            if (!title) return alert('Укажи название книги');
+            if (!title) return tg.showAlert('Укажи название книги');
 
             const data = {
                 title,
@@ -317,12 +326,12 @@
 
             if (editingBookId) {
                 update(ref(db, 'books/' + editingBookId), data).then(() => document.getElementById('btn-cancel-edit-book').click())
-                    .catch(err => alert('Ошибка: ' + err.message));
+                    .catch(err => tg.showAlert('Ошибка: ' + err.message));
             } else {
                 push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then(() => {
                     document.getElementById('btn-cancel-edit-book').click();
-                    alert('Книга добавлена! Теперь можно добавить главы ниже.');
-                }).catch(err => alert('Ошибка: ' + err.message));
+                    tg.showAlert('Книга добавлена! Теперь можно добавить главы ниже.');
+                }).catch(err => tg.showAlert('Ошибка: ' + err.message));
             }
         };
 
@@ -377,10 +386,23 @@
                     <span class="num">${i + 1}</span>
                     <img src="${url}" onerror="this.style.opacity=0.2">
                     <button class="rm" data-i="${i}">✕</button>
+                    <div class="page-move">
+                        <button data-move="up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>⬆️</button>
+                        <button data-move="down" data-i="${i}" ${i === chapterPages.length - 1 ? 'disabled' : ''}>⬇️</button>
+                    </div>
                 </div>
             `).join('');
-            grid.querySelectorAll('button[data-i]').forEach(btn => {
+            grid.querySelectorAll('button[data-i]:not([data-move])').forEach(btn => {
                 btn.onclick = () => { chapterPages.splice(parseInt(btn.dataset.i, 10), 1); renderChapterPagesGrid(); };
+            });
+            grid.querySelectorAll('button[data-move]').forEach(btn => {
+                btn.onclick = () => {
+                    const i = parseInt(btn.dataset.i, 10);
+                    const j = btn.dataset.move === 'up' ? i - 1 : i + 1;
+                    if (j < 0 || j >= chapterPages.length) return;
+                    [chapterPages[i], chapterPages[j]] = [chapterPages[j], chapterPages[i]];
+                    renderChapterPagesGrid();
+                };
             });
         }
 
@@ -403,10 +425,10 @@
                     const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
                     const json = await res.json();
                     if (json.success) chapterPages[placeholderIdx] = json.data.url;
-                    else { chapterPages.splice(placeholderIdx, 1); alert('Ошибка загрузки страницы: ' + (json.error?.message || 'неизвестная')); }
+                    else { chapterPages.splice(placeholderIdx, 1); tg.showAlert('Ошибка загрузки страницы: ' + (json.error?.message || 'неизвестная')); }
                 } catch (err) {
                     chapterPages.splice(placeholderIdx, 1);
-                    alert('Ошибка сети при загрузке страницы');
+                    tg.showAlert('Ошибка сети при загрузке страницы');
                 }
                 renderChapterPagesGrid();
             }
@@ -415,7 +437,7 @@
         document.getElementById('btn-add-page-url').onclick = function() {
             const input = document.getElementById('chapter-page-url');
             const url = input.value.trim();
-            if (!url) return alert('Вставь ссылку на изображение страницы');
+            if (!url) return tg.showAlert('Вставь ссылку на изображение страницы');
             chapterPages.push(url);
             input.value = '';
             renderChapterPagesGrid();
@@ -439,9 +461,11 @@
 
             container.querySelectorAll('button[data-cid]').forEach(btn => {
                 btn.onclick = () => {
-                    if (!confirm('Удалить эту главу?')) return;
-                    const path = btn.dataset.cid === 'legacy' ? `books/${bookId}/text` : `books/${bookId}/chapters/${btn.dataset.cid}`;
-                    remove(ref(db, path)).catch(err => alert('Ошибка: ' + err.message));
+                    tg.showConfirm('Удалить эту главу?', (ok) => {
+                        if (!ok) return;
+                        const path = btn.dataset.cid === 'legacy' ? `books/${bookId}/text` : `books/${bookId}/chapters/${btn.dataset.cid}`;
+                        remove(ref(db, path)).catch(err => tg.showAlert('Ошибка: ' + err.message));
+                    });
                 };
             });
         }
@@ -449,31 +473,31 @@
         document.getElementById('btn-add-chapter').onclick = function() {
             const bookId = document.getElementById('chapter-book-select').value;
             const title = document.getElementById('chapter-title').value.trim();
-            if (!bookId) return alert('Сначала добавь книгу');
+            if (!bookId) return tg.showAlert('Сначала добавь книгу');
 
             const book = booksData.find(b => b.id === bookId);
             const isPaged = !!(book && (book.type === 'manga' || book.type === 'manhwa'));
 
             if (isPaged) {
                 const pages = chapterPages.filter(Boolean);
-                if (!pages.length) return alert('Добавь хотя бы одну страницу главы');
+                if (!pages.length) return tg.showAlert('Добавь хотя бы одну страницу главы');
                 push(ref(db, 'books/' + bookId + '/chapters'), { title, pages, createdAt: Date.now() }).then(() => {
                     document.getElementById('chapter-title').value = '';
                     chapterPages = [];
                     renderChapterPagesGrid();
                     tg.showPopup ? tg.showPopup({ title: 'Готово', message: 'Глава опубликована', buttons: [{ type: 'ok' }] }) : alert('Глава добавлена');
-                }).catch(err => alert('Ошибка: ' + err.message));
+                }).catch(err => tg.showAlert('Ошибка: ' + err.message));
             } else {
                 const text = document.getElementById('chapter-text').value.trim();
-                if (!text) return alert('Введи текст главы');
+                if (!text) return tg.showAlert('Введи текст главы');
                 push(ref(db, 'books/' + bookId + '/chapters'), { title, text, createdAt: Date.now() }).then(() => {
                     document.getElementById('chapter-title').value = '';
                     document.getElementById('chapter-text').value = '';
                     tg.showPopup ? tg.showPopup({ title: 'Готово', message: 'Глава опубликована', buttons: [{ type: 'ok' }] }) : alert('Глава добавлена');
-                }).catch(err => alert('Ошибка: ' + err.message));
+                }).catch(err => tg.showAlert('Ошибка: ' + err.message));
             }
         };
     }
 </script>
 </body>
-   </html>
+</html>
