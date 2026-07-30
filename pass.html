@@ -88,7 +88,7 @@
     body.theme-dark .tab-btn { background: #2a2d3a; color: #c9b6ff; }
     body.theme-dark .reward-label { color: #b8aed0; }
 
-    /* === Встроенная админ-панель пасса (как в shop.html) === */
+    /* === Встроенная админ-панель пасса === */
     .input {
         width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
         font-size: 14px; background: #f4f6f7; color: #2c3e50;
@@ -113,6 +113,21 @@
     body.theme-dark .admin-item { background: #232632; }
     body.theme-dark .upload-btn { background: #2a2d3a; }
     body.theme-dark .admin-toggle { color: #7a8090; }
+
+    /* === Модальное окно для пароля === */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.7); z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(4px);
+    }
+    .modal-box {
+        background: #fff; border-radius: 20px; padding: 24px; width: 90%; max-width: 320px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;
+    }
+    body.theme-dark .modal-box { background: #14161f; }
+    .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
+    .modal-buttons .btn { margin-bottom: 0; flex: 1; padding: 12px; }
 </style>
 </head>
 <body>
@@ -165,13 +180,7 @@
             <div class="inv-grid" id="pass-inv-grid"></div>
         </div>
 
-        <!-- Перенесенная админ-панель -->
         <div class="admin-toggle" id="admin-toggle">⚙ управление пассом</div>
-        
-        <div id="admin-auth-block" class="card" style="display:none; margin-bottom: 14px;">
-            <input type="password" id="admin-pwd-input" class="input" placeholder="Введите пароль">
-            <button id="btn-admin-login" class="btn">Войти</button>
-        </div>
 
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Текущий сезон: <span id="pass-admin-season-id"></span></h3>
@@ -273,6 +282,18 @@
     </div> <!-- Конец блока pass-root -->
 </div>
 
+<!-- Модальное окно (изначально скрыто) -->
+<div id="admin-auth-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3 style="margin-top:0; margin-bottom:16px;">Вход в управление</h3>
+        <input type="password" id="admin-pwd-input" class="input" placeholder="Пароль администратора">
+        <div class="modal-buttons">
+            <button id="btn-admin-cancel" class="btn btn-secondary">Отмена</button>
+            <button id="btn-admin-login" class="btn">Войти</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -291,7 +312,7 @@
     const tg = window.Telegram.WebApp;
     try { tg.expand(); tg.ready(); } catch (e) {}
 
-    // === Определяем текущего пользователя (те же правила, что в app.html/shop.html) ===
+    // === Определяем текущего пользователя ===
     const params = new URLSearchParams(window.location.search);
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
     const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
@@ -320,10 +341,6 @@
     const QUEST_TYPE_LABEL = { chapters: 'глав прочитано', books: 'книг дочитано', comments: 'комментариев', messages: 'сообщений', reactions: 'реакций', boss: 'ударов по боссу' };
     const REWARD_ICON_FALLBACK = { coins: '🪙', gems: '💎', frame: '🖼', decoration: '🎀', badge: '🏅', nickcolor: '🎨', buff: '⚡', title: '🏷', vip: '✨', overlay: '👑', pet: '🐾', chatbg: '🖼', reaction: '😄', sound: '🔊', chest: '🎁', exclusive: '🔒' };
 
-    // Типы наград пасса. Первые 5 — это РЕАЛЬНЫЕ категории магазина (shopItems):
-    // при сохранении уровня для них автоматически создаётся скрытый товар в магазине,
-    // который выдаётся игроку в инвентарь — экипировка работает через уже
-    // существующую систему (users/{uid}/equipped.frame/badge/nickColor/decorations).
     const PASS_REWARD_TYPES = [
         { id: 'coins',      label: '🪙 Монеты — value: число' },
         { id: 'frame',      label: '🖼 Рамка аватара (как в магазине) — value: URL картинки' },
@@ -345,7 +362,6 @@
     const PASS_SHOP_LINKED_TYPES = ['frame', 'decoration', 'badge', 'nickcolor'];
     const IMAGE_UPLOAD_TYPES = ['frame', 'decoration', 'badge', 'overlay', 'chatbg'];
 
-    // Те же ключи загрузки, что используются в основном приложении и магазине
     const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
     const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
     const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
@@ -387,7 +403,6 @@
         });
     }
 
-
     function startPass() {
         let myUser = {};
         let shopItemsData = [];
@@ -395,7 +410,6 @@
         let currentTab = 'levels';
         const season = currentSeasonId();
 
-        // Синхронизация темы с основным приложением
         onValue(ref(db, 'settings/theme'), (snap) => {
             const theme = snap.val();
             document.body.classList.toggle('theme-dark', theme === 'dark');
@@ -419,7 +433,6 @@
             renderAll();
         });
 
-        // Гарантируем актуальный сезон в профиле игрока
         function ensureSeason() {
             const p = myUser.pass;
             if (!p || p.season !== season) {
@@ -482,9 +495,7 @@
         function renderSeasonHeader() {
             const numberPrefix = seasonPassData.seasonNumber ? escapeHtml(seasonPassData.seasonNumber) + ' — ' : '';
             document.getElementById('pc-season-name').textContent = numberPrefix + (seasonPassData.name || 'Сезонный пасс');
-
             applyDynamicPassTheme();
-
             const ends = seasonPassData.endsAt;
             const countdownEl = document.getElementById('pc-countdown');
             if (ends) {
@@ -606,8 +617,6 @@
             });
         };
 
-        // Выдача награды по типу. Для frame/decoration/badge/nickcolor использует
-        // тот же users/{uid}/inventory, что и обычный магазин.
         function grantReward(r) {
             if (!r || !r.type) return Promise.resolve();
             const updates = {};
@@ -671,7 +680,6 @@
             return String(str || 'x').replace(/[.#$/\[\]\s]/g, '_').slice(0, 60) + '_' + Date.now().toString(36).slice(-4);
         }
 
-        // === Ивентовые задания пасса ===
         function questsList() {
             return Object.entries(seasonPassData.weeklyQuests || {}).map(([id, v]) => ({ id, ...v }));
         }
@@ -724,7 +732,6 @@
             }).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // === Инвентарь пасс-эксклюзивных косметик ===
         function renderInventory() {
             const el = document.getElementById('pass-inv-grid');
             const p = myUser.pass || {};
@@ -812,24 +819,32 @@
         setupRewardUploadField('pass-free-value-file', 'pass-free-value');
         setupRewardUploadField('pass-premium-value-file', 'pass-premium-value');
 
+        // Обработчик клика по шестеренке
         document.getElementById('admin-toggle').onclick = function() {
             if (isAdmin) {
                 const showing = document.getElementById('admin-panel').style.display !== 'none';
                 document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';
                 return;
             }
-            // Показываем блок ввода пароля вместо блокируемого prompt()
-            const authBlock = document.getElementById('admin-auth-block');
-            authBlock.style.display = authBlock.style.display === 'none' ? 'block' : 'none';
+            // Открываем модальное окно ПОВЕРХ ВСЕГО
+            document.getElementById('admin-auth-modal').style.display = 'flex';
         };
 
-        // Обработчик для новой кнопки входа
+        // Кнопка ОТМЕНА в модалке
+        document.getElementById('btn-admin-cancel').onclick = function() {
+            document.getElementById('admin-auth-modal').style.display = 'none';
+            document.getElementById('admin-pwd-input').value = '';
+        };
+
+        // Кнопка ВОЙТИ в модалке
         document.getElementById('btn-admin-login').onclick = function() {
             const pwd = document.getElementById('admin-pwd-input').value;
             if (pwd === 'admin123') {
                 isAdmin = true;
-                document.getElementById('admin-auth-block').style.display = 'none';
-                document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('admin-auth-modal').style.display = 'none'; // Скрываем модалку
+                document.getElementById('admin-panel').style.display = 'block';     // Показываем админку
+                document.getElementById('admin-pwd-input').value = '';              // Очищаем поле ввода
+                
                 populateSeasonForm();
                 renderAdminLevelsList();
                 renderAdminQuestsListPass();
@@ -888,7 +903,6 @@
             update(ref(db), updates).then(() => alert('Прогресс сезона обнулён у всех игроков')).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // --- Уровни ---
         let editingLevelNum = null;
 
         function ensureRewardShopItem(reward) {
@@ -971,7 +985,6 @@
             }).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // --- Ивентовые задания ---
         let editingQuestId = null;
 
         function renderAdminQuestsListPass() {
@@ -1030,7 +1043,6 @@
             p.then(() => document.getElementById('btn-cancel-edit-pass-quest').click()).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // --- Прогресс игроков ---
         function listenAllUsersForAdmin() {
             onValue(ref(db, 'users'), (snap) => {
                 const data = snap.val() || {};
