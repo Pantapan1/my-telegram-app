@@ -87,6 +87,32 @@
     body.theme-dark .section-title { color: #ecedf1; }
     body.theme-dark .tab-btn { background: #2a2d3a; color: #c9b6ff; }
     body.theme-dark .reward-label { color: #b8aed0; }
+
+    /* === Встроенная админ-панель пасса (как в shop.html) === */
+    .input {
+        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
+        font-size: 14px; background: #f4f6f7; color: #2c3e50;
+    }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#6a3de8,#a239ff); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .btn-secondary { background: #f1f2f6; color: #2c3e50; }
+    .divider { height: 1px; background: rgba(0,0,0,0.08); margin: 18px 0; }
+    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #b0b0b0; cursor: pointer; border-radius: 10px; }
+    .admin-toggle:hover { color: #6a3de8; }
+    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; }
+    .admin-item-info { flex: 1; font-size: 13px; }
+    .admin-item-title { font-weight: 700; }
+    .admin-item-sub { color: #95a5a6; font-size: 11px; margin-top: 2px; }
+    .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .icon-btn { border: none; background: #eee; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; }
+    .icon-btn.danger { background: #fdecea; color: #e74c3c; }
+    .upload-row { display: flex; gap: 8px; }
+    .upload-row .input { flex: 1; margin-bottom: 0; }
+    .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 18px; }
+    body.theme-dark .input { background: #2a2d3a; color: #ecedf1; border-color: rgba(255,255,255,0.08); }
+    body.theme-dark .btn-secondary { background: #2a2d3a; color: #ecedf1; }
+    body.theme-dark .admin-item { background: #232632; }
+    body.theme-dark .upload-btn { background: #2a2d3a; }
+    body.theme-dark .admin-toggle { color: #7a8090; }
 </style>
 </head>
 <body>
@@ -140,6 +166,105 @@
         </div>
 
     </div>
+
+    <div class="admin-toggle" id="admin-toggle">⚙ управление пассом</div>
+    <div class="card" id="admin-panel" style="display:none;">
+        <h3 style="margin-top:0;">Текущий сезон: <span id="pass-admin-season-id"></span></h3>
+        <p style="font-size:12px;color:#95a5a6;margin-bottom:12px;">Сброс прогресса игроков происходит автоматически 1-го числа каждого месяца.</p>
+
+        <input type="text" id="pass-season-number" class="input" placeholder="Номер сезона для игроков (напр. «Сезон 5»)">
+        <input type="text" id="pass-season-name" class="input" placeholder="Название сезона (напр. «Террария: Пробуждение»)">
+        <input type="datetime-local" id="pass-season-ends" class="input" placeholder="Окончание сезона">
+        <input type="number" id="pass-premium-price" class="input" placeholder="Цена премиум-пасса, монет" min="0">
+        <label style="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer;">
+            <input type="checkbox" id="pass-enabled-toggle" style="width:20px;height:20px;">
+            <span>Пасс включён (кнопка видна игрокам)</span>
+        </label>
+
+        <div class="card" style="padding:12px;margin-bottom:10px;">
+            <div style="font-weight:800;margin-bottom:8px;">🎨 Тематическое оформление страницы пасса</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <label style="font-size:12px;color:#95a5a6;flex:1;">Цвет градиента 1</label>
+                <input type="color" id="pass-theme-color1" value="#6a3de8" style="width:52px;height:36px;border:none;border-radius:8px;">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <label style="font-size:12px;color:#95a5a6;flex:1;">Цвет градиента 2</label>
+                <input type="color" id="pass-theme-color2" value="#a239ff" style="width:52px;height:36px;border:none;border-radius:8px;">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <label style="font-size:12px;color:#95a5a6;flex:1;">Акцентный цвет (XP-бар, кнопки)</label>
+                <input type="color" id="pass-theme-accent" value="#ffb300" style="width:52px;height:36px;border:none;border-radius:8px;">
+            </div>
+        </div>
+
+        <button class="btn" id="btn-save-pass-season">💾 Сохранить настройки сезона</button>
+
+        <div class="divider"></div>
+
+        <h3 id="pass-level-form-heading">Добавить/изменить уровень</h3>
+        <input type="number" id="pass-level-num" class="input" placeholder="Номер уровня (1-100)" min="1" max="100">
+        <input type="number" id="pass-level-xp" class="input" placeholder="Нужно XP всего, чтобы открыть уровень" min="1">
+
+        <div class="card" style="padding:12px;margin-bottom:10px;">
+            <div style="font-weight:800;margin-bottom:8px;">🆓 Бесплатная награда</div>
+            <select id="pass-free-type" class="input" style="appearance:none;"></select>
+            <input type="text" id="pass-free-label" class="input" placeholder="Название награды (напр. «Титул: Новичок»)">
+            <div class="upload-row">
+                <input type="text" id="pass-free-value" class="input" placeholder="Значение (число/HEX-цвет/эмодзи/URL картинки)">
+                <label class="upload-btn" for="pass-free-value-file">📁</label>
+                <input type="file" id="pass-free-value-file" accept="image/*,audio/*" style="display:none;">
+            </div>
+            <input type="text" id="pass-free-icon" class="input" placeholder="Эмодзи-иконка (напр. 🪙)">
+        </div>
+
+        <div class="card" style="padding:12px;margin-bottom:10px;">
+            <div style="font-weight:800;margin-bottom:8px;">💎 Премиум награда</div>
+            <select id="pass-premium-type" class="input" style="appearance:none;"></select>
+            <input type="text" id="pass-premium-label" class="input" placeholder="Название награды">
+            <div class="upload-row">
+                <input type="text" id="pass-premium-value" class="input" placeholder="Значение (число/HEX-цвет/эмодзи/URL картинки)">
+                <label class="upload-btn" for="pass-premium-value-file">📁</label>
+                <input type="file" id="pass-premium-value-file" accept="image/*,audio/*" style="display:none;">
+            </div>
+            <input type="text" id="pass-premium-icon" class="input" placeholder="Эмодзи-иконка (напр. 👑)">
+        </div>
+
+        <button class="btn" id="btn-save-pass-level">Сохранить уровень</button>
+        <button class="btn btn-secondary" id="btn-cancel-edit-pass-level" style="display:none;">Отменить редактирование</button>
+
+        <div class="divider"></div>
+        <h3>Уровни пасса</h3>
+        <div id="admin-pass-levels-list"></div>
+
+        <div class="divider"></div>
+        <h3 id="pass-quest-form-heading">Добавить ивентовое задание пасса</h3>
+        <input type="text" id="pass-quest-title" class="input" placeholder="Название (напр. «Шахтёрская смена»)">
+        <select id="pass-quest-type" class="input" style="appearance:none;">
+            <option value="chapters">Прочитано глав (за неделю)</option>
+            <option value="books">Дочитано книг</option>
+            <option value="comments">Оставлено комментариев</option>
+            <option value="messages">Отправлено сообщений</option>
+            <option value="reactions">Поставлено реакций</option>
+            <option value="boss">Ударов по боссу</option>
+        </select>
+        <input type="number" id="pass-quest-goal" class="input" placeholder="Цель (число)" min="1">
+        <input type="number" id="pass-quest-xp" class="input" placeholder="Награда XP" min="1">
+        <button class="btn" id="btn-add-pass-quest">Добавить задание</button>
+        <button class="btn btn-secondary" id="btn-cancel-edit-pass-quest" style="display:none;">Отменить редактирование</button>
+
+        <div class="divider"></div>
+        <h3>Ивентовые задания сезона</h3>
+        <div id="admin-pass-quests-list"></div>
+
+        <div class="divider"></div>
+        <h3>Прогресс игроков</h3>
+        <input type="text" id="pass-user-search" class="input" placeholder="🔍 Поиск по имени">
+        <div id="admin-pass-users-list"></div>
+
+        <div class="divider"></div>
+        <button class="btn btn-secondary" id="btn-pass-new-season" style="color:#e74c3c;">🔄 Начать новый сезон вручную (сбросить прогресс всех игроков)</button>
+        <button class="btn btn-secondary" id="btn-pass-delete-season" style="color:#e74c3c;">🗑 Удалить всю конфигурацию сезона (уровни, задания, настройки)</button>
+    </div>
 </div>
 
 <script type="module">
@@ -188,6 +313,74 @@
 
     const QUEST_TYPE_LABEL = { chapters: 'глав прочитано', books: 'книг дочитано', comments: 'комментариев', messages: 'сообщений', reactions: 'реакций', boss: 'ударов по боссу' };
     const REWARD_ICON_FALLBACK = { coins: '🪙', gems: '💎', frame: '🖼', decoration: '🎀', badge: '🏅', nickcolor: '🎨', buff: '⚡', title: '🏷', vip: '✨', overlay: '👑', pet: '🐾', chatbg: '🖼', reaction: '😄', sound: '🔊', chest: '🎁', exclusive: '🔒' };
+
+    // Типы наград пасса. Первые 5 — это РЕАЛЬНЫЕ категории магазина (shopItems):
+    // при сохранении уровня для них автоматически создаётся скрытый товар в магазине,
+    // который выдаётся игроку в инвентарь — экипировка работает через уже
+    // существующую систему (users/{uid}/equipped.frame/badge/nickColor/decorations).
+    const PASS_REWARD_TYPES = [
+        { id: 'coins',      label: '🪙 Монеты — value: число' },
+        { id: 'frame',      label: '🖼 Рамка аватара (как в магазине) — value: URL картинки' },
+        { id: 'decoration', label: '🎀 Декор профиля (как в магазине) — value: URL картинки' },
+        { id: 'badge',      label: '🏅 Значок у ника (как в магазине) — value: URL картинки' },
+        { id: 'nickcolor',  label: '🎨 Цвет ника (как в магазине) — value: HEX-цвет, напр. #ff9f0a' },
+        { id: 'buff',       label: '⚡ Буст монет (как в магазине) — value: "множитель,часы" напр. 2,24' },
+        { id: 'gems',       label: '💎 Кристаллы (премиум-валюта) — value: число' },
+        { id: 'title',      label: '🏷 Титул под именем — value: текст титула' },
+        { id: 'vip',        label: '✨ VIP-статус — value: число дней' },
+        { id: 'overlay',    label: '👑 Оверлей на аватар — value: URL картинки' },
+        { id: 'pet',        label: '🐾 Питомец — value: эмодзи' },
+        { id: 'chatbg',     label: '🖼 Фон чата — value: URL картинки' },
+        { id: 'reaction',   label: '😄 Кастомная реакция — value: эмодзи или URL' },
+        { id: 'sound',      label: '🔊 Звуковой стикер — value: URL аудио' },
+        { id: 'chest',      label: '🎁 Сундук — value: варианты монет через запятую, напр. 50,100,200' },
+        { id: 'exclusive',  label: '🔒 Эксклюзивный контент — value: текст/описание' },
+    ];
+    const PASS_SHOP_LINKED_TYPES = ['frame', 'decoration', 'badge', 'nickcolor'];
+    const IMAGE_UPLOAD_TYPES = ['frame', 'decoration', 'badge', 'overlay', 'chatbg'];
+
+    // Те же ключи загрузки, что используются в основном приложении и магазине
+    const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
+    const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
+    const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
+
+    async function uploadImageAsset(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.success) throw new Error((json.error && json.error.message) || 'Ошибка загрузки картинки');
+        return json.data.url;
+    }
+    async function uploadAudioAsset(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.secure_url) throw new Error('Ошибка загрузки аудио');
+        return json.secure_url;
+    }
+    function setupRewardUploadField(fileInputId, textInputId) {
+        const fileInput = document.getElementById(fileInputId);
+        const label = document.querySelector(`label[for="${fileInputId}"]`);
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const original = label.textContent;
+            label.textContent = '⏳';
+            try {
+                const url = file.type.startsWith('audio/') ? await uploadAudioAsset(file) : await uploadImageAsset(file);
+                document.getElementById(textInputId).value = url;
+            } catch (err) {
+                alert((err && err.message) || 'Ошибка загрузки файла');
+            } finally {
+                label.textContent = original;
+                fileInput.value = '';
+            }
+        });
+    }
+
 
     function startPass() {
         let myUser = {};
@@ -597,6 +790,278 @@
                 document.getElementById('tab-btn-' + t).classList.toggle('active', t === tab);
             });
             renderAll();
+        };
+
+        // ============================================================
+        // === ВСТРОЕННАЯ АДМИН-ПАНЕЛЬ ПАССА ==========================
+        // ============================================================
+        let isAdmin = false;
+        let allUsersForAdmin = [];
+
+        (function initRewardTypeSelects() {
+            const opts = PASS_REWARD_TYPES.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+            document.getElementById('pass-free-type').innerHTML = opts;
+            document.getElementById('pass-premium-type').innerHTML = opts;
+        })();
+        setupRewardUploadField('pass-free-value-file', 'pass-free-value');
+        setupRewardUploadField('pass-premium-value-file', 'pass-premium-value');
+
+        document.getElementById('admin-toggle').onclick = function() {
+            if (isAdmin) {
+                const showing = document.getElementById('admin-panel').style.display !== 'none';
+                document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';
+                return;
+            }
+            const pwd = prompt('Пароль:');
+            if (pwd === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-panel').style.display = 'block';
+                populateSeasonForm();
+                renderAdminLevelsList();
+                renderAdminQuestsListPass();
+                listenAllUsersForAdmin();
+            } else if (pwd) {
+                alert('Неверный пароль');
+            }
+        };
+
+        function populateSeasonForm() {
+            document.getElementById('pass-admin-season-id').textContent = season;
+            document.getElementById('pass-season-number').value = seasonPassData.seasonNumber || '';
+            document.getElementById('pass-season-name').value = seasonPassData.name || '';
+            document.getElementById('pass-season-ends').value = seasonPassData.endsAt ? toLocalInputValue(seasonPassData.endsAt) : '';
+            document.getElementById('pass-premium-price').value = seasonPassData.premiumPrice || 300;
+            document.getElementById('pass-enabled-toggle').checked = seasonPassData.enabled !== false;
+            const theme = seasonPassData.theme || {};
+            document.getElementById('pass-theme-color1').value = theme.color1 || '#6a3de8';
+            document.getElementById('pass-theme-color2').value = theme.color2 || '#a239ff';
+            document.getElementById('pass-theme-accent').value = theme.accent || '#ffb300';
+        }
+        function toLocalInputValue(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            const p2 = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+        }
+
+        document.getElementById('btn-save-pass-season').onclick = function() {
+            const name = document.getElementById('pass-season-name').value.trim() || 'Сезонный пасс';
+            const seasonNumber = document.getElementById('pass-season-number').value.trim();
+            const endsRaw = document.getElementById('pass-season-ends').value;
+            const price = parseInt(document.getElementById('pass-premium-price').value, 10) || 0;
+            const enabled = document.getElementById('pass-enabled-toggle').checked;
+            const theme = {
+                color1: document.getElementById('pass-theme-color1').value,
+                color2: document.getElementById('pass-theme-color2').value,
+                accent: document.getElementById('pass-theme-accent').value
+            };
+            update(ref(db, 'seasonPass/' + season), { name, seasonNumber, endsAt: endsRaw ? new Date(endsRaw).getTime() : null, premiumPrice: price, enabled, theme })
+                .then(() => alert('Настройки сезона сохранены'))
+                .catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-pass-delete-season').onclick = function() {
+            if (!confirm('Удалить ВСЮ конфигурацию текущего сезона (уровни, задания, настройки)? Прогресс игроков не тронется, но забирать будет нечего.')) return;
+            remove(ref(db, 'seasonPass/' + season)).then(() => alert('Конфигурация сезона удалена')).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-pass-new-season').onclick = function() {
+            if (!confirm('Обнулить прогресс пасса всех игроков в этом сезоне? Действие необратимо.')) return;
+            const updates = {};
+            allUsersForAdmin.forEach(u => {
+                updates['users/' + u.id + '/pass'] = { season, xp: 0, level: 0, premium: false, claimed: {}, weeklyProgress: {}, weeklyClaimed: {} };
+            });
+            update(ref(db), updates).then(() => alert('Прогресс сезона обнулён у всех игроков')).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // --- Уровни ---
+        let editingLevelNum = null;
+
+        function ensureRewardShopItem(reward) {
+            return new Promise((resolve) => {
+                if (!PASS_SHOP_LINKED_TYPES.includes(reward.type) || !reward.value) { resolve(reward); return; }
+                if (reward.itemId && shopItemsData.find(i => i.id === reward.itemId)) { resolve(reward); return; }
+                const payload = { name: reward.label || (reward.type + ' пасса'), category: reward.type, price: 0, hidden: true, source: 'pass', createdAt: Date.now() };
+                if (reward.type === 'nickcolor') payload.color = reward.value; else payload.image = reward.value;
+                push(ref(db, 'shopItems'), payload).then(newRef => resolve({ ...reward, itemId: newRef.key })).catch(() => resolve(reward));
+            });
+        }
+
+        function renderAdminLevelsList() {
+            const el = document.getElementById('admin-pass-levels-list');
+            const levels = sortedLevels();
+            if (!levels.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Уровни ещё не добавлены</div>'; return; }
+            el.innerHTML = levels.map(l => `
+                <div class="admin-item">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">Уровень ${l.level} · ${l.xpRequired || 0} XP</div>
+                        <div class="admin-item-sub">🆓 ${l.free ? (l.free.icon || '') + ' ' + (l.free.label || l.free.type) : '—'} &nbsp;|&nbsp; 💎 ${l.premium ? (l.premium.icon || '') + ' ' + (l.premium.label || l.premium.type) : '—'}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editPassLevel(${l.level})">✏️</button>
+                        <button class="icon-btn danger" onclick="deletePassLevel(${l.level})">🗑</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        window.editPassLevel = function(levelNum) {
+            const l = (seasonPassData.levels || {})[levelNum];
+            if (!l) return;
+            editingLevelNum = levelNum;
+            document.getElementById('pass-level-num').value = levelNum;
+            document.getElementById('pass-level-xp').value = l.xpRequired || '';
+            document.getElementById('pass-free-type').value = (l.free && l.free.type) || 'coins';
+            document.getElementById('pass-free-label').value = (l.free && l.free.label) || '';
+            document.getElementById('pass-free-value').value = (l.free && l.free.value) || '';
+            document.getElementById('pass-free-icon').value = (l.free && l.free.icon) || '';
+            document.getElementById('pass-premium-type').value = (l.premium && l.premium.type) || 'coins';
+            document.getElementById('pass-premium-label').value = (l.premium && l.premium.label) || '';
+            document.getElementById('pass-premium-value').value = (l.premium && l.premium.value) || '';
+            document.getElementById('pass-premium-icon').value = (l.premium && l.premium.icon) || '';
+            document.getElementById('pass-level-form-heading').textContent = 'Редактировать уровень ' + levelNum;
+            document.getElementById('btn-save-pass-level').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-pass-level').style.display = 'block';
+            document.getElementById('pass-level-num').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        document.getElementById('btn-cancel-edit-pass-level').onclick = function() {
+            editingLevelNum = null;
+            ['pass-level-num','pass-level-xp','pass-free-label','pass-free-value','pass-free-icon','pass-premium-label','pass-premium-value','pass-premium-icon'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('pass-level-form-heading').textContent = 'Добавить/изменить уровень';
+            document.getElementById('btn-save-pass-level').textContent = 'Сохранить уровень';
+            document.getElementById('btn-cancel-edit-pass-level').style.display = 'none';
+        };
+
+        window.deletePassLevel = function(levelNum) {
+            if (!confirm('Удалить уровень ' + levelNum + '?')) return;
+            remove(ref(db, 'seasonPass/' + season + '/levels/' + levelNum)).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-save-pass-level').onclick = function() {
+            const levelNum = parseInt(document.getElementById('pass-level-num').value, 10);
+            const xpRequired = parseInt(document.getElementById('pass-level-xp').value, 10);
+            if (!levelNum || levelNum < 1) return alert('Укажи номер уровня');
+            if (!xpRequired || xpRequired < 1) return alert('Укажи требуемый XP');
+
+            const existing = (seasonPassData.levels || {})[levelNum];
+            let free = { type: document.getElementById('pass-free-type').value, label: document.getElementById('pass-free-label').value.trim(), value: document.getElementById('pass-free-value').value.trim(), icon: document.getElementById('pass-free-icon').value.trim() || '🎁' };
+            if (existing && existing.free && existing.free.itemId) free.itemId = existing.free.itemId;
+            let premium = { type: document.getElementById('pass-premium-type').value, label: document.getElementById('pass-premium-label').value.trim(), value: document.getElementById('pass-premium-value').value.trim(), icon: document.getElementById('pass-premium-icon').value.trim() || '👑' };
+            if (existing && existing.premium && existing.premium.itemId) premium.itemId = existing.premium.itemId;
+
+            Promise.all([ensureRewardShopItem(free), ensureRewardShopItem(premium)]).then(([freeFinal, premiumFinal]) => {
+                return set(ref(db, 'seasonPass/' + season + '/levels/' + levelNum), { xpRequired, free: freeFinal, premium: premiumFinal });
+            }).then(() => {
+                document.getElementById('btn-cancel-edit-pass-level').click();
+                alert('Уровень ' + levelNum + ' сохранён');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // --- Ивентовые задания ---
+        let editingQuestId = null;
+
+        function renderAdminQuestsListPass() {
+            const el = document.getElementById('admin-pass-quests-list');
+            const list = questsList();
+            if (!list.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Заданий пока нет</div>'; return; }
+            el.innerHTML = list.map(q => `
+                <div class="admin-item">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(q.title || '')}</div>
+                        <div class="admin-item-sub">${QUEST_TYPE_LABEL[q.type] || q.type} · цель ${q.goal || 0} · +${q.xp || 0} XP</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editPassQuest('${q.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="deletePassQuest('${q.id}')">🗑</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        window.editPassQuest = function(id) {
+            const q = (seasonPassData.weeklyQuests || {})[id];
+            if (!q) return;
+            editingQuestId = id;
+            document.getElementById('pass-quest-title').value = q.title || '';
+            document.getElementById('pass-quest-type').value = q.type || 'chapters';
+            document.getElementById('pass-quest-goal').value = q.goal || '';
+            document.getElementById('pass-quest-xp').value = q.xp || '';
+            document.getElementById('pass-quest-form-heading').textContent = 'Редактировать задание пасса';
+            document.getElementById('btn-add-pass-quest').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-pass-quest').style.display = 'block';
+        };
+        document.getElementById('btn-cancel-edit-pass-quest').onclick = function() {
+            editingQuestId = null;
+            document.getElementById('pass-quest-title').value = '';
+            document.getElementById('pass-quest-goal').value = '';
+            document.getElementById('pass-quest-xp').value = '';
+            document.getElementById('pass-quest-form-heading').textContent = 'Добавить ивентовое задание пасса';
+            document.getElementById('btn-add-pass-quest').textContent = 'Добавить задание';
+            document.getElementById('btn-cancel-edit-pass-quest').style.display = 'none';
+        };
+        window.deletePassQuest = function(id) {
+            if (!confirm('Удалить задание?')) return;
+            remove(ref(db, 'seasonPass/' + season + '/weeklyQuests/' + id)).catch(err => alert('Ошибка: ' + err.message));
+        };
+        document.getElementById('btn-add-pass-quest').onclick = function() {
+            const title = document.getElementById('pass-quest-title').value.trim();
+            const goal = parseInt(document.getElementById('pass-quest-goal').value, 10);
+            const xp = parseInt(document.getElementById('pass-quest-xp').value, 10);
+            if (!title) return alert('Укажи название');
+            if (!goal || goal < 1) return alert('Укажи цель');
+            if (!xp || xp < 1) return alert('Укажи награду XP');
+            const data = { title, type: document.getElementById('pass-quest-type').value, goal, xp };
+            const p = editingQuestId
+                ? update(ref(db, 'seasonPass/' + season + '/weeklyQuests/' + editingQuestId), data)
+                : push(ref(db, 'seasonPass/' + season + '/weeklyQuests'), data);
+            p.then(() => document.getElementById('btn-cancel-edit-pass-quest').click()).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // --- Прогресс игроков ---
+        function listenAllUsersForAdmin() {
+            onValue(ref(db, 'users'), (snap) => {
+                const data = snap.val() || {};
+                allUsersForAdmin = Object.entries(data).map(([id, v]) => ({ id, ...v })).filter(u => u.pass && u.pass.season === season);
+                renderAdminUsersList();
+            });
+        }
+        function renderAdminUsersList() {
+            const el = document.getElementById('admin-pass-users-list');
+            if (!el) return;
+            const query = (document.getElementById('pass-user-search').value || '').trim().toLowerCase();
+            let list = allUsersForAdmin.slice();
+            if (query) list = list.filter(u => (u.name || '').toLowerCase().includes(query));
+            list.sort((a, b) => (b.pass.xp || 0) - (a.pass.xp || 0));
+            if (!list.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Пока никто не участвует в сезоне</div>'; return; }
+            el.innerHTML = list.slice(0, 60).map(u => `
+                <div class="admin-item">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(u.name || 'Читатель')}</div>
+                        <div class="admin-item-sub">Ур. ${u.pass.level || 0} · ${u.pass.xp || 0} XP ${u.pass.premium ? '· 💎 премиум' : ''}</div>
+                    </div>
+                    <div class="admin-item-actions" style="gap:4px;">
+                        <button class="icon-btn" title="Выдать XP" onclick="adminGiveXp('${u.id}')">➕XP</button>
+                        <button class="icon-btn" title="Переключить премиум" onclick="adminTogglePremium('${u.id}')">💎</button>
+                        <button class="icon-btn danger" title="Сбросить" onclick="adminResetUser('${u.id}')">🔄</button>
+                    </div>
+                </div>`).join('');
+        }
+        document.getElementById('pass-user-search').addEventListener('input', renderAdminUsersList);
+
+        window.adminGiveXp = function(uid) {
+            const amountStr = prompt('Сколько XP выдать? (отрицательное — забрать)');
+            const amount = parseInt(amountStr, 10);
+            if (!amountStr || isNaN(amount)) return;
+            const u = allUsersForAdmin.find(x => x.id === uid);
+            const newXp = Math.max(0, ((u && u.pass && u.pass.xp) || 0) + amount);
+            update(ref(db, 'users/' + uid), { 'pass/xp': newXp, 'pass/level': levelForXp(newXp) }).catch(err => alert('Ошибка: ' + err.message));
+        };
+        window.adminTogglePremium = function(uid) {
+            const u = allUsersForAdmin.find(x => x.id === uid);
+            update(ref(db, 'users/' + uid + '/pass'), { premium: !(u && u.pass && u.pass.premium) }).catch(err => alert('Ошибка: ' + err.message));
+        };
+        window.adminResetUser = function(uid) {
+            if (!confirm('Сбросить прогресс пасса этого игрока?')) return;
+            update(ref(db, 'users/' + uid), { pass: { season, xp: 0, level: 0, premium: false, claimed: {}, weeklyProgress: {}, weeklyClaimed: {} } }).catch(err => alert('Ошибка: ' + err.message));
         };
 
         setInterval(renderSeasonHeader, 60000);
