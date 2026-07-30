@@ -102,6 +102,7 @@
 
         <div class="card">
             <h3 style="margin-top:0;">Главы</h3>
+            <p style="font-size:12px;color:#95a5a6;margin:-6px 0 10px;">Форма ниже подстраивается под тип уже выбранной книги — переключатель типа выше это про новую книгу, которую ты ещё не создал.</p>
             <select id="chapter-book-select" class="input"></select>
             <div id="chapter-mode-badge" style="font-size:13px;font-weight:700;padding:8px 10px;border-radius:10px;margin-bottom:10px;"></div>
             <div id="chapters-list"></div>
@@ -201,6 +202,7 @@
         let booksData = [];
         let editingBookId = null;
         let selectedBookType = 'book';
+        let pendingSelectBookId = null; // после добавления книги сразу выбираем её в списке глав ниже
         let chapterPages = []; // страницы (URL картинок) для текущей главы манги/манхвы
 
         // Скрываем вкладки типов, недоступные этому автору, и выставляем первую доступную активной
@@ -209,7 +211,6 @@
             if (!allowedContentTypes.includes(tab.dataset.type)) tab.style.display = 'none';
         });
         const firstAllowedTab = typeTabs.find(t => allowedContentTypes.includes(t.dataset.type));
-        if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
 
         const TYPE_HINTS = {
             book: '📖 Обычная книга — главы состоят из текста.',
@@ -225,6 +226,11 @@
         typeTabs.forEach(tab => {
             tab.onclick = () => selectBookType(tab.dataset.type);
         });
+
+        // Только теперь, когда TYPE_HINTS и selectBookType уже объявлены, можно
+        // безопасно проставить начальный активный тип (иначе — ReferenceError и
+        // весь остальной код инициализации редактора просто не выполняется).
+        if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
 
         onValue(ref(db, 'books'), (snap) => {
             const data = snap.val();
@@ -328,9 +334,10 @@
                 update(ref(db, 'books/' + editingBookId), data).then(() => document.getElementById('btn-cancel-edit-book').click())
                     .catch(err => tg.showAlert('Ошибка: ' + err.message));
             } else {
-                push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then(() => {
+                push(ref(db, 'books'), { ...data, createdAt: Date.now() }).then((newRef) => {
+                    pendingSelectBookId = newRef.key;
                     document.getElementById('btn-cancel-edit-book').click();
-                    tg.showAlert('Книга добавлена! Теперь можно добавить главы ниже.');
+                    tg.showAlert('Книга добавлена! Ниже уже выбрана она — можно сразу добавить главу.');
                 }).catch(err => tg.showAlert('Ошибка: ' + err.message));
             }
         };
@@ -343,6 +350,10 @@
                 ? booksData.map(b => `<option value="${b.id}">${typeIcons[b.type] || '📖'} ${escapeHtml(b.title)}</option>`).join('')
                 : '<option value="">Сначала добавь книгу</option>';
             if (booksData.some(b => b.id === prev)) sel.value = prev;
+            if (pendingSelectBookId && booksData.some(b => b.id === pendingSelectBookId)) {
+                sel.value = pendingSelectBookId;
+                pendingSelectBookId = null;
+            }
             renderChaptersList();
             updateChapterFormMode();
         }
