@@ -743,6 +743,15 @@
         <div class="reader-content" id="events-body" style="padding:0;">
             <div id="events-timeline-wrap"></div>
         </div>
+        <div id="event-detail-card" class="event-detail-backdrop" onclick="if(event.target===this) closeEventDetail()">
+            <div class="event-detail-card">
+                <button class="event-detail-close" onclick="closeEventDetail()">✕</button>
+                <div id="event-detail-image"></div>
+                <div id="event-detail-title" class="event-detail-title"></div>
+                <div id="event-detail-dates" class="event-detail-dates"></div>
+                <div id="event-detail-status" class="event-detail-status"></div>
+            </div>
+        </div>
     </div>
 
     <!-- ЧИТАЛКА -->
