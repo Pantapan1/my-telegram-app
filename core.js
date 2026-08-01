@@ -8,7 +8,8 @@ import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBoss
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
 import { checkDailyCoinReward, renderOwnProfileHeader, renderProfileStats, renderQuestsList, renderUserProfileOverlay } from './profile.js';
 import { populateStickerPackSelect, renderChatOverlay, renderChatsList, renderStickerPicker, renderUserPickList } from './chats.js';
-import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { renderEventsCalendar } from './events.js';
 
 // Firebase Storage больше не используется — фото грузятся на ImgBB (см. ниже), чтобы не требовать план Blaze.
 
@@ -318,6 +319,13 @@ import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBanners
                 state.questsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
                 renderQuestsList();
                 if (state.isAdmin) renderAdminQuestsList();
+            });
+
+            onValue(ref(state.db, 'events'), (snapshot) => {
+                const data = snapshot.val();
+                state.eventsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.isAdmin) renderAdminEventsList();
+                if (state.activeOverlay === 'events') renderEventsCalendar();
             });
 
             setInterval(renderEventMultiplierBanner, 30000);
