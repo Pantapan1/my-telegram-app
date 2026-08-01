@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Заявка на публикацию</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    .card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    .input {
+        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
+        font-size: 14px; background: #f4f6f7; font-family: inherit;
+    }
+    textarea.input { min-height: 120px; resize: vertical; }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; font-weight: 700; cursor: pointer; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+    .status-pending { background: #fff4e0; color: #ed8f03; }
+    .status-approved { background: #eafaf1; color: #27ae60; }
+    .status-rejected { background: #fdecea; color: #e74c3c; }
+    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #b0b0b0; cursor: pointer; transition: color .2s ease, transform .2s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 10px; }
+    .admin-toggle:hover { color: #ed8f03; }
+    .admin-toggle:active { transform: scale(0.95); }
+    .app-item { background: #f8f9fa; border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+    .app-item .name { font-weight: 700; margin-bottom: 4px; }
+    .app-item .msg { font-size: 13px; color: #555; margin-bottom: 10px; white-space: pre-wrap; }
+    .app-actions { display: flex; gap: 8px; }
+    .app-actions button { flex: 1; border: none; border-radius: 10px; padding: 8px 0; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .btn-approve { background: #eafaf1; color: #27ae60; }
+    .btn-reject { background: #fdecea; color: #e74c3c; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 20px 0; font-size: 14px; }
+
+    /* === Правила публикации + согласие === */
+    .rules-box {
+        background: #f8f9fa; border-radius: 14px; padding: 14px; margin-bottom: 14px;
+        font-size: 13px; line-height: 1.55; color: #444; white-space: pre-wrap;
+        max-height: 220px; overflow-y: auto; border: 1px solid #eee;
+    }
+    .rules-box.empty { color: #95a5a6; text-align: center; }
+    .agree-row {
+        display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px;
+        background: #fff4e0; border-radius: 12px; padding: 12px; cursor: pointer;
+        user-select: none;
+    }
+    .agree-row input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; accent-color: #ed8f03; }
+    .agree-row span { font-size: 13px; color: #7a5a1a; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .content-types { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .content-type-chip {
+        display: flex; align-items: center; gap: 6px; background: #f4f6f7; border-radius: 12px;
+        padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; user-select: none;
+        border: 2px solid transparent;
+    }
+    .content-type-chip input { accent-color: #ed8f03; }
+    .content-type-chip.checked { background: #fff4e0; border-color: #ffb75e; color: #ed8f03; }
+    .field-label { font-size: 13px; font-weight: 700; color: #7f8c8d; margin: 4px 0 8px; }
+    .type-badge {
+        display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px;
+        background: #eef2f7; color: #5c6b7a; margin-right: 6px; margin-top: 4px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+        <a href="app.html" class="back-link">←</a>
+        <h1>📝 Публикация книг</h1>
+    </div>
+
+    <div id="no-session" class="card" style="display:none;">
+        Не удалось определить пользователя. Открой эту страницу из профиля в приложении.
+        <a href="app.html" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">← Вернуться в приложение</a>
+    </div>
+
+    <div id="app-root" style="display:none;">
+        <div class="card" id="status-card" style="display:none;"></div>
+
+        <div class="card" id="form-card">
+            <p style="margin-top:0;color:#7f8c8d;font-size:14px;">
+                Хочешь публиковать свои книги в приложении? Расскажи немного о себе и о том, что планируешь писать —
+                администратор рассмотрит заявку.
+            </p>
+
+            <div class="field-label">📜 Правила подачи и публикации контента</div>
+            <div class="rules-box" id="rules-box">Правила пока не заполнены администратором.</div>
+
+            <div class="field-label">Что планируешь публиковать?</div>
+            <div class="content-types" id="content-types">
+                <label class="content-type-chip" data-type="book"><input type="checkbox" value="book" checked> 📖 Книги</label>
+                <label class="content-type-chip" data-type="manga"><input type="checkbox" value="manga"> 🇯🇵 Манга</label>
+                <label class="content-type-chip" data-type="manhwa"><input type="checkbox" value="manhwa"> 🇰🇷 Манхва</label>
+            </div>
+
+            <textarea id="app-message" class="input" placeholder="Расскажи о себе и своих книгах..."></textarea>
+
+            <label class="agree-row" id="agree-row">
+                <input type="checkbox" id="agree-checkbox">
+                <span>Я прочитал(а) и согласен(на) с правилами подачи и публикации контента</span>
+            </label>
+
+            <button class="btn" id="btn-submit-application" disabled>Отправить заявку</button>
+        </div>
+
+        <div class="admin-toggle" id="admin-toggle">⚙ рассмотрение заявок</div>
+        <div id="admin-panel" style="display:none;">
+            <div class="card">
+                <h3 style="margin-top:0;">Заявки на рассмотрении</h3>
+                <div id="admin-apps-list"></div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">📜 Правила подачи и публикации контента</h3>
+                <p style="margin-top:0;color:#7f8c8d;font-size:13px;">Этот текст увидит каждый пользователь перед подачей заявки. Он должен будет согласиться с ним.</p>
+                <textarea id="rules-editor" class="input" placeholder="Например: 1. Запрещён плагиат чужих произведений...&#10;2. Контент 18+ публикуется с пометкой...&#10;3. Администрация вправе отклонить заявку без объяснения причин..."></textarea>
+                <button class="btn" id="btn-save-rules" style="margin:0;">Сохранить правила</button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Цвет галочки издателя</h3>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="color" id="badge-color-input" value="#1da1f2" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;">
+                    <button class="btn" id="btn-save-badge-color" style="margin:0;">Сохранить цвет</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Действующие издатели</h3>
+                <div id="admin-publishers-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null, myName = null;
+    if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
+    else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
+    else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+    }
+
+    if (!myId) {
+        document.getElementById('no-session').style.display = 'block';
+    } else {
+        document.getElementById('app-root').style.display = 'block';
+        startPage();
+    }
+
+    function startPage() {
+        let isAdmin = false;
+
+        // Правила подачи и публикации — показываем всем перед формой
+        onValue(ref(db, 'settings/publicationRules'), (snap) => {
+            const rules = snap.val();
+            const box = document.getElementById('rules-box');
+            if (rules && rules.trim()) {
+                box.textContent = rules;
+                box.classList.remove('empty');
+            } else {
+                box.textContent = 'Правила пока не заполнены администратором.';
+                box.classList.add('empty');
+            }
+        });
+
+        // Чипы выбора типа публикуемого контента (книги / манга / манхва)
+        const typeChips = Array.from(document.querySelectorAll('#content-types .content-type-chip'));
+        function refreshChipStyles() {
+            typeChips.forEach(chip => {
+                const checked = chip.querySelector('input').checked;
+                chip.classList.toggle('checked', checked);
+            });
+        }
+        typeChips.forEach(chip => {
+            const input = chip.querySelector('input');
+            input.addEventListener('change', refreshChipStyles);
+        });
+        refreshChipStyles();
+
+        // Чекбокс согласия с правилами — блокирует кнопку отправки, пока не отмечен
+        const agreeCheckbox = document.getElementById('agree-checkbox');
+        const submitBtn = document.getElementById('btn-submit-application');
+        agreeCheckbox.addEventListener('change', () => {
+            submitBtn.disabled = !agreeCheckbox.checked;
+        });
+
+        // Моя собственная заявка
+        onValue(ref(db, 'publisherApplications/' + myId), (snap) => {
+            const my = snap.val();
+            const statusCard = document.getElementById('status-card');
+            const formCard = document.getElementById('form-card');
+
+            if (!my || my.status === 'rejected') {
+                statusCard.style.display = my ? 'block' : 'none';
+                if (my && my.status === 'rejected') {
+                    statusCard.innerHTML = `<span class="status-badge status-rejected">❌ Заявка отклонена</span><div style="font-size:13px;color:#7f8c8d;">Можешь отправить новую заявку ниже.</div>`;
+                }
+                formCard.style.display = 'block';
+            } else if (my.status === 'pending') {
+                statusCard.style.display = 'block';
+                statusCard.innerHTML = `<span class="status-badge status-pending">⏳ На рассмотрении</span><div style="font-size:13px;color:#7f8c8d;">Мы сообщим, как только администратор примет решение.</div>`;
+                formCard.style.display = 'none';
+            } else if (my.status === 'approved') {
+                statusCard.style.display = 'block';
+                statusCard.innerHTML = `<span class="status-badge status-approved">✅ Заявка одобрена!</span><div style="font-size:13px;color:#7f8c8d;">Теперь тебе доступен редактор книг.</div><a href="book-editor.html?uid=${encodeURIComponent(myId)}&name=${encodeURIComponent(myName)}" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">📚 Открыть редактор книг →</a>`;
+                formCard.style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-submit-application').onclick = function() {
+            const message = document.getElementById('app-message').value.trim();
+            if (!message) { alert('Расскажи немного о себе перед отправкой'); return; }
+            if (!agreeCheckbox.checked) { alert('Нужно согласиться с правилами подачи и публикации контента'); return; }
+
+            const contentTypes = typeChips
+                .filter(chip => chip.querySelector('input').checked)
+                .map(chip => chip.dataset.type);
+            if (!contentTypes.length) { alert('Выбери хотя бы один тип контента, который планируешь публиковать'); return; }
+
+            set(ref(db, 'publisherApplications/' + myId), {
+                userName: myName,
+                message,
+                contentTypes,
+                agreedToRules: true,
+                agreedAt: Date.now(),
+                status: 'pending',
+                createdAt: Date.now()
+            }).then(() => {
+                document.getElementById('app-message').value = '';
+                agreeCheckbox.checked = false;
+                submitBtn.disabled = true;
+                tg.showPopup ? tg.showPopup({ title: 'Отправлено!', message: 'Заявка на рассмотрении у администратора', buttons: [{ type: 'ok' }] }) : alert('Заявка отправлена');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        // === Админ: рассмотрение заявок ===
+        document.getElementById('admin-toggle').onclick = function() {
+            if (isAdmin) {
+                const p = document.getElementById('admin-panel');
+                p.style.display = p.style.display === 'none' ? 'block' : 'none';
+                return;
+            }
+            const pwd = prompt('Пароль:');
+            if (pwd === 'admin123') {
+                isAdmin = true;
+                document.getElementById('admin-panel').style.display = 'block';
+                listenAllApplications();
+                listenPublishers();
+                listenBadgeColor();
+                listenRulesEditor();
+            } else if (pwd) {
+                alert('Неверный пароль');
+            }
+        };
+
+        function listenRulesEditor() {
+            onValue(ref(db, 'settings/publicationRules'), (snap) => {
+                const rules = snap.val();
+                const editor = document.getElementById('rules-editor');
+                // не перетираем то, что админ уже печатает, если поле в фокусе
+                if (document.activeElement !== editor) editor.value = rules || '';
+            });
+        }
+
+        document.getElementById('btn-save-rules').onclick = function() {
+            const text = document.getElementById('rules-editor').value.trim();
+            set(ref(db, 'settings/publicationRules'), text).then(() => {
+                alert('Правила обновлены. Их увидит каждый пользователь перед подачей заявки.');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        function listenBadgeColor() {
+            onValue(ref(db, 'settings/badgeColor'), (snap) => {
+                const color = snap.val();
+                if (color) document.getElementById('badge-color-input').value = color;
+            });
+        }
+
+        document.getElementById('btn-save-badge-color').onclick = function() {
+            const color = document.getElementById('badge-color-input').value;
+            set(ref(db, 'settings/badgeColor'), color).then(() => {
+                alert('Цвет галочки обновлён у всех');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        function listenPublishers() {
+            onValue(ref(db, 'users'), (snap) => {
+                const data = snap.val();
+                const users = data ? Object.entries(data).map(([uid, v]) => ({ uid, ...v })) : [];
+                const publishers = users.filter(u => u.isPublisher);
+                const el = document.getElementById('admin-publishers-list');
+
+                if (!publishers.length) { el.innerHTML = '<div class="empty-state">Пока нет ни одного одобренного издателя</div>'; return; }
+
+                el.innerHTML = publishers.map(u => `
+                    <div class="app-item">
+                        <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <input type="color" class="publisher-color-input" data-uid="${u.uid}" value="${u.badgeColor || '#1da1f2'}" style="width:44px;height:36px;border:none;border-radius:10px;padding:0;background:none;flex-shrink:0;">
+                            <span style="font-size:12px;color:#95a5a6;flex:1;">${u.badgeColor ? 'Свой цвет галочки' : 'Используется общий цвет по умолчанию'}</span>
+                            <button class="publisher-color-save" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;background:#eafaf1;color:#27ae60;cursor:pointer;">Сохранить</button>
+                            ${u.badgeColor ? `<button class="publisher-color-reset" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;background:#f1f2f6;color:#7f8c8d;cursor:pointer;">Сбросить</button>` : ''}
+                        </div>
+                        <div class="app-actions">
+                            <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                el.querySelectorAll('.publisher-color-save').forEach(btn => {
+                    btn.onclick = () => {
+                        const uid = btn.dataset.uid;
+                        const input = el.querySelector(`.publisher-color-input[data-uid="${uid}"]`);
+                        update(ref(db, 'users/' + uid), { badgeColor: input.value }).then(() => {
+                            alert('Индивидуальный цвет галочки сохранён для этого издателя');
+                        }).catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('.publisher-color-reset').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!confirm('Убрать индивидуальный цвет? Будет использоваться общий цвет по умолчанию.')) return;
+                        update(ref(db, 'users/' + btn.dataset.uid), { badgeColor: null })
+                            .catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('button[data-uid]:not(.publisher-color-save):not(.publisher-color-reset)').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!confirm('Забрать статус издателя у этого пользователя?')) return;
+                        update(ref(db, 'users/' + btn.dataset.uid), { isPublisher: false });
+                        update(ref(db, 'publisherApplications/' + btn.dataset.uid), { status: 'rejected' });
+                    };
+                });
+            });
+        }
+
+        function listenAllApplications() {
+            onValue(ref(db, 'publisherApplications'), (snap) => {
+                const data = snap.val();
+                const apps = data ? Object.entries(data).map(([uid, v]) => ({ uid, ...v })) : [];
+                const pending = apps.filter(a => a.status === 'pending');
+                const el = document.getElementById('admin-apps-list');
+
+                if (!pending.length) { el.innerHTML = '<div class="empty-state">Нет заявок на рассмотрении</div>'; return; }
+
+                el.innerHTML = pending.map(a => {
+                    const typeLabels = { book: '📖 Книги', manga: '🇯🇵 Манга', manhwa: '🇰🇷 Манхва' };
+                    const types = (a.contentTypes || []).map(t => `<span class="type-badge">${typeLabels[t] || t}</span>`).join('');
+                    return `
+                    <div class="app-item">
+                        <div class="name">${escapeHtml(a.userName)}</div>
+                        <div style="margin-bottom:6px;">${types || '<span class="type-badge">📖 Книги</span>'}</div>
+                        <div class="msg">${escapeHtml(a.message)}</div>
+                        <div class="app-actions">
+                            <button class="btn-approve" data-uid="${a.uid}" data-action="approve">✅ Одобрить</button>
+                            <button class="btn-reject" data-uid="${a.uid}" data-action="reject">❌ Отклонить</button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+
+                el.querySelectorAll('button[data-uid]').forEach(btn => {
+                    btn.onclick = () => {
+                        const uid = btn.dataset.uid;
+                        const approve = btn.dataset.action === 'approve';
+                        const app = pending.find(a => a.uid === uid);
+                        update(ref(db, 'publisherApplications/' + uid), { status: approve ? 'approved' : 'rejected', reviewedAt: Date.now() });
+                        if (approve) update(ref(db, 'users/' + uid), { isPublisher: true, publisherContentTypes: (app && app.contentTypes) || ['book'] });
+                    };
+                });
+            });
+        }
+    }
+</script>
+</body>
+</html>
