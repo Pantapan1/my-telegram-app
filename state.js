@@ -53,6 +53,8 @@ export const state = {
   terrariaData: {},  // доп. фичи темы Terraria (день/ночь, boss hp, пиксель-иконки и т.д.)
   economyData: { dailyEnabled: true, dailyAmount: 10, chapterEnabled: false, chapterAmount: 0, bookEnabled: false, bookAmount: 0, streakEnabled: false, streakAmount: 0, streakEvery: 1, streakMax: 0, eventMultiplier: 1, eventMultiplierUntil: null },
   questsData: [],
+  eventsData: [],
+  editingEventId: null,
   streakRewardStore: JSON.parse(localStorage.getItem('sr_streak_reward') || '{}'),
   terrariaDayNightTimer: null,
   renderedChatState: { chatId: null, signature: null },
