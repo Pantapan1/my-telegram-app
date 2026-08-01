@@ -143,6 +143,32 @@
         body.theme-terraria .input:focus { border-color: #ffb238; box-shadow: 0 0 0 3px rgba(255,178,56,.35); }
         body.theme-terraria :focus-visible { outline-color: #ffb238; }
 
+        body.theme-terraria .msg-row:not(.mine) .msg-bubble {
+            background: #6b4726;
+            color: #ffe9b3;
+            border: 1px solid #2c1c0d;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        }
+        body.theme-terraria .msg-row.mine .msg-bubble { border: 1px solid #2c1c0d; }
+        body.theme-terraria .msg-reply-quote { border-left-color: rgba(255,233,179,.45); background: rgba(0,0,0,.28); color: #ffe9b3; }
+        body.theme-terraria .msg-row.mine .msg-reply-quote { border-left-color: rgba(255,255,255,.7); background: rgba(255,255,255,.15); }
+        body.theme-terraria .msg-time { color: #ffe9b3; opacity: 0.85; }
+        body.theme-terraria .msg-avatar-fallback { border: 1px solid #2c1c0d; }
+        body.theme-terraria .chat-messages-list { background: transparent; }
+        body.theme-terraria #chat-body { background: var(--overlay-bg) !important; }
+        body.theme-terraria #chat-sticker-picker { background: var(--card-bg) !important; border-top-color: #2c1c0d !important; }
+        body.theme-terraria #chat-typing-indicator { background: var(--overlay-bg) !important; color: var(--text-secondary) !important; }
+        body.theme-terraria #chat-reply-bar { background: #4a3319 !important; border-top-color: #2c1c0d !important; }
+        body.theme-terraria #chat-reply-bar > div { color: #ffd873 !important; }
+        body.theme-terraria #btn-cancel-reply { color: #ffd873 !important; }
+        body.theme-terraria #chat-edit-bar { background: #2e4a3a !important; border-top-color: #2c1c0d !important; }
+        body.theme-terraria #chat-edit-bar > div { color: #a3e8c4 !important; }
+        body.theme-terraria #btn-cancel-edit-msg { color: #a3e8c4 !important; }
+        body.theme-terraria .chat-list-item {
+            background: #6b4726; border-color: #2c1c0d; box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        }
+        body.theme-terraria .chat-input-row { background: var(--overlay-bg); border-top-color: #2c1c0d; }
+        body.theme-terraria .user-pick-item { background: #6b4726; border-color: #2c1c0d; }
         body.theme-terraria .icon-btn-refresh {
             background: #6b4726; border-color: #2c1c0d; color: #ffe9b3;
         }
