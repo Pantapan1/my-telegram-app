@@ -64,15 +64,22 @@
             content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
             background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,178,56,0.20), transparent 60%);
             animation: terraria-glow 4s ease-in-out infinite;
+            will-change: opacity; transform: translateZ(0);
         }
         @keyframes terraria-glow {
             0%, 100% { opacity: .5; }
             50% { opacity: 1; }
         }
 
-        /* парящие искры/светлячки, поднимающиеся снизу вверх */
-        body.theme-terraria::after {
-            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        /* парящие искры/светлячки, поднимающиеся снизу вверх.
+           Раньше это был ::after с анимацией background-position — она заставляет
+           браузер перерисовывать весь экран на каждый кадр и сильно лагает на слабых
+           телефонах. Теперь это отдельный элемент вдвое выше экрана, который просто
+           сдвигается через transform (GPU-композитинг, дёшево). */
+        #terraria-embers { display: none; }
+        body.theme-terraria #terraria-embers {
+            display: block; position: fixed; left: 0; top: 0; width: 100%; height: 200%;
+            pointer-events: none; z-index: 0;
             background-image:
                 radial-gradient(2px 2px at 8% 30%, rgba(255,178,56,.95), transparent 60%),
                 radial-gradient(1.5px 1.5px at 22% 70%, rgba(255,210,110,.85), transparent 60%),
@@ -81,13 +88,14 @@
                 radial-gradient(2px 2px at 68% 85%, rgba(255,178,56,.9), transparent 60%),
                 radial-gradient(1.5px 1.5px at 82% 25%, rgba(255,210,110,.85), transparent 60%),
                 radial-gradient(2px 2px at 94% 65%, rgba(255,160,50,.9), transparent 60%);
-            background-size: 100% 200%;
+            background-size: 100% 50%;
             background-repeat: repeat-y;
-            animation: terraria-embers 9s linear infinite;
+            animation: terraria-embers-float 9s linear infinite;
+            will-change: transform;
         }
-        @keyframes terraria-embers {
-            from { background-position: 0 0; }
-            to { background-position: 0 -200%; }
+        @keyframes terraria-embers-float {
+            from { transform: translate3d(0, 0, 0); }
+            to { transform: translate3d(0, -50%, 0); }
         }
 
         body.theme-terraria .header h1 {
@@ -155,7 +163,7 @@
         body.theme-terraria .msg-time { color: #ffe9b3; opacity: 0.85; }
         body.theme-terraria .msg-avatar-fallback { border: 1px solid #2c1c0d; }
         body.theme-terraria .chat-messages-list { background: transparent; }
-        body.theme-terraria #chat-body { background: var(--overlay-bg) !important; }
+        body.theme-terraria #chat-body { background-color: var(--overlay-bg) !important; }
         body.theme-terraria #chat-sticker-picker { background: var(--card-bg) !important; border-top-color: #2c1c0d !important; }
         body.theme-terraria #chat-typing-indicator { background: var(--overlay-bg) !important; color: var(--text-secondary) !important; }
         body.theme-terraria #chat-reply-bar { background: #4a3319 !important; border-top-color: #2c1c0d !important; }
@@ -257,13 +265,17 @@
             }
         }
 
-        /* --- 7. Свечение галочки издателя как руда --- */
+        /* --- 7. Свечение галочки издателя как руда ---
+           Раньше анимировались box-shadow + filter — оба дорогие, а в чате такой
+           значок может быть у каждого сообщения одновременно, отсюда лаги. */
         body.theme-terraria.terraria-oreglow-on .verified-badge {
+            box-shadow: 0 0 8px 2px rgba(255,178,56,.7);
             animation: terraria-ore-glow 1.8s ease-in-out infinite;
+            will-change: opacity;
         }
         @keyframes terraria-ore-glow {
-            0%, 100% { box-shadow: 0 0 4px 1px rgba(255,178,56,.5); filter: brightness(1); }
-            50% { box-shadow: 0 0 10px 4px rgba(255,210,110,.9); filter: brightness(1.35); }
+            0%, 100% { opacity: .8; }
+            50% { opacity: 1; }
         }
 
         body {
