@@ -88,11 +88,16 @@ export function otherParticipant(chat) {
             const chatBodyEl = document.getElementById('chat-body');
             if (chatBodyEl) {
                 if (chatBg) {
-                    chatBodyEl.style.backgroundImage = `url('${chatBg}')`;
-                    chatBodyEl.style.backgroundSize = 'cover';
-                    chatBodyEl.style.backgroundPosition = 'center';
+                    // !important здесь специально: обои — платная награда пасса, они должны
+                    // быть видны при любом оформлении сайта (Terraria, Roblox и т.д.),
+                    // даже если у темы есть свой фон для #chat-body.
+                    chatBodyEl.style.setProperty('background-image', `url('${chatBg}')`, 'important');
+                    chatBodyEl.style.setProperty('background-size', 'cover', 'important');
+                    chatBodyEl.style.setProperty('background-position', 'center', 'important');
                 } else {
-                    chatBodyEl.style.backgroundImage = '';
+                    chatBodyEl.style.removeProperty('background-image');
+                    chatBodyEl.style.removeProperty('background-size');
+                    chatBodyEl.style.removeProperty('background-position');
                 }
             }
 
