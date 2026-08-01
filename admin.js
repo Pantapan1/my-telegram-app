@@ -5,7 +5,7 @@ import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
 window.switchAdminTab = function(tab) {
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'pass'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'pass', 'events'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });
@@ -720,4 +720,92 @@ window.switchAdminTab = function(tab) {
                 document.getElementById('chapter-text').value = ''; 
                 tg.showPopup({ title: 'Глава добавлена!', message: 'Она появится в книге', buttons: [{ type: 'ok' }] }); 
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        // АДМИН - СОБЫТИЯ (календарь)
+
+        export function renderAdminEventsList() {
+            const el = document.getElementById('admin-events-list');
+            if (!el) return;
+
+            if (!state.eventsData.length) {
+                el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Событий пока нет</div>';
+                return;
+            }
+
+            const sorted = state.eventsData.slice().sort((a, b) => (a.startDate || 0) - (b.startDate || 0));
+            el.innerHTML = sorted.map(e => {
+                const ended = e.endDate && e.endDate < Date.now();
+                return `
+                <div class="admin-item">
+                    ${e.image ? `<img src="${e.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(e.title || '')}">${initialOf(e.title)}</div>`}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(e.title || '(без названия)')}</div>
+                        <div class="admin-item-sub">${formatDate(e.startDate)} — ${formatDate(e.endDate)}${ended ? ' · Завершено' : ''}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn" onclick="editEvent('${e.id}')">✏️</button>
+                        <button class="icon-btn danger" onclick="deleteEvent('${e.id}')">🗑</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.editEvent = function(id) {
+            const e = state.eventsData.find(x => x.id === id);
+            if (!e) return;
+
+            state.editingEventId = id;
+            document.getElementById('event-title').value = e.title || '';
+            document.getElementById('event-image').value = e.image || '';
+            document.getElementById('event-start').value = e.startDate ? new Date(e.startDate).toISOString().slice(0, 10) : '';
+            document.getElementById('event-end').value = e.endDate ? new Date(e.endDate).toISOString().slice(0, 10) : '';
+            document.getElementById('event-form-heading').textContent = 'Редактировать событие';
+            document.getElementById('btn-add-event').textContent = 'Сохранить изменения';
+            document.getElementById('btn-cancel-edit-event').classList.remove('hidden');
+            document.getElementById('event-title').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        document.getElementById('btn-cancel-edit-event').onclick = function() {
+            state.editingEventId = null;
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-image').value = '';
+            document.getElementById('event-start').value = '';
+            document.getElementById('event-end').value = '';
+            document.getElementById('event-form-heading').textContent = 'Добавить событие';
+            document.getElementById('btn-add-event').textContent = 'Добавить событие';
+            document.getElementById('btn-cancel-edit-event').classList.add('hidden');
+        };
+
+        document.getElementById('btn-add-event').onclick = function() {
+            const title = document.getElementById('event-title').value.trim();
+            const image = document.getElementById('event-image').value.trim();
+            const startRaw = document.getElementById('event-start').value;
+            const endRaw = document.getElementById('event-end').value;
+
+            if (!title) return tg.showAlert('Укажи название события');
+            if (!startRaw || !endRaw) return tg.showAlert('Укажи дату начала и окончания');
+
+            const startDate = new Date(startRaw + 'T00:00:00').getTime();
+            const endDate = new Date(endRaw + 'T23:59:59').getTime();
+            if (endDate < startDate) return tg.showAlert('Дата окончания раньше даты начала');
+
+            const data = { title, image, startDate, endDate };
+
+            if (state.editingEventId) {
+                update(ref(state.db, 'events/' + state.editingEventId), data).then(() => {
+                    document.getElementById('btn-cancel-edit-event').click();
+                    tg.showPopup({ title: 'Сохранено', message: 'Событие обновлено', buttons: [{ type: 'ok' }] });
+                }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err)));
+            } else {
+                push(ref(state.db, 'events'), { ...data, createdAt: Date.now() }).then(() => {
+                    document.getElementById('btn-cancel-edit-event').click();
+                    tg.showPopup({ title: 'Добавлено!', message: 'Событие появится в календаре', buttons: [{ type: 'ok' }] });
+                }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err)));
+            }
+        };
+
+        window.deleteEvent = function(id) {
+            if (!confirm('Удалить событие?')) return;
+            remove(ref(state.db, 'events/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
