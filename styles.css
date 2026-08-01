@@ -981,3 +981,56 @@
         .pass-level-num { font-weight: 800; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
         .pass-claim-btn { margin-top: 6px; width: 100%; border: none; border-radius: 10px; padding: 6px 0; font-weight: 800; font-size: 11px; cursor: pointer; }
         .pass-track-row { display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px 14px; }
+
+        /* ============================================================
+           КАЛЕНДАРЬ СОБЫТИЙ (горизонтальный таймлайн)
+           ============================================================ */
+        .events-scroll { overflow-x: auto; overflow-y: hidden; height: 100%; -webkit-overflow-scrolling: touch; }
+        .events-inner { position: relative; min-height: 100%; padding: 44px 20px 20px; box-sizing: border-box; }
+        .events-date-scale {
+            position: absolute; top: 0; left: 20px; right: 20px; height: 34px;
+            border-bottom: 2px solid var(--border-soft);
+        }
+        .events-date-mark {
+            position: absolute; top: 0; transform: translateX(-50%);
+            font-size: 12px; font-weight: 700; color: var(--text-secondary); white-space: nowrap;
+        }
+        .events-date-mark::after {
+            content: ''; position: absolute; left: 50%; top: 20px; width: 1px; height: 2000px;
+            background: var(--border-soft); opacity: .5; pointer-events: none;
+        }
+        .events-rows-wrap { position: relative; padding-top: 10px; }
+        .events-row { position: relative; height: 60px; }
+        .events-today-line {
+            position: absolute; top: -34px; bottom: 0; width: 2px; background: #ff453a; z-index: 2;
+        }
+        .events-today-line::before {
+            content: 'Сегодня'; position: absolute; top: -20px; left: 6px; font-size: 10px; font-weight: 800;
+            color: #ff453a; white-space: nowrap;
+        }
+        .event-bar {
+            position: absolute; top: 4px; height: 52px; border-radius: 14px; overflow: hidden;
+            display: flex; align-items: center; gap: 8px; padding: 0 12px;
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
+            box-shadow: 0 4px 12px rgba(237,143,3,0.3);
+            min-width: 60px;
+        }
+        .event-bar.upcoming { background: linear-gradient(135deg, #64d2ff 0%, #0a84ff 100%); box-shadow: 0 4px 12px rgba(10,132,255,0.3); }
+        .event-bar.ended { background: linear-gradient(135deg, #8a8f98 0%, #5a5f68 100%); box-shadow: none; opacity: .75; }
+        .event-bar-thumb {
+            width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,.6); display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 800; font-size: 13px;
+        }
+        .event-bar-title {
+            color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.25);
+        }
+        .event-bar-stamp {
+            position: absolute; top: 8px; right: -26px; width: 100px; text-align: center;
+            background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 800;
+            transform: rotate(35deg); padding: 2px 0; letter-spacing: .5px; text-transform: uppercase;
+        }
+        body.theme-terraria .events-date-mark { color: var(--text-secondary); }
+        body.theme-terraria .event-bar { border: 1px solid #2c1c0d; }
+
