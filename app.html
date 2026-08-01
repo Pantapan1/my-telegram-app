@@ -142,6 +142,7 @@
             <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления: ...</button>
             <button class="btn btn-secondary" id="btn-toggle-sound">🔊 Звук: вкл</button>
             <button class="btn btn-secondary" id="btn-open-shop">🛍 Магазин</button>
+            <button class="btn btn-secondary" id="btn-open-events" onclick="openEventsCalendar()">📅 Календарь событий</button>
             <button class="btn btn-secondary" id="btn-open-publisher-app">📝 Подать заявку на публикацию</button>
             <button class="btn btn-secondary hidden" id="btn-open-book-editor">📚 Редактор моих книг</button>
             <div id="profile-edit-panel" class="hidden">
@@ -231,6 +232,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-boss" onclick="switchAdminTab('boss')">🐲 Босс</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-economy" onclick="switchAdminTab('economy')">💰 Экономика</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-quests" onclick="switchAdminTab('quests')">🎯 Задания</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-events" onclick="switchAdminTab('events')">📅 События</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
@@ -557,6 +559,24 @@
                     <div id="admin-quests-list"></div>
                 </div>
 
+                <!-- ВКЛАДКА: СОБЫТИЯ (календарь) -->
+                <div id="admin-tab-events" class="hidden">
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);" id="event-form-heading">Добавить событие</h3>
+                    <input type="text" id="event-title" class="input" placeholder="Название события">
+                    <div class="image-field-row">
+                        <input type="text" id="event-image" class="input" placeholder="Картинка события (URL)">
+                        <label class="upload-btn" for="event-image-file" id="event-image-upload-btn">📁</label>
+                        <input type="file" id="event-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <input type="date" id="event-start" class="input" placeholder="Дата начала">
+                    <input type="date" id="event-end" class="input" placeholder="Дата окончания">
+                    <button class="btn" id="btn-add-event">Добавить событие</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-event">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Управление событиями</h3>
+                    <div id="admin-events-list"></div>
+                </div>
 
             </div>
         </div>
@@ -708,6 +728,19 @@
             <input type="file" id="chat-attach-file" accept="image/*,video/*,audio/*" class="hidden">
             <textarea id="chat-message-input" class="input" placeholder="Сообщение..." rows="1" style="resize:none; max-height:120px; overflow-y:auto; line-height:1.3;"></textarea>
             <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
+        </div>
+    </div>
+
+    <!-- КАЛЕНДАРЬ СОБЫТИЙ -->
+    <div id="events-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="close-events-btn" onclick="closeEventsCalendar()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Календарь событий</div>
+            </div>
+        </div>
+        <div class="reader-content" id="events-body" style="padding:0;">
+            <div id="events-timeline-wrap"></div>
         </div>
     </div>
 
