@@ -19,6 +19,7 @@ export const PASS_REWARD_TYPES = [
             { id: 'sound',      label: '🔊 Звуковой стикер — value: URL аудио' },
             { id: 'chest',      label: '🎁 Сундук — value: варианты монет через запятую, напр. 50,100,200' },
             { id: 'exclusive',  label: '🔒 Эксклюзивный контент — value: текст/описание' },
+            { id: 'cardpack',   label: '🃏 Набор карточек (карточная игра) — value: ID набора из админки «Карточки»' },
         ];
 
 export const PASS_REASON_TO_QUEST_TYPE = { chapter: 'chapters', book: 'books', comment: 'comments', message: 'messages', reaction: 'reactions', boss: 'boss' };

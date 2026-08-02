@@ -346,6 +346,7 @@
         { id: 'sound',      label: '🔊 Звуковой стикер — value: URL аудио' },
         { id: 'chest',      label: '🎁 Сундук — варианты через запятую, напр. 50,100' },
         { id: 'exclusive',  label: '🔒 Эксклюзивный контент — описание' },
+        { id: 'cardpack',   label: '🃏 Набор карточек — value: ID набора из админки «Карточки»' },
     ];
     
     const PASS_SHOP_LINKED_TYPES = ['frame', 'decoration', 'badge', 'nickcolor'];
@@ -443,6 +444,39 @@
             seasonPassData = snap.val() || { name: 'Сезонный пасс', endsAt: null, premiumPrice: 300, levels: {}, weeklyQuests: {} };
             renderAll();
         });
+
+        // === для награды типа "Набор карточек" ===
+        let cardsData = [];
+        let cardPacksData = [];
+        onValue(ref(db, 'cards'), (snap) => { const d = snap.val(); cardsData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; });
+        onValue(ref(db, 'cardPacks'), (snap) => { const d = snap.val(); cardPacksData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; });
+
+        const RARITY_WEIGHTS_PASS = { common: 60, rare: 25, epic: 12, legendary: 3 };
+        const RARITY_ORDER_PASS = ['common', 'rare', 'epic', 'legendary'];
+
+        function weightedRandomCardPass(pool) {
+            const total = pool.reduce((s, c) => s + (RARITY_WEIGHTS_PASS[c.rarity] || RARITY_WEIGHTS_PASS.common), 0);
+            let r = Math.random() * total;
+            for (const c of pool) {
+                r -= (RARITY_WEIGHTS_PASS[c.rarity] || RARITY_WEIGHTS_PASS.common);
+                if (r <= 0) return c;
+            }
+            return pool[pool.length - 1];
+        }
+
+        function openPackCardsPass(pack, pool) {
+            const results = [];
+            for (let i = 0; i < (pack.count || 1); i++) results.push(weightedRandomCardPass(pool));
+            if (pack.minRarity) {
+                const minIdx = RARITY_ORDER_PASS.indexOf(pack.minRarity);
+                const hasGuaranteed = results.some(c => RARITY_ORDER_PASS.indexOf(c.rarity) >= minIdx);
+                if (!hasGuaranteed) {
+                    const eligible = pool.filter(c => RARITY_ORDER_PASS.indexOf(c.rarity) >= minIdx);
+                    if (eligible.length) results[results.length - 1] = eligible[Math.floor(Math.random() * eligible.length)];
+                }
+            }
+            return results;
+        }
 
         onValue(ref(db, 'users/' + myId), (snap) => {
             myUser = snap.val() || {};
@@ -589,6 +623,9 @@
                 const shopItem = shopItemsData.find(i => i.id === r.value);
                 if (shopItem) return shopItem.name;
             }
+            if (r.type === 'cardpack' && r._receivedCards) {
+                return r._receivedCards.map(c => c.name).join(', ');
+            }
             if (r.label) return r.label;
             if (r.type === 'coins') return (r.value || 0) + ' монет';
             if (r.type === 'gems') return (r.value || 0) + ' кристаллов';
@@ -712,6 +749,20 @@
                 case 'exclusive':
                     updates['pass/unlocked/exclusive/' + safeKey(r.label || r.value)] = { label: r.label || '', value: r.value || '' };
                     break;
+                case 'cardpack': {
+                    const pack = cardPacksData.find(p => p.id === r.value);
+                    if (pack && cardsData.length) {
+                        const received = openPackCardsPass(pack, cardsData);
+                        const counts = {};
+                        received.forEach(c => { counts[c.id] = (counts[c.id] || 0) + 1; });
+                        const existing = myUser.cardCollection || {};
+                        Object.entries(counts).forEach(([cardId, n]) => {
+                            updates['cardCollection/' + cardId] = (existing[cardId] || 0) + n;
+                        });
+                        r._receivedCards = received;
+                    }
+                    break;
+                }
             }
             if (!Object.keys(updates).length) return Promise.resolve();
             return update(ref(db, 'users/' + myId), updates).catch(() => {});

@@ -144,6 +144,7 @@
             <button class="btn btn-secondary" id="btn-toggle-sound">🔊 Звук: вкл</button>
             <button class="btn btn-secondary" id="btn-open-shop">🛍 Магазин</button>
             <button class="btn btn-secondary" id="btn-open-events" onclick="openEventsCalendar()">📅 Календарь событий</button>
+            <button class="btn btn-secondary" id="btn-open-decks" onclick="openCardGameMenu()">🃏 Карточная игра</button>
             <button class="btn btn-secondary" id="btn-open-publisher-app">📝 Подать заявку на публикацию</button>
             <button class="btn btn-secondary hidden" id="btn-open-book-editor">📚 Редактор моих книг</button>
             <div id="profile-edit-panel" class="hidden">
@@ -234,6 +235,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-economy" onclick="switchAdminTab('economy')">💰 Экономика</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-quests" onclick="switchAdminTab('quests')">🎯 Задания</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-events" onclick="switchAdminTab('events')">📅 События</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-cards" onclick="switchAdminTab('cards')">🃏 Карточки</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
@@ -579,6 +581,154 @@
                     <div id="admin-events-list"></div>
                 </div>
 
+                <!-- ВКЛАДКА: КАРТОЧНАЯ ИГРА -->
+                <div id="admin-tab-cards" class="hidden">
+
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Рамки карточек по редкости</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Картинка рамки накладывается вокруг карточки этой редкости везде в игре</div>
+
+                    <div style="font-weight:800;color:var(--text-primary);margin-bottom:4px;">⚪ Обычная</div>
+                    <div class="image-field-row">
+                        <input type="text" id="frame-image-common" class="input" placeholder="Рамка для обычных (URL)">
+                        <label class="upload-btn" for="frame-file-common" id="frame-upload-btn-common">📁</label>
+                        <input type="file" id="frame-file-common" accept="image/*" class="hidden">
+                    </div>
+
+                    <div style="font-weight:800;color:var(--text-primary);margin-bottom:4px;">🔵 Редкая</div>
+                    <div class="image-field-row">
+                        <input type="text" id="frame-image-rare" class="input" placeholder="Рамка для редких (URL)">
+                        <label class="upload-btn" for="frame-file-rare" id="frame-upload-btn-rare">📁</label>
+                        <input type="file" id="frame-file-rare" accept="image/*" class="hidden">
+                    </div>
+
+                    <div style="font-weight:800;color:var(--text-primary);margin-bottom:4px;">🟣 Эпическая</div>
+                    <div class="image-field-row">
+                        <input type="text" id="frame-image-epic" class="input" placeholder="Рамка для эпических (URL)">
+                        <label class="upload-btn" for="frame-file-epic" id="frame-upload-btn-epic">📁</label>
+                        <input type="file" id="frame-file-epic" accept="image/*" class="hidden">
+                    </div>
+
+                    <div style="font-weight:800;color:var(--text-primary);margin-bottom:4px;">🟠 Легендарная</div>
+                    <div class="image-field-row">
+                        <input type="text" id="frame-image-legendary" class="input" placeholder="Рамка для легендарных (URL)">
+                        <label class="upload-btn" for="frame-file-legendary" id="frame-upload-btn-legendary">📁</label>
+                        <input type="file" id="frame-file-legendary" accept="image/*" class="hidden">
+                    </div>
+
+                    <button class="btn" id="btn-save-frames">Сохранить рамки</button>
+
+                    <div class="divider"></div>
+
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Классы героев</h3>
+                    <input type="text" id="class-name" class="input" placeholder="Название класса (напр. Маг)">
+                    <input type="text" id="class-icon" class="input" placeholder="Иконка (эмодзи, напр. 🔮)">
+                    <input type="color" id="class-color" class="input" value="#0a84ff" style="height:44px;padding:4px;">
+                    <button class="btn" id="btn-add-class">Добавить класс</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-class">Отменить редактирование</button>
+                    <div id="admin-classes-list" style="margin-top:10px;"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Правила сборки колоды</h3>
+                    <input type="number" id="deck-size-setting" class="input" placeholder="Карт в колоде" min="1">
+                    <input type="number" id="deck-max-copies-setting" class="input" placeholder="Макс. копий одной карты" min="1">
+                    <button class="btn" id="btn-save-deck-settings">Сохранить настройки</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);" id="card-form-heading">Добавить карточку</h3>
+                    <input type="text" id="card-name" class="input" placeholder="Название карточки">
+                    <div class="image-field-row">
+                        <input type="text" id="card-image" class="input" placeholder="Картинка карточки (URL)">
+                        <label class="upload-btn" for="card-image-file" id="card-image-upload-btn">📁</label>
+                        <input type="file" id="card-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <select id="card-class" class="input"><option value="">Нейтральная (доступна всем)</option></select>
+                    <select id="card-type" class="input">
+                        <option value="minion">Существо</option>
+                        <option value="spell">Заклинание</option>
+                    </select>
+                    <select id="card-rarity" class="input">
+                        <option value="common">Обычная</option>
+                        <option value="rare">Редкая</option>
+                        <option value="epic">Эпическая</option>
+                        <option value="legendary">Легендарная</option>
+                    </select>
+                    <input type="number" id="card-mana" class="input" placeholder="Стоимость маны (0-10)" min="0" max="10">
+                    <input type="number" id="card-attack" class="input" placeholder="Атака (для существ)" min="0">
+                    <input type="number" id="card-health" class="input" placeholder="Здоровье (для существ)" min="0">
+                    <textarea id="card-effect" class="input" placeholder="Описание эффекта (текстом, для игроков)" style="min-height:70px;"></textarea>
+                    <select id="card-effect-type" class="input">
+                        <option value="">Без игрового эффекта</option>
+                        <option value="battlecry_damage">Боевой клич: урон герою противника</option>
+                        <option value="battlecry_heal">Боевой клич: лечение своего героя</option>
+                        <option value="battlecry_draw">Боевой клич: добрать карты</option>
+                        <option value="deathrattle_damage">Предсмертный хрип: урон герою противника</option>
+                        <option value="deathrattle_draw">Предсмертный хрип: добрать карты</option>
+                        <option value="buff_attack_random">Боевой клич: +атака случайному своему существу</option>
+                    </select>
+                    <input type="number" id="card-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-taunt" style="width:18px;height:18px;"> Провокация (сначала должны атаковать это существо)
+                    </label>
+                    <button class="btn" id="btn-add-card">Добавить карточку</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все карточки</h3>
+                    <div id="admin-cards-list"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Выдать карточку игроку</h3>
+                    <input type="text" id="grant-user-id" class="input" placeholder="ID игрока (Telegram ID)">
+                    <select id="grant-card-id" class="input"><option value="">Карточка...</option></select>
+                    <input type="number" id="grant-count" class="input" placeholder="Количество" min="1" value="1">
+                    <button class="btn" id="btn-grant-card">Выдать</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);" id="combo-form-heading">Добавить комбо</h3>
+                    <input type="text" id="combo-name" class="input" placeholder="Название комбо">
+                    <select id="combo-card-1" class="input"><option value="">Карта 1...</option></select>
+                    <select id="combo-card-2" class="input"><option value="">Карта 2...</option></select>
+                    <select id="combo-card-3" class="input"><option value="">Карта 3 (необязательно)...</option></select>
+                    <textarea id="combo-effect" class="input" placeholder="Что происходит при этом комбо (текстом)" style="min-height:60px;"></textarea>
+                    <select id="combo-effect-type" class="input">
+                        <option value="">Без игрового эффекта</option>
+                        <option value="battlecry_damage">Урон герою противника</option>
+                        <option value="battlecry_heal">Лечение своего героя</option>
+                        <option value="battlecry_draw">Добрать карты</option>
+                        <option value="buff_attack_random">+атака случайному своему существу</option>
+                    </select>
+                    <input type="number" id="combo-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
+                    <button class="btn" id="btn-add-combo">Добавить комбо</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-combo">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все комбо</h3>
+                    <div id="admin-combos-list"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);" id="pack-form-heading">Добавить набор карточек</h3>
+                    <input type="text" id="pack-name" class="input" placeholder="Название набора">
+                    <div class="image-field-row">
+                        <input type="text" id="pack-image" class="input" placeholder="Картинка набора (URL)">
+                        <label class="upload-btn" for="pack-image-file" id="pack-image-upload-btn">📁</label>
+                        <input type="file" id="pack-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <input type="number" id="pack-price" class="input" placeholder="Цена в монетах" min="0">
+                    <input type="number" id="pack-count" class="input" placeholder="Карточек в наборе" min="1" value="3">
+                    <select id="pack-min-rarity" class="input">
+                        <option value="">Без гарантии редкости</option>
+                        <option value="rare">Гарантирована редкая+</option>
+                        <option value="epic">Гарантирована эпическая+</option>
+                        <option value="legendary">Гарантирована легендарная</option>
+                    </select>
+                    <button class="btn" id="btn-add-pack">Добавить набор</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-pack">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все наборы</h3>
+                    <div id="admin-packs-list"></div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -732,7 +882,60 @@
         </div>
     </div>
 
-    <!-- КАЛЕНДАРЬ СОБЫТИЙ -->
+    <!-- КОЛОДЫ (КАРТОЧНАЯ ИГРА) -->
+    <div id="card-game-menu-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="card-menu-back-btn" onclick="closeCardGameMenu()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Карточная игра</div>
+            </div>
+        </div>
+        <div class="reader-content" id="card-game-menu-body"></div>
+    </div>
+
+    <div id="pack-shop-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="pack-shop-back-btn" onclick="closePackShop()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Магазин наборов</div>
+            </div>
+        </div>
+        <div class="reader-content" id="pack-shop-body"></div>
+    </div>
+
+
+    <div id="card-collection-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="card-collection-back-btn" onclick="closeCardCollection()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Коллекция</div>
+            </div>
+        </div>
+        <div class="reader-content" id="card-collection-body"></div>
+    </div>
+
+    <div id="decks-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="decks-back-btn" onclick="decksGoBack()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="decks-header-title">Мои колоды</div>
+            </div>
+            <button class="btn btn-secondary hidden" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="deck-save-btn" onclick="saveDeck()">Сохранить</button>
+        </div>
+        <div class="reader-content" id="decks-body"></div>
+    </div>
+
+    <!-- БОЙ (КАРТОЧНАЯ ИГРА) -->
+    <div id="battle-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="battle-back-btn" onclick="leaveBattle()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="battle-header-title">Бой</div>
+            </div>
+        </div>
+        <div class="reader-content" id="battle-body" style="padding:0;"></div>
+    </div>
+
     <div id="events-overlay" class="reader-overlay">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="close-events-btn" onclick="closeEventsCalendar()">←</button>

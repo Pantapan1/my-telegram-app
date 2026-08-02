@@ -9,6 +9,8 @@ import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterList
 import { checkDailyCoinReward, renderOwnProfileHeader, renderProfileStats, renderQuestsList, renderUserProfileOverlay } from './profile.js';
 import { populateStickerPackSelect, renderChatOverlay, renderChatsList, renderStickerPicker, renderUserPickList } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
+import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
 
 // Firebase Storage больше не используется — фото грузятся на ImgBB (см. ниже), чтобы не требовать план Blaze.
@@ -180,7 +182,21 @@ import { renderEventsCalendar } from './events.js';
         export function startFirebaseListeners() {
             setInterval(ensureUserProfile, 60000);
 
+            // Если за 10 секунд лента так и не получила ответ от Firebase (например, из-за VPN,
+            // блокировки WebSocket или проблем с базой) — показываем понятную ошибку вместо
+            // бесконечных серых заглушек.
+            let feedLoaded = false;
+            const feedWatchdog = setTimeout(() => {
+                if (feedLoaded) return;
+                const container = document.getElementById('feed-container');
+                if (container) {
+                    container.innerHTML = '<div class="empty-state"><span class="icon">📡</span><div class="title">Не удалось загрузить данные</div><div class="sub">Проверьте интернет-соединение (попробуйте отключить VPN) и обновите страницу</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
+                }
+            }, 10000);
+
             onValue(ref(state.db, 'posts'), (snapshot) => {
+                feedLoaded = true;
+                clearTimeout(feedWatchdog);
                 const data = snapshot.val();
                 state.postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
                     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -218,6 +234,12 @@ import { renderEventsCalendar } from './events.js';
                 
                 if (state.isAdmin) renderAdminPostsList();
                 if (state.activeOverlay === 'post') renderPostOverlay();
+            }, (error) => {
+                feedLoaded = true;
+                clearTimeout(feedWatchdog);
+                console.error('Firebase (posts) ошибка:', error);
+                const container = document.getElementById('feed-container');
+                if (container) container.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span><div class="title">${friendlyDbError(error)}</div></div>`;
             });
 
             onValue(ref(state.db, 'banners'), (snapshot) => {
@@ -326,6 +348,53 @@ import { renderEventsCalendar } from './events.js';
                 state.eventsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
                 if (state.isAdmin) renderAdminEventsList();
                 if (state.activeOverlay === 'events') renderEventsCalendar();
+            });
+
+            onValue(ref(state.db, 'cards'), (snapshot) => {
+                const data = snapshot.val();
+                state.cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.isAdmin) { renderAdminCardsList(); renderAdminCombosList(); }
+            });
+
+            onValue(ref(state.db, 'cardCombos'), (snapshot) => {
+                const data = snapshot.val();
+                state.cardCombosData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.isAdmin) renderAdminCombosList();
+            });
+
+            onValue(ref(state.db, 'cardPacks'), (snapshot) => {
+                const data = snapshot.val();
+                state.cardPacksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.isAdmin) renderAdminPacksList();
+            });
+
+            onValue(ref(state.db, 'heroClasses'), (snapshot) => {
+                const data = snapshot.val();
+                state.heroClassesData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.isAdmin) renderAdminClassesList();
+            });
+
+            onValue(ref(state.db, 'cardGameSettings'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) state.deckSettings = { deckSize: data.deckSize || 30, maxCopies: data.maxCopies || 2 };
+                if (state.isAdmin) populateDeckSettingsForm();
+            });
+
+            onValue(ref(state.db, 'cardFrames'), (snapshot) => {
+                state.cardFramesData = snapshot.val() || {};
+                if (state.isAdmin) populateFramesForm();
+            });
+
+            onValue(ref(state.db, 'users/' + state.currentUser.id + '/cardCollection'), (snapshot) => {
+                state.myCollection = snapshot.val() || {};
+                if (state.activeOverlay === 'decks') renderDecksView();
+                if (state.activeOverlay === 'cardCollection') renderCardCollectionView();
+            });
+
+            onValue(ref(state.db, 'users/' + state.currentUser.id + '/decks'), (snapshot) => {
+                const data = snapshot.val();
+                state.myDecks = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+                if (state.activeOverlay === 'decks') renderDecksView();
             });
 
             setInterval(renderEventMultiplierBanner, 30000);

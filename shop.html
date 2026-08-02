@@ -223,6 +223,9 @@
             <div id="ad-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
         </div>
 
+        <div class="section-title">🃏 Наборы карточек</div>
+        <div class="grid" id="packs-grid"></div>
+
         <div class="section-title">🖼 Рамки аватара</div>
         <div class="grid" id="frames-grid"></div>
 
@@ -419,6 +422,102 @@
             renderShop();
             if (isAdmin) renderAdminList();
         });
+
+        // === Наборы карточек (карточная игра) ===
+        let cardsData = [];
+        let cardPacksData = [];
+
+        onValue(ref(db, 'cards'), (snap) => {
+            const data = snap.val();
+            cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderPacksGrid();
+        });
+        onValue(ref(db, 'cardPacks'), (snap) => {
+            const data = snap.val();
+            cardPacksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderPacksGrid();
+        });
+
+        const RARITY_LABELS_SHOP = { common: 'Обычная', rare: 'Редкая', epic: 'Эпическая', legendary: 'Легендарная' };
+        const RARITY_WEIGHTS_SHOP = { common: 60, rare: 25, epic: 12, legendary: 3 };
+        const RARITY_ORDER_SHOP = ['common', 'rare', 'epic', 'legendary'];
+
+        function renderPacksGrid() {
+            const el = document.getElementById('packs-grid');
+            if (!el) return;
+            if (!cardPacksData.length) { el.innerHTML = '<div class="empty-state">Наборов пока нет</div>'; return; }
+
+            el.innerHTML = cardPacksData.map(pack => {
+                const price = pack.price || 0;
+                const canAfford = (myUser.coins || 0) >= price;
+                const guaranteeLine = pack.minRarity ? `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:4px;">Гарантия: ${RARITY_LABELS_SHOP[pack.minRarity] || ''}+</div>` : '';
+                const imageBlock = pack.image
+                    ? `<img src="${pack.image}" class="item-img" onerror="this.style.opacity=0.2">`
+                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f5f0e8;border-radius:12px;">🃏</div>`;
+                return `
+                <div class="item-card">
+                    ${imageBlock}
+                    <div class="item-name">${escapeHtml(pack.name || '')}</div>
+                    <div style="font-size:12px;color:#95a5a6;margin-bottom:4px;">${pack.count || 1} карт${(pack.count || 1) === 1 ? 'а' : ''}</div>
+                    ${guaranteeLine}
+                    <div class="item-price">${price} 🪙</div>
+                    <button class="item-btn ${canAfford ? 'btn-buy' : 'btn-disabled'}" data-pack-id="${pack.id}">Купить</button>
+                </div>`;
+            }).join('');
+
+            document.querySelectorAll('[data-pack-id]').forEach(btn => {
+                btn.onclick = () => buyPack(btn.getAttribute('data-pack-id'));
+            });
+        }
+
+        function weightedRandomCard(pool) {
+            const total = pool.reduce((s, c) => s + (RARITY_WEIGHTS_SHOP[c.rarity] || RARITY_WEIGHTS_SHOP.common), 0);
+            let r = Math.random() * total;
+            for (const c of pool) {
+                r -= (RARITY_WEIGHTS_SHOP[c.rarity] || RARITY_WEIGHTS_SHOP.common);
+                if (r <= 0) return c;
+            }
+            return pool[pool.length - 1];
+        }
+
+        function openPackCards(pack, pool) {
+            const results = [];
+            for (let i = 0; i < (pack.count || 1); i++) results.push(weightedRandomCard(pool));
+            if (pack.minRarity) {
+                const minIdx = RARITY_ORDER_SHOP.indexOf(pack.minRarity);
+                const hasGuaranteed = results.some(c => RARITY_ORDER_SHOP.indexOf(c.rarity) >= minIdx);
+                if (!hasGuaranteed) {
+                    const eligible = pool.filter(c => RARITY_ORDER_SHOP.indexOf(c.rarity) >= minIdx);
+                    if (eligible.length) results[results.length - 1] = eligible[Math.floor(Math.random() * eligible.length)];
+                }
+            }
+            return results;
+        }
+
+        function buyPack(packId) {
+            const pack = cardPacksData.find(p => p.id === packId);
+            if (!pack) return;
+            const price = pack.price || 0;
+            if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+            if (!cardsData.length) { tg.showAlert ? tg.showAlert('Карточки ещё не добавлены в игру') : alert('Карточки ещё не добавлены'); return; }
+
+            const received = openPackCards(pack, cardsData);
+            const counts = {};
+            received.forEach(c => { counts[c.id] = (counts[c.id] || 0) + 1; });
+
+            const existingCollection = myUser.cardCollection || {};
+            const updates = { coins: (myUser.coins || 0) - price };
+            Object.entries(counts).forEach(([cardId, n]) => {
+                updates['cardCollection/' + cardId] = (existingCollection[cardId] || 0) + n;
+            });
+
+            update(ref(db, 'users/' + myId), updates).then(() => {
+                playSound('coin'); confettiBurst();
+                const list = received.map(c => `${RARITY_LABELS_SHOP[c.rarity] || ''}: ${c.name}`).join('\n');
+                if (tg.showPopup) tg.showPopup({ title: '🃏 Набор открыт!', message: list, buttons: [{ type: 'ok' }] });
+                else alert('Получено:\n' + list);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
 
         onValue(ref(db, 'settings/shop/dealItemId'), (snap) => {
             dealOfDayId = snap.val() || null;

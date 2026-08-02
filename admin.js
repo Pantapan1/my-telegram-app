@@ -5,7 +5,7 @@ import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
 window.switchAdminTab = function(tab) {
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });
@@ -809,3 +809,4 @@ window.switchAdminTab = function(tab) {
             if (!confirm('Удалить событие?')) return;
             remove(ref(state.db, 'events/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
+

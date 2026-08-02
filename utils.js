@@ -3,6 +3,12 @@ import { state, tg } from './state.js';
 import { COVER_COLORS, IMGBB_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, TERRARIA_PIXEL_BITMAPS } from './constants.js';
 import { openChapter, renderChapterListView } from './books.js';
 
+export function cardFrameStyle(rarity) {
+    const url = state.cardFramesData && state.cardFramesData[rarity || 'common'];
+    if (!url) return '';
+    return `border-image: url('${url}') 30 stretch; border-width: 6px; border-style: solid;`;
+}
+
 export function colorFor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -449,6 +455,12 @@ export function colorFor(str) {
         setupImageUpload('boss-image-file', 'boss-image', 'boss-image-upload-btn', 'boss');
         setupImageUpload('boss-reward-image-file', 'boss-reward-image', 'boss-reward-image-upload-btn', 'boss');
         setupImageUpload('event-image-file', 'event-image', 'event-image-upload-btn', 'events');
+        setupImageUpload('card-image-file', 'card-image', 'card-image-upload-btn', 'cards');
+        setupImageUpload('pack-image-file', 'pack-image', 'pack-image-upload-btn', 'card-packs');
+        setupImageUpload('frame-file-common', 'frame-image-common', 'frame-upload-btn-common', 'card-frames');
+        setupImageUpload('frame-file-rare', 'frame-image-rare', 'frame-upload-btn-rare', 'card-frames');
+        setupImageUpload('frame-file-epic', 'frame-image-epic', 'frame-upload-btn-epic', 'card-frames');
+        setupImageUpload('frame-file-legendary', 'frame-image-legendary', 'frame-upload-btn-legendary', 'card-frames');
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
 
