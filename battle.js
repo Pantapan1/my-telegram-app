@@ -397,18 +397,20 @@ window.leaveBattle = function () {
 
 function renderMinion(iid, m, isMine, canSelect) {
     const selected = state.selectedAttackerIid === iid;
+    const displayName = m.name || 'Существо';
     return `
     <div class="battle-minion ${canSelect ? 'can-attack' : ''} ${selected ? 'selected' : ''}"
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
         <div class="bm-portrait">
             ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
-            ${m.image ? `<img src="${m.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(m.name || '')}">${initialOf(m.name)}</div>`}
+            <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
+            ${m.image ? `<img src="${m.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
         </div>
         <div class="bm-badges">
             <div class="bm-atk">⚔${m.attack}</div>
             <div class="bm-hp">❤${m.health}</div>
         </div>
-        <div class="battle-minion-name">${escapeHtml(m.name || '')}</div>
+        <div class="battle-minion-name">${escapeHtml(displayName)}</div>
     </div>`;
 }
 
@@ -416,11 +418,13 @@ function renderHandCard(iid, cardId, playable) {
     const card = cardById(cardId);
     if (!card) return '';
     const isMinion = card.type === 'minion';
+    const displayName = card.name || 'Карта';
     return `
-    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" onclick="${playable ? `battlePlayCard('${iid}')` : ''}">
+    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" onclick="battlePlayCard('${iid}')">
         <div class="bhc-portrait" style="${cardFrameStyle(card.rarity)}">
-            ${card.image ? `<img src="${card.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(card.name || '')}">${initialOf(card.name)}</div>`}
-            <div class="bhc-name">${escapeHtml(card.name || '')}</div>
+            <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
+            ${card.image ? `<img src="${card.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
+            <div class="bhc-name">${escapeHtml(displayName)}</div>
         </div>
         <div class="battle-hand-mana">${card.mana || 0}</div>
         ${isMinion
@@ -514,22 +518,25 @@ function showDamagePopup(elId, amount) {
 
 window.battleMinionTap = function (iid) {
     const data = state.battleData;
+    if (data.turnPlayer !== state.mySlot) { tg.showAlert('Сейчас не твой ход'); return; }
     const me = data[state.mySlot];
     const minion = me.board[iid];
-    if (!minion || !minion.canAttack || data.turnPlayer !== state.mySlot) return;
+    if (!minion) return;
+    if (!minion.canAttack) { tg.showAlert('Это существо уже атаковало в этом ходу или ещё не может атаковать'); return; }
     state.selectedAttackerIid = state.selectedAttackerIid === iid ? null : iid;
     renderBattleView();
 };
 
 window.battlePlayCard = function (iid) {
     const data = state.battleData;
-    if (data.turnPlayer !== state.mySlot) return;
+    if (data.turnPlayer !== state.mySlot) { tg.showAlert('Сейчас не твой ход'); return; }
     const mySlot = state.mySlot;
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
     const cardId = me.hand[iid];
     const card = cardById(cardId);
-    if (!card || card.mana > me.mana) return;
+    if (!card) { tg.showAlert('Эта карта больше не существует в игре (удалена из админки)'); return; }
+    if (card.mana > me.mana) { tg.showAlert(`Не хватает маны: нужно 💧${card.mana}, у тебя 💧${me.mana}`); return; }
 
     playCardInternal(state.activeBattleId, data, mySlot, oppSlot, iid, card);
 };
