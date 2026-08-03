@@ -4,7 +4,9 @@ import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, frien
 import { awardPassXP, passVipBadge, renderPassButton } from './pass.js';
 import { currentMultiplier, populateBossAdminForm, renderBossParticipantsList } from './feed.js';
 import { startChatWith } from './chats.js';
-import { populateChapterBookSelect, populateEconomyAdminForm, populateThemeAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { populateChapterBookSelect, populateEconomyAdminForm, populateThemeAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { populateDeckSettingsForm, populateFramesForm, renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList } from './cards.js';
+import { populateStickerPackSelect } from './chats.js';
 
 export function checkDailyCoinReward() {
             if (state.dailyRewardChecked) return;
@@ -360,6 +362,14 @@ export function checkDailyCoinReward() {
                 populateEconomyAdminForm();
                 renderAdminQuestsList();
                 renderPassButton();
+                renderAdminEventsList();
+                renderAdminCardsList();
+                renderAdminCombosList();
+                renderAdminPacksList();
+                renderAdminClassesList();
+                populateDeckSettingsForm();
+                populateFramesForm();
+                populateStickerPackSelect();
             } else if (pwd) { 
                 tg.showAlert('Неверный пароль'); 
             }

@@ -270,12 +270,12 @@ window.editPack = function (id) {
     document.getElementById('pack-count').value = p.count ?? 3;
     document.getElementById('pack-min-rarity').value = p.minRarity || '';
     document.getElementById('pack-form-heading').textContent = 'Редактировать набор';
-    document.getElementById('btn-add-pack').textContent = 'Сохранить изменения';
-    document.getElementById('btn-cancel-edit-pack').classList.remove('hidden');
+    document.getElementById('btn-add-cardpack').textContent = 'Сохранить изменения';
+    document.getElementById('btn-cancel-edit-cardpack').classList.remove('hidden');
     document.getElementById('pack-name').scrollIntoView({ behavior: 'smooth' });
 };
 
-document.getElementById('btn-cancel-edit-pack').onclick = function () {
+document.getElementById('btn-cancel-edit-cardpack').onclick = function () {
     state.editingPackId = null;
     document.getElementById('pack-name').value = '';
     document.getElementById('pack-image').value = '';
@@ -283,11 +283,11 @@ document.getElementById('btn-cancel-edit-pack').onclick = function () {
     document.getElementById('pack-count').value = 3;
     document.getElementById('pack-min-rarity').value = '';
     document.getElementById('pack-form-heading').textContent = 'Добавить набор карточек';
-    document.getElementById('btn-add-pack').textContent = 'Добавить набор';
-    document.getElementById('btn-cancel-edit-pack').classList.add('hidden');
+    document.getElementById('btn-add-cardpack').textContent = 'Добавить набор';
+    document.getElementById('btn-cancel-edit-cardpack').classList.add('hidden');
 };
 
-document.getElementById('btn-add-pack').onclick = function () {
+document.getElementById('btn-add-cardpack').onclick = function () {
     const name = document.getElementById('pack-name').value.trim();
     const image = document.getElementById('pack-image').value.trim();
     const price = parseInt(document.getElementById('pack-price').value, 10) || 0;
@@ -301,12 +301,12 @@ document.getElementById('btn-add-pack').onclick = function () {
 
     if (state.editingPackId) {
         update(ref(state.db, 'cardPacks/' + state.editingPackId), data).then(() => {
-            document.getElementById('btn-cancel-edit-pack').click();
+            document.getElementById('btn-cancel-edit-cardpack').click();
             tg.showPopup({ title: 'Сохранено', message: 'Набор обновлён', buttons: [{ type: 'ok' }] });
         }).catch(err => tg.showAlert('Ошибка обновления: ' + friendlyDbError(err)));
     } else {
         push(ref(state.db, 'cardPacks'), { ...data, createdAt: Date.now() }).then(() => {
-            document.getElementById('btn-cancel-edit-pack').click();
+            document.getElementById('btn-cancel-edit-cardpack').click();
             tg.showPopup({ title: 'Добавлено!', message: 'Набор создан', buttons: [{ type: 'ok' }] });
         }).catch(err => tg.showAlert('Ошибка добавления: ' + friendlyDbError(err)));
     }
