@@ -65,6 +65,17 @@ function cardById(id) {
     return state.cardsData.find(c => c.id === id);
 }
 
+// Firebase Realtime Database не хранит пустые объекты ({}) — если стол/рука/комбо
+// становятся пустыми, при следующем чтении это поле пропадает (undefined) вместо {}.
+// Без этой нормализации попытка actor.board[id] = ... падает с ошибкой и запись в базу не происходит.
+function normalizePlayerState(p) {
+    if (!p) return p;
+    p.hand = p.hand || {};
+    p.board = p.board || {};
+    p.firedCombos = p.firedCombos || {};
+    return p;
+}
+
 function drawCards(player, n, log) {
     for (let i = 0; i < n; i++) {
         if (player.deck && player.deck.length) {
@@ -520,7 +531,7 @@ window.battleMinionTap = function (iid) {
     const data = state.battleData;
     if (data.turnPlayer !== state.mySlot) { tg.showAlert('Сейчас не твой ход'); return; }
     const me = data[state.mySlot];
-    const minion = me.board[iid];
+    const minion = (me.board || {})[iid];
     if (!minion) return;
     if (!minion.canAttack) { tg.showAlert('Это существо уже атаковало в этом ходу или ещё не может атаковать'); return; }
     state.selectedAttackerIid = state.selectedAttackerIid === iid ? null : iid;
@@ -533,7 +544,7 @@ window.battlePlayCard = function (iid) {
     const mySlot = state.mySlot;
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
-    const cardId = me.hand[iid];
+    const cardId = (me.hand || {})[iid];
     const card = cardById(cardId);
     if (!card) { tg.showAlert('Эта карта больше не существует в игре (удалена из админки)'); return; }
     if (card.mana > me.mana) { tg.showAlert(`Не хватает маны: нужно 💧${card.mana}, у тебя 💧${me.mana}`); return; }
@@ -542,8 +553,8 @@ window.battlePlayCard = function (iid) {
 };
 
 function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
-    const actor = JSON.parse(JSON.stringify(data[actorSlot]));
-    const opponent = JSON.parse(JSON.stringify(data[opponentSlot]));
+    const actor = normalizePlayerState(JSON.parse(JSON.stringify(data[actorSlot])));
+    const opponent = normalizePlayerState(JSON.parse(JSON.stringify(data[opponentSlot])));
     const log = [`${actor.name} играет «${card.name}»`];
 
     actor.mana -= card.mana;
@@ -574,7 +585,7 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
         updates['battles/' + battleId + '/winner'] = opponentSlot;
     }
 
-    update(ref(state.db), updates);
+    update(ref(state.db), updates).catch(e => tg.showAlert('Ошибка сохранения хода: ' + (e && e.message ? e.message : e)));
 }
 
 window.battleAttackTarget = function (targetIid) {
@@ -585,11 +596,11 @@ window.battleAttackTarget = function (targetIid) {
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
     const opp = data[oppSlot];
-    const attacker = me.board[state.selectedAttackerIid];
+    const attacker = (me.board || {})[state.selectedAttackerIid];
     if (!attacker || !attacker.canAttack) return;
 
     if (hasTaunt(opp.board)) {
-        const targetIsTaunt = targetIid !== 'hero' && opp.board[targetIid] && opp.board[targetIid].taunt;
+        const targetIsTaunt = targetIid !== 'hero' && (opp.board || {})[targetIid] && (opp.board || {})[targetIid].taunt;
         if (!targetIsTaunt) { tg.showAlert ? tg.showAlert('Сначала нужно атаковать существо с провокацией') : alert('Сначала нужно атаковать существо с провокацией'); return; }
     }
 
@@ -598,8 +609,8 @@ window.battleAttackTarget = function (targetIid) {
 };
 
 function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) {
-    const me = JSON.parse(JSON.stringify(data[mySlot]));
-    const opp = JSON.parse(JSON.stringify(data[oppSlot]));
+    const me = normalizePlayerState(JSON.parse(JSON.stringify(data[mySlot])));
+    const opp = normalizePlayerState(JSON.parse(JSON.stringify(data[oppSlot])));
     const attacker = me.board[attackerIid];
     if (!attacker) return;
 
@@ -653,7 +664,7 @@ window.battleEndTurn = function () {
 
 function endTurn(battleId, data, currentSlot) {
     const nextSlot = currentSlot === 'p1' ? 'p2' : 'p1';
-    const nextPlayer = JSON.parse(JSON.stringify(data[nextSlot]));
+    const nextPlayer = normalizePlayerState(JSON.parse(JSON.stringify(data[nextSlot])));
 
     nextPlayer.maxMana = Math.min((nextPlayer.maxMana || 1) + 1, 10);
     nextPlayer.mana = nextPlayer.maxMana;
@@ -729,7 +740,7 @@ async function runBotTurn(battleId) {
         data = state.battleData;
         if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
         const bot = data[botSlot];
-        const attacker = bot.board[iid];
+        const attacker = (bot.board || {})[iid];
         if (!attacker || !attacker.canAttack) continue;
         if (Math.random() < 0.15) continue; // иногда не атакует — держит блокера
 
