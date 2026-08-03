@@ -1096,52 +1096,99 @@
             font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
             color: var(--text-secondary); padding: 3px 16px; flex: 0 0 auto; opacity: .75;
         }
+
+        /* Стол — зелёное сукно как в настольных карточных играх */
         .battle-board {
-            display: flex; gap: 8px; padding: 6px 12px; height: 90px; overflow-x: auto;
+            display: flex; gap: 14px; padding: 10px 16px; height: 96px; overflow-x: auto;
             align-items: center; flex: 0 0 auto; box-sizing: border-box;
+            background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 75%, #14301f 100%);
+            box-shadow: inset 0 3px 10px rgba(0,0,0,.35);
         }
-        .battle-board.opp-board { background: rgba(255,69,58,.06); border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
-        .battle-board.my-board { background: rgba(10,132,255,.06); border-bottom: 1px solid var(--border-soft); }
-        .battle-minion {
-            flex-shrink: 0; width: 68px; background: var(--card-bg); border: 2px solid var(--card-border);
-            border-radius: 12px; padding: 5px; text-align: center; position: relative; opacity: .65;
-            box-sizing: border-box;
+        .battle-board.opp-board { border-top: 1px solid rgba(0,0,0,.4); }
+        .battle-board.my-board { border-bottom: 1px solid rgba(0,0,0,.4); }
+        .battle-empty-zone { color: rgba(255,255,255,.55); font-size: 11px; }
+
+        /* Существо на столе — круглый портрет с самоцветами атаки/здоровья по бокам, как в HS */
+        .battle-minion { flex-shrink: 0; width: 60px; text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
+        .battle-minion.can-attack { opacity: 1; cursor: pointer; }
+        .battle-minion.can-attack .bm-portrait { box-shadow: 0 0 0 3px #ed8f03, 0 0 10px rgba(237,143,3,.7); }
+        .battle-minion.selected .bm-portrait { box-shadow: 0 0 0 3px #ff453a, 0 0 12px rgba(255,69,58,.8); transform: translateY(-4px); }
+        .bm-portrait {
+            width: 56px; height: 56px; border-radius: 50%; overflow: hidden; margin: 0 auto;
+            border: 3px solid #d9c48a; background: #333; box-sizing: border-box; position: relative;
+            box-shadow: 0 2px 6px rgba(0,0,0,.4);
         }
-        .battle-minion.can-attack { opacity: 1; cursor: pointer; border-color: #ed8f03; box-shadow: 0 0 0 2px rgba(237,143,3,.3); }
-        .battle-minion.selected { border-color: #ff453a; box-shadow: 0 0 0 3px rgba(255,69,58,.4); transform: translateY(-4px); }
-        .battle-minion img { width: 100%; height: 34px; object-fit: cover; border-radius: 8px; display: block; }
-        .battle-minion-fallback {
-            width: 100%; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 800; font-size: 14px; box-sizing: border-box;
+        .bm-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .battle-minion-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
+        .bm-badges { display: flex; justify-content: space-between; width: 56px; margin: -10px auto 0; position: relative; z-index: 2; }
+        .bm-atk, .bm-hp {
+            width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 900; color: #fff; border: 2px solid #2a2015; box-shadow: 0 2px 3px rgba(0,0,0,.4);
         }
-        .battle-minion-name { font-size: 9px; font-weight: 700; color: var(--text-primary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .battle-minion-stats { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: var(--text-secondary); margin-top: 1px; }
+        .bm-atk { background: radial-gradient(circle at 35% 30%, #d9c26a, #8a6d1f); }
+        .bm-hp { background: radial-gradient(circle at 35% 30%, #ff6b5e, #a4241a); }
+        .battle-minion-name {
+            font-size: 9px; font-weight: 700; color: #fff; margin-top: 2px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,.8);
+        }
+
+        /* Рука — полноценные карточки с портретом на весь фон, как в Hearthstone */
         .battle-hand {
-            display: flex; gap: 8px; padding: 6px 12px; overflow-x: auto; align-items: center;
-            height: 96px; flex: 0 0 auto; box-sizing: border-box; background: rgba(0,0,0,.03);
+            display: flex; gap: 10px; padding: 10px 14px; overflow-x: auto; align-items: center;
+            height: 118px; flex: 0 0 auto; box-sizing: border-box; background: rgba(0,0,0,.06);
             border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft);
         }
         .battle-hand-card {
-            flex-shrink: 0; width: 72px; background: var(--card-bg); border: 2px solid var(--card-border);
-            border-radius: 12px; padding: 5px; text-align: center; position: relative; box-sizing: border-box;
+            flex-shrink: 0; width: 78px; height: 100px; border-radius: 14px; position: relative; box-sizing: border-box;
+            background: #2a2015; overflow: visible; transition: transform .15s ease;
         }
-        .battle-hand-card.playable { border-color: #0a84ff; cursor: pointer; box-shadow: 0 0 0 2px rgba(10,132,255,.25); }
-        .battle-hand-card.unplayable { opacity: .4; }
-        .battle-hand-card img { width: 100%; height: 38px; object-fit: cover; border-radius: 8px; display: block; }
+        .battle-hand-card.playable { cursor: pointer; }
+        .battle-hand-card.playable:active { transform: translateY(-4px); }
+        .battle-hand-card.unplayable { opacity: .45; }
+        .bhc-portrait {
+            width: 100%; height: 100%; border-radius: 12px; overflow: hidden; position: relative;
+            border: 2px solid #6b5636; box-sizing: border-box;
+        }
+        .battle-hand-card.playable .bhc-portrait { border-color: #4fa8ff; box-shadow: 0 0 0 2px rgba(79,168,255,.4), 0 3px 8px rgba(0,0,0,.4); }
+        .bhc-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .bhc-portrait::after {
+            content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+            background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
+        }
+        .bhc-name {
+            position: absolute; left: 4px; right: 4px; bottom: 3px; z-index: 2;
+            font-size: 9px; font-weight: 800; color: #fff; text-align: center; line-height: 1.15;
+            text-shadow: 0 1px 2px rgba(0,0,0,.8); overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
         .battle-hand-mana {
-            position: absolute; top: 2px; left: 2px; background: #0a84ff; color: #fff; font-size: 10px; font-weight: 800;
-            border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+            position: absolute; top: -8px; left: -8px; z-index: 3;
+            background: radial-gradient(circle at 35% 30%, #6fc7ff, #0a5ea8); color: #fff; font-size: 11px; font-weight: 900;
+            border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            border: 2px solid #082e50; box-shadow: 0 2px 4px rgba(0,0,0,.5);
         }
-        .battle-empty-zone { color: var(--text-secondary); font-size: 11px; opacity: .6; }
+        .bhc-atk, .bhc-hp {
+            position: absolute; bottom: -6px; z-index: 3; width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff;
+            border: 2px solid #2a2015; box-shadow: 0 2px 3px rgba(0,0,0,.4);
+        }
+        .bhc-atk { left: -6px; background: radial-gradient(circle at 35% 30%, #d9c26a, #8a6d1f); }
+        .bhc-hp { right: -6px; background: radial-gradient(circle at 35% 30%, #ff6b5e, #a4241a); }
+        .bhc-spell-tag {
+            position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); z-index: 3;
+            background: radial-gradient(circle at 35% 30%, #c98fff, #6a1fb8); color: #fff; font-size: 9px; font-weight: 800;
+            border-radius: 10px; padding: 2px 7px; border: 2px solid #2a2015; white-space: nowrap;
+        }
 
         @keyframes battleMinionIn { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .battle-minion, .battle-hand-card { animation: battleMinionIn .22s ease; }
 
         .battle-taunt-badge {
-            position: absolute; top: -6px; left: -6px; background: #5a5f68; color: #fff; font-size: 11px;
-            width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 2px solid var(--card-bg); z-index: 2;
+            position: absolute; top: -4px; left: 50%; transform: translateX(-50%); background: #5a5f68; color: #fff; font-size: 10px;
+            width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 2px solid #d9c48a; z-index: 4;
         }
+
 
         @keyframes heroHitFlash {
             0% { box-shadow: 0 0 0 0 rgba(255,69,58,0); background: var(--card-bg); }

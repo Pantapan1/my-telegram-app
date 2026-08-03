@@ -302,11 +302,13 @@ function createBattle(p1info, p2info, isBot) {
 // ===================== ВХОД В БОЙ / СИНХРОНИЗАЦИЯ =====================
 
 let battleRefListener = null;
+let activeBotRunKey = null;
 
 function enterBattle(battleId) {
     state.activeBattleId = battleId;
     state.selectedAttackerIid = null;
     prevHealth = { mine: null, opp: null };
+    activeBotRunKey = null;
     document.getElementById('battle-header-title').textContent = 'Бой';
 
     if (battleRefListener) off(battleRefListener);
@@ -321,7 +323,19 @@ function enterBattle(battleId) {
 
         const oppSlot = state.mySlot === 'p1' ? 'p2' : 'p1';
         if (data.status === 'active' && data.turnPlayer === oppSlot && data[oppSlot].isBot) {
-            runBotTurn(battleId);
+            // защита от повторного запуска: ход бота стартует один раз на turnNumber,
+            // а не при каждом изменении данных (иначе несколько параллельных запусков мешают друг другу)
+            const runKey = battleId + ':' + data.turnNumber + ':' + oppSlot;
+            if (activeBotRunKey !== runKey) {
+                activeBotRunKey = runKey;
+                runBotTurn(battleId).catch((err) => {
+                    console.error('Ошибка хода бота, завершаю ход принудительно:', err);
+                    const fresh = state.battleData;
+                    if (fresh && fresh.status === 'active' && fresh.turnPlayer === oppSlot) {
+                        endTurn(battleId, fresh, oppSlot);
+                    }
+                });
+            }
         }
         watchOpponentInactivity(battleId, data, state.mySlot, oppSlot);
     });
@@ -383,28 +397,35 @@ window.leaveBattle = function () {
 
 function renderMinion(iid, m, isMine, canSelect) {
     const selected = state.selectedAttackerIid === iid;
-    const srcCard = cardById(m.cardId);
-    const frameStyle = srcCard ? cardFrameStyle(srcCard.rarity) : '';
     return `
-    <div class="battle-minion ${canSelect ? 'can-attack' : ''} ${selected ? 'selected' : ''} ${m.taunt ? 'has-taunt' : ''}"
-         style="${frameStyle}"
+    <div class="battle-minion ${canSelect ? 'can-attack' : ''} ${selected ? 'selected' : ''}"
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
-        ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
-        ${m.image ? `<img src="${m.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(m.name || '')}">${initialOf(m.name)}</div>`}
+        <div class="bm-portrait">
+            ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
+            ${m.image ? `<img src="${m.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(m.name || '')}">${initialOf(m.name)}</div>`}
+        </div>
+        <div class="bm-badges">
+            <div class="bm-atk">⚔${m.attack}</div>
+            <div class="bm-hp">❤${m.health}</div>
+        </div>
         <div class="battle-minion-name">${escapeHtml(m.name || '')}</div>
-        <div class="battle-minion-stats"><span>⚔️${m.attack}</span><span>❤️${m.health}</span></div>
     </div>`;
 }
 
 function renderHandCard(iid, cardId, playable) {
     const card = cardById(cardId);
     if (!card) return '';
+    const isMinion = card.type === 'minion';
     return `
-    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" style="${cardFrameStyle(card.rarity)}" onclick="${playable ? `battlePlayCard('${iid}')` : ''}">
-        ${card.image ? `<img src="${card.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(card.name || '')}">${initialOf(card.name)}</div>`}
-        <div class="battle-hand-mana">💧${card.mana || 0}</div>
-        <div class="battle-minion-name">${escapeHtml(card.name || '')}</div>
-        ${card.type === 'minion' ? `<div class="battle-minion-stats"><span>⚔️${card.attack || 0}</span><span>❤️${card.health || 0}</span></div>` : `<div class="battle-minion-stats">✨ Закл.</div>`}
+    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" onclick="${playable ? `battlePlayCard('${iid}')` : ''}">
+        <div class="bhc-portrait" style="${cardFrameStyle(card.rarity)}">
+            ${card.image ? `<img src="${card.image}" onerror="this.style.display='none'">` : `<div class="battle-minion-fallback" style="background:${colorFor(card.name || '')}">${initialOf(card.name)}</div>`}
+            <div class="bhc-name">${escapeHtml(card.name || '')}</div>
+        </div>
+        <div class="battle-hand-mana">${card.mana || 0}</div>
+        ${isMinion
+            ? `<div class="bhc-atk">${card.attack || 0}</div><div class="bhc-hp">${card.health || 0}</div>`
+            : `<div class="bhc-spell-tag">✨ Закл.</div>`}
     </div>`;
 }
 
