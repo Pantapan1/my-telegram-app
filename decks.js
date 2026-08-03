@@ -347,7 +347,8 @@ function renderPackShopView() {
         return;
     }
 
-    const coins = (state.currentUser && state.currentUser.coins) || 0;
+    const me = state.usersData.find(u => u.id === state.currentUser.id);
+    const coins = (me && me.coins) || 0;
 
     body.innerHTML = `
         <div style="text-align:right;font-weight:800;color:var(--text-primary);margin-bottom:12px;">🪙 ${coins}</div>
@@ -385,7 +386,8 @@ window.buyPack = function (packId) {
     const pack = state.cardPacksData.find(p => p.id === packId);
     if (!pack) return;
 
-    const coins = (state.currentUser && state.currentUser.coins) || 0;
+    const me = state.usersData.find(u => u.id === state.currentUser.id);
+    const coins = (me && me.coins) || 0;
     if (coins < (pack.price || 0)) return tg.showAlert('Недостаточно монет');
 
     const drawn = drawPackCards(pack);

@@ -234,6 +234,9 @@
                 <div id="pass-free-shop-select-container" style="display:none;">
                     <select id="pass-free-shop-select" class="input"></select>
                 </div>
+                <div id="pass-free-cardpack-select-container" style="display:none;">
+                    <select id="pass-free-cardpack-select" class="input"></select>
+                </div>
                 
                 <input type="text" id="pass-free-icon" class="input" placeholder="Эмодзи-иконка (напр. 🪙)">
             </div>
@@ -250,6 +253,9 @@
                 </div>
                 <div id="pass-premium-shop-select-container" style="display:none;">
                     <select id="pass-premium-shop-select" class="input"></select>
+                </div>
+                <div id="pass-premium-cardpack-select-container" style="display:none;">
+                    <select id="pass-premium-cardpack-select" class="input"></select>
                 </div>
 
                 <input type="text" id="pass-premium-icon" class="input" placeholder="Эмодзи-иконка (напр. 👑)">
@@ -449,7 +455,7 @@
         let cardsData = [];
         let cardPacksData = [];
         onValue(ref(db, 'cards'), (snap) => { const d = snap.val(); cardsData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; });
-        onValue(ref(db, 'cardPacks'), (snap) => { const d = snap.val(); cardPacksData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; });
+        onValue(ref(db, 'cardPacks'), (snap) => { const d = snap.val(); cardPacksData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; updateAdminCardPackSelects(); });
 
         const RARITY_WEIGHTS_PASS = { common: 60, rare: 25, epic: 12, legendary: 3 };
         const RARITY_ORDER_PASS = ['common', 'rare', 'epic', 'legendary'];
@@ -918,18 +924,29 @@
             document.getElementById('pass-premium-shop-select').innerHTML = options || '<option value="">Нет товаров</option>';
         }
 
+        function updateAdminCardPackSelects() {
+            const options = cardPacksData.map(p => `<option value="${p.id}">${p.name || '(без названия)'} — ${p.price || 0}🪙, ${p.count || 1} карт</option>`).join('');
+            document.getElementById('pass-free-cardpack-select').innerHTML = options || '<option value="">Наборов пока нет</option>';
+            document.getElementById('pass-premium-cardpack-select').innerHTML = options || '<option value="">Наборов пока нет</option>';
+        }
+
         // Логика переключения между текстовым вводом и выбором из магазина
         function toggleRewardInputType(track) {
             const type = document.getElementById(`pass-${track}-type`).value;
             const uploadRow = document.getElementById(`pass-${track}-upload-row`);
             const selectContainer = document.getElementById(`pass-${track}-shop-select-container`);
-            
+            const cardpackContainer = document.getElementById(`pass-${track}-cardpack-select-container`);
+
+            uploadRow.style.display = 'none';
+            selectContainer.style.display = 'none';
+            cardpackContainer.style.display = 'none';
+
             if (type === 'shop_item') {
-                uploadRow.style.display = 'none';
                 selectContainer.style.display = 'block';
+            } else if (type === 'cardpack') {
+                cardpackContainer.style.display = 'block';
             } else {
                 uploadRow.style.display = 'flex';
-                selectContainer.style.display = 'none';
             }
         }
         document.getElementById('pass-free-type').addEventListener('change', () => toggleRewardInputType('free'));
@@ -961,6 +978,7 @@
                 renderAdminLevelsList();
                 renderAdminQuestsListPass();
                 listenAllUsersForAdmin();
+                updateAdminCardPackSelects();
                 
                 toggleRewardInputType('free');
                 toggleRewardInputType('premium');
@@ -1036,8 +1054,8 @@
             if (!levels.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Уровни ещё не добавлены</div>'; return; }
             
             el.innerHTML = levels.map(l => {
-                const freeLabel = l.free ? (l.free.type === 'shop_item' ? `🛍 Товар (ID: ${l.free.value})` : `${l.free.icon || ''} ${l.free.label || l.free.type}`) : '—';
-                const premLabel = l.premium ? (l.premium.type === 'shop_item' ? `🛍 Товар (ID: ${l.premium.value})` : `${l.premium.icon || ''} ${l.premium.label || l.premium.type}`) : '—';
+                const freeLabel = l.free ? (l.free.type === 'shop_item' ? `🛍 Товар (ID: ${l.free.value})` : l.free.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.free.value) || {}).name || 'Набор (не найден)'}` : `${l.free.icon || ''} ${l.free.label || l.free.type}`) : '—';
+                const premLabel = l.premium ? (l.premium.type === 'shop_item' ? `🛍 Товар (ID: ${l.premium.value})` : l.premium.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.premium.value) || {}).name || 'Набор (не найден)'}` : `${l.premium.icon || ''} ${l.premium.label || l.premium.type}`) : '—';
                 return `
                 <div class="admin-item">
                     <div class="admin-item-info">
@@ -1063,6 +1081,7 @@
             document.getElementById('pass-free-type').value = freeType;
             toggleRewardInputType('free');
             if (freeType === 'shop_item') document.getElementById('pass-free-shop-select').value = (l.free && l.free.value) || '';
+            else if (freeType === 'cardpack') document.getElementById('pass-free-cardpack-select').value = (l.free && l.free.value) || '';
             else document.getElementById('pass-free-value').value = (l.free && l.free.value) || '';
             document.getElementById('pass-free-label').value = (l.free && l.free.label) || '';
             document.getElementById('pass-free-icon').value = (l.free && l.free.icon) || '';
@@ -1071,6 +1090,7 @@
             document.getElementById('pass-premium-type').value = premType;
             toggleRewardInputType('premium');
             if (premType === 'shop_item') document.getElementById('pass-premium-shop-select').value = (l.premium && l.premium.value) || '';
+            else if (premType === 'cardpack') document.getElementById('pass-premium-cardpack-select').value = (l.premium && l.premium.value) || '';
             else document.getElementById('pass-premium-value').value = (l.premium && l.premium.value) || '';
             document.getElementById('pass-premium-label').value = (l.premium && l.premium.label) || '';
             document.getElementById('pass-premium-icon').value = (l.premium && l.premium.icon) || '';
@@ -1103,13 +1123,17 @@
             const existing = (seasonPassData.levels || {})[levelNum];
             
             const freeType = document.getElementById('pass-free-type').value;
-            const freeVal = freeType === 'shop_item' ? document.getElementById('pass-free-shop-select').value : document.getElementById('pass-free-value').value.trim();
-            let free = { type: freeType, label: document.getElementById('pass-free-label').value.trim(), value: freeVal, icon: document.getElementById('pass-free-icon').value.trim() || (freeType==='shop_item'?'🛍':'🎁') };
+            const freeVal = freeType === 'shop_item' ? document.getElementById('pass-free-shop-select').value
+                : freeType === 'cardpack' ? document.getElementById('pass-free-cardpack-select').value
+                : document.getElementById('pass-free-value').value.trim();
+            let free = { type: freeType, label: document.getElementById('pass-free-label').value.trim(), value: freeVal, icon: document.getElementById('pass-free-icon').value.trim() || (freeType==='shop_item'?'🛍':freeType==='cardpack'?'🃏':'🎁') };
             if (existing && existing.free && existing.free.itemId) free.itemId = existing.free.itemId;
             
             const premType = document.getElementById('pass-premium-type').value;
-            const premVal = premType === 'shop_item' ? document.getElementById('pass-premium-shop-select').value : document.getElementById('pass-premium-value').value.trim();
-            let premium = { type: premType, label: document.getElementById('pass-premium-label').value.trim(), value: premVal, icon: document.getElementById('pass-premium-icon').value.trim() || (premType==='shop_item'?'🛍':'👑') };
+            const premVal = premType === 'shop_item' ? document.getElementById('pass-premium-shop-select').value
+                : premType === 'cardpack' ? document.getElementById('pass-premium-cardpack-select').value
+                : document.getElementById('pass-premium-value').value.trim();
+            let premium = { type: premType, label: document.getElementById('pass-premium-label').value.trim(), value: premVal, icon: document.getElementById('pass-premium-icon').value.trim() || (premType==='shop_item'?'🛍':premType==='cardpack'?'🃏':'👑') };
             if (existing && existing.premium && existing.premium.itemId) premium.itemId = existing.premium.itemId;
 
             Promise.all([ensureRewardShopItem(free), ensureRewardShopItem(premium)]).then(([freeFinal, premiumFinal]) => {

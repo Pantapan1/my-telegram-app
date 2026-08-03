@@ -546,6 +546,7 @@
             myUser = snap.val() || {};
             document.getElementById('my-coins').textContent = myUser.coins || 0;
             renderShop();
+            renderPacksGrid();
         });
 
         // === Реклама за монеты (AdsGram) ===

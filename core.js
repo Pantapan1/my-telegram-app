@@ -453,6 +453,9 @@ import { renderEventsCalendar } from './events.js';
                 if (state.activeOverlay === 'userprofile' && state.viewingUserId) {
                     renderUserProfileOverlay(state.viewingUserId);
                 }
+                if (state.activeOverlay === 'packShop' && window.renderPackShopView) {
+                    window.renderPackShopView();
+                }
             });
 
             onValue(ref(state.db, 'chats'), (snapshot) => {
