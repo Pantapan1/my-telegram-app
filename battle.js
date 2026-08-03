@@ -435,16 +435,17 @@ function renderBattleView() {
 
     const oppHandCount = Object.keys(opp.hand || {}).length;
     const oppBoardHtml = Object.entries(opp.board || {}).map(([iid, m]) => renderMinion(iid, m, false, myTurn)).join('')
-        || '<div style="color:var(--text-secondary);font-size:12px;padding:8px;">Стол пуст</div>';
+        || '<div class="battle-empty-zone">Стол соперника пуст</div>';
     const myBoardHtml = Object.entries(me.board || {}).map(([iid, m]) => renderMinion(iid, m, true, myTurn && m.canAttack)).join('')
-        || '<div style="color:var(--text-secondary);font-size:12px;padding:8px;">Стол пуст</div>';
+        || '<div class="battle-empty-zone">Твой стол пуст</div>';
     const myHandHtml = Object.entries(me.hand || {}).map(([iid, cardId]) => {
         const card = cardById(cardId);
         const playable = myTurn && card && card.mana <= me.mana;
         return renderHandCard(iid, cardId, playable);
-    }).join('');
+    }).join('') || '<div class="battle-empty-zone">Рука пуста</div>';
 
     body.innerHTML = `
+    <div class="battle-arena">
         <div class="battle-player-row opp">
             <div class="battle-hero" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
                 <div class="battle-hero-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</div>
@@ -452,9 +453,12 @@ function renderBattleView() {
             </div>
             <div class="battle-hand-back">${'🂠'.repeat(Math.min(oppHandCount, 8))}</div>
         </div>
-        <div class="battle-board">${oppBoardHtml}</div>
-        <div class="battle-turn-indicator">${myTurn ? 'Твой ход' : `Ход соперника`} · раунд ${data.turnNumber}</div>
-        <div class="battle-board">${myBoardHtml}</div>
+        <div class="battle-zone-label">🛡 Стол соперника ${myTurn ? '· жми по существу или по герою, чтобы атаковать' : ''}</div>
+        <div class="battle-board opp-board">${oppBoardHtml}</div>
+        <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · раунд ${data.turnNumber}</div>
+        <div class="battle-zone-label">🛡 Твой стол · жми на существо, чтобы выбрать атакующего</div>
+        <div class="battle-board my-board">${myBoardHtml}</div>
+        <div class="battle-zone-label">🎴 Твоя рука · синяя рамка — можно разыграть</div>
         <div class="battle-hand">${myHandHtml}</div>
         <div class="battle-player-row mine">
             <div class="battle-hero" id="battle-hero-mine">
@@ -465,7 +469,8 @@ function renderBattleView() {
                 <button class="btn btn-secondary" onclick="surrenderBattle()" style="padding:10px 14px;">Сдаться</button>
                 <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
             </div>
-        </div>`;
+        </div>
+    </div>`;
 
     if (prevHealth.opp !== null && opp.heroHealth < prevHealth.opp) showDamagePopup('battle-hero-opp', prevHealth.opp - opp.heroHealth);
     if (prevHealth.mine !== null && me.heroHealth < prevHealth.mine) showDamagePopup('battle-hero-mine', prevHealth.mine - me.heroHealth);
