@@ -302,6 +302,7 @@ export function checkDailyCoinReward() {
 
             const me = state.usersData.find(u => u.id === state.currentUser.id);
             document.getElementById('stats-coins').textContent = (me && me.coins) || 0;
+            document.getElementById('stats-trophies').textContent = (me && me.wins) || 0;
             document.getElementById('stats-time-spent').textContent = formatTimeSpent((me && me.totalTimeSpent) || 0);
             
             const genreCounts = {}; 

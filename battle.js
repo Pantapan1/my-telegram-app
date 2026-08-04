@@ -463,13 +463,15 @@ function renderBattleView() {
             <div class="empty-state" style="padding-top:60px;">
                 <span class="icon">${iWon ? '🏆' : '💀'}</span>
                 <div class="title">${iWon ? 'Победа!' : 'Поражение'}</div>
-                <div class="sub">${iWon ? 'Ты получил 20 🪙 за победу' : 'В следующий раз повезёт'}</div>
+                <div class="sub">${iWon ? 'Ты получил 20 🪙 и +1 🏆 кубок за победу' : 'В следующий раз повезёт'}</div>
                 <button class="btn" onclick="leaveBattle()" style="margin-top:16px;">Выйти</button>
             </div>`;
         return;
     }
 
     const oppHandCount = Object.keys(opp.hand || {}).length;
+    const oppHandBacksHtml = Array.from({ length: Math.min(oppHandCount, 10) })
+        .map(() => `<div class="battle-card-back"></div>`).join('') || '<div class="battle-empty-zone">Рука пуста</div>';
     const oppBoardHtml = Object.entries(opp.board || {}).map(([iid, m]) => renderMinion(iid, m, false, myTurn)).join('')
         || '<div class="battle-empty-zone">Стол соперника пуст</div>';
     const myBoardHtml = Object.entries(me.board || {}).map(([iid, m]) => renderMinion(iid, m, true, myTurn && m.canAttack)).join('')
@@ -486,30 +488,29 @@ function renderBattleView() {
 
     body.innerHTML = `
     <div class="battle-arena">
-        <div class="battle-player-row opp">
-            <div class="battle-hero" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
-                <div class="battle-hero-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</div>
-                <div class="battle-hero-stats">❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</div>
+        <div class="battle-hand-strip opp">
+            <div class="battle-hand-row">${oppHandBacksHtml}</div>
+            <div class="battle-name-tab" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
+                <span class="bnt-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
+                <span class="bnt-stats">❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
             </div>
-            <div class="battle-hand-back">${'🂠'.repeat(Math.min(oppHandCount, 8))}</div>
         </div>
         ${hintHtml}
-        <div class="battle-zone-label">🛡 Стол соперника</div>
-        <div class="battle-board opp-board">${oppBoardHtml}</div>
-        <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · раунд ${data.turnNumber}</div>
-        <div class="battle-zone-label">🛡 Твой стол</div>
-        <div class="battle-board my-board">${myBoardHtml}</div>
-        <div class="battle-zone-label">🎴 Рука</div>
-        <div class="battle-hand">${myHandHtml}</div>
-        <div class="battle-player-row mine">
-            <div class="battle-hero" id="battle-hero-mine">
-                <div class="battle-hero-name">Ты</div>
-                <div class="battle-hero-stats">❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</div>
+        <div class="battle-battlefield">
+            <div class="bf-half opp-board">${oppBoardHtml}</div>
+            <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · раунд ${data.turnNumber}</div>
+            <div class="bf-half my-board">${myBoardHtml}</div>
+        </div>
+        <div class="battle-hand-strip mine">
+            <div class="battle-name-tab" id="battle-hero-mine">
+                <span class="bnt-name">Ты</span>
+                <span class="bnt-stats">❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</span>
             </div>
-            <div style="display:flex;gap:8px;">
-                <button class="btn btn-secondary" onclick="surrenderBattle()" style="padding:10px 14px;">Сдаться</button>
-                <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
-            </div>
+            <div class="battle-hand-row">${myHandHtml}</div>
+        </div>
+        <div class="battle-actions-row">
+            <button class="btn btn-secondary" onclick="surrenderBattle()">Сдаться</button>
+            <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
         </div>
     </div>`;
 
@@ -584,7 +585,7 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
     if (opponent.heroHealth <= 0) {
         updates['battles/' + battleId + '/status'] = 'finished';
         updates['battles/' + battleId + '/winner'] = actorSlot;
-        if (!data[actorSlot].isBot) update(ref(state.db, 'users/' + actor.uid), { coins: increment(20) }).catch(() => {});
+        if (!data[actorSlot].isBot) update(ref(state.db, 'users/' + actor.uid), { coins: increment(20), wins: increment(1) }).catch(() => {});
     } else if (actor.heroHealth <= 0) {
         updates['battles/' + battleId + '/status'] = 'finished';
         updates['battles/' + battleId + '/winner'] = opponentSlot;
@@ -652,7 +653,7 @@ function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) 
     if (opp.heroHealth <= 0) {
         updates['battles/' + battleId + '/status'] = 'finished';
         updates['battles/' + battleId + '/winner'] = mySlot;
-        if (!data[mySlot].isBot) update(ref(state.db, 'users/' + me.uid), { coins: increment(20) }).catch(() => {});
+        if (!data[mySlot].isBot) update(ref(state.db, 'users/' + me.uid), { coins: increment(20), wins: increment(1) }).catch(() => {});
     } else if (me.heroHealth <= 0) {
         updates['battles/' + battleId + '/status'] = 'finished';
         updates['battles/' + battleId + '/winner'] = oppSlot;
@@ -694,7 +695,7 @@ function endTurn(battleId, data, currentSlot) {
     if (nextPlayer.heroHealth <= 0) {
         updates['battles/' + battleId + '/status'] = 'finished';
         updates['battles/' + battleId + '/winner'] = currentSlot;
-        if (!data[currentSlot].isBot) update(ref(state.db, 'users/' + data[currentSlot].uid), { coins: increment(20) }).catch(() => {});
+        if (!data[currentSlot].isBot) update(ref(state.db, 'users/' + data[currentSlot].uid), { coins: increment(20), wins: increment(1) }).catch(() => {});
     }
 
     update(ref(state.db), updates);

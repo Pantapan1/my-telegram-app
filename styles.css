@@ -1079,34 +1079,57 @@
            БОЙ (КАРТОЧНАЯ ИГРА)
            ============================================================ */
         .battle-arena { display: flex; flex-direction: column; height: 100%; }
-        .battle-player-row {
-            display: flex; align-items: center; justify-content: space-between; padding: 10px 16px;
-            flex: 0 0 auto;
+
+        /* Полоска руки (сверху — соперник рубашками вниз, снизу — твои карты лицом) */
+        .battle-hand-strip { flex: 0 0 auto; display: flex; flex-direction: column; position: relative; z-index: 3; }
+        .battle-hand-row {
+            display: flex; gap: 10px; padding: 10px 14px; overflow-x: auto; align-items: center;
+            height: 118px; box-sizing: border-box; background: rgba(0,0,0,.05);
         }
-        .battle-hero { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 14px; cursor: default; }
-        .battle-player-row.opp .battle-hero { cursor: pointer; }
-        .battle-hero-name { font-weight: 800; color: var(--text-primary); font-size: 13px; }
-        .battle-hero-stats { font-size: 12px; color: var(--text-secondary); font-weight: 700; margin-top: 2px; }
-        .battle-hand-back { font-size: 20px; letter-spacing: -6px; color: var(--text-secondary); }
-        .battle-turn-indicator {
-            text-align: center; font-weight: 800; font-size: 12px; color: #fff; flex: 0 0 auto;
-            padding: 6px 0; background: linear-gradient(90deg, transparent, rgba(237,143,3,.55), transparent);
+        .battle-hand-strip.opp { border-bottom: 1px solid var(--border-soft); }
+        .battle-hand-strip.mine { border-top: 1px solid var(--border-soft); }
+
+        /* Плашка с именем и хп/маной героя, "нахлёстом" на границу руки и поля боя */
+        .battle-name-tab {
+            align-self: flex-start; margin-left: 14px; background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 999px; padding: 5px 14px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.25); position: relative; z-index: 4;
         }
-        .battle-zone-label {
-            font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
-            color: var(--text-secondary); padding: 3px 16px; flex: 0 0 auto; opacity: .75;
+        .battle-hand-strip.opp .battle-name-tab { margin-top: -14px; cursor: pointer; }
+        .battle-hand-strip.mine .battle-name-tab { margin-bottom: -14px; cursor: default; }
+        .bnt-name { font-weight: 800; color: var(--text-primary); font-size: 12px; }
+        .bnt-stats { font-size: 11px; color: var(--text-secondary); font-weight: 700; }
+
+        /* Рубашка карты соперника — мы не видим, что там */
+        .battle-card-back {
+            flex-shrink: 0; width: 56px; height: 74px; border-radius: 10px;
+            background: repeating-linear-gradient(135deg, #3a2c1a, #3a2c1a 6px, #4a3a24 6px, #4a3a24 12px);
+            border: 2px solid #6b5636; box-shadow: 0 2px 4px rgba(0,0,0,.35);
         }
 
-        /* Стол — зелёное сукно как в настольных карточных играх */
-        .battle-board {
-            display: flex; gap: 14px; padding: 8px 16px; height: 104px; overflow-x: auto; overflow-y: hidden;
-            align-items: center; flex: 0 0 auto; box-sizing: border-box;
-            background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 75%, #14301f 100%);
-            box-shadow: inset 0 3px 10px rgba(0,0,0,.35);
+        /* Единое поле боя — стол соперника сверху, твой снизу, разделены индикатором хода */
+        .battle-battlefield {
+            flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+            background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 65%, #14301f 100%);
+            box-shadow: inset 0 3px 14px rgba(0,0,0,.4); min-height: 160px; position: relative; z-index: 1;
         }
-        .battle-board.opp-board { border-top: 1px solid rgba(0,0,0,.4); }
-        .battle-board.my-board { border-bottom: 1px solid rgba(0,0,0,.4); }
-        .battle-empty-zone { color: rgba(255,255,255,.55); font-size: 11px; }
+        .bf-half {
+            display: flex; gap: 14px; padding: 8px 16px; min-height: 100px; overflow-x: auto; overflow-y: hidden;
+            align-items: center; box-sizing: border-box; flex: 1 1 0;
+        }
+        .bf-half.opp-board { border-bottom: 1px dashed rgba(255,255,255,.12); }
+        .battle-turn-indicator {
+            text-align: center; font-weight: 800; font-size: 12px; color: #fff; flex: 0 0 auto;
+            padding: 5px 0; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(237,143,3,.65), rgba(0,0,0,0));
+        }
+        .battle-empty-zone { color: rgba(255,255,255,.5); font-size: 11px; }
+        .battle-hint {
+            flex: 0 0 auto; font-size: 11px; text-align: center; color: var(--text-secondary);
+            padding: 4px 16px; opacity: .8;
+        }
+
+        .battle-actions-row { flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; }
+        .battle-actions-row .btn { padding: 10px 16px; }
 
         /* Существо на столе — круглый портрет с самоцветами атаки/здоровья по бокам, как в HS */
         .battle-minion { flex-shrink: 0; width: 60px; text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
