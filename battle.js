@@ -480,6 +480,10 @@ function renderBattleView() {
         return renderHandCard(iid, cardId, playable);
     }).join('') || '<div class="battle-empty-zone">Рука пуста</div>';
 
+    const showHint = !state.battleHintShown;
+    state.battleHintShown = true;
+    const hintHtml = showHint ? `<div class="battle-hint">Тапни карту в руке, чтобы разыграть · тапни своё существо, потом цель, чтобы атаковать</div>` : '';
+
     body.innerHTML = `
     <div class="battle-arena">
         <div class="battle-player-row opp">
@@ -489,12 +493,13 @@ function renderBattleView() {
             </div>
             <div class="battle-hand-back">${'🂠'.repeat(Math.min(oppHandCount, 8))}</div>
         </div>
-        <div class="battle-zone-label">🛡 Стол соперника ${myTurn ? '· жми по существу или по герою, чтобы атаковать' : ''}</div>
+        ${hintHtml}
+        <div class="battle-zone-label">🛡 Стол соперника</div>
         <div class="battle-board opp-board">${oppBoardHtml}</div>
         <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · раунд ${data.turnNumber}</div>
-        <div class="battle-zone-label">🛡 Твой стол · жми на существо, чтобы выбрать атакующего</div>
+        <div class="battle-zone-label">🛡 Твой стол</div>
         <div class="battle-board my-board">${myBoardHtml}</div>
-        <div class="battle-zone-label">🎴 Твоя рука · синяя рамка — можно разыграть</div>
+        <div class="battle-zone-label">🎴 Рука</div>
         <div class="battle-hand">${myHandHtml}</div>
         <div class="battle-player-row mine">
             <div class="battle-hero" id="battle-hero-mine">
