@@ -1078,7 +1078,20 @@
         /* ============================================================
            БОЙ (КАРТОЧНАЯ ИГРА)
            ============================================================ */
-        .battle-arena { display: flex; flex-direction: column; height: 100%; }
+        .battle-arena {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100dvh;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: var(--bg-gradient); 
+    z-index: 9999;
+    overflow: hidden;
+    box-sizing: border-box;
+}
 
         /* Полоска руки (сверху — соперник рубашками вниз, снизу — твои карты лицом) */
         .battle-hand-strip { flex: 0 0 auto; display: flex; flex-direction: column; position: relative; z-index: 3; }
@@ -1095,8 +1108,8 @@
             border-radius: 999px; padding: 5px 14px; display: flex; align-items: center; gap: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,.25); position: relative; z-index: 4;
         }
-        .battle-hand-strip.opp .battle-name-tab { margin-top: -14px; cursor: pointer; }
-        .battle-hand-strip.mine .battle-name-tab { margin-bottom: -14px; cursor: default; }
+        .battle-hand-strip.opp .battle-name-tab { margin-top: -10px; margin-bottom: 10px; cursor: pointer; }
+        .battle-hand-strip.mine .battle-name-tab { margin-bottom: -10px; margin-top: 10px; cursor: default; }
         .bnt-name { font-weight: 800; color: var(--text-primary); font-size: 12px; }
         .bnt-stats { font-size: 11px; color: var(--text-secondary); font-weight: 700; }
 
@@ -1109,10 +1122,16 @@
 
         /* Единое поле боя — стол соперника сверху, твой снизу, разделены индикатором хода */
         .battle-battlefield {
-            flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
-            background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 65%, #14301f 100%);
-            box-shadow: inset 0 3px 14px rgba(0,0,0,.4); min-height: 160px; position: relative; z-index: 1;
-        }
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 65%, #14301f 100%);
+    box-shadow: inset 0 3px 14px rgba(0,0,0,.4);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
         .bf-half {
             display: flex; gap: 14px; padding: 8px 16px; min-height: 100px; overflow-x: auto; overflow-y: hidden;
             align-items: center; box-sizing: border-box; flex: 1 1 0;
@@ -1128,8 +1147,23 @@
             padding: 4px 16px; opacity: .8;
         }
 
-        .battle-actions-row { flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; }
-        .battle-actions-row .btn { padding: 10px 16px; }
+        .battle-actions-row {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border-soft);
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.battle-actions-row .btn {
+    padding: 12px 20px;
+    font-size: 14px;
+    width: auto;
+    flex: 1;
+    max-width: 200px;
+}
 
         /* Существо на столе — круглый портрет с самоцветами атаки/здоровья по бокам, как в HS */
         .battle-minion { flex-shrink: 0; width: 60px; text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
@@ -1141,7 +1175,17 @@
             border: 3px solid #d9c48a; background: radial-gradient(circle, #4a3d2e, #241d14); box-sizing: border-box; position: relative;
             box-shadow: 0 2px 6px rgba(0,0,0,.4);
         }
-        .bm-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+        .bm-portrait img, 
+        .bhc-portrait img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        
         .battle-minion-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
         .bm-badges { display: flex; justify-content: space-between; width: 58px; margin: -10px auto 0; position: relative; z-index: 2; }
         .bm-atk, .bm-hp {
@@ -1168,7 +1212,7 @@
             border: 2px solid #6b5636; box-sizing: border-box;
         }
         .battle-hand-card.playable .bhc-portrait { border-color: #4fa8ff; box-shadow: 0 0 0 2px rgba(79,168,255,.4), 0 3px 8px rgba(0,0,0,.4); }
-        .bhc-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
         .bhc-portrait::after {
             content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
             background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));
@@ -1228,6 +1272,3 @@
             50% { box-shadow: 0 0 0 8px rgba(237,143,3,0); }
         }
         .battle-pulse { animation: battlePulse 1.6s ease-in-out infinite; }
-
-
-
