@@ -10,6 +10,48 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ============================================================
+           ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ АКТИВНЫХ СПОСОБНОСТЕЙ В БОЮ
+           ============================================================ */
+        .bm-ability-btn {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            background: #ff9f0a;
+            border: 2px solid #2a2015;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 11px;
+            color: #fff;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .bm-ability-btn.active {
+            background: #30d158;
+            box-shadow: 0 0 10px #30d158;
+            transform: scale(1.15);
+        }
+        .bm-cooldown-badge {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            border: 1px solid #6b5636;
+            border-radius: 10px;
+            padding: 2px 4px;
+            font-size: 9px;
+            font-weight: 800;
+            z-index: 5;
+        }
+    </style>
 </head>
 <body>
 
@@ -695,8 +737,11 @@
                         <option value="deathrattle_draw">Предсмертный хрип: добрать карты</option>
                         <option value="deathrattle_heal">Предсмертный хрип: лечение своего героя</option>
                         <option value="deathrattle_summon_token">Предсмертный хрип: призвать существо "Дух" 1/N</option>
+                        <option value="active_damage_target">Активная: Урон выбранной цели</option>
+                        <option value="active_heal_target">Активная: Лечение выбранной цели</option>
                     </select>
                     <input type="number" id="card-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
+                    <input type="number" id="card-cooldown" class="input" placeholder="Кулдаун активной способности (ходов)" min="1" value="2">
                     <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
                         <input type="checkbox" id="card-taunt" style="width:18px;height:18px;"> Провокация (сначала должны атаковать это существо)
                     </label>
@@ -1096,4 +1141,4 @@
     <!-- FIREBASE + ЛОГИКА (разбито на модули: state, constants, utils, pass, feed, books, profile, chats, admin, core) -->
     <script type="module" src="core.js"></script>
 </body>
-                        </html>
+</html>

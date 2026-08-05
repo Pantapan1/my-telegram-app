@@ -85,4 +85,5 @@ export const state = {
   lastTypingSent: 0,
   typingClearTimer: null,
   editingQuestId: null,
+  arenasData: [],
 };

@@ -142,14 +142,31 @@ function renderCardGameMenu() {
     const totalCards = Object.values(state.myCollection || {}).reduce((s, n) => s + n, 0);
 
     body.innerHTML = `
-        <div style="text-align:center;padding:10px 0 24px;">
-            <div style="font-size:48px;margin-bottom:8px;">🃏</div>
-            <div style="color:var(--text-secondary);font-size:13px;">${deckCount} колод · ${uniqueCards} карт в коллекции (${totalCards} шт.)</div>
+        <div class="cg-menu-header">
+            <div class="cg-title">Врата Бездны</div>
+            <div class="cg-stats">Колод: ${deckCount} | Карт собрано: ${uniqueCards} (${totalCards} шт.)</div>
         </div>
-        <button class="btn" onclick="startCardBattle()" style="font-size:16px;padding:16px;">⚔️ Играть</button>
-        <button class="btn btn-secondary" onclick="openDecksOverlay()" style="margin-top:10px;">🃏 Мои колоды (${deckCount})</button>
-        <button class="btn btn-secondary" onclick="openCardCollection()" style="margin-top:10px;">📚 Коллекция (${uniqueCards})</button>
-        <button class="btn btn-secondary" onclick="openPackShop()" style="margin-top:10px;">🛍 Магазин наборов</button>
+        <div class="cg-menu-grid">
+            <div class="cg-main-btn" onclick="startCardBattle()">
+                <div class="cg-icon">⚔️</div>
+                <div class="cg-label">В БОЙ</div>
+                <div class="cg-sub">Искать противника</div>
+            </div>
+            
+            <div class="cg-side-btns">
+                <div class="cg-btn" onclick="openDecksOverlay()">
+                    <div style="font-size:24px; margin-bottom:4px;">🃏</div>
+                    Мои колоды
+                </div>
+                <div class="cg-btn" onclick="openCardCollection()">
+                    <div style="font-size:24px; margin-bottom:4px;">📚</div>
+                    Коллекция
+                </div>
+                <button class="cg-btn full-width" onclick="openPackShop()">
+                    🛍 Магазин наборов
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -429,4 +446,3 @@ function renderPackOpeningReveal(drawn) {
         <button class="btn" onclick="renderPackShopView()" style="margin-top:14px;">Продолжить</button>
     `;
 }
-

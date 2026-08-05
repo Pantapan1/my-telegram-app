@@ -4,6 +4,56 @@ import { escapeHtml, colorFor, initialOf, cardFrameStyle } from './utils.js';
 
 const BOT_NAMES = ['Артём', 'Максим', 'Соня', 'Данил', 'Егор', 'Полина', 'Тимур', 'Вика'];
 
+// ===================== АНИМАЦИИ И МУЗЫКА =====================
+
+window.showBattleFloatingText = function(elId, text, color) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const popup = document.createElement('div');
+    popup.className = 'battle-floating-text';
+    popup.style.left = (rect.left + rect.width / 2) + 'px';
+    popup.style.top = rect.top + 'px';
+    popup.style.color = color || '#ff453a';
+    popup.textContent = text;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1000);
+};
+
+let currentBgmUrl = null;
+
+function playBattleMusic(url) {
+    const audio = document.getElementById('battle-bgm');
+    if (!audio) return;
+    if (currentBgmUrl === url && !audio.paused) return; 
+    
+    audio.pause();
+    currentBgmUrl = url;
+    if (url && localStorage.getItem('sr_sound_enabled') !== '0') {
+        audio.src = url;
+        audio.volume = 0.35;
+        audio.play().catch(e => console.warn('Музыка заблокирована браузером', e));
+    }
+}
+
+function stopBattleMusic() {
+    const audio = document.getElementById('battle-bgm');
+    if (audio) { audio.pause(); audio.src = ""; }
+    currentBgmUrl = null;
+}
+
+window.showCardEffectInfo = function(event, title, text) {
+    event.stopPropagation();
+    const msg = text || 'Особый эффект карты';
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+        window.Telegram.WebApp.showAlert(`${title}: ${msg}`);
+    } else {
+        alert(`${title}: ${msg}`);
+    }
+};
+
+// ===================== УТИЛИТЫ =====================
+
 function randId() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }
@@ -18,7 +68,6 @@ function shuffle(arr) {
 }
 
 function expandDeck(cards) {
-    // cards: { cardId: count } -> flat array of cardIds
     const pile = [];
     Object.entries(cards || {}).forEach(([cardId, count]) => {
         for (let i = 0; i < count; i++) pile.push(cardId);
@@ -65,9 +114,6 @@ function cardById(id) {
     return state.cardsData.find(c => c.id === id);
 }
 
-// Firebase Realtime Database не хранит пустые объекты ({}) — если стол/рука/комбо
-// становятся пустыми, при следующем чтении это поле пропадает (undefined) вместо {}.
-// Без этой нормализации попытка actor.board[id] = ... падает с ошибкой и запись в базу не происходит.
 function normalizePlayerState(p) {
     if (!p) return p;
     p.hand = p.hand || {};
@@ -89,7 +135,6 @@ function drawCards(player, n, log) {
     }
 }
 
-// actor — тот, кто получает бонус эффекта; opponent — противник (для урона по герою)
 function applyEffect(actor, opponent, effectType, value, log) {
     if (!effectType || !value) return;
     switch (effectType) {
@@ -146,7 +191,7 @@ function applyEffect(actor, opponent, effectType, value, log) {
         case 'buff_all_own': {
             const minions = Object.values(actor.board || {});
             minions.forEach(m => { m.attack += value; m.health += value; m.maxHealth = (m.maxHealth || m.health) + value; });
-            if (minions.length) log.push(`${actor.name}: эффект даёт всем своим существам +${value}/+${value}`);
+            if (minions.length) log.push(`${actor.name}: эффект даёт всем своих существам +${value}/+${value}`);
             break;
         }
         case 'battlecry_freeze_random': {
@@ -155,21 +200,21 @@ function applyEffect(actor, opponent, effectType, value, log) {
                 const [, m] = targets[Math.floor(Math.random() * targets.length)];
                 m.frozen = true;
                 m.canAttack = false;
-                log.push(`${actor.name}: эффект замораживает «${m.name}» — оно пропустит следующую атаку`);
+                log.push(`${actor.name}: эффект замораживает «${m.name}»`);
             }
             break;
         }
         case 'deathrattle_summon_token': {
             const iid = randId();
             actor.board = actor.board || {};
-            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0 };
+            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0, cooldownMax: 2, cooldownCurrent: 0 };
             log.push(`${actor.name}: эффект призывает «Дух» ${1}/${value || 1}`);
             break;
         }
         case 'battlecry_summon_token': {
             const iid = randId();
             actor.board = actor.board || {};
-            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0 };
+            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0, cooldownMax: 2, cooldownCurrent: 0 };
             log.push(`${actor.name}: эффект призывает «Дух» ${1}/${value || 1} на стол`);
             break;
         }
@@ -195,6 +240,7 @@ function applyEffect(actor, opponent, effectType, value, log) {
                 m.taunt = false;
                 m.deathrattleType = null;
                 m.deathrattleValue = 0;
+                m.activeType = null;
                 log.push(`${actor.name}: эффект снимает способности с «${m.name}»`);
             }
             break;
@@ -317,13 +363,13 @@ function applyEffect(actor, opponent, effectType, value, log) {
             if (minions.length) {
                 const m = minions[Math.floor(Math.random() * minions.length)];
                 m.shielded = true;
-                log.push(`${actor.name}: эффект даёт щит «${m.name}» (поглотит следующий удар)`);
+                log.push(`${actor.name}: эффект даёт щит «${m.name}»`);
             }
             break;
         }
         case 'battlecry_shield_hero': {
             actor.heroShielded = true;
-            log.push(`${actor.name}: эффект даёт герою щит (поглотит следующую атаку по герою)`);
+            log.push(`${actor.name}: эффект даёт герою щит`);
             break;
         }
         case 'battlecry_chaos': {
@@ -340,7 +386,6 @@ function applyEffect(actor, opponent, effectType, value, log) {
     }
 }
 
-// проверяет и запускает комбо-бонусы для игрока actor после того, как на его столе появилась новая карта
 function checkCombos(actor, opponent, log) {
     const ownedCardIds = new Set(Object.values(actor.board || {}).map(m => m.cardId));
     actor.firedCombos = actor.firedCombos || {};
@@ -350,8 +395,17 @@ function checkCombos(actor, opponent, log) {
         if (ids.length < 2) return;
         const allPresent = ids.every(id => ownedCardIds.has(id));
         if (!allPresent) return;
+        
         actor.firedCombos[combo.id] = true;
         log.push(`✨ Комбо «${combo.name}» активировано!`);
+        
+        if (actor.uid === state.currentUser.id) {
+            setTimeout(() => {
+                window.showBattleFloatingText('battle-hero-mine', `КОМБО: ${combo.name}!`, '#bf5af2');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }, 100);
+        }
+        
         if (combo.effectType) applyEffect(actor, opponent, combo.effectType, combo.effectValue, log);
     });
 }
@@ -361,16 +415,21 @@ function hasTaunt(boardObj) {
 }
 
 function makeBoardEntry(card) {
+    const isActive = card.effectType && card.effectType.startsWith('active_');
     return {
         cardId: card.id, name: card.name, image: card.image || '',
         attack: card.attack || 0, health: card.health || 1, maxHealth: card.health || 1,
         canAttack: !!card.charge, taunt: !!card.taunt, lifesteal: !!card.lifesteal, shielded: false,
         deathrattleType: card.effectType && card.effectType.startsWith('deathrattle_') ? card.effectType : null,
         deathrattleValue: card.effectValue || 0,
+        activeType: isActive ? card.effectType : null,
+        activeValue: card.effectValue || 0,
+        cooldownMax: card.cooldown || 2,
+        cooldownCurrent: 0
     };
 }
 
-// ===================== МАТЧМЕЙКИНГ =====================
+// ===================== МАТЧМЕЙКИНГ И АРЕНА =====================
 
 let queueListenerRef = null;
 let assignmentListenerRef = null;
@@ -435,12 +494,10 @@ function beginQueue(deckId) {
         const [oppUid, oppInfo] = others[0];
         const STALE_MS = 12000;
         if (Date.now() - (oppInfo.ts || 0) > STALE_MS) {
-            // "призрак" от прерванной сессии — не матчимся, а подчищаем
             remove(ref(state.db, 'matchmakingQueue/' + oppUid)).catch(() => {});
             return;
         }
         if (myUid < oppUid) {
-            // мы отвечаем за создание боя
             finishQueueing();
             remove(ref(state.db, 'matchmakingQueue/' + myUid)).catch(() => {});
             remove(ref(state.db, 'matchmakingQueue/' + oppUid)).catch(() => {});
@@ -453,7 +510,6 @@ function beginQueue(deckId) {
                 enterBattle(battleId);
             });
         }
-        // если наш uid больше — просто ждём, нас заберёт другой клиент
     });
 
     state.matchmakingTimer = setTimeout(() => {
@@ -488,7 +544,6 @@ export function cancelMatchmaking() {
     remove(ref(state.db, 'matchmakingQueue/' + state.currentUser.id)).catch(() => {});
 }
 
-// подчищаем очередь, если страница закрывается/сворачивается прямо во время поиска
 window.addEventListener('beforeunload', () => {
     if (state.inQueue && state.currentUser && state.currentUser.id) {
         remove(ref(state.db, 'matchmakingQueue/' + state.currentUser.id)).catch(() => {});
@@ -500,7 +555,7 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// ===================== СОЗДАНИЕ БОЯ =====================
+// ===================== СОЗДАНИЕ И ВХОД В БОЙ =====================
 
 function createBattle(p1info, p2info, isBot) {
     const p1Deck = (state.myDecks.find(d => d.id === p1info.deckId) || {}).cards || {};
@@ -514,6 +569,21 @@ function createBattle(p1info, p2info, isBot) {
     return p2DeckPromise.then(p2Deck => {
         const goesFirst = Math.random() < 0.5 ? 'p1' : 'p2';
 
+        const arenas = state.arenasData || [];
+        const arena = arenas.length > 0 ? arenas[Math.floor(Math.random() * arenas.length)] : null;
+
+        const p1 = initPlayerState(p1info.uid, p1info.name, false, p1Deck);
+        const p2 = initPlayerState(p2info.uid, p2info.name, !!isBot, p2Deck);
+
+        if (arena && arena.effectType === 'start_hp_boost') {
+            const v = arena.effectValue || 0;
+            p1.maxHealth += v; p1.heroHealth += v;
+            p2.maxHealth += v; p2.heroHealth += v;
+        } else if (arena && arena.effectType === 'start_mana') {
+            const v = arena.effectValue || 0;
+            p1.mana += v; p2.mana += v;
+        }
+
         const battle = {
             status: 'active',
             createdAt: Date.now(),
@@ -521,8 +591,8 @@ function createBattle(p1info, p2info, isBot) {
             turnNumber: 1,
             isBot: !!isBot,
             winner: null,
-            p1: initPlayerState(p1info.uid, p1info.name, false, p1Deck),
-            p2: initPlayerState(p2info.uid, p2info.name, !!isBot, p2Deck),
+            arenaId: arena ? arena.id : null,
+            p1, p2,
             log: { [randId()]: { t: Date.now(), text: 'Бой начался!' } },
         };
 
@@ -531,37 +601,61 @@ function createBattle(p1info, p2info, isBot) {
     });
 }
 
-// ===================== ВХОД В БОЙ / СИНХРОНИЗАЦИЯ =====================
-
 let battleRefListener = null;
 let activeBotRunKey = null;
 
 function enterBattle(battleId) {
     state.activeBattleId = battleId;
     state.selectedAttackerIid = null;
-    prevHealth = { mine: null, opp: null };
+    state.selectedAbilityIid = null;
+    let prevHealth = { mine: null, opp: null };
     activeBotRunKey = null;
     document.getElementById('battle-header-title').textContent = 'Бой';
 
     if (battleRefListener) off(battleRefListener);
     battleRefListener = ref(state.db, 'battles/' + battleId);
+
+    let introShown = false;
+
     onValue(battleRefListener, (snap) => {
         const data = snap.val();
         if (!data) return;
         state.battleData = data;
         state.mySlot = data.p1.uid === state.currentUser.id ? 'p1' : 'p2';
 
+        const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
+
         renderBattleView();
+
+        const bField = document.querySelector('.battle-battlefield');
+        if (bField && arena && arena.bgUrl) {
+            bField.style.backgroundImage = `url('${arena.bgUrl}')`;
+            bField.style.backgroundSize = 'cover';
+            bField.style.backgroundPosition = 'center';
+        }
+
+        if (arena && arena.bgmUrl && data.status === 'active') {
+            playBattleMusic(arena.bgmUrl);
+        }
+
+        if (arena && !introShown && data.status === 'active') {
+            introShown = true;
+            if (bField) {
+                const banner = document.createElement('div');
+                banner.className = 'arena-intro-banner';
+                banner.innerHTML = `⚔️ ${escapeHtml(arena.name)} ⚔️`;
+                bField.appendChild(banner);
+            }
+        }
+
+        if (data.status === 'finished') stopBattleMusic();
 
         const oppSlot = state.mySlot === 'p1' ? 'p2' : 'p1';
         if (data.status === 'active' && data.turnPlayer === oppSlot && data[oppSlot].isBot) {
-            // защита от повторного запуска: ход бота стартует один раз на turnNumber,
-            // а не при каждом изменении данных (иначе несколько параллельных запусков мешают друг другу)
             const runKey = battleId + ':' + data.turnNumber + ':' + oppSlot;
             if (activeBotRunKey !== runKey) {
                 activeBotRunKey = runKey;
                 runBotTurn(battleId).catch((err) => {
-                    console.error('Ошибка хода бота, завершаю ход принудительно:', err);
                     const fresh = state.battleData;
                     if (fresh && fresh.status === 'active' && fresh.turnPlayer === oppSlot) {
                         endTurn(battleId, fresh, oppSlot);
@@ -614,30 +708,31 @@ function watchOpponentInactivity(battleId, data, mySlot, oppSlot) {
     }, remaining + 500);
 }
 
-window.leaveBattle = function () {
-    cancelMatchmaking();
-    clearTimeout(inactivityTimer);
-    if (battleRefListener) { off(battleRefListener); battleRefListener = null; }
-    state.activeBattleId = null;
-    state.battleData = null;
-    document.getElementById('battle-overlay').classList.remove('active');
-    state.activeOverlay = 'cardGameMenu';
-    document.getElementById('card-game-menu-overlay').classList.add('active');
-};
-
 // ===================== РЕНДЕР =====================
 
 function renderMinion(iid, m, isMine, canSelect) {
     const selected = state.selectedAttackerIid === iid;
+    const isAbilitySelected = state.selectedAbilityIid === iid;
     const displayName = m.name || 'Существо';
+
+    let abilityBtn = '';
+    if (m.activeType && isMine) {
+        if (m.cooldownCurrent <= 0) {
+            abilityBtn = `<button class="bm-ability-btn ${isAbilitySelected ? 'active' : ''}" onclick="event.stopPropagation(); battleActivateAbility('${iid}')">⚡</button>`;
+        } else {
+            abilityBtn = `<div class="bm-cooldown-badge">⏳${m.cooldownCurrent}</div>`;
+        }
+    }
+
     return `
-    <div class="battle-minion ${canSelect ? 'can-attack' : ''} ${selected ? 'selected' : ''}"
+    <div id="minion-${iid}" class="battle-minion ${canSelect || isAbilitySelected ? 'can-attack' : ''} ${selected || isAbilitySelected ? 'selected' : ''}"
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
         <div class="bm-portrait">
             ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
             ${m.frozen ? '<div class="battle-frozen-badge">❄️</div>' : ''}
             ${m.shielded ? '<div class="battle-shield-badge">🔵</div>' : ''}
             ${m.lifesteal ? '<div class="battle-lifesteal-badge">🩸</div>' : ''}
+            ${abilityBtn}
             <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
             ${m.image ? `<img src="${m.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
         </div>
@@ -666,11 +761,9 @@ function renderHandCard(iid, cardId, playable) {
         ${isMinion
             ? `<div class="bhc-atk">${card.attack || 0}</div><div class="bhc-hp">${card.health || 0}</div>`
             : `<div class="bhc-spell-tag">✨ Закл.</div>`}
-        ${card.effectType ? `<div class="bhc-ability-badge" onclick="event.stopPropagation(); tg.showAlert('${escapeHtml(displayName)}: ${effectText || 'есть особый эффект'}')">✨</div>` : ''}
+        ${card.effectType ? `<div class="bhc-ability-badge" onclick="showCardEffectInfo(event, '${escapeHtml(displayName)}', '${effectText}')">✨</div>` : ''}
     </div>`;
 }
-
-let prevHealth = { mine: null, opp: null };
 
 function renderBattleView() {
     const body = document.getElementById('battle-body');
@@ -739,34 +832,33 @@ function renderBattleView() {
             <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
         </div>
     </div>`;
-
-    if (prevHealth.opp !== null && opp.heroHealth < prevHealth.opp) showDamagePopup('battle-hero-opp', prevHealth.opp - opp.heroHealth);
-    if (prevHealth.mine !== null && me.heroHealth < prevHealth.mine) showDamagePopup('battle-hero-mine', prevHealth.mine - me.heroHealth);
-    prevHealth = { mine: me.heroHealth, opp: opp.heroHealth };
-}
-
-function showDamagePopup(elId, amount) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.classList.add('hero-hit');
-    const num = document.createElement('div');
-    num.className = 'battle-dmg-popup';
-    num.textContent = '-' + amount;
-    el.appendChild(num);
-    setTimeout(() => num.remove(), 900);
-    setTimeout(() => el.classList.remove('hero-hit'), 400);
 }
 
 // ===================== ДЕЙСТВИЯ ИГРОКА =====================
 
 window.battleMinionTap = function (iid) {
     const data = state.battleData;
-    if (data.turnPlayer !== state.mySlot) { tg.showAlert('Сейчас не твой ход'); return; }
+    if (data.turnPlayer !== state.mySlot) { tg.showAlert ? tg.showAlert('Сейчас не твой ход') : alert('Сейчас не твой ход'); return; }
+    
     const me = data[state.mySlot];
     const minion = (me.board || {})[iid];
     if (!minion) return;
-    if (!minion.canAttack) { tg.showAlert('Это существо уже атаковало в этом ходу или ещё не может атаковать'); return; }
+    if (!minion.canAttack) { tg.showAlert ? tg.showAlert('Существо уже атаковало в этом ходу или заморожено') : alert('Не может атаковать'); return; }
+    
+    state.selectedAbilityIid = null;
     state.selectedAttackerIid = state.selectedAttackerIid === iid ? null : iid;
+    renderBattleView();
+};
+
+window.battleActivateAbility = function (iid) {
+    const data = state.battleData;
+    if (data.turnPlayer !== state.mySlot) return;
+    const me = data[state.mySlot];
+    const minion = (me.board || {})[iid];
+    if (!minion || minion.cooldownCurrent > 0) return;
+
+    state.selectedAttackerIid = null;
+    state.selectedAbilityIid = state.selectedAbilityIid === iid ? null : iid;
     renderBattleView();
 };
 
@@ -822,18 +914,26 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
 
 window.battleAttackTarget = function (targetIid) {
     const data = state.battleData;
-    if (data.turnPlayer !== state.mySlot || !state.selectedAttackerIid) return;
+    if (data.turnPlayer !== state.mySlot) return;
 
+    if (state.selectedAbilityIid) {
+        resolveActiveAbility(state.activeBattleId, data, state.mySlot, state.selectedAbilityIid, targetIid);
+        state.selectedAbilityIid = null;
+        return;
+    }
+
+    if (!state.selectedAttackerIid) return;
     const mySlot = state.mySlot;
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
     const opp = data[oppSlot];
     const attacker = (me.board || {})[state.selectedAttackerIid];
+    
     if (!attacker || !attacker.canAttack) return;
 
     if (hasTaunt(opp.board)) {
         const targetIsTaunt = targetIid !== 'hero' && (opp.board || {})[targetIid] && (opp.board || {})[targetIid].taunt;
-        if (!targetIsTaunt) { tg.showAlert ? tg.showAlert('Сначала нужно атаковать существо с провокацией') : alert('Сначала нужно атаковать существо с провокацией'); return; }
+        if (!targetIsTaunt) { tg.showAlert ? tg.showAlert('Сначала нужно атаковать существо с провокацией') : alert('Провокация мешает'); return; }
     }
 
     resolveAttack(state.activeBattleId, data, mySlot, oppSlot, state.selectedAttackerIid, targetIid);
@@ -841,51 +941,130 @@ window.battleAttackTarget = function (targetIid) {
 };
 
 function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) {
+    if (state.actionLocked) return;
+    state.actionLocked = true;
+
     const me = normalizePlayerState(JSON.parse(JSON.stringify(data[mySlot])));
     const opp = normalizePlayerState(JSON.parse(JSON.stringify(data[oppSlot])));
     const attacker = me.board[attackerIid];
-    if (!attacker) return;
+    if (!attacker) { state.actionLocked = false; return; }
 
     const log = [];
+    const val = attacker.attack;
+
+    const targetDOMId = targetIid === 'hero' ? 'battle-hero-opp' : `minion-${targetIid}`;
+    window.showBattleFloatingText(targetDOMId, `-${val}`, '#ff453a');
+    const targetEl = document.getElementById(targetDOMId);
+    if (targetEl) {
+        targetEl.classList.add('hero-hit');
+        setTimeout(() => targetEl.classList.remove('hero-hit'), 400);
+    }
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
     if (targetIid === 'hero') {
         if (opp.heroShielded) {
             opp.heroShielded = false;
             log.push(`${me.name}: «${attacker.name}» бьёт героя, но щит поглощает урон`);
         } else {
-            opp.heroHealth -= attacker.attack;
-            log.push(`${me.name}: «${attacker.name}» бьёт героя на ${attacker.attack}`);
+            opp.heroHealth -= val;
+            log.push(`${me.name}: «${attacker.name}» бьёт героя на ${val}`);
             if (attacker.lifesteal) {
-                me.heroHealth = Math.min(me.maxHealth, me.heroHealth + attacker.attack);
-                log.push(`«${attacker.name}» (кровопийца): герой лечится на ${attacker.attack}`);
+                me.heroHealth = Math.min(me.maxHealth, me.heroHealth + val);
+                log.push(`«${attacker.name}» (кровопийца): герой лечится на ${val}`);
             }
         }
     } else {
         const target = opp.board[targetIid];
-        if (!target) return;
-        if (target.shielded) {
-            target.shielded = false;
-            log.push(`${me.name}: «${attacker.name}» атакует «${target.name}», но щит поглощает урон`);
-        } else {
-            target.health -= attacker.attack;
-            log.push(`${me.name}: «${attacker.name}» атакует «${target.name}» на ${attacker.attack}`);
-            if (attacker.lifesteal) {
-                me.heroHealth = Math.min(me.maxHealth, me.heroHealth + attacker.attack);
-                log.push(`«${attacker.name}» (кровопийца): герой лечится на ${attacker.attack}`);
-            }
-            if (target.health <= 0) {
-                delete opp.board[targetIid];
-                log.push(`«${target.name}» погибает`);
-                if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+        if (target) {
+            if (target.shielded) {
+                target.shielded = false;
+                log.push(`${me.name}: «${attacker.name}» атакует «${target.name}», но щит поглощает урон`);
+            } else {
+                target.health -= val;
+                log.push(`${me.name}: «${attacker.name}» атакует «${target.name}» на ${val}`);
+                if (attacker.lifesteal) {
+                    me.heroHealth = Math.min(me.maxHealth, me.heroHealth + val);
+                    log.push(`«${attacker.name}» (кровопийца): герой лечится на ${val}`);
+                }
+                if (target.health <= 0) {
+                    delete opp.board[targetIid];
+                    log.push(`«${target.name}» погибает`);
+                    if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                }
             }
         }
     }
+    
     attacker.canAttack = false;
     if (attacker.health <= 0) {
         delete me.board[attackerIid];
         log.push(`«${attacker.name}» погибает`);
         if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
     }
+
+    const updates = {};
+    updates['battles/' + battleId + '/' + mySlot] = me;
+    updates['battles/' + battleId + '/' + oppSlot] = opp;
+    updates['battles/' + battleId + '/log/' + randId()] = { t: Date.now(), text: log.join('; ') };
+    updates['battles/' + battleId + '/lastActionAt'] = Date.now();
+
+    if (opp.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = mySlot;
+        if (!data[mySlot].isBot) update(ref(state.db, 'users/' + me.uid), { coins: increment(20), wins: increment(1) }).catch(() => {});
+    } else if (me.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = oppSlot;
+    }
+
+    setTimeout(() => {
+        update(ref(state.db), updates);
+        state.actionLocked = false;
+    }, 400);
+}
+
+function resolveActiveAbility(battleId, data, mySlot, casterIid, targetIid) {
+    const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
+    const me = normalizePlayerState(JSON.parse(JSON.stringify(data[mySlot])));
+    const opp = normalizePlayerState(JSON.parse(JSON.stringify(data[oppSlot])));
+
+    const caster = me.board[casterIid];
+    if (!caster || caster.cooldownCurrent > 0) return;
+
+    const log = [];
+    const val = caster.activeValue || 1;
+
+    if (caster.activeType === 'active_damage_target') {
+        if (targetIid === 'hero') {
+            opp.heroHealth -= val;
+            log.push(`${me.name}: «${caster.name}» бьёт навыком героя на ${val} урона`);
+        } else {
+            const target = opp.board[targetIid];
+            if (target) {
+                target.health -= val;
+                log.push(`${me.name}: «${caster.name}» бьёт навыком «${target.name}» на ${val} урона`);
+                if (target.health <= 0) {
+                    delete opp.board[targetIid];
+                    log.push(`«${target.name}» погибает`);
+                    if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                }
+            } else return;
+        }
+    } else if (caster.activeType === 'active_heal_target') {
+        if (targetIid === 'hero') {
+            me.heroHealth = Math.min(me.maxHealth, me.heroHealth + val);
+            log.push(`${me.name}: «${caster.name}» лечит героя на ${val} навыком`);
+        } else {
+            const target = me.board[targetIid] || opp.board[targetIid];
+            if (target) {
+                target.health = Math.min(target.maxHealth || target.health, target.health + val);
+                log.push(`${me.name}: «${caster.name}» лечит «${target.name}» на ${val} навыком`);
+            } else return;
+        }
+    }
+
+    caster.cooldownCurrent = caster.cooldownMax;
+    caster.canAttack = false;
 
     const updates = {};
     updates['battles/' + battleId + '/' + mySlot] = me;
@@ -919,6 +1098,15 @@ function endTurn(battleId, data, currentSlot) {
     nextPlayer.mana = Math.max(0, nextPlayer.maxMana - (nextPlayer.manaDebuff || 0));
     nextPlayer.manaDebuff = 0;
 
+    const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
+    if (arena && arena.effectType === 'turn_damage') {
+        const v = arena.effectValue || 1;
+        nextPlayer.heroHealth -= v;
+        if (nextPlayer.uid === state.currentUser.id) {
+            setTimeout(() => window.showBattleFloatingText('battle-hero-mine', `-${v} (Арена)`, '#ff453a'), 500);
+        }
+    }
+
     if (nextPlayer.deck && nextPlayer.deck.length) {
         const cardId = nextPlayer.deck.shift();
         nextPlayer.hand[randId()] = cardId;
@@ -930,6 +1118,7 @@ function endTurn(battleId, data, currentSlot) {
     Object.values(nextPlayer.board || {}).forEach(m => {
         if (m.frozen) { m.frozen = false; m.canAttack = false; }
         else { m.canAttack = true; }
+        if (m.cooldownCurrent > 0) m.cooldownCurrent--;
     });
 
     const updates = {};
@@ -962,7 +1151,6 @@ async function runBotTurn(battleId) {
     const oppSlot = botSlot === 'p1' ? 'p2' : 'p1';
     if (!data[botSlot].isBot) return;
 
-    // фаза розыгрыша карт — не всегда тратит всю ману до конца, иногда "придерживает" карту
     let guard = 0;
     while (guard < 10) {
         guard++;
@@ -973,7 +1161,7 @@ async function runBotTurn(battleId) {
             .map(([iid, cardId]) => ({ iid, card: cardById(cardId) }))
             .filter(x => x.card && x.card.mana <= bot.mana);
         if (!affordable.length) break;
-        if (Math.random() < 0.22) break; // человеческая непоследовательность — иногда не доигрывает руку
+        if (Math.random() < 0.22) break;
 
         const pick = affordable[Math.floor(Math.random() * affordable.length)];
         await delay(rand(500, 1300));
@@ -985,7 +1173,6 @@ async function runBotTurn(battleId) {
 
     await delay(rand(500, 1200));
 
-    // фаза атаки
     data = state.battleData;
     if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
     const attackers = Object.entries(data[botSlot].board || {}).filter(([, m]) => m.canAttack);
@@ -995,7 +1182,7 @@ async function runBotTurn(battleId) {
         const bot = data[botSlot];
         const attacker = (bot.board || {})[iid];
         if (!attacker || !attacker.canAttack) continue;
-        if (Math.random() < 0.15) continue; // иногда не атакует — держит блокера
+        if (Math.random() < 0.15) continue;
 
         const opp = data[oppSlot];
         const oppMinions = Object.entries(opp.board || {});
@@ -1011,11 +1198,61 @@ async function runBotTurn(battleId) {
         await delay(rand(500, 1100));
         data = state.battleData;
         if (!data || data.turnPlayer !== botSlot) return;
-        resolveAttack(battleId, data, botSlot, oppSlot, iid, targetIid);
+        
+        // Для бота не делаем анимацию, чтобы не ломать поток, просто шлём в БД:
+        resolveBotAttack(battleId, data, botSlot, oppSlot, iid, targetIid);
     }
 
     await delay(rand(400, 900));
     data = state.battleData;
     if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
     endTurn(battleId, data, botSlot);
+}
+
+// Упрощенная версия для бота без таймаутов на анимации
+function resolveBotAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) {
+    const me = normalizePlayerState(JSON.parse(JSON.stringify(data[mySlot])));
+    const opp = normalizePlayerState(JSON.parse(JSON.stringify(data[oppSlot])));
+    const attacker = me.board[attackerIid];
+    if (!attacker) return;
+
+    const log = [];
+    const val = attacker.attack;
+
+    if (targetIid === 'hero') {
+        if (opp.heroShielded) { opp.heroShielded = false; } 
+        else { opp.heroHealth -= val; }
+    } else {
+        const target = opp.board[targetIid];
+        if (target) {
+            if (target.shielded) { target.shielded = false; } 
+            else { 
+                target.health -= val; 
+                if (target.health <= 0) {
+                    delete opp.board[targetIid];
+                    if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                }
+            }
+        }
+    }
+    
+    attacker.canAttack = false;
+    if (attacker.health <= 0) {
+        delete me.board[attackerIid];
+        if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
+    }
+
+    const updates = {};
+    updates['battles/' + battleId + '/' + mySlot] = me;
+    updates['battles/' + battleId + '/' + oppSlot] = opp;
+
+    if (opp.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = mySlot;
+    } else if (me.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = oppSlot;
+    }
+
+    update(ref(state.db), updates);
 }
