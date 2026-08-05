@@ -13,8 +13,6 @@ import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, re
 import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
 
-// Firebase Storage больше не используется — фото грузятся на ImgBB (см. ниже), чтобы не требовать план Blaze.
-
 const firebaseConfig = {
     apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
     authDomain: "book-2b50d.firebaseapp.com",
@@ -28,16 +26,19 @@ try {
     const app = initializeApp(firebaseConfig);
     state.db = getDatabase(app);
 } catch (e) {
-    console.error('Firebase ошибка:', e);
+    console.error('Firebase ошибка инициализации:', e);
 }
 
-tg.expand();
-tg.ready();
+try {
+    tg.expand();
+    tg.ready();
+} catch (e) {}
 
 // === АВТОРИЗАЦИЯ ===
 
 export function initApp() {
-    document.getElementById('auth-overlay').style.display = 'none';
+    const authOverlay = document.getElementById('auth-overlay');
+    if (authOverlay) authOverlay.style.display = 'none';
     startFirebaseListeners();
     if (state.db) ensureUserProfile();
 }
@@ -52,56 +53,64 @@ if (state.tgUser) {
     state.currentUser = state.authUser;
     initApp();
 } else {
-    document.getElementById('auth-overlay').style.display = 'flex';
+    const authOverlay = document.getElementById('auth-overlay');
+    if (authOverlay) authOverlay.style.display = 'flex';
 }
 
-document.getElementById('btn-register-auth').onclick = function() {
-    if (!state.db) return alert('База данных недоступна');
-    const un = document.getElementById('auth-username').value.trim();
-    const pw = document.getElementById('auth-password').value.trim();
-    if (!un || !pw) return alert('Введите никнейм и пароль');
-    
-    const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
-    if (!safeUn) return alert('Используйте только английские буквы и цифры для ника');
-    
-    get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
-        if (snapshot.exists()) {
-             alert('Никнейм уже занят!');
-        } else {
-             const newId = 'usr_' + Date.now();
-             set(ref(state.db, `auth_users/${safeUn}`), { password: pw, id: newId }).then(() => {
-                 localStorage.setItem('sr_auth_user', JSON.stringify({id: newId, name: un}));
+const regAuthBtn = document.getElementById('btn-register-auth');
+if (regAuthBtn) {
+    regAuthBtn.onclick = function() {
+        if (!state.db) return alert('База данных недоступна');
+        const un = document.getElementById('auth-username').value.trim();
+        const pw = document.getElementById('auth-password').value.trim();
+        if (!un || !pw) return alert('Введите никнейм и пароль');
+        
+        const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+        if (!safeUn) return alert('Используйте только английские буквы и цифры для ника');
+        
+        get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
+            if (snapshot.exists()) {
+                 alert('Никнейм уже занят!');
+            } else {
+                 const newId = 'usr_' + Date.now();
+                 set(ref(state.db, `auth_users/${safeUn}`), { password: pw, id: newId }).then(() => {
+                     localStorage.setItem('sr_auth_user', JSON.stringify({id: newId, name: un}));
+                     location.reload();
+                 }).catch(e => alert(friendlyDbError(e)));
+            }
+        }).catch(e => alert(friendlyDbError(e)));
+    };
+}
+
+const loginAuthBtn = document.getElementById('btn-login-auth');
+if (loginAuthBtn) {
+    loginAuthBtn.onclick = function() {
+        if (!state.db) return alert('База данных недоступна');
+        const un = document.getElementById('auth-username').value.trim();
+        const pw = document.getElementById('auth-password').value.trim();
+        if (!un || !pw) return alert('Введите никнейм и пароль');
+        
+        const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+        get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
+            if (snapshot.exists() && snapshot.val().password === pw) {
+                 localStorage.setItem('sr_auth_user', JSON.stringify({id: snapshot.val().id, name: un}));
                  location.reload();
-             }).catch(e => alert(friendlyDbError(e)));
+            } else {
+                 alert('Неверный никнейм или пароль');
+            }
+        }).catch(e => alert(friendlyDbError(e)));
+    };
+}
+
+const logoutBtn = document.getElementById('btn-logout');
+if (logoutBtn) {
+    logoutBtn.onclick = function() {
+        if (confirm('Выйти из аккаунта?')) {
+            localStorage.removeItem('sr_auth_user');
+            location.reload();
         }
-    }).catch(e => alert(friendlyDbError(e)));
-};
-
-document.getElementById('btn-login-auth').onclick = function() {
-    if (!state.db) return alert('База данных недоступна');
-    const un = document.getElementById('auth-username').value.trim();
-    const pw = document.getElementById('auth-password').value.trim();
-    if (!un || !pw) return alert('Введите никнейм и пароль');
-    
-    const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
-    get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
-        if (snapshot.exists() && snapshot.val().password === pw) {
-             localStorage.setItem('sr_auth_user', JSON.stringify({id: snapshot.val().id, name: un}));
-             location.reload();
-        } else {
-             alert('Неверный никнейм или пароль');
-        }
-    }).catch(e => alert(friendlyDbError(e)));
-};
-
-document.getElementById('btn-logout').onclick = function() {
-    if (confirm('Выйти из аккаунта?')) {
-        localStorage.removeItem('sr_auth_user');
-        location.reload();
-    }
-};
-
-// Базовые переменные и утилиты
+    };
+}
 
 export function flushTimeSpent() {
     if (!state.sessionStartedAt || !state.db || !state.currentUser) return;
@@ -118,14 +127,15 @@ export function startTimeTracking() {
     setInterval(() => { if (document.visibilityState === 'visible') flushTimeSpent(); }, 30000);
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') flushTimeSpent();
-        else state.lastFlushedAt = Date.now(); // не считаем время, пока вкладка была свёрнута
+        else state.lastFlushedAt = Date.now();
     });
     window.addEventListener('beforeunload', flushTimeSpent);
 }
 
 window.switchTab = function(tabName) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('section-' + tabName).classList.add('active');
+    const targetSection = document.getElementById('section-' + tabName);
+    if (targetSection) targetSection.classList.add('active');
 
     const order = ['feed', 'books', 'chats', 'profile'];
     document.querySelectorAll('.nav-btn').forEach((btn, index) => {
@@ -136,74 +146,73 @@ window.switchTab = function(tabName) {
     if (tabName === 'feed') {
         state.lastSeenPostsCount = state.postsData.length;
         localStorage.setItem('sr_last_seen_posts_count', String(state.lastSeenPostsCount));
-        document.getElementById('feed-nav-badge').classList.add('hidden');
+        const badge = document.getElementById('feed-nav-badge');
+        if (badge) badge.classList.add('hidden');
     }
     if (tabName === 'chats') {
         state.chatsData.forEach(c => { 
             if (c.participants && c.participants[state.currentUser.id]) state.chatLastRead[c.id] = Date.now(); 
         });
         saveLocal('sr_chat_last_read', state.chatLastRead);
-        document.getElementById('chats-nav-badge').classList.add('hidden');
+        const badge = document.getElementById('chats-nav-badge');
+        if (badge) badge.classList.add('hidden');
         renderChatsList();
     }
     if (tabName === 'profile') {
         renderProfileStats();
     }
     
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    try { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
 };
 
 export function ensureUserProfile() {
+    if (!state.currentUser) return;
     const payload = { 
         name: state.currentUser.name, 
         lastSeen: Date.now() 
     };
-    // telegramId сохраняем на будущее (например, если позже подключите push через бота на Blaze)
     if (state.tgUser && state.tgUser.id) payload.telegramId = state.tgUser.id;
     update(ref(state.db, 'users/' + state.currentUser.id), payload).catch(() => {});
 }
 
-// === Браузерные уведомления (работают, пока приложение открыто/в фоновой вкладке) ===
-// Всё, что случилось ДО открытия приложения, не уведомляем — только новое.
-
 export function startFirebaseListeners() {
     setInterval(ensureUserProfile, 60000);
 
-    // Если за 10 секунд лента так и не получила ответ от Firebase (например, из-за VPN,
-    // блокировки WebSocket или проблем с базой) — показываем понятную ошибку вместо
-    // бесконечных серых заглушек.
     let feedLoaded = false;
     const feedWatchdog = setTimeout(() => {
         if (feedLoaded) return;
+        feedLoaded = true;
         const container = document.getElementById('feed-container');
         if (container) {
-            container.innerHTML = '<div class="empty-state"><span class="icon">📡</span><div class="title">Не удалось загрузить данные</div><div class="sub">Проверьте интернет-соединение (попробуйте отключить VPN) и обновите страницу</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
+            container.innerHTML = '<div class="empty-state"><span class="icon">📡</span><div class="title">Не удалось загрузить данные</div><div class="sub">Проверьте интернет-соединение или VPN</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
         }
-    }, 10000);
+    }, 7000); // Сократили тайм-аут до 7 секунд для быстрого отклика при сбое
 
     onValue(ref(state.db, 'posts'), (snapshot) => {
-        feedLoaded = true;
-        clearTimeout(feedWatchdog);
+        if (!feedLoaded) {
+            feedLoaded = true;
+            clearTimeout(feedWatchdog);
+        }
         const data = snapshot.val();
         state.postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
             if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
             return b.createdAt - a.createdAt;
         }) : [];
         
-        if (state.postsData.length > state.lastSeenPostsCount && !document.getElementById('section-feed').classList.contains('active')) {
-            document.getElementById('feed-nav-badge').classList.remove('hidden');
+        const feedSection = document.getElementById('section-feed');
+        if (state.postsData.length > state.lastSeenPostsCount && feedSection && !feedSection.classList.contains('active')) {
+            const badge = document.getElementById('feed-nav-badge');
+            if (badge) badge.classList.remove('hidden');
         }
 
-        // Новые посты от других — уведомление
         state.postsData.forEach(post => {
-            if (post.createdAt > sessionStartTime && post.authorId !== state.currentUser.id && !notifiedIds.has('post:' + post.id)) {
+            if (state.currentUser && post.createdAt > sessionStartTime && post.authorId !== state.currentUser.id && !notifiedIds.has('post:' + post.id)) {
                 notifiedIds.add('post:' + post.id);
                 const authorPart = post.authorName ? ` от ${post.authorName}` : '';
                 showNotification(`📰 Новый пост${authorPart}`, truncateText(post.title || post.text, 150), 'post:' + post.id);
                 playSound('newPost');
             }
-            // Новые комментарии к МОИМ постам — уведомление
-            if (post.authorId === state.currentUser.id && post.comments) {
+            if (state.currentUser && post.authorId === state.currentUser.id && post.comments) {
                 Object.entries(post.comments).forEach(([cid, c]) => {
                     if (c.createdAt > sessionStartTime && c.userId !== state.currentUser.id && !notifiedIds.has('comment:' + cid)) {
                         notifiedIds.add('comment:' + cid);
@@ -222,8 +231,10 @@ export function startFirebaseListeners() {
         if (state.isAdmin) renderAdminPostsList();
         if (state.activeOverlay === 'post') renderPostOverlay();
     }, (error) => {
-        feedLoaded = true;
-        clearTimeout(feedWatchdog);
+        if (!feedLoaded) {
+            feedLoaded = true;
+            clearTimeout(feedWatchdog);
+        }
         console.error('Firebase (posts) ошибка:', error);
         const container = document.getElementById('feed-container');
         if (container) container.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span><div class="title">${friendlyDbError(error)}</div></div>`;
@@ -251,7 +262,6 @@ export function startFirebaseListeners() {
         renderBossCard();
         if (state.isAdmin) populateBossAdminForm();
 
-        // Автоматическая выдача наград, когда игроки добивают босса до 0 HP
         if (state.bossData && state.bossData.enabled && !state.bossData.defeated && (state.bossData.hp || 0) <= 0) {
             update(ref(state.db, 'settings/boss'), { defeated: true }).then(() => {
                 distributeBossRewards(state.bossData, () => {
@@ -270,7 +280,10 @@ export function startFirebaseListeners() {
         state.youtubeVideoId = snapshot.val() || null;
         const btn = document.getElementById('btn-open-yt');
         if (btn) btn.classList.toggle('hidden', !state.youtubeVideoId);
-        if (state.isAdmin) document.getElementById('yt-video-id').value = state.youtubeVideoId || '';
+        if (state.isAdmin) {
+            const ytInput = document.getElementById('yt-video-id');
+            if (ytInput) ytInput.value = state.youtubeVideoId || '';
+        }
     });
 
     onValue(ref(state.db, 'settings/badgeColor'), (snapshot) => {
@@ -280,7 +293,7 @@ export function startFirebaseListeners() {
         if (state.activeOverlay === 'post') renderPostOverlay();
         if (state.activeOverlay === 'userprofile' && state.viewingUserId) renderUserProfileOverlay(state.viewingUserId);
         if (state.activeOverlay === 'chat' && state.currentChatId) {
-            state.renderedChatState = { chatId: null, signature: null }; // цвет изменился — форсируем перерисовку списка
+            state.renderedChatState = { chatId: null, signature: null };
             const chat = state.chatsData.find(c => c.id === state.currentChatId);
             if (chat) renderChatOverlay(chat);
         }
@@ -317,9 +330,10 @@ export function startFirebaseListeners() {
         renderEventMultiplierBanner();
         renderQuestsList();
         if (state.isAdmin) populateEconomyAdminForm();
-        // Фиксируем стрик чтения один раз при заходе — обязательно после загрузки state.economyData,
-        // иначе поймаем ошибку обращения к state.economyData до её инициализации
-        if (!state.streakCheckedThisSession) { state.streakCheckedThisSession = true; updateStreak(); }
+        if (!state.streakCheckedThisSession && state.currentUser) { 
+            state.streakCheckedThisSession = true; 
+            updateStreak(); 
+        }
     });
 
     onValue(ref(state.db, 'quests'), (snapshot) => {
@@ -341,8 +355,7 @@ export function startFirebaseListeners() {
         state.cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
         if (state.isAdmin) { renderAdminCardsList(); renderAdminCombosList(); }
     });
-    
-    // --- НОВЫЙ СЛУШАТЕЛЬ ДЛЯ АРЕН (ПОЛЕЙ БОЯ) ---
+
     onValue(ref(state.db, 'arenas'), (snapshot) => {
         const data = snapshot.val();
         state.arenasData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -378,21 +391,21 @@ export function startFirebaseListeners() {
         if (state.isAdmin) populateFramesForm();
     });
 
-    onValue(ref(state.db, 'users/' + state.currentUser.id + '/cardCollection'), (snapshot) => {
-        state.myCollection = snapshot.val() || {};
-        if (state.activeOverlay === 'decks') renderDecksView();
-        if (state.activeOverlay === 'cardCollection') renderCardCollectionView();
-    });
+    if (state.currentUser) {
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/cardCollection'), (snapshot) => {
+            state.myCollection = snapshot.val() || {};
+            if (state.activeOverlay === 'decks') renderDecksView();
+            if (state.activeOverlay === 'cardCollection') renderCardCollectionView();
+        });
 
-    onValue(ref(state.db, 'users/' + state.currentUser.id + '/decks'), (snapshot) => {
-        const data = snapshot.val();
-        state.myDecks = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-        if (state.activeOverlay === 'decks') renderDecksView();
-    });
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/decks'), (snapshot) => {
+            const data = snapshot.val();
+            state.myDecks = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            if (state.activeOverlay === 'decks') renderDecksView();
+        });
+    }
 
     setInterval(renderEventMultiplierBanner, 30000);
-
-    // Обновление таймеров обратного отсчёта у баннеров-событий раз в секунду
     setInterval(updateBannerCountdowns, 1000);
 
     onValue(ref(state.db, 'books'), (snapshot) => {
@@ -430,7 +443,10 @@ export function startFirebaseListeners() {
         renderPassButton();
         renderPassPetWidget();
 
-        if (!state.timeTrackingStarted) { state.timeTrackingStarted = true; startTimeTracking(); }
+        if (!state.timeTrackingStarted && state.currentUser) { 
+            state.timeTrackingStarted = true; 
+            startTimeTracking(); 
+        }
         renderQuestsList();
         renderFeed();
         if (state.activeOverlay === 'post') renderPostOverlay();
@@ -455,9 +471,8 @@ export function startFirebaseListeners() {
         const data = snapshot.val();
         state.chatsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
 
-        // Новые сообщения в моих чатах — уведомление (кроме тех, что я сам сейчас открыл)
         state.chatsData.forEach(chat => {
-            if (!chat.participants || !chat.participants[state.currentUser.id]) return;
+            if (!state.currentUser || !chat.participants || !chat.participants[state.currentUser.id]) return;
             if (!chat.messages) return;
             const isViewingThisChat = state.activeOverlay === 'chat' && state.currentChatId === chat.id
                 && document.visibilityState === 'visible' && document.hasFocus();
