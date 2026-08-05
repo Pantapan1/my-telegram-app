@@ -403,6 +403,11 @@ function checkCombos(actor, opponent, log) {
             setTimeout(() => {
                 window.showBattleFloatingText('battle-hero-mine', `КОМБО: ${combo.name}!`, '#bf5af2');
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                const heroEl = document.getElementById('battle-hero-mine');
+                if (heroEl) {
+                    heroEl.classList.add('battle-combo-flash');
+                    setTimeout(() => heroEl.classList.remove('battle-combo-flash'), 700);
+                }
             }, 100);
         }
         
@@ -544,6 +549,27 @@ export function cancelMatchmaking() {
     remove(ref(state.db, 'matchmakingQueue/' + state.currentUser.id)).catch(() => {});
 }
 
+// ===================== ВЫХОД ИЗ ЭКРАНА БОЯ =====================
+// Вызывается кнопкой "←" в шапке боя и кнопкой "Выйти" на экране результата.
+// Раньше эта функция вообще не была объявлена — клик по кнопке "назад" не делал ничего.
+window.leaveBattle = function () {
+    if (state.inQueue) cancelMatchmaking();
+
+    if (battleRefListener) { off(battleRefListener); battleRefListener = null; }
+
+    stopBattleMusic();
+
+    state.activeBattleId = null;
+    state.battleData = null;
+    state.selectedAttackerIid = null;
+    state.selectedAbilityIid = null;
+    activeBotRunKey = null;
+
+    const overlay = document.getElementById('battle-overlay');
+    if (overlay) overlay.classList.remove('active');
+    state.activeOverlay = null;
+};
+
 window.addEventListener('beforeunload', () => {
     if (state.inQueue && state.currentUser && state.currentUser.id) {
         remove(ref(state.db, 'matchmakingQueue/' + state.currentUser.id)).catch(() => {});
@@ -603,6 +629,8 @@ function createBattle(p1info, p2info, isBot) {
 
 let battleRefListener = null;
 let activeBotRunKey = null;
+let recentlyPlayedIid = null;
+let recentlyPlayedAt = 0;
 
 function enterBattle(battleId) {
     state.activeBattleId = battleId;
@@ -714,6 +742,7 @@ function renderMinion(iid, m, isMine, canSelect) {
     const selected = state.selectedAttackerIid === iid;
     const isAbilitySelected = state.selectedAbilityIid === iid;
     const displayName = m.name || 'Существо';
+    const justPlayed = iid === recentlyPlayedIid && (Date.now() - recentlyPlayedAt) < 600;
 
     let abilityBtn = '';
     if (m.activeType && isMine) {
@@ -725,7 +754,7 @@ function renderMinion(iid, m, isMine, canSelect) {
     }
 
     return `
-    <div id="minion-${iid}" class="battle-minion ${canSelect || isAbilitySelected ? 'can-attack' : ''} ${selected || isAbilitySelected ? 'selected' : ''}"
+    <div id="minion-${iid}" class="battle-minion ${canSelect || isAbilitySelected ? 'can-attack' : ''} ${selected || isAbilitySelected ? 'selected' : ''} ${justPlayed ? 'just-played' : ''}"
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
         <div class="bm-portrait">
             ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
@@ -887,6 +916,8 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
     if (card.type === 'minion') {
         const newIid = randId();
         actor.board[newIid] = makeBoardEntry(card);
+        recentlyPlayedIid = newIid;
+        recentlyPlayedAt = Date.now();
     }
 
     if (card.effectType && card.effectType.startsWith('battlecry_')) {
@@ -917,6 +948,12 @@ window.battleAttackTarget = function (targetIid) {
     if (data.turnPlayer !== state.mySlot) return;
 
     if (state.selectedAbilityIid) {
+        const casterEl = document.getElementById(`minion-${state.selectedAbilityIid}`);
+        if (casterEl) {
+            const portrait = casterEl.querySelector('.bm-portrait') || casterEl;
+            portrait.classList.add('battle-combo-flash');
+            setTimeout(() => portrait.classList.remove('battle-combo-flash'), 700);
+        }
         resolveActiveAbility(state.activeBattleId, data, state.mySlot, state.selectedAbilityIid, targetIid);
         state.selectedAbilityIid = null;
         return;

@@ -133,33 +133,63 @@ window.updateDeckDraftName = function (value) {
 
 // ===================== ГЛАВНОЕ МЕНЮ КАРТОЧНОЙ ИГРЫ =====================
 
+function cardGameRank(wins) {
+    if (wins >= 50) return { label: 'Повелитель Бездны', icon: '👑' };
+    if (wins >= 25) return { label: 'Чемпион Арены', icon: '🏆' };
+    if (wins >= 10) return { label: 'Ветеран боёв', icon: '🥈' };
+    if (wins >= 1) return { label: 'Искатель славы', icon: '🥉' };
+    return { label: 'Новобранец', icon: '🔰' };
+}
+
 function renderCardGameMenu() {
     const body = document.getElementById('card-game-menu-body');
     if (!body) return;
 
+    const me = (state.usersData || []).find(u => u.id === state.currentUser.id) || {};
+    const wins = me.wins || 0;
+
     const deckCount = state.myDecks.length;
     const uniqueCards = Object.values(state.myCollection || {}).filter(n => n > 0).length;
     const totalCards = Object.values(state.myCollection || {}).reduce((s, n) => s + n, 0);
+    const totalCardsInGame = (state.cardsData || []).length;
+    const collectionPct = totalCardsInGame ? Math.min(100, Math.round((uniqueCards / totalCardsInGame) * 100)) : 0;
+
+    const rank = cardGameRank(wins);
+    const hasDeck = deckCount > 0;
 
     body.innerHTML = `
         <div class="cg-menu-header">
+            <div class="cg-rank-badge">${rank.icon}</div>
             <div class="cg-title">Врата Бездны</div>
-            <div class="cg-stats">Колод: ${deckCount} | Карт собрано: ${uniqueCards} (${totalCards} шт.)</div>
+            <div class="cg-rank-label">${escapeHtml(rank.label)}</div>
+            <div class="cg-stats-row">
+                <div class="cg-stat-pill">🏆 <b>${wins}</b> побед</div>
+                <div class="cg-stat-pill">🃏 <b>${deckCount}</b> колод</div>
+            </div>
         </div>
+
         <div class="cg-menu-grid">
-            <div class="cg-main-btn" onclick="startCardBattle()">
+            <div class="cg-main-btn ${hasDeck ? '' : 'disabled'}" onclick="startCardBattle()">
                 <div class="cg-icon">⚔️</div>
                 <div class="cg-label">В БОЙ</div>
-                <div class="cg-sub">Искать противника</div>
+                <div class="cg-sub">${hasDeck ? 'Искать противника' : 'Сначала собери колоду'}</div>
             </div>
-            
+
+            <div class="cg-collection-progress" onclick="openCardCollection()">
+                <div class="cg-cp-top">
+                    <span>📚 Коллекция</span>
+                    <span>${uniqueCards}/${totalCardsInGame || '?'} (${totalCards} шт. всего)</span>
+                </div>
+                <div class="cg-cp-bar"><div class="cg-cp-fill" style="width:${collectionPct}%;"></div></div>
+            </div>
+
             <div class="cg-side-btns">
                 <div class="cg-btn" onclick="openDecksOverlay()">
-                    <div style="font-size:24px; margin-bottom:4px;">🃏</div>
+                    <div class="cg-btn-icon">🃏</div>
                     Мои колоды
                 </div>
                 <div class="cg-btn" onclick="openCardCollection()">
-                    <div style="font-size:24px; margin-bottom:4px;">📚</div>
+                    <div class="cg-btn-icon">📖</div>
                     Коллекция
                 </div>
                 <button class="cg-btn full-width" onclick="openPackShop()">

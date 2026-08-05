@@ -1076,6 +1076,67 @@
         .event-detail-status.active { background: #ed8f03; }
 
         /* ============================================================
+           ГЛАВНОЕ МЕНЮ КАРТОЧНОЙ ИГРЫ («Врата Бездны»)
+           ============================================================ */
+        .cg-menu-header {
+            text-align: center; padding: 18px 0 22px; position: relative; overflow: hidden;
+            margin: -16px -16px 4px; background: radial-gradient(ellipse at top, rgba(237,143,3,.14) 0%, transparent 70%);
+        }
+        .cg-rank-badge {
+            width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 28px;
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
+            box-shadow: 0 6px 18px rgba(237, 143, 3, 0.4);
+        }
+        .cg-title { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: .3px; }
+        .cg-rank-label { font-size: 12px; font-weight: 700; color: #ed8f03; margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+        .cg-stats-row { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .cg-stat-pill {
+            background: var(--surface); border: 1px solid var(--border-soft); border-radius: 20px;
+            padding: 5px 12px; font-size: 12px; color: var(--text-secondary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .cg-stat-pill b { color: var(--text-primary); }
+
+        .cg-menu-grid { display: flex; flex-direction: column; gap: 14px; }
+
+        .cg-main-btn {
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%);
+            border-radius: 22px; padding: 26px 20px; text-align: center; cursor: pointer;
+            box-shadow: 0 8px 22px rgba(237, 143, 3, 0.35);
+            transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow .25s ease;
+        }
+        .cg-main-btn:hover { box-shadow: 0 10px 26px rgba(237, 143, 3, 0.45); transform: translateY(-2px); }
+        .cg-main-btn:active { transform: scale(0.97); transition-duration: .1s; }
+        .cg-main-btn.disabled { opacity: .75; filter: saturate(.6); }
+        .cg-main-btn .cg-icon { font-size: 38px; margin-bottom: 6px; }
+        .cg-main-btn .cg-label { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+        .cg-main-btn .cg-sub { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+
+        .cg-collection-progress {
+            background: var(--surface); border: 1px solid var(--border-soft); border-radius: 18px;
+            padding: 12px 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: transform .2s ease;
+        }
+        .cg-collection-progress:active { transform: scale(0.98); }
+        .cg-cp-top { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .cg-cp-bar { height: 8px; border-radius: 6px; background: var(--input-bg); overflow: hidden; }
+        .cg-cp-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #ffb75e, #ed8f03); transition: width .4s ease; }
+
+        .cg-side-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+        .cg-btn {
+            flex: 1 1 calc(50% - 6px); min-width: 120px; background: var(--surface);
+            border: 1px solid var(--border-soft); border-radius: 18px; padding: 18px 12px;
+            text-align: center; color: var(--text-primary); font-size: 13px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .cg-btn:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .cg-btn:active { transform: scale(0.96); transition-duration: .1s; }
+        .cg-btn.full-width { flex-basis: 100%; }
+        .cg-btn-icon { font-size: 24px; margin-bottom: 4px; }
+
+        /* ============================================================
            БОЙ (КАРТОЧНАЯ ИГРА)
            ============================================================ */
         .battle-arena { display: flex; flex-direction: column; height: 100%; }
@@ -1123,6 +1184,19 @@
             padding: 5px 0; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(237,143,3,.65), rgba(0,0,0,0));
         }
         .battle-empty-zone { color: rgba(255,255,255,.5); font-size: 11px; }
+        .arena-intro-banner {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .5px; text-align: center;
+            padding: 10px 22px; border-radius: 14px; background: rgba(0,0,0,0.45);
+            box-shadow: 0 4px 16px rgba(0,0,0,.4); z-index: 6; pointer-events: none;
+            animation: arenaIntroFade 2.6s ease forwards;
+        }
+        @keyframes arenaIntroFade {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            12% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            75% { opacity: 1; }
+            100% { opacity: 0; }
+        }
         .battle-hint {
             flex: 0 0 auto; font-size: 11px; text-align: center; color: var(--text-secondary);
             padding: 4px 16px; opacity: .8;
@@ -1217,6 +1291,19 @@
         }
         .battle-shield-badge { left: -4px; background: #2b6fb0; }
         .battle-lifesteal-badge { right: -4px; background: #8a1a2e; }
+
+        .bm-ability-btn {
+            position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+            border: 2px solid #2a2015; background: #ed8f03; color: #fff; font-size: 11px; line-height: 1;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5;
+            box-shadow: 0 2px 6px rgba(0,0,0,.4);
+        }
+        .bm-ability-btn.active { background: #ff453a; box-shadow: 0 0 0 3px rgba(255,69,58,.5); }
+        .bm-cooldown-badge {
+            position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+            background: #5a5f68; color: #fff; font-size: 9px; border: 2px solid #2a2015;
+            display: flex; align-items: center; justify-content: center; z-index: 5;
+        }
         .bhc-ability-badge {
             position: absolute; top: -6px; right: -6px; z-index: 5; background: radial-gradient(circle at 35% 30%, #ffe38a, #c98f1a);
             width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -1229,7 +1316,7 @@
             30% { box-shadow: 0 0 0 6px rgba(255,69,58,.35); background: rgba(255,69,58,.25); }
             100% { box-shadow: 0 0 0 0 rgba(255,69,58,0); background: var(--card-bg); }
         }
-        .battle-hero.hero-hit { animation: heroHitFlash .4s ease; position: relative; }
+        .battle-name-tab.hero-hit, .battle-minion.hero-hit .bm-portrait { animation: heroHitFlash .4s ease; }
         @keyframes dmgPopupFloat {
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-28px); opacity: 0; }
@@ -1238,6 +1325,34 @@
             position: absolute; top: -6px; right: 6px; color: #ff453a; font-weight: 900; font-size: 16px;
             animation: dmgPopupFloat .9s ease forwards; pointer-events: none;
         }
+
+        @keyframes floatingTextRise {
+            0% { transform: translate(-50%, 0) scale(0.8); opacity: 0; }
+            15% { transform: translate(-50%, -6px) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, -46px) scale(1); opacity: 0; }
+        }
+        .battle-floating-text {
+            position: fixed; font-size: 20px; font-weight: 900; z-index: 10020;
+            text-shadow: 0 2px 4px rgba(0,0,0,.5), 0 0 10px rgba(0,0,0,.3);
+            pointer-events: none; animation: floatingTextRise 1s ease forwards;
+            transform: translate(-50%, 0);
+        }
+
+        /* Реакция карты на розыгрыш из руки на стол */
+        @keyframes cardPlayedPop {
+            0% { transform: scale(1.3) translateY(-18px); opacity: 0; filter: brightness(1.6); }
+            60% { transform: scale(1.08) translateY(0); opacity: 1; filter: brightness(1.15); }
+            100% { transform: scale(1) translateY(0); opacity: 1; filter: brightness(1); }
+        }
+        .battle-minion.just-played { animation: cardPlayedPop .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        /* Вспышка при использовании способности существа или комбо */
+        @keyframes comboFlash {
+            0% { box-shadow: 0 0 0 0 rgba(191,90,242,.7); }
+            60% { box-shadow: 0 0 0 14px rgba(191,90,242,0); }
+            100% { box-shadow: 0 0 0 0 rgba(191,90,242,0); }
+        }
+        .battle-combo-flash { animation: comboFlash .7s ease; }
 
         @keyframes battlePulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(237,143,3,.5); }

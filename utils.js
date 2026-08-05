@@ -463,6 +463,7 @@ export function colorFor(str) {
         setupImageUpload('frame-file-legendary', 'frame-image-legendary', 'frame-upload-btn-legendary', 'card-frames');
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
+        setupImageUpload('arena-image-file', 'arena-image', 'arena-image-upload-btn', 'arenas');
 
 
 
@@ -835,5 +836,6 @@ export function colorFor(str) {
         setupSoundUploadField('sound-newMessage-file', 'sound-newMessage', 'sound-newMessage-btn');
         setupSoundUploadField('sound-newPost-file', 'sound-newPost', 'sound-newPost-btn');
         setupSoundUploadField('sound-coin-file', 'sound-coin', 'sound-coin-btn');
+        setupSoundUploadField('arena-bgm-file', 'arena-bgm', 'arena-bgm-upload-btn');
 
         // АДМИН - КНИГИ И ГЛАВЫ
