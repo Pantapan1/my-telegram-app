@@ -99,6 +99,7 @@ function applyEffect(actor, opponent, effectType, value, log) {
             log.push(`${actor.name}: эффект наносит ${value} урона герою соперника`);
             break;
         case 'battlecry_heal':
+        case 'deathrattle_heal':
             actor.heroHealth = Math.min(actor.maxHealth, actor.heroHealth + value);
             log.push(`${actor.name}: эффект лечит на ${value}`);
             break;
@@ -114,6 +115,226 @@ function applyEffect(actor, opponent, effectType, value, log) {
                 m.attack += value;
                 log.push(`${actor.name}: эффект даёт «${m.name}» +${value} атаки`);
             }
+            break;
+        }
+        case 'battlecry_damage_minion': {
+            const targets = Object.entries(opponent.board || {});
+            if (targets.length) {
+                const [iid, m] = targets[Math.floor(Math.random() * targets.length)];
+                m.health -= value;
+                log.push(`${actor.name}: эффект наносит ${value} урона «${m.name}» соперника`);
+                if (m.health <= 0) {
+                    delete opponent.board[iid];
+                    log.push(`«${m.name}» погибает`);
+                    if (m.deathrattleType) applyEffect(opponent, actor, m.deathrattleType, m.deathrattleValue, log);
+                }
+            }
+            break;
+        }
+        case 'battlecry_damage_all_enemy': {
+            Object.entries(opponent.board || {}).forEach(([iid, m]) => {
+                m.health -= value;
+                if (m.health <= 0) {
+                    delete opponent.board[iid];
+                    log.push(`«${m.name}» погибает`);
+                    if (m.deathrattleType) applyEffect(opponent, actor, m.deathrattleType, m.deathrattleValue, log);
+                }
+            });
+            log.push(`${actor.name}: эффект наносит ${value} урона всем существам соперника`);
+            break;
+        }
+        case 'buff_all_own': {
+            const minions = Object.values(actor.board || {});
+            minions.forEach(m => { m.attack += value; m.health += value; m.maxHealth = (m.maxHealth || m.health) + value; });
+            if (minions.length) log.push(`${actor.name}: эффект даёт всем своим существам +${value}/+${value}`);
+            break;
+        }
+        case 'battlecry_freeze_random': {
+            const targets = Object.entries(opponent.board || {});
+            if (targets.length) {
+                const [, m] = targets[Math.floor(Math.random() * targets.length)];
+                m.frozen = true;
+                m.canAttack = false;
+                log.push(`${actor.name}: эффект замораживает «${m.name}» — оно пропустит следующую атаку`);
+            }
+            break;
+        }
+        case 'deathrattle_summon_token': {
+            const iid = randId();
+            actor.board = actor.board || {};
+            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0 };
+            log.push(`${actor.name}: эффект призывает «Дух» ${1}/${value || 1}`);
+            break;
+        }
+        case 'battlecry_summon_token': {
+            const iid = randId();
+            actor.board = actor.board || {};
+            actor.board[iid] = { cardId: null, name: 'Дух', image: '', attack: 1, health: value || 1, maxHealth: value || 1, canAttack: false, taunt: false, deathrattleType: null, deathrattleValue: 0 };
+            log.push(`${actor.name}: эффект призывает «Дух» ${1}/${value || 1} на стол`);
+            break;
+        }
+        case 'battlecry_heal_minion': {
+            const minions = Object.values(actor.board || {}).filter(m => m.health < m.maxHealth);
+            if (minions.length) {
+                const m = minions[Math.floor(Math.random() * minions.length)];
+                m.health = Math.min(m.maxHealth, m.health + value);
+                log.push(`${actor.name}: эффект лечит «${m.name}» на ${value}`);
+            }
+            break;
+        }
+        case 'battlecry_heal_all_own': {
+            const minions = Object.values(actor.board || {});
+            minions.forEach(m => { m.health = Math.min(m.maxHealth, m.health + value); });
+            if (minions.length) log.push(`${actor.name}: эффект лечит всех своих существ на ${value}`);
+            break;
+        }
+        case 'battlecry_silence_random': {
+            const targets = Object.entries(opponent.board || {});
+            if (targets.length) {
+                const [, m] = targets[Math.floor(Math.random() * targets.length)];
+                m.taunt = false;
+                m.deathrattleType = null;
+                m.deathrattleValue = 0;
+                log.push(`${actor.name}: эффект снимает способности с «${m.name}»`);
+            }
+            break;
+        }
+        case 'battlecry_return_to_hand': {
+            const targets = Object.entries(opponent.board || {});
+            if (targets.length) {
+                const [tiid, m] = targets[Math.floor(Math.random() * targets.length)];
+                if (m.cardId) {
+                    opponent.hand = opponent.hand || {};
+                    opponent.hand[randId()] = m.cardId;
+                }
+                delete opponent.board[tiid];
+                log.push(`${actor.name}: эффект возвращает «${m.name}» сопернику в руку`);
+            }
+            break;
+        }
+        case 'deathrattle_damage_all_enemy': {
+            Object.entries(opponent.board || {}).forEach(([tiid, m]) => {
+                m.health -= value;
+                if (m.health <= 0) {
+                    delete opponent.board[tiid];
+                    log.push(`«${m.name}» погибает`);
+                }
+            });
+            log.push(`${actor.name}: предсмертный хрип наносит ${value} урона всем существам соперника`);
+            break;
+        }
+        case 'battlecry_kill_weakest': {
+            const targets = Object.entries(opponent.board || {});
+            if (targets.length) {
+                targets.sort((a, b) => a[1].health - b[1].health);
+                const [tiid, m] = targets[0];
+                delete opponent.board[tiid];
+                log.push(`${actor.name}: эффект уничтожает самое слабое существо соперника «${m.name}»`);
+                if (m.deathrattleType) applyEffect(opponent, actor, m.deathrattleType, m.deathrattleValue, log);
+            }
+            break;
+        }
+        case 'battlecry_double_attack_random': {
+            const minions = Object.values(actor.board || {});
+            if (minions.length) {
+                const m = minions[Math.floor(Math.random() * minions.length)];
+                m.attack *= 2;
+                log.push(`${actor.name}: эффект удваивает атаку «${m.name}» до ${m.attack}`);
+            }
+            break;
+        }
+        case 'battlecry_damage_trade': {
+            opponent.heroHealth -= value * 2;
+            actor.heroHealth -= value;
+            log.push(`${actor.name}: эффект наносит ${value * 2} урона сопернику ценой ${value} собственного здоровья`);
+            break;
+        }
+        case 'battlecry_taunt_random_own': {
+            const minions = Object.values(actor.board || {});
+            if (minions.length) {
+                const m = minions[Math.floor(Math.random() * minions.length)];
+                m.taunt = true;
+                log.push(`${actor.name}: эффект даёт провокацию «${m.name}»`);
+            }
+            break;
+        }
+        case 'battlecry_freeze_all_enemy': {
+            const minions = Object.values(opponent.board || {});
+            minions.forEach(m => { m.frozen = true; m.canAttack = false; });
+            if (minions.length) log.push(`${actor.name}: эффект замораживает всех существ соперника`);
+            break;
+        }
+        case 'battlecry_mana_debuff': {
+            opponent.manaDebuff = (opponent.manaDebuff || 0) + value;
+            log.push(`${actor.name}: эффект уменьшит ману соперника на ${value} в следующем ходу`);
+            break;
+        }
+        case 'battlecry_buff_max_health': {
+            actor.maxHealth += value;
+            actor.heroHealth += value;
+            log.push(`${actor.name}: эффект увеличивает максимальное здоровье героя на ${value}`);
+            break;
+        }
+        case 'battlecry_transform_random_hand': {
+            const handIids = Object.keys(actor.hand || {});
+            if (handIids.length) {
+                const iid = handIids[Math.floor(Math.random() * handIids.length)];
+                const oldCard = cardById(actor.hand[iid]);
+                const pool = state.cardsData.filter(c => c.id !== (oldCard && oldCard.id) && (!oldCard || c.type === oldCard.type));
+                if (pool.length) {
+                    const newCard = pool[Math.floor(Math.random() * pool.length)];
+                    actor.hand[iid] = newCard.id;
+                    log.push(`${actor.name}: эффект превращает карту в руке в «${newCard.name}»`);
+                }
+            }
+            break;
+        }
+        case 'battlecry_mana_refund': {
+            actor.mana = Math.min(actor.maxMana, actor.mana + value);
+            log.push(`${actor.name}: эффект возвращает ${value} маны`);
+            break;
+        }
+        case 'battlecry_clone_random_own': {
+            const minions = Object.entries(actor.board || {});
+            if (minions.length) {
+                const [, m] = minions[Math.floor(Math.random() * minions.length)];
+                const newIid = randId();
+                actor.board = actor.board || {};
+                actor.board[newIid] = { ...m, canAttack: false };
+                log.push(`${actor.name}: эффект создаёт копию «${m.name}»`);
+            }
+            break;
+        }
+        case 'battlecry_swap_health': {
+            const a = actor.heroHealth, o = opponent.heroHealth;
+            actor.heroHealth = Math.min(actor.maxHealth, o);
+            opponent.heroHealth = Math.min(opponent.maxHealth, a);
+            log.push(`${actor.name}: эффект меняет здоровье героев местами (${a}↔${o})`);
+            break;
+        }
+        case 'battlecry_shield_random_own': {
+            const minions = Object.values(actor.board || {});
+            if (minions.length) {
+                const m = minions[Math.floor(Math.random() * minions.length)];
+                m.shielded = true;
+                log.push(`${actor.name}: эффект даёт щит «${m.name}» (поглотит следующий удар)`);
+            }
+            break;
+        }
+        case 'battlecry_shield_hero': {
+            actor.heroShielded = true;
+            log.push(`${actor.name}: эффект даёт герою щит (поглотит следующую атаку по герою)`);
+            break;
+        }
+        case 'battlecry_chaos': {
+            const chaosPool = [
+                ['battlecry_damage', value], ['battlecry_heal', value], ['battlecry_draw', 1],
+                ['battlecry_damage_minion', value], ['buff_attack_random', value], ['battlecry_freeze_random', 1],
+                ['battlecry_heal_minion', value], ['battlecry_summon_token', 1],
+            ];
+            const [chosenType, chosenValue] = chaosPool[Math.floor(Math.random() * chaosPool.length)];
+            log.push(`${actor.name}: эффект хаоса выбирает случайное действие`);
+            applyEffect(actor, opponent, chosenType, chosenValue, log);
             break;
         }
     }
@@ -143,7 +364,7 @@ function makeBoardEntry(card) {
     return {
         cardId: card.id, name: card.name, image: card.image || '',
         attack: card.attack || 0, health: card.health || 1, maxHealth: card.health || 1,
-        canAttack: false, taunt: !!card.taunt,
+        canAttack: !!card.charge, taunt: !!card.taunt, lifesteal: !!card.lifesteal, shielded: false,
         deathrattleType: card.effectType && card.effectType.startsWith('deathrattle_') ? card.effectType : null,
         deathrattleValue: card.effectValue || 0,
     };
@@ -414,6 +635,9 @@ function renderMinion(iid, m, isMine, canSelect) {
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
         <div class="bm-portrait">
             ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
+            ${m.frozen ? '<div class="battle-frozen-badge">❄️</div>' : ''}
+            ${m.shielded ? '<div class="battle-shield-badge">🔵</div>' : ''}
+            ${m.lifesteal ? '<div class="battle-lifesteal-badge">🩸</div>' : ''}
             <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
             ${m.image ? `<img src="${m.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
         </div>
@@ -430,6 +654,7 @@ function renderHandCard(iid, cardId, playable) {
     if (!card) return '';
     const isMinion = card.type === 'minion';
     const displayName = card.name || 'Карта';
+    const effectText = (card.effect || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     return `
     <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" onclick="battlePlayCard('${iid}')">
         <div class="bhc-portrait" style="${cardFrameStyle(card.rarity)}">
@@ -441,6 +666,7 @@ function renderHandCard(iid, cardId, playable) {
         ${isMinion
             ? `<div class="bhc-atk">${card.attack || 0}</div><div class="bhc-hp">${card.health || 0}</div>`
             : `<div class="bhc-spell-tag">✨ Закл.</div>`}
+        ${card.effectType ? `<div class="bhc-ability-badge" onclick="event.stopPropagation(); tg.showAlert('${escapeHtml(displayName)}: ${effectText || 'есть особый эффект'}')">✨</div>` : ''}
     </div>`;
 }
 
@@ -492,7 +718,7 @@ function renderBattleView() {
             <div class="battle-hand-row">${oppHandBacksHtml}</div>
             <div class="battle-name-tab" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
                 <span class="bnt-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
-                <span class="bnt-stats">❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
+                <span class="bnt-stats">${opp.heroShielded ? "🔵 " : ""}❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
             </div>
         </div>
         ${hintHtml}
@@ -504,7 +730,7 @@ function renderBattleView() {
         <div class="battle-hand-strip mine">
             <div class="battle-name-tab" id="battle-hero-mine">
                 <span class="bnt-name">Ты</span>
-                <span class="bnt-stats">❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</span>
+                <span class="bnt-stats">${me.heroShielded ? "🔵 " : ""}❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</span>
             </div>
             <div class="battle-hand-row">${myHandHtml}</div>
         </div>
@@ -623,18 +849,35 @@ function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) 
     const log = [];
 
     if (targetIid === 'hero') {
-        opp.heroHealth -= attacker.attack;
-        log.push(`${me.name}: «${attacker.name}» бьёт героя на ${attacker.attack}`);
+        if (opp.heroShielded) {
+            opp.heroShielded = false;
+            log.push(`${me.name}: «${attacker.name}» бьёт героя, но щит поглощает урон`);
+        } else {
+            opp.heroHealth -= attacker.attack;
+            log.push(`${me.name}: «${attacker.name}» бьёт героя на ${attacker.attack}`);
+            if (attacker.lifesteal) {
+                me.heroHealth = Math.min(me.maxHealth, me.heroHealth + attacker.attack);
+                log.push(`«${attacker.name}» (кровопийца): герой лечится на ${attacker.attack}`);
+            }
+        }
     } else {
         const target = opp.board[targetIid];
         if (!target) return;
-        target.health -= attacker.attack;
-        attacker.health -= target.attack;
-        log.push(`${me.name}: «${attacker.name}» атакует «${target.name}»`);
-        if (target.health <= 0) {
-            delete opp.board[targetIid];
-            log.push(`«${target.name}» погибает`);
-            if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+        if (target.shielded) {
+            target.shielded = false;
+            log.push(`${me.name}: «${attacker.name}» атакует «${target.name}», но щит поглощает урон`);
+        } else {
+            target.health -= attacker.attack;
+            log.push(`${me.name}: «${attacker.name}» атакует «${target.name}» на ${attacker.attack}`);
+            if (attacker.lifesteal) {
+                me.heroHealth = Math.min(me.maxHealth, me.heroHealth + attacker.attack);
+                log.push(`«${attacker.name}» (кровопийца): герой лечится на ${attacker.attack}`);
+            }
+            if (target.health <= 0) {
+                delete opp.board[targetIid];
+                log.push(`«${target.name}» погибает`);
+                if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+            }
         }
     }
     attacker.canAttack = false;
@@ -673,7 +916,8 @@ function endTurn(battleId, data, currentSlot) {
     const nextPlayer = normalizePlayerState(JSON.parse(JSON.stringify(data[nextSlot])));
 
     nextPlayer.maxMana = Math.min((nextPlayer.maxMana || 1) + 1, 10);
-    nextPlayer.mana = nextPlayer.maxMana;
+    nextPlayer.mana = Math.max(0, nextPlayer.maxMana - (nextPlayer.manaDebuff || 0));
+    nextPlayer.manaDebuff = 0;
 
     if (nextPlayer.deck && nextPlayer.deck.length) {
         const cardId = nextPlayer.deck.shift();
@@ -683,7 +927,10 @@ function endTurn(battleId, data, currentSlot) {
         nextPlayer.heroHealth -= nextPlayer.fatigue;
     }
 
-    Object.values(nextPlayer.board || {}).forEach(m => { m.canAttack = true; });
+    Object.values(nextPlayer.board || {}).forEach(m => {
+        if (m.frozen) { m.frozen = false; m.canAttack = false; }
+        else { m.canAttack = true; }
+    });
 
     const updates = {};
     updates['battles/' + battleId + '/' + nextSlot] = nextPlayer;

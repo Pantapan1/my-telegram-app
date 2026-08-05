@@ -666,13 +666,45 @@
                         <option value="battlecry_damage">Боевой клич: урон герою противника</option>
                         <option value="battlecry_heal">Боевой клич: лечение своего героя</option>
                         <option value="battlecry_draw">Боевой клич: добрать карты</option>
-                        <option value="deathrattle_damage">Предсмертный хрип: урон герою противника</option>
-                        <option value="deathrattle_draw">Предсмертный хрип: добрать карты</option>
+                        <option value="battlecry_damage_minion">Боевой клич: урон случайному существу соперника</option>
+                        <option value="battlecry_damage_all_enemy">Боевой клич: урон всем существам соперника</option>
+                        <option value="battlecry_freeze_random">Боевой клич: заморозить случайное существо соперника</option>
+                        <option value="battlecry_silence_random">Боевой клич: снять способности со случайного существа соперника</option>
+                        <option value="battlecry_return_to_hand">Боевой клич: вернуть случайное существо соперника в руку</option>
+                        <option value="battlecry_heal_minion">Боевой клич: вылечить случайное своё существо</option>
+                        <option value="battlecry_heal_all_own">Боевой клич: вылечить всех своих существ</option>
+                        <option value="battlecry_summon_token">Боевой клич: призвать существо "Дух" 1/N на стол</option>
+                        <option value="battlecry_kill_weakest">Боевой клич: уничтожить самое слабое существо соперника</option>
+                        <option value="battlecry_double_attack_random">Боевой клич: удвоить атаку случайного своего существа</option>
+                        <option value="battlecry_damage_trade">Боевой клич: урон×2 сопернику ценой своего здоровья</option>
+                        <option value="battlecry_taunt_random_own">Боевой клич: дать провокацию случайному своему существу</option>
+                        <option value="battlecry_freeze_all_enemy">Боевой клич: заморозить ВСЕХ существ соперника</option>
+                        <option value="battlecry_mana_debuff">Боевой клич: -мана сопернику в следующий ход</option>
+                        <option value="battlecry_buff_max_health">Боевой клич: +макс. здоровье героя навсегда</option>
+                        <option value="battlecry_transform_random_hand">Боевой клич: превратить карту в руке в другую</option>
+                        <option value="battlecry_mana_refund">Боевой клич: вернуть ману в этот ход</option>
+                        <option value="battlecry_clone_random_own">Боевой клич: клонировать случайное своё существо</option>
+                        <option value="battlecry_swap_health">Боевой клич: поменять здоровье героев местами</option>
+                        <option value="battlecry_shield_random_own">Боевой клич: дать щит случайному своему существу</option>
+                        <option value="battlecry_shield_hero">Боевой клич: дать щит своему герою</option>
+                        <option value="battlecry_chaos">Боевой клич: хаос — случайный эффект</option>
                         <option value="buff_attack_random">Боевой клич: +атака случайному своему существу</option>
+                        <option value="buff_all_own">Боевой клич: +атака и +здоровье всем своим существам</option>
+                        <option value="deathrattle_damage">Предсмертный хрип: урон герою противника</option>
+                        <option value="deathrattle_damage_all_enemy">Предсмертный хрип: урон всем существам соперника</option>
+                        <option value="deathrattle_draw">Предсмертный хрип: добрать карты</option>
+                        <option value="deathrattle_heal">Предсмертный хрип: лечение своего героя</option>
+                        <option value="deathrattle_summon_token">Предсмертный хрип: призвать существо "Дух" 1/N</option>
                     </select>
                     <input type="number" id="card-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
                     <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
                         <input type="checkbox" id="card-taunt" style="width:18px;height:18px;"> Провокация (сначала должны атаковать это существо)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-lifesteal" style="width:18px;height:18px;"> Кровопийца (лечит героя на сумму урона от атаки)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-charge" style="width:18px;height:18px;"> Рывок (может атаковать в тот же ход, когда разыграно)
                     </label>
                     <button class="btn" id="btn-add-card">Добавить карточку</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
@@ -700,7 +732,30 @@
                         <option value="battlecry_damage">Урон герою противника</option>
                         <option value="battlecry_heal">Лечение своего героя</option>
                         <option value="battlecry_draw">Добрать карты</option>
+                        <option value="battlecry_damage_minion">Урон случайному существу соперника</option>
+                        <option value="battlecry_damage_all_enemy">Урон всем существам соперника</option>
+                        <option value="battlecry_freeze_random">Заморозить случайное существо соперника</option>
+                        <option value="battlecry_silence_random">Снять способности со случайного существа соперника</option>
+                        <option value="battlecry_return_to_hand">Вернуть случайное существо соперника в руку</option>
+                        <option value="battlecry_heal_minion">Вылечить случайное своё существо</option>
+                        <option value="battlecry_heal_all_own">Вылечить всех своих существ</option>
+                        <option value="battlecry_summon_token">Призвать существо "Дух" 1/N на стол</option>
+                        <option value="battlecry_kill_weakest">Уничтожить самое слабое существо соперника</option>
+                        <option value="battlecry_double_attack_random">Удвоить атаку случайного своего существа</option>
+                        <option value="battlecry_damage_trade">Урон×2 сопернику ценой своего здоровья</option>
+                        <option value="battlecry_taunt_random_own">Дать провокацию случайному своему существу</option>
+                        <option value="battlecry_freeze_all_enemy">Заморозить ВСЕХ существ соперника</option>
+                        <option value="battlecry_mana_debuff">-мана сопернику в следующий ход</option>
+                        <option value="battlecry_buff_max_health">+макс. здоровье героя навсегда</option>
+                        <option value="battlecry_transform_random_hand">Превратить карту в руке в другую</option>
+                        <option value="battlecry_mana_refund">Вернуть ману в этот ход</option>
+                        <option value="battlecry_clone_random_own">Клонировать случайное своё существо</option>
+                        <option value="battlecry_swap_health">Поменять здоровье героев местами</option>
+                        <option value="battlecry_shield_random_own">Дать щит случайному своему существу</option>
+                        <option value="battlecry_shield_hero">Дать щит своему герою</option>
+                        <option value="battlecry_chaos">Хаос — случайный эффект</option>
                         <option value="buff_attack_random">+атака случайному своему существу</option>
+                        <option value="buff_all_own">+атака и +здоровье всем своим существам</option>
                     </select>
                     <input type="number" id="combo-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
                     <button class="btn" id="btn-add-combo">Добавить комбо</button>

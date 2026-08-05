@@ -79,6 +79,8 @@ window.editCard = function (id) {
     document.getElementById('card-effect-type').value = c.effectType || '';
     document.getElementById('card-effect-value').value = c.effectValue ?? '';
     document.getElementById('card-taunt').checked = !!c.taunt;
+    document.getElementById('card-lifesteal').checked = !!c.lifesteal;
+    document.getElementById('card-charge').checked = !!c.charge;
     document.getElementById('card-form-heading').textContent = 'Редактировать карточку';
     document.getElementById('btn-add-card').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-card').classList.remove('hidden');
@@ -92,6 +94,8 @@ document.getElementById('btn-cancel-edit-card').onclick = function () {
     document.getElementById('card-type').value = 'minion';
     document.getElementById('card-effect-type').value = '';
     document.getElementById('card-taunt').checked = false;
+    document.getElementById('card-lifesteal').checked = false;
+    document.getElementById('card-charge').checked = false;
     document.getElementById('card-rarity').value = 'common';
     document.getElementById('card-form-heading').textContent = 'Добавить карточку';
     document.getElementById('btn-add-card').textContent = 'Добавить карточку';
@@ -111,11 +115,13 @@ document.getElementById('btn-add-card').onclick = function () {
     const effectType = document.getElementById('card-effect-type').value;
     const effectValue = parseInt(document.getElementById('card-effect-value').value, 10) || 0;
     const taunt = document.getElementById('card-taunt').checked;
+    const lifesteal = document.getElementById('card-lifesteal').checked;
+    const charge = document.getElementById('card-charge').checked;
 
     if (!name) return tg.showAlert('Укажи название карточки');
     if (mana < 0 || mana > 10) return tg.showAlert('Стоимость маны от 0 до 10');
 
-    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, taunt };
+    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, taunt, lifesteal, charge };
 
     if (state.editingCardId) {
         update(ref(state.db, 'cards/' + state.editingCardId), data).then(() => {
