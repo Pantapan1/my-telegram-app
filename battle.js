@@ -1189,37 +1189,77 @@ function renderBattleView() {
     state.battleHintShown = true;
     const hintHtml = showHint ? `<div class="battle-hint">Тапни карту в руке, чтобы разыграть · тапни своё существо, потом цель, чтобы атаковать</div>` : '';
 
-    body.innerHTML = `
-    <div class="battle-arena">
-        <div class="battle-hand-strip opp">
-            <div class="battle-hand-row">${oppHandBacksHtml}</div>
-            <div class="battle-name-tab" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
-                <span class="bnt-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
-                <span class="bnt-stats">${opp.heroShielded ? "🔵 " : ""}❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
+    let arenaEl = document.querySelector('.battle-arena');
+    if (!arenaEl) {
+        body.innerHTML = `
+        <div class="battle-arena">
+            <div class="battle-hand-strip opp">
+                <div class="battle-hand-row" id="ui-opp-hand"></div>
+                <div class="battle-name-tab" id="battle-hero-opp">
+                    <span class="bnt-name" id="ui-opp-name"></span>
+                    <span class="bnt-stats" id="ui-opp-stats"></span>
+                </div>
             </div>
-        </div>
-        ${hintHtml}
-        <div class="battle-battlefield" ${currentArenaBgUrl ? `style="background-image:url('${currentArenaBgUrl}');background-size:cover;background-position:center;"` : ''}>
-            <div class="bf-half opp-board">${oppBoardHtml}</div>
-            <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · ⏱ <span id="battle-turn-timer-value">--:--</span></div>
-            <div class="bf-half my-board">${myBoardHtml}</div>
-        </div>
-        <div class="battle-hand-strip mine">
-            <div class="battle-name-tab" id="battle-hero-mine">
-                <span class="bnt-name">Ты</span>
-                <span class="bnt-stats">${me.heroShielded ? "🔵 " : ""}❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</span>
+            <div id="ui-hint"></div>
+            <div class="battle-battlefield" id="ui-battlefield" style="position: relative;">
+                <div class="bf-half opp-board" id="ui-opp-board"></div>
+                <div class="battle-turn-indicator" id="ui-turn-indicator"></div>
+                <div class="bf-half my-board" id="ui-my-board"></div>
             </div>
-            <div class="battle-hand-row">${myHandHtml}</div>
-        </div>
-        <div class="battle-actions-row">
-            <button class="btn btn-secondary" onclick="surrenderBattle()">Сдаться</button>
-            <div class="battle-emoji-wrap">
-                <button class="btn btn-secondary" style="padding:10px 14px;" onclick="toggleBattleEmojiPicker()">😊</button>
-                <div class="battle-emoji-picker" id="battle-emoji-picker"></div>
+            <div class="battle-hand-strip mine">
+                <div class="battle-name-tab" id="battle-hero-mine">
+                    <span class="bnt-name">Ты</span>
+                    <span class="bnt-stats" id="ui-my-stats"></span>
+                </div>
+                <div class="battle-hand-row" id="ui-my-hand"></div>
             </div>
-            <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
-        </div>
-    </div>`;
+            <div class="battle-actions-row">
+                <button class="btn btn-secondary" onclick="surrenderBattle()">Сдаться</button>
+                <div class="battle-emoji-wrap">
+                    <button class="btn btn-secondary" style="padding:10px 14px;" onclick="toggleBattleEmojiPicker()">😊</button>
+                    <div class="battle-emoji-picker" id="battle-emoji-picker"></div>
+                </div>
+                <button class="btn" id="battle-end-turn-btn" onclick="battleEndTurn()">Закончить ход</button>
+            </div>
+        </div>`;
+    }
+
+    document.getElementById('ui-opp-hand').innerHTML = oppHandBacksHtml;
+    document.getElementById('ui-opp-board').innerHTML = oppBoardHtml;
+    document.getElementById('ui-my-board').innerHTML = myBoardHtml;
+    document.getElementById('ui-my-hand').innerHTML = myHandHtml;
+    
+    const oppHero = document.getElementById('battle-hero-opp');
+    if (oppHero) oppHero.setAttribute('onclick', myTurn ? "battleAttackTarget('hero')" : "");
+    
+    document.getElementById('ui-opp-name').textContent = `${opp.name || 'Соперник'} ${opp.isBot ? '🤖' : ''}`;
+    document.getElementById('ui-opp-stats').innerHTML = `${opp.heroShielded ? "🔵 " : ""}❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}`;
+    document.getElementById('ui-my-stats').innerHTML = `${me.heroShielded ? "🔵 " : ""}❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}`;
+    
+    document.getElementById('ui-hint').innerHTML = hintHtml;
+    
+    const bf = document.getElementById('ui-battlefield');
+    if (bf) {
+        bf.style.backgroundImage = currentArenaBgUrl ? `url('${currentArenaBgUrl}')` : 'none';
+        bf.style.backgroundSize = 'cover';
+        bf.style.backgroundPosition = 'center';
+    }
+    
+    document.getElementById('ui-turn-indicator').innerHTML = `${myTurn ? '⚡ Твой ход' : '⏳ Ход соперника'} · ⏱ <span id="battle-turn-timer-value">--:--</span>`;
+    tickTurnTimer(); 
+
+    const endBtn = document.getElementById('battle-end-turn-btn');
+    if (endBtn) {
+        if (myTurn) {
+            endBtn.className = 'btn battle-pulse';
+            endBtn.removeAttribute('disabled');
+            endBtn.style.opacity = '1';
+        } else {
+            endBtn.className = 'btn';
+            endBtn.setAttribute('disabled', 'true');
+            endBtn.style.opacity = '.4';
+        }
+    }
 }
 
 // ===================== ДЕЙСТВИЯ ИГРОКА =====================

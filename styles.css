@@ -1,4 +1,4 @@
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
         :focus-visible { outline: 2px solid #ff9f0a; outline-offset: 2px; }
 
         :root {
@@ -1139,7 +1139,7 @@
         /* ============================================================
            БОЙ (КАРТОЧНАЯ ИГРА)
            ============================================================ */
-        .battle-arena { display: flex; flex-direction: column; height: 100%; }
+        .battle-arena { display: flex; flex-direction: column; min-height: 100%; }
 
         /* Полоска руки (сверху — соперник рубашками вниз, снизу — твои карты лицом) */
         .battle-hand-strip { flex: 0 0 auto; display: flex; flex-direction: column; position: relative; z-index: 3; }
@@ -1170,12 +1170,12 @@
 
         /* Единое поле боя — стол соперника сверху, твой снизу, разделены индикатором хода */
         .battle-battlefield {
-            flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+            flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start;
             background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 65%, #14301f 100%);
             box-shadow: inset 0 3px 14px rgba(0,0,0,.4); min-height: 160px; position: relative; z-index: 1;
         }
         .bf-half {
-            display: flex; gap: clamp(8px, 3vw, 14px); padding: 8px clamp(8px, 3vw, 16px); min-height: clamp(108px, 34vw, 130px); overflow-x: auto; overflow-y: hidden;
+            display: flex; gap: clamp(8px, 3vw, 14px); padding: 8px clamp(8px, 3vw, 16px); min-height: min-content; overflow-x: auto; overflow-y: hidden;
             align-items: center; box-sizing: border-box; flex: 1 1 0;
         }
         .bf-half.opp-board { border-bottom: 1px dashed rgba(255,255,255,.12); }
