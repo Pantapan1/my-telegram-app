@@ -5,7 +5,7 @@ import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
 window.switchAdminTab = function(tab) {
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas', 'story'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas', 'story', 'users'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });
@@ -810,3 +810,85 @@ window.switchAdminTab = function(tab) {
             remove(ref(state.db, 'events/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
+
+        // === АДМИН - ПОЛЬЗОВАТЕЛИ ===
+
+        export function renderAdminUsersList() {
+            const el = document.getElementById('admin-users-list');
+            const countEl = document.getElementById('admin-users-count');
+            if (!el) return;
+
+            const term = (document.getElementById('admin-users-search')?.value || '').trim().toLowerCase();
+
+            let list = state.usersData.slice().sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
+            if (term) {
+                list = list.filter(u =>
+                    (u.name || '').toLowerCase().includes(term) ||
+                    String(u.id || '').toLowerCase().includes(term)
+                );
+            }
+
+            if (countEl) countEl.textContent = `Всего пользователей: ${state.usersData.length}` + (term ? ` · найдено: ${list.length}` : '');
+
+            if (!list.length) {
+                el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Пользователи не найдены</div>';
+                return;
+            }
+
+            el.innerHTML = list.map(u => `
+                <div class="admin-item" style="align-items:center;">
+                    ${u.avatar
+                        ? `<img src="${u.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;margin-right:10px;flex-shrink:0;">`
+                        : `<div class="cover-fallback" style="width:40px;height:40px;border-radius:50%;background:${colorFor(u.name || '')};font-size:16px;margin-right:10px;flex-shrink:0;">${initialOf(u.name)}</div>`
+                    }
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">
+                            ${escapeHtml(u.name || 'Без имени')}
+                            ${u.isPublisher ? ' <span class="verified-badge" title="Издатель">✓</span>' : ''}
+                            ${u.banned ? ' <span style="color:#e74c3c;font-size:11px;font-weight:700;">ЗАБЛОКИРОВАН</span>' : ''}
+                        </div>
+                        <div class="admin-item-sub">ID: ${escapeHtml(String(u.id))} · 🪙 ${u.coins || 0} · с ${u.joinedAt ? formatDate(u.joinedAt) : '—'}</div>
+                    </div>
+                    <div class="admin-item-actions" style="flex-wrap:wrap;">
+                        <button class="icon-btn" title="Изменить баланс монет" onclick="adminChangeUserCoins('${u.id}')">🪙</button>
+                        <button class="icon-btn" title="${u.isPublisher ? 'Забрать статус издателя' : 'Выдать статус издателя'}" onclick="adminTogglePublisher('${u.id}')">${u.isPublisher ? '✓' : '📗'}</button>
+                        <button class="icon-btn ${u.banned ? '' : 'danger'}" title="${u.banned ? 'Разблокировать' : 'Заблокировать'}" onclick="adminToggleBan('${u.id}')">${u.banned ? '🔓' : '🚫'}</button>
+                        <button class="icon-btn danger" title="Удалить пользователя" onclick="adminDeleteUser('${u.id}')">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('admin-users-search')?.addEventListener('input', renderAdminUsersList);
+
+        window.adminChangeUserCoins = function(userId) {
+            const u = state.usersData.find(x => x.id === userId);
+            if (!u) return;
+            const raw = prompt('Новый баланс монет для «' + (u.name || 'Без имени') + '»:', u.coins || 0);
+            if (raw === null) return;
+            const amount = parseInt(raw, 10);
+            if (isNaN(amount) || amount < 0) return tg.showAlert('Введите корректное число');
+
+            update(ref(state.db, 'users/' + userId), { coins: amount }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        window.adminTogglePublisher = function(userId) {
+            const u = state.usersData.find(x => x.id === userId);
+            if (!u) return;
+            update(ref(state.db, 'users/' + userId), { isPublisher: !u.isPublisher }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        window.adminToggleBan = function(userId) {
+            const u = state.usersData.find(x => x.id === userId);
+            if (!u) return;
+            const next = !u.banned;
+            if (next && !confirm('Заблокировать пользователя «' + (u.name || 'Без имени') + '»? Он не сможет пользоваться приложением.')) return;
+            update(ref(state.db, 'users/' + userId), { banned: next }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        window.adminDeleteUser = function(userId) {
+            const u = state.usersData.find(x => x.id === userId);
+            if (!u) return;
+            if (!confirm('Полностью удалить пользователя «' + (u.name || 'Без имени') + '»? Это действие необратимо.')) return;
+            remove(ref(state.db, 'users/' + userId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };

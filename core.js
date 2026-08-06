@@ -8,7 +8,7 @@ import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBoss
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
 import { checkDailyCoinReward, renderOwnProfileHeader, renderProfileStats, renderQuestsList, renderUserProfileOverlay } from './profile.js';
 import { populateStickerPackSelect, renderChatOverlay, renderChatsList, renderStickerPicker, renderUserPickList } from './chats.js';
-import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
+import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList, renderAdminUsersList } from './admin.js';
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
@@ -446,7 +446,17 @@ export function startFirebaseListeners() {
     onValue(ref(state.db, 'users'), (snapshot) => {
         const data = snapshot.val();
         state.usersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-        
+
+        if (state.currentUser) {
+            const me = state.usersData.find(u => u.id === state.currentUser.id);
+            if (me && me.banned) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;padding:24px;text-align:center;font-size:16px;color:#e74c3c;">🚫 Ваш аккаунт заблокирован администратором.</div>';
+                return;
+            }
+        }
+
+        if (state.isAdmin) renderAdminUsersList();
+
         renderChatsList(); 
         renderOwnProfileHeader();
         renderNotificationsToggle();

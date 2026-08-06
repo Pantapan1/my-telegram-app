@@ -285,6 +285,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-cards" onclick="switchAdminTab('cards')">🃏 Карточки</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-arenas" onclick="switchAdminTab('arenas')">🗺️ Арены</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-story" onclick="switchAdminTab('story')">📖 Сюжет</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-users" onclick="switchAdminTab('users')">👥 Пользователи</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
@@ -952,6 +953,14 @@
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Все главы</h3>
                     <div id="admin-story-list"></div>
+                </div>
+
+                <!-- ВКЛАДКА: ПОЛЬЗОВАТЕЛИ -->
+                <div id="admin-tab-users" class="hidden">
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">Управление пользователями</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;" id="admin-users-count"></div>
+                    <input type="text" id="admin-users-search" class="input" placeholder="Поиск по имени или ID...">
+                    <div id="admin-users-list"></div>
                 </div>
 
             </div>
