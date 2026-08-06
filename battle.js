@@ -564,6 +564,7 @@ window.leaveBattle = function () {
     state.selectedAttackerIid = null;
     state.selectedAbilityIid = null;
     activeBotRunKey = null;
+    currentArenaBgUrl = null;
 
     const overlay = document.getElementById('battle-overlay');
     if (overlay) overlay.classList.remove('active');
@@ -631,6 +632,7 @@ let battleRefListener = null;
 let activeBotRunKey = null;
 let recentlyPlayedIid = null;
 let recentlyPlayedAt = 0;
+let currentArenaBgUrl = null;
 
 function enterBattle(battleId) {
     state.activeBattleId = battleId;
@@ -652,15 +654,9 @@ function enterBattle(battleId) {
         state.mySlot = data.p1.uid === state.currentUser.id ? 'p1' : 'p2';
 
         const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
+        currentArenaBgUrl = (arena && arena.bgUrl) || null;
 
         renderBattleView();
-
-        const bField = document.querySelector('.battle-battlefield');
-        if (bField && arena && arena.bgUrl) {
-            bField.style.backgroundImage = `url('${arena.bgUrl}')`;
-            bField.style.backgroundSize = 'cover';
-            bField.style.backgroundPosition = 'center';
-        }
 
         if (arena && arena.bgmUrl && data.status === 'active') {
             playBattleMusic(arena.bgmUrl);
@@ -844,7 +840,7 @@ function renderBattleView() {
             </div>
         </div>
         ${hintHtml}
-        <div class="battle-battlefield">
+        <div class="battle-battlefield" ${currentArenaBgUrl ? `style="background-image:url('${currentArenaBgUrl}');background-size:cover;background-position:center;"` : ''}>
             <div class="bf-half opp-board">${oppBoardHtml}</div>
             <div class="battle-turn-indicator">${myTurn ? '⚡ Твой ход' : `⏳ Ход соперника`} · раунд ${data.turnNumber}</div>
             <div class="bf-half my-board">${myBoardHtml}</div>
