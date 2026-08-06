@@ -284,6 +284,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-events" onclick="switchAdminTab('events')">📅 События</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-cards" onclick="switchAdminTab('cards')">🃏 Карточки</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-arenas" onclick="switchAdminTab('arenas')">🗺️ Арены</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-story" onclick="switchAdminTab('story')">📖 Сюжет</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
@@ -740,6 +741,30 @@
                         <option value="deathrattle_summon_token">Предсмертный хрип: призвать существо "Дух" 1/N</option>
                         <option value="active_damage_target">Активная: Урон выбранной цели</option>
                         <option value="active_heal_target">Активная: Лечение выбранной цели</option>
+                        <option value="active_freeze_target">Активная: Заморозить выбранную цель</option>
+                        <option value="active_silence_target">Активная: Снять способности с выбранной цели</option>
+                        <option value="battlecry_windfury_self">Боевой клич: даёт себе Ярость ветра</option>
+                        <option value="battlecry_windfury_random_own">Боевой клич: Ярость ветра случайному своему существу</option>
+                        <option value="battlecry_poison_self">Боевой клич: даёт себе Яд</option>
+                        <option value="battlecry_stealth_self">Боевой клич: даёт себе Скрытность</option>
+                        <option value="battlecry_stealth_all_own">Боевой клич: Скрытность всем своим существам</option>
+                        <option value="battlecry_summon_two_tokens">Боевой клич: призвать двух "Духов" 1/N</option>
+                        <option value="battlecry_copy_enemy_random">Боевой клич: скопировать случайное существо соперника себе</option>
+                        <option value="battlecry_discard_random_enemy">Боевой клич: соперник сбрасывает случайную карту из руки</option>
+                        <option value="battlecry_mill_enemy">Боевой клич: сжечь N карт сверху колоды соперника</option>
+                        <option value="battlecry_reduce_enemy_max_mana_perm">Боевой клич: навсегда -N макс. маны сопернику</option>
+                        <option value="battlecry_gain_max_mana_perm">Боевой клич: навсегда +N макс. маны себе</option>
+                        <option value="battlecry_full_heal_hero">Боевой клич: полностью восстановить здоровье героя</option>
+                        <option value="battlecry_damage_self_minion_random">Боевой клич: урон случайному своему существу (цена эффекта)</option>
+                        <option value="battlecry_summon_copy_strongest_own">Боевой клич: призвать копию сильнейшего своего существа</option>
+                        <option value="battlecry_shield_all_own">Боевой клич: щит всем своим существам</option>
+                        <option value="battlecry_taunt_all_own">Боевой клич: провокация всем своим существам</option>
+                        <option value="battlecry_silence_all_enemy">Боевой клич: снять способности со всех существ соперника</option>
+                        <option value="deathrattle_summon_two_tokens">Предсмертный хрип: призвать двух "Духов"</option>
+                        <option value="deathrattle_weaken_random_enemy">Предсмертный хрип: -N/-N случайному существу соперника</option>
+                        <option value="deathrattle_shield_hero">Предсмертный хрип: щит своему герою</option>
+                        <option value="deathrattle_reduce_enemy_mana">Предсмертный хрип: -N маны сопернику в этом ходу</option>
+                        <option value="aura_buff_attack_own">Аура: пока существо живо, все другие свои существа +N атаки</option>
                     </select>
                     <input type="number" id="card-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
                     <input type="number" id="card-cooldown" class="input" placeholder="Кулдаун активной способности (ходов)" min="1" value="2">
@@ -751,6 +776,15 @@
                     </label>
                     <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
                         <input type="checkbox" id="card-charge" style="width:18px;height:18px;"> Рывок (может атаковать в тот же ход, когда разыграно)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-windfury" style="width:18px;height:18px;"> 🌪️ Ярость ветра (может атаковать дважды за ход)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-poison" style="width:18px;height:18px;"> ☠️ Яд (мгновенно убивает существо, которое атакует)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-stealth" style="width:18px;height:18px;"> 👻 Скрытность (нельзя выбрать целью, пока само не атакует)
                     </label>
                     <button class="btn" id="btn-add-card">Добавить карточку</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
@@ -867,6 +901,57 @@
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Все арены</h3>
                     <div id="admin-arenas-list"></div>
+                </div>
+
+                <!-- ВКЛАДКА: СЮЖЕТНЫЙ РЕЖИМ (главы/боссы карточной игры) -->
+                <div id="admin-tab-story" class="hidden">
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="story-chapter-form-heading">Создать главу</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Главы проходятся по порядку (номер «Порядок» ниже) — следующая открывается после победы над предыдущей. У каждой главы свой соперник с диалогами и фиксированной колодой.</div>
+
+                    <input type="text" id="story-chapter-name" class="input" placeholder="Название главы (напр. Глава 1: Пробуждение)">
+                    <input type="number" id="story-chapter-order" class="input" placeholder="Порядок (0, 1, 2…)" min="0">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Имя соперника (босса)</label>
+                    <input type="text" id="story-boss-name" class="input" placeholder="Например: Тёмный Рыцарь">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Портрет соперника (для диалогов)</label>
+                    <div class="image-field-row">
+                        <input type="text" id="story-boss-image" class="input" placeholder="Ссылка на картинку (URL)">
+                        <label class="upload-btn" for="story-boss-image-file" id="story-boss-image-upload-btn">📁</label>
+                        <input type="file" id="story-boss-image-file" accept="image/*" class="hidden">
+                    </div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:6px; color:var(--text-primary);">💬 Диалоги (визуальная новелла)</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Формат — по одной реплике на строку: <b>Имя: текст</b>. Например: <br><code>Ты: Наконец я тебя нашёл!</code><br><code>Тёмный Рыцарь: Ты пожалеешь, что пришёл сюда.</code></div>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Перед боем</label>
+                    <textarea id="story-dialogue-intro" class="input" rows="4" placeholder="Ты: Наконец я тебя нашёл!&#10;Тёмный Рыцарь: Ты пожалеешь, что пришёл сюда."></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">По ходу боя (формат: <b>Ход|Имя|Текст</b>, напр. <code>3|Тёмный Рыцарь|Не сдавайся так просто!</code>)</label>
+                    <textarea id="story-dialogue-during" class="input" rows="3" placeholder="3|Тёмный Рыцарь|Не сдавайся так просто!"></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">При победе игрока</label>
+                    <textarea id="story-dialogue-win" class="input" rows="3" placeholder="Тёмный Рыцарь: Невозможно... ты сильнее, чем я думал."></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">При поражении игрока</label>
+                    <textarea id="story-dialogue-lose" class="input" rows="3" placeholder="Тёмный Рыцарь: Ты ещё не готов к схватке со мной."></textarea>
+
+                    <div class="divider"></div>
+                    <div id="story-boss-deck-picker"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:8px; color:var(--text-primary);">🎁 Награда за первое прохождение</h3>
+                    <input type="number" id="story-reward-coins" class="input" placeholder="Монеты" min="0">
+                    <select id="story-reward-card" class="input"><option value="">Без карточки</option></select>
+                    <input type="number" id="story-reward-card-count" class="input" placeholder="Кол-во карточек" min="1" value="1">
+
+                    <button class="btn" id="btn-add-story-chapter" onclick="window.saveStoryChapter()">Добавить главу</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-story-chapter" onclick="window.cancelEditStoryChapter()">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все главы</h3>
+                    <div id="admin-story-list"></div>
                 </div>
 
             </div>
@@ -1033,6 +1118,16 @@
         <div class="reader-content" id="card-game-menu-body"></div>
     </div>
 
+    <div id="story-mode-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="story-mode-back-btn" onclick="closeStoryMode()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">📖 Сюжетный режим</div>
+            </div>
+        </div>
+        <div class="reader-content" id="story-mode-body"></div>
+    </div>
+
     <div id="pack-shop-overlay" class="reader-overlay">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="pack-shop-back-btn" onclick="closePackShop()">←</button>
@@ -1128,6 +1223,12 @@
     <!-- === РЕКЛАМНЫЙ БАННЕР ADSGRAM (низ экрана, все страницы) === -->
     <div class="ad-banner-bottom" id="global-ad-banner">
         <adsgram-task data-block-id="task-39987" data-debug="false" data-debug-console="false" class="task"></adsgram-task>
+    </div>
+
+    <!-- ДИАЛОГИ СЮЖЕТНОГО РЕЖИМА (визуальная новелла), поверх всего интерфейса, включая бой -->
+    <div id="story-dialogue-overlay" class="story-dialogue-overlay">
+        <button class="story-dlg-skip" onclick="skipStoryDialogue(event)">Пропустить ✕</button>
+        <div class="story-dlg-box" id="story-dialogue-box" onclick="advanceStoryDialogue()"></div>
     </div>
 
     <!-- === ЯКОРНАЯ НАВИГАЦИЯ === -->

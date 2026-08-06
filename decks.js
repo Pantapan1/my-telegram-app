@@ -184,6 +184,10 @@ function renderCardGameMenu() {
             </div>
 
             <div class="cg-side-btns">
+                <div class="cg-btn" onclick="openStoryMode()">
+                    <div class="cg-btn-icon">📖</div>
+                    Сюжет
+                </div>
                 <div class="cg-btn" onclick="openDecksOverlay()">
                     <div class="cg-btn-icon">🃏</div>
                     Мои колоды

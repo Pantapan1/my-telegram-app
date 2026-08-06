@@ -86,4 +86,9 @@ export const state = {
   typingClearTimer: null,
   editingQuestId: null,
   arenasData: [],
+  storyChapters: [],
+  storyCleared: {},
+  editingStoryChapterId: null,
+  storyBossDeckDraft: {},
+  storyPendingChapterId: null,
 };

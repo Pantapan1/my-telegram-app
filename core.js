@@ -12,6 +12,7 @@ import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBanners
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, renderStoryListView } from './story.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -353,7 +354,14 @@ export function startFirebaseListeners() {
     onValue(ref(state.db, 'cards'), (snapshot) => {
         const data = snapshot.val();
         state.cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-        if (state.isAdmin) { renderAdminCardsList(); renderAdminCombosList(); }
+        if (state.isAdmin) { renderAdminCardsList(); renderAdminCombosList(); renderStoryBossDeckPicker(); populateStoryRewardCardSelect(); }
+    });
+
+    onValue(ref(state.db, 'storyChapters'), (snapshot) => {
+        const data = snapshot.val();
+        state.storyChapters = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin) renderAdminStoryList();
+        if (state.activeOverlay === 'storyMode') renderStoryListView();
     });
 
     onValue(ref(state.db, 'arenas'), (snapshot) => {
@@ -402,6 +410,11 @@ export function startFirebaseListeners() {
             const data = snapshot.val();
             state.myDecks = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
             if (state.activeOverlay === 'decks') renderDecksView();
+        });
+
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyCleared'), (snapshot) => {
+            state.storyCleared = snapshot.val() || {};
+            if (state.activeOverlay === 'storyMode') renderStoryListView();
         });
     }
 

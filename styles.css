@@ -1144,8 +1144,8 @@
         /* Полоска руки (сверху — соперник рубашками вниз, снизу — твои карты лицом) */
         .battle-hand-strip { flex: 0 0 auto; display: flex; flex-direction: column; position: relative; z-index: 3; }
         .battle-hand-row {
-            display: flex; gap: 10px; padding: 10px 14px; overflow-x: auto; align-items: center;
-            height: 118px; box-sizing: border-box; background: rgba(0,0,0,.05);
+            display: flex; gap: clamp(6px, 2vw, 10px); padding: 8px clamp(8px, 3vw, 14px); overflow-x: auto; align-items: center;
+            height: clamp(96px, 28vw, 118px); box-sizing: border-box; background: rgba(0,0,0,.05);
         }
         .battle-hand-strip.opp { border-bottom: 1px solid var(--border-soft); }
         .battle-hand-strip.mine { border-top: 1px solid var(--border-soft); }
@@ -1163,7 +1163,7 @@
 
         /* Рубашка карты соперника — мы не видим, что там */
         .battle-card-back {
-            flex-shrink: 0; width: 56px; height: 74px; border-radius: 10px;
+            flex-shrink: 0; width: clamp(44px, 14vw, 56px); height: clamp(58px, 18vw, 74px); border-radius: 10px;
             background: repeating-linear-gradient(135deg, #3a2c1a, #3a2c1a 6px, #4a3a24 6px, #4a3a24 12px);
             border: 2px solid #6b5636; box-shadow: 0 2px 4px rgba(0,0,0,.35);
         }
@@ -1175,7 +1175,7 @@
             box-shadow: inset 0 3px 14px rgba(0,0,0,.4); min-height: 160px; position: relative; z-index: 1;
         }
         .bf-half {
-            display: flex; gap: 14px; padding: 8px 16px; min-height: 100px; overflow-x: auto; overflow-y: hidden;
+            display: flex; gap: clamp(8px, 3vw, 14px); padding: 8px clamp(8px, 3vw, 16px); min-height: clamp(108px, 34vw, 130px); overflow-x: auto; overflow-y: hidden;
             align-items: center; box-sizing: border-box; flex: 1 1 0;
         }
         .bf-half.opp-board { border-bottom: 1px dashed rgba(255,255,255,.12); }
@@ -1183,6 +1183,8 @@
             text-align: center; font-weight: 800; font-size: 12px; color: #fff; flex: 0 0 auto;
             padding: 5px 0; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(237,143,3,.65), rgba(0,0,0,0));
         }
+        #battle-turn-timer-value.low { color: #ff453a; animation: turnTimerPulse .6s ease infinite; }
+        @keyframes turnTimerPulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
         .battle-empty-zone { color: rgba(255,255,255,.5); font-size: 11px; }
         .arena-intro-banner {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -1202,22 +1204,46 @@
             padding: 4px 16px; opacity: .8;
         }
 
-        .battle-actions-row { flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; }
+        .battle-actions-row { flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 10px 14px; }
         .battle-actions-row .btn { padding: 10px 16px; }
 
-        /* Существо на столе — круглый портрет с самоцветами атаки/здоровья по бокам, как в HS */
-        .battle-minion { flex-shrink: 0; width: 60px; text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
+        .battle-emoji-wrap { position: relative; }
+        .battle-emoji-picker {
+            display: none; position: absolute; bottom: calc(100% + 8px); right: 0; z-index: 30;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
+            padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.25); grid-template-columns: repeat(4, 1fr); gap: 4px;
+            white-space: nowrap;
+        }
+        .battle-emoji-picker.active { display: grid; }
+        .battle-emoji-picker span { font-size: 22px; cursor: pointer; padding: 4px; text-align: center; border-radius: 8px; transition: background .15s; }
+        .battle-emoji-picker span:active { background: var(--input-bg); transform: scale(0.9); }
+
+        @keyframes battleReactionPop {
+            0% { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+            15% { transform: translate(-50%, -12px) scale(1.3); opacity: 1; }
+            30% { transform: translate(-50%, -8px) scale(1); opacity: 1; }
+            80% { transform: translate(-50%, -8px) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -30px) scale(0.9); opacity: 0; }
+        }
+        .battle-reaction-popup {
+            position: fixed; font-size: 34px; z-index: 10021; pointer-events: none;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
+            animation: battleReactionPop 3s ease forwards;
+        }
+
+        /* Существо на столе — прямоугольный портрет с самоцветами атаки/здоровья по бокам */
+        .battle-minion { flex-shrink: 0; width: clamp(50px, 16vw, 64px); text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
         .battle-minion.can-attack { opacity: 1; cursor: pointer; }
         .battle-minion.can-attack .bm-portrait { box-shadow: 0 0 0 3px #ed8f03, 0 0 10px rgba(237,143,3,.7); }
         .battle-minion.selected .bm-portrait { box-shadow: 0 0 0 3px #ff453a, 0 0 12px rgba(255,69,58,.8); transform: translateY(-4px); }
         .bm-portrait {
-            width: 58px; height: 58px; border-radius: 50%; overflow: hidden; margin: 0 auto;
+            width: clamp(48px, 15.5vw, 62px); height: clamp(60px, 19.5vw, 78px); border-radius: 12px; overflow: hidden; margin: 0 auto;
             border: 3px solid #d9c48a; background: radial-gradient(circle, #4a3d2e, #241d14); box-sizing: border-box; position: relative;
             box-shadow: 0 2px 6px rgba(0,0,0,.4);
         }
-        .bm-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+        .bm-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
         .battle-minion-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
-        .bm-badges { display: flex; justify-content: space-between; width: 58px; margin: -10px auto 0; position: relative; z-index: 2; }
+        .bm-badges { display: flex; justify-content: space-between; width: clamp(48px, 15.5vw, 62px); margin: -12px auto 0; position: relative; z-index: 2; }
         .bm-atk, .bm-hp {
             width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 10px; font-weight: 900; color: #fff; border: 2px solid #2a2015; box-shadow: 0 2px 3px rgba(0,0,0,.4);
@@ -1231,7 +1257,7 @@
             border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft);
         }
         .battle-hand-card {
-            flex-shrink: 0; width: 78px; height: 100px; border-radius: 14px; position: relative; box-sizing: border-box;
+            flex-shrink: 0; width: clamp(62px, 19vw, 78px); height: clamp(80px, 24.5vw, 100px); border-radius: 14px; position: relative; box-sizing: border-box;
             background: #2a2015; overflow: visible; transition: transform .15s ease;
         }
         .battle-hand-card.playable { cursor: pointer; }
@@ -1291,6 +1317,10 @@
         }
         .battle-shield-badge { left: -4px; background: #2b6fb0; }
         .battle-lifesteal-badge { right: -4px; background: #8a1a2e; }
+
+        .bm-keyword-row { display: flex; justify-content: center; gap: 3px; margin-top: 2px; font-size: 10px; line-height: 1; }
+        .is-stealthed { opacity: .45; filter: grayscale(.3); }
+        .bm-atk.buffed { color: #30d158; text-shadow: 0 0 6px rgba(48,209,88,.6); }
 
         .bm-ability-btn {
             position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
@@ -1362,3 +1392,39 @@
 
 
 
+
+/* ===================== СЮЖЕТНЫЙ РЕЖИМ (главы/боссы + диалоги визуальной новеллы) ===================== */
+
+.story-chapter-locked { opacity: .55; }
+
+.story-dialogue-overlay {
+    position: fixed; inset: 0; z-index: 10090;
+    background: rgba(0,0,0,0.55);
+    display: none; align-items: flex-end; justify-content: center;
+    padding: 0 12px 22px;
+}
+.story-dialogue-overlay.active { display: flex; }
+
+.story-dlg-box {
+    width: 100%; max-width: 520px; background: var(--surface);
+    border-radius: 18px; padding: 16px; display: flex; gap: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35); cursor: pointer;
+    border: 1px solid var(--border-soft); animation: slideUpFade .25s ease;
+}
+
+.story-dlg-avatar {
+    width: 64px; height: 64px; border-radius: 14px; object-fit: cover;
+    flex-shrink: 0; background: var(--input-bg); font-size: 26px;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff;
+}
+.story-dlg-avatar-player { background: linear-gradient(135deg, #0a84ff, #64d2ff); font-size: 30px; }
+
+.story-dlg-textwrap { flex: 1; min-width: 0; }
+.story-dlg-name { font-weight: 800; color: var(--text-primary); font-size: 14px; margin-bottom: 4px; }
+.story-dlg-text { color: var(--text-primary); font-size: 14.5px; line-height: 1.45; word-break: break-word; }
+.story-dlg-hint { margin-top: 8px; font-size: 11px; color: var(--text-secondary); text-align: right; }
+
+.story-dlg-skip {
+    position: absolute; bottom: 100px; right: 24px; background: rgba(0,0,0,0.45); color: #fff;
+    border: none; border-radius: 10px; padding: 7px 12px; font-size: 12px; cursor: pointer; z-index: 1;
+}

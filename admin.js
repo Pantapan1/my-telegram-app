@@ -5,7 +5,7 @@ import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
 window.switchAdminTab = function(tab) {
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas', 'story'].forEach(t => { 
                 document.getElementById('admin-tab-' + t).classList.toggle('hidden', tab !== t); 
                 document.getElementById('admin-tab-btn-' + t).classList.toggle('active', tab === t); 
             });

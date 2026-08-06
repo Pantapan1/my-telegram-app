@@ -82,6 +82,9 @@ window.editCard = function (id) {
     document.getElementById('card-taunt').checked = !!c.taunt;
     document.getElementById('card-lifesteal').checked = !!c.lifesteal;
     document.getElementById('card-charge').checked = !!c.charge;
+    document.getElementById('card-windfury').checked = !!c.windfury;
+    document.getElementById('card-poison').checked = !!c.poison;
+    document.getElementById('card-stealth').checked = !!c.stealth;
     document.getElementById('card-form-heading').textContent = 'Редактировать карточку';
     document.getElementById('btn-add-card').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-card').classList.remove('hidden');
@@ -100,6 +103,9 @@ document.getElementById('btn-cancel-edit-card').onclick = function () {
     document.getElementById('card-taunt').checked = false;
     document.getElementById('card-lifesteal').checked = false;
     document.getElementById('card-charge').checked = false;
+    document.getElementById('card-windfury').checked = false;
+    document.getElementById('card-poison').checked = false;
+    document.getElementById('card-stealth').checked = false;
     document.getElementById('card-rarity').value = 'common';
     document.getElementById('card-form-heading').textContent = 'Добавить карточку';
     document.getElementById('btn-add-card').textContent = 'Добавить карточку';
@@ -122,11 +128,14 @@ document.getElementById('btn-add-card').onclick = function () {
     const taunt = document.getElementById('card-taunt').checked;
     const lifesteal = document.getElementById('card-lifesteal').checked;
     const charge = document.getElementById('card-charge').checked;
+    const windfury = document.getElementById('card-windfury').checked;
+    const poison = document.getElementById('card-poison').checked;
+    const stealth = document.getElementById('card-stealth').checked;
 
     if (!name) return tg.showAlert('Укажи название карточки');
     if (mana < 0 || mana > 10) return tg.showAlert('Стоимость маны от 0 до 10');
 
-    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge };
+    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth };
 
     if (state.editingCardId) {
         update(ref(state.db, 'cards/' + state.editingCardId), data).then(() => {

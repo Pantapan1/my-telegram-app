@@ -464,8 +464,78 @@ export function colorFor(str) {
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
         setupImageUpload('arena-image-file', 'arena-image', 'arena-image-upload-btn', 'arenas');
+        setupImageUpload('story-boss-image-file', 'story-boss-image', 'story-boss-image-upload-btn', 'story');
 
 
+
+        // ===================== СЮЖЕТНЫЙ РЕЖИМ: ДИАЛОГИ (ВИЗУАЛЬНАЯ НОВЕЛЛА) =====================
+
+        let storyDialogueQueue = [];
+        let storyDialogueOnDone = null;
+        let storyDialogueAvatar = '';
+        let storyDialogueBossName = '';
+
+        const STORY_PLAYER_SPEAKER_NAMES = ['ты', 'игрок', 'player', 'you'];
+
+        function renderStoryDialogueLine() {
+            const box = document.getElementById('story-dialogue-box');
+            if (!box) return;
+            const line = storyDialogueQueue[0];
+            if (!line) { window.advanceStoryDialogue(); return; }
+
+            const isPlayer = STORY_PLAYER_SPEAKER_NAMES.includes((line.speaker || '').trim().toLowerCase());
+            const avatarHtml = isPlayer
+                ? `<div class="story-dlg-avatar story-dlg-avatar-player">🧑</div>`
+                : (storyDialogueAvatar
+                    ? `<img src="${storyDialogueAvatar}" class="story-dlg-avatar" onerror="this.outerHTML='<div class=&quot;story-dlg-avatar&quot; style=&quot;background:${colorFor(storyDialogueBossName)}&quot;>${initialOf(storyDialogueBossName)}</div>';">`
+                    : `<div class="story-dlg-avatar" style="background:${colorFor(storyDialogueBossName)}">${initialOf(storyDialogueBossName)}</div>`);
+
+            box.innerHTML = `
+                ${avatarHtml}
+                <div class="story-dlg-textwrap">
+                    <div class="story-dlg-name">${escapeHtml(line.speaker || storyDialogueBossName || 'Соперник')}</div>
+                    <div class="story-dlg-text">${escapeHtml(line.text || '')}</div>
+                    <div class="story-dlg-hint">${storyDialogueQueue.length > 1 ? 'Тапни, чтобы продолжить ▶' : 'Тапни, чтобы закрыть ✓'}</div>
+                </div>`;
+        }
+
+        // Показывает очередь диалоговых реплик поверх всего интерфейса (перед боем, по ходам, после боя).
+        // lines: [{speaker, text}], avatarUrl/bossName — для портрета соперника, onDone — вызывается после закрытия.
+        export function showStoryDialogue(lines, avatarUrl, bossName, onDone) {
+            const overlay = document.getElementById('story-dialogue-overlay');
+            if (!overlay || !lines || !lines.length) { if (onDone) onDone(); return; }
+
+            storyDialogueQueue = lines.slice();
+            storyDialogueOnDone = onDone || null;
+            storyDialogueAvatar = avatarUrl || '';
+            storyDialogueBossName = bossName || 'Соперник';
+
+            overlay.classList.add('active');
+            renderStoryDialogueLine();
+        }
+
+        window.advanceStoryDialogue = function () {
+            storyDialogueQueue.shift();
+            if (!storyDialogueQueue.length) {
+                const overlay = document.getElementById('story-dialogue-overlay');
+                if (overlay) overlay.classList.remove('active');
+                const cb = storyDialogueOnDone;
+                storyDialogueOnDone = null;
+                if (cb) cb();
+                return;
+            }
+            renderStoryDialogueLine();
+        };
+
+        window.skipStoryDialogue = function (event) {
+            if (event) event.stopPropagation();
+            storyDialogueQueue = [];
+            const overlay = document.getElementById('story-dialogue-overlay');
+            if (overlay) overlay.classList.remove('active');
+            const cb = storyDialogueOnDone;
+            storyDialogueOnDone = null;
+            if (cb) cb();
+        };
 
         export function createPostImageField(containerId, url = '') {
             const id = 'img_' + Math.random().toString(36).substr(2, 9);
