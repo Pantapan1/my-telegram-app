@@ -7,6 +7,7 @@ import { startChatWith } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, populateThemeAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList } from './admin.js';
 import { populateDeckSettingsForm, populateFramesForm, renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList } from './cards.js';
 import { populateStickerPackSelect } from './chats.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect } from './story.js';
 
 export function checkDailyCoinReward() {
             if (state.dailyRewardChecked) return;
@@ -371,6 +372,10 @@ export function checkDailyCoinReward() {
                 populateDeckSettingsForm();
                 populateFramesForm();
                 populateStickerPackSelect();
+                if (window.renderAdminArenasList) window.renderAdminArenasList();
+                renderAdminStoryList();
+                renderStoryBossDeckPicker();
+                populateStoryRewardCardSelect();
             } else if (pwd) { 
                 tg.showAlert('Неверный пароль'); 
             }
