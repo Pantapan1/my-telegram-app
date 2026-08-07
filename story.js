@@ -383,6 +383,19 @@ window.changeStoryBossCardCount = function (cardId, delta) {
     renderStoryBossDeckPicker();
 };
 
+// Заполняет выпадающий список карточек для награды за прохождение главы
+export function populateStoryRewardCardSelect() {
+    const sel = document.getElementById('story-reward-card');
+    if (!sel) return;
+
+    const prevVal = sel.value;
+    const options = (state.cardsData || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .map(c => `<option value="${c.id}">${escapeHtml(c.name || '')}</option>`).join('');
+    sel.innerHTML = '<option value="">Без карточки</option>' + options;
+
+    if ((state.cardsData || []).some(c => c.id === prevVal)) sel.value = prevVal;
+}
+
 export function populateStoryAdminSettingsForm() {
     const input = document.getElementById('story-global-bg');
     if (input) input.value = (state.storySettings && state.storySettings.bgImage) || '';
