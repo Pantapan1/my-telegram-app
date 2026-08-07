@@ -407,14 +407,6 @@ window.saveStoryGlobalSettings = function () {
         tg.showPopup({ title: 'Готово', message: 'Оформление сюжета обновлено', buttons: [{ type: 'ok' }] });
     }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
 };
-    const sel = document.getElementById('story-reward-card');
-    if (!sel) return;
-    const current = sel.value;
-    sel.innerHTML = '<option value="">Без карточки</option>' + (state.cardsData || [])
-        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-        .map(c => `<option value="${c.id}">${escapeHtml(c.name || '(без названия)')}</option>`).join('');
-    if (current) sel.value = current;
-}
 
 export function renderAdminStoryList() {
     const el = document.getElementById('admin-story-list');
