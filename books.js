@@ -294,8 +294,7 @@ export function getChapters(book) {
             const amount = Math.round((state.economyData.streakAmount || 0) * currentMultiplier());
             if (amount <= 0 || !state.db) return;
 
-            const me = state.usersData.find(u => u.id === state.currentUser.id);
-            update(ref(state.db, 'users/' + state.currentUser.id), { coins: (me && me.coins || 0) + amount }).then(() => {
+            update(ref(state.db, 'users/' + state.currentUser.id), { coins: increment(amount) }).then(() => {
                 tg.showPopup({ title: `🔥 +${amount} монет!`, message: `Награда за ${count} ${count === 1 ? 'день' : 'дней'} чтения подряд`, buttons: [{ type: 'ok' }] });
                 playSound('coin');
                 confettiBurst();

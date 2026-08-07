@@ -1,4 +1,4 @@
-import { ref, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, update, remove, runTransaction, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, initialOf, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge, renderPassButton } from './pass.js';
@@ -7,7 +7,7 @@ import { startChatWith } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, populateThemeAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList, renderAdminUsersList } from './admin.js';
 import { populateDeckSettingsForm, populateFramesForm, renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList } from './cards.js';
 import { populateStickerPackSelect } from './chats.js';
-import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect } from './story.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, populateStoryAdminSettingsForm } from './story.js';
 
 export function checkDailyCoinReward() {
             if (state.dailyRewardChecked) return;
@@ -15,28 +15,33 @@ export function checkDailyCoinReward() {
             if (!me) return; // профиль ещё не создан в базе — подождём следующего обновления
             state.dailyRewardChecked = true;
 
-            const today = new Date().toDateString();
-            const payload = {};
-            if (!me.joinedAt) payload.joinedAt = Date.now();
-            let amount = 0;
-            if (state.economyData.dailyEnabled && me.lastRewardDate !== today) {
-                amount = Math.round((state.economyData.dailyAmount || 0) * currentMultiplier());
-                payload.coins = (me.coins || 0) + amount;
-                payload.lastRewardDate = today;
-            } else if (me.lastRewardDate !== today) {
-                // награда выключена админом, но дату всё равно фиксируем, чтобы не копить долги
-                payload.lastRewardDate = today;
+            if (!me.joinedAt) {
+                update(ref(state.db, 'users/' + state.currentUser.id), { joinedAt: Date.now() }).catch(() => {});
             }
 
-            if (Object.keys(payload).length) {
-                update(ref(state.db, 'users/' + state.currentUser.id), payload).then(() => {
-                    if (amount > 0) {
-                        tg.showPopup({ title: `🪙 +${amount} монет!`, message: 'Награда за ежедневный вход в приложение', buttons: [{ type: 'ok' }] });
-                        playSound('coin');
-                        confettiBurst();
-                    }
+            const today = new Date().toDateString();
+            if (me.lastRewardDate === today) return; // уже проверяли сегодня — не трогаем сервер зря
+
+            // Атомарная транзакция: сервер сам решает, кто "выигрывает" право на награду.
+            // Если lastRewardDate уже сегодняшний (кто-то успел раньше — например, быстрый повторный
+            // заход/обновление страницы), транзакция прерывается и монеты повторно не начисляются.
+            const dateRef = ref(state.db, 'users/' + state.currentUser.id + '/lastRewardDate');
+            runTransaction(dateRef, (current) => {
+                if (current === today) return; // abort — уже получено сегодня
+                return today;
+            }).then((result) => {
+                if (!result.committed) return; // проиграли гонку — награду уже начислили в другом сеансе
+
+                if (!state.economyData.dailyEnabled) return;
+                const amount = Math.round((state.economyData.dailyAmount || 0) * currentMultiplier());
+                if (amount <= 0) return;
+
+                update(ref(state.db, 'users/' + state.currentUser.id), { coins: increment(amount) }).then(() => {
+                    tg.showPopup({ title: `🪙 +${amount} монет!`, message: 'Награда за ежедневный вход в приложение', buttons: [{ type: 'ok' }] });
+                    playSound('coin');
+                    confettiBurst();
                 }).catch(() => {});
-            }
+            }).catch(() => {});
         }
 
 
@@ -281,16 +286,23 @@ export function checkDailyCoinReward() {
             const progress = questProgressValue(q, me);
             if (progress < (q.goal || 1)) return;
 
-            const amount = Math.round((q.reward || 0) * currentMultiplier());
-            const payload = { coins: (me.coins || 0) + amount };
-            payload['questClaimed/' + id] = true;
+            // Атомарная транзакция на флаге "задание забрано": сервер сам решает,
+            // кто первый — второй (даже быстрый повторный клик/обновление страницы) её не пройдёт.
+            const claimedRef = ref(state.db, 'users/' + state.currentUser.id + '/questClaimed/' + id);
+            runTransaction(claimedRef, (current) => {
+                if (current === true) return; // abort — уже забрано
+                return true;
+            }).then((result) => {
+                if (!result.committed) return; // проиграли гонку — награда уже выдана в другом сеансе
 
-            update(ref(state.db, 'users/' + state.currentUser.id), payload).then(() => {
-                tg.showPopup({ title: '🏆 Задание выполнено!', message: `+${amount} монет`, buttons: [{ type: 'ok' }] });
-                showTerrariaToast('Задание выполнено', (q.title || '') + ` · +${amount} монет`, '🏆');
-                playSound('coin');
-                confettiBurst();
-                awardPassXP(50, 'quest');
+                const amount = Math.round((q.reward || 0) * currentMultiplier());
+                update(ref(state.db, 'users/' + state.currentUser.id), { coins: increment(amount) }).then(() => {
+                    tg.showPopup({ title: '🏆 Задание выполнено!', message: `+${amount} монет`, buttons: [{ type: 'ok' }] });
+                    showTerrariaToast('Задание выполнено', (q.title || '') + ` · +${amount} монет`, '🏆');
+                    playSound('coin');
+                    confettiBurst();
+                    awardPassXP(50, 'quest');
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
@@ -304,6 +316,7 @@ export function checkDailyCoinReward() {
             const me = state.usersData.find(u => u.id === state.currentUser.id);
             document.getElementById('stats-coins').textContent = (me && me.coins) || 0;
             document.getElementById('stats-trophies').textContent = (me && me.wins) || 0;
+            document.getElementById('stats-story-wins').textContent = (me && me.storyChaptersWon) || 0;
             document.getElementById('stats-time-spent').textContent = formatTimeSpent((me && me.totalTimeSpent) || 0);
             
             const genreCounts = {}; 
@@ -377,6 +390,7 @@ export function checkDailyCoinReward() {
                 renderStoryBossDeckPicker();
                 populateStoryRewardCardSelect();
                 renderAdminUsersList();
+                populateStoryAdminSettingsForm();
             } else if (pwd) { 
                 tg.showAlert('Неверный пароль'); 
             }

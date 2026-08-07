@@ -1,4 +1,4 @@
-import { ref, push, set, update, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, push, set, update, remove, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { escapeHtml, colorFor, initialOf, cardFrameStyle } from './utils.js';
 import { startMatchmaking } from './battle.js';
@@ -449,13 +449,13 @@ window.buyPack = function (packId) {
     drawn.forEach(card => { newCollection[card.id] = (newCollection[card.id] || 0) + 1; });
 
     const uid = state.currentUser.id;
-    Promise.all([
-        update(ref(state.db, 'users/' + uid), { coins: coins - (pack.price || 0) }),
-        update(ref(state.db, 'users/' + uid + '/cardCollection'), drawn.reduce((acc, card) => {
-            acc[card.id] = newCollection[card.id];
-            return acc;
-        }, {}))
-    ]).then(() => {
+    // Один атомарный update() вместо двух раздельных запросов — списание монет и начисление карт
+    // применяются вместе, без риска потерять одну из частей при быстрой перезагрузке страницы.
+    // increment() — безопасная атомарная операция, не основанная на устаревшем локальном значении coins.
+    const updates = { coins: increment(-(pack.price || 0)) };
+    drawn.forEach(card => { updates['cardCollection/' + card.id] = newCollection[card.id]; });
+
+    update(ref(state.db, 'users/' + uid), updates).then(() => {
         renderPackOpeningReveal(drawn);
     }).catch(err => tg.showAlert('Ошибка покупки: ' + err.message));
 };

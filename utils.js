@@ -465,6 +465,7 @@ export function colorFor(str) {
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
         setupImageUpload('arena-image-file', 'arena-image', 'arena-image-upload-btn', 'arenas');
         setupImageUpload('story-boss-image-file', 'story-boss-image', 'story-boss-image-upload-btn', 'story');
+        setupImageUpload('story-global-bg-file', 'story-global-bg', 'story-global-bg-upload-btn', 'story');
 
 
 

@@ -12,7 +12,7 @@ import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBanners
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
-import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, renderStoryListView } from './story.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, renderStoryListView, populateStoryAdminSettingsForm } from './story.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -316,6 +316,12 @@ export function startFirebaseListeners() {
     onValue(ref(state.db, 'settings/terrariaTheme'), (snapshot) => {
         state.terrariaData = snapshot.val() || {};
         applyTerrariaFeatures();
+    });
+
+    onValue(ref(state.db, 'settings/story'), (snapshot) => {
+        state.storySettings = snapshot.val() || {};
+        if (state.activeOverlay === 'storyMode') renderStoryListView();
+        if (state.isAdmin) populateStoryAdminSettingsForm();
     });
 
     onValue(ref(state.db, 'seasonPass/' + currentSeasonId()), (snapshot) => {

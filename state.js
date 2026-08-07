@@ -91,4 +91,6 @@ export const state = {
   editingStoryChapterId: null,
   storyBossDeckDraft: {},
   storyPendingChapterId: null,
+  storyCompletionBannerShown: false,
+  storySettings: {},
 };

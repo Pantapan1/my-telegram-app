@@ -331,7 +331,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, push, update, remove, set, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -506,7 +506,7 @@
             received.forEach(c => { counts[c.id] = (counts[c.id] || 0) + 1; });
 
             const existingCollection = myUser.cardCollection || {};
-            const updates = { coins: (myUser.coins || 0) - price };
+            const updates = { coins: increment(-price) };
             Object.entries(counts).forEach(([cardId, n]) => {
                 updates['cardCollection/' + cardId] = (existingCollection[cardId] || 0) + n;
             });
@@ -722,7 +722,7 @@
             if (category === 'buff_daily') {
                 if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
                 update(ref(db, 'users/' + myId), {
-                    coins: (myUser.coins || 0) - price,
+                    coins: increment(-price),
                     buffUntil: Date.now() + item.buffHours * 3600000,
                     buffMultiplier: item.buffMultiplier,
                     buffItemId: item.id
@@ -739,7 +739,7 @@
                 if (!hasStock) { tg.showAlert ? tg.showAlert('Товар раскуплен') : alert('Товар раскуплен'); return; }
 
                 const updates = {
-                    coins: (myUser.coins || 0) - price,
+                    coins: increment(-price),
                     ['inventory/' + itemId]: true
                 };
                 update(ref(db, 'users/' + myId), updates).catch(err => alert('Ошибка: ' + err.message));
@@ -1201,8 +1201,12 @@
 
                 if (!confirm(`Подарить «${item.name}» пользователю ${friendData.name} за ${item.price}🪙?`)) return;
 
-                await update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) - item.price });
-                await update(ref(db, 'users/' + friendUid + '/inventory'), { [itemId]: true });
+                // Один атомарный update() на общий узел 'users' — списание монет дарителя и выдача
+                // предмета другу применяются вместе, без риска потерять одну из частей.
+                await update(ref(db, 'users'), {
+                    [myId + '/coins']: increment(-item.price),
+                    [friendUid + '/inventory/' + itemId]: true
+                });
                 tg.showPopup ? tg.showPopup({ title: 'Подарок отправлен! 🎁', message: `${friendData.name} получит «${item.name}»`, buttons: [{ type: 'ok' }] }) : alert('Подарок отправлен!');
                 playSound('coin'); confettiBurst();
             } catch (err) {

@@ -1,6 +1,7 @@
-import { ref, onValue, off, update, remove, set, get, push, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, onValue, off, update, remove, set, get, push, increment, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { escapeHtml, colorFor, initialOf, cardFrameStyle, showStoryDialogue } from './utils.js';
+import { escapeHtml, colorFor, initialOf, cardFrameStyle, showStoryDialogue, showTerrariaToast } from './utils.js';
+import { maybeShowStoryCompletionBanner, maybeToastNextChapterUnlocked } from './story.js';
 
 const BOT_NAMES = ['Артём', 'Максим', 'Соня', 'Данил', 'Егор', 'Полина', 'Тимур', 'Вика'];
 
@@ -728,11 +729,13 @@ function startBotBattle(deckId) {
 export function startStoryBattle(chapter, deckId) {
     const myUid = state.currentUser.id;
     const botUid = 'BOSS_' + randId();
-    const reward = {
-        coins: chapter.rewardCoins || 0,
-        cardId: chapter.rewardCardId || null,
-        cardCount: chapter.rewardCardCount || 1,
-    };
+    const alreadyCleared = !!(state.storyCleared || {})[chapter.id];
+    // Если глава уже пройдена раньше — это фарм-повтор: выдаём отдельную (обычно меньшую)
+    // награду за повтор вместо основной, чтобы бой не терял смысла, но и не давал дублировать
+    // главную награду за прохождение.
+    const reward = alreadyCleared
+        ? { coins: chapter.replayCoins || 0, cardId: null, cardCount: 0, isReplay: true }
+        : { coins: chapter.rewardCoins || 0, cardId: chapter.rewardCardId || null, cardCount: chapter.rewardCardCount || 1, isReplay: false };
     createBattle(
         { uid: myUid, name: state.currentUser.name || 'Игрок', deckId },
         { uid: botUid, name: chapter.bossName || 'Соперник', deckId: null, isBot: true },
@@ -743,6 +746,9 @@ export function startStoryBattle(chapter, deckId) {
             bossAvatar: chapter.bossAvatar || '',
             fixedP2Deck: chapter.bossDeck || {},
             storyDuring: chapter.duringDialogue || {},
+            storyHpDialogue: chapter.hpDialogue || {},
+            storyPhase2Threshold: chapter.phase2Threshold || 0,
+            storyPhase2ManaBonus: chapter.phase2ManaBonus || 0,
             storyWin: chapter.winDialogue || [],
             storyLose: chapter.loseDialogue || [],
             storyReward: reward,
@@ -840,6 +846,9 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
             battle.storyChapterId = overrides.storyChapterId || null;
             battle.bossAvatar = overrides.bossAvatar || '';
             if (overrides.storyDuring) battle.storyDuring = overrides.storyDuring;
+            if (overrides.storyHpDialogue) battle.storyHpDialogue = overrides.storyHpDialogue;
+            if (overrides.storyPhase2Threshold) battle.storyPhase2Threshold = overrides.storyPhase2Threshold;
+            if (overrides.storyPhase2ManaBonus) battle.storyPhase2ManaBonus = overrides.storyPhase2ManaBonus;
             if (overrides.storyWin) battle.storyWin = overrides.storyWin;
             if (overrides.storyLose) battle.storyLose = overrides.storyLose;
             if (overrides.storyReward) battle.storyReward = overrides.storyReward;
@@ -851,25 +860,39 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
 }
 
 // Обрабатывает завершение боя сюжетного режима: показывает диалог победы/поражения
-// и один раз выдаёт награду за главу (при первом прохождении).
-function handleStoryBattleFinish(data) {
+// и один раз выдаёт награду за бой (при первом просмотре результата этого конкретного боя).
+function handleStoryBattleFinish(data, battleId) {
     const iWon = data.winner === 'p1';
     const lines = iWon
         ? (data.storyWin && data.storyWin.length ? data.storyWin : [{ speaker: data.p2.name, text: 'Невозможно... ты сильнее, чем я думал.' }])
         : (data.storyLose && data.storyLose.length ? data.storyLose : [{ speaker: data.p2.name, text: 'Ты ещё не готов к схватке со мной.' }]);
 
-    const finish = () => showStoryDialogue(lines, data.bossAvatar, data.p2.name, () => {});
+    const finish = () => showStoryDialogue(lines, data.bossAvatar, data.p2.name, () => {
+        if (iWon && data.storyChapterId) {
+            maybeShowStoryCompletionBanner();
+            maybeToastNextChapterUnlocked(data.storyChapterId, !(data.storyReward && data.storyReward.isReplay));
+        }
+    });
 
     if (!iWon || !data.storyChapterId) { finish(); return; }
 
-    const clearedRef = ref(state.db, 'users/' + data.p1.uid + '/storyCleared/' + data.storyChapterId);
-    get(clearedRef).then(snap => {
-        if (snap.exists()) return;
+    // Идемпотентная защита прямо на записи боя: даже если экран результата открыть
+    // повторно (быстрая перезагрузка страницы, переподключение), этот КОНКРЕТНЫЙ бой
+    // выдаёт награду не более одного раза. Награда за первое прохождение и за повтор
+    // ("фарм") уже посчитана заранее в startStoryBattle и записана в data.storyReward.
+    const grantedRef = ref(state.db, 'battles/' + battleId + '/rewardGranted');
+    runTransaction(grantedRef, (current) => {
+        if (current === true) return; // abort — награда за этот бой уже выдана
+        return true;
+    }).then((result) => {
+        if (!result.committed) return;
+
         const reward = data.storyReward || {};
         const updates = {};
         updates['users/' + data.p1.uid + '/storyCleared/' + data.storyChapterId] = true;
         if (reward.coins) updates['users/' + data.p1.uid + '/coins'] = increment(reward.coins);
         if (reward.cardId && reward.cardCount) updates['users/' + data.p1.uid + '/cardCollection/' + reward.cardId] = increment(reward.cardCount);
+        if (!reward.isReplay) updates['users/' + data.p1.uid + '/storyChaptersWon'] = increment(1);
         return update(ref(state.db), updates);
     }).catch(() => {}).then(finish);
 }
@@ -936,6 +959,8 @@ function enterBattle(battleId) {
 
     let introShown = false;
     const shownStoryTurns = new Set();
+    const shownHpTriggers = new Set();
+    let phase2LocalTriggered = false;
     let storyResultHandled = false;
 
     onValue(battleRefListener, (snap) => {
@@ -952,9 +977,45 @@ function enterBattle(battleId) {
             }
         }
 
+        // Реплики босса по проценту HP + вторая фаза (бонус маны при падении HP ниже порога).
+        // Боссом в сюжетном режиме всегда выступает p2 (см. startStoryBattle).
+        if (data.isStory && data.status === 'active' && data.p2 && data.p2.maxHealth && (data.storyHpDialogue || data.storyPhase2Threshold)) {
+            const boss = data.p2;
+            const pct = Math.max(0, Math.round((boss.heroHealth / boss.maxHealth) * 100));
+
+            if (data.storyHpDialogue) {
+                const thresholds = Object.keys(data.storyHpDialogue).map(Number).sort((a, b) => b - a);
+                const toShow = thresholds.find(t => pct <= t && !shownHpTriggers.has(String(t)));
+                thresholds.forEach(t => { if (pct <= t) shownHpTriggers.add(String(t)); });
+                if (toShow !== undefined) {
+                    showStoryDialogue(data.storyHpDialogue[String(toShow)], data.bossAvatar, data.p2.name, () => {});
+                }
+            }
+
+            if (data.storyPhase2Threshold && !phase2LocalTriggered && boss.heroHealth > 0 && pct <= data.storyPhase2Threshold) {
+                phase2LocalTriggered = true;
+                // Атомарная транзакция на записи боя — бонус маны применяется ровно один раз,
+                // даже если экран боя переоткрыть в момент срабатывания фазы 2.
+                runTransaction(ref(state.db, 'battles/' + battleId + '/phase2Applied'), (current) => {
+                    if (current === true) return;
+                    return true;
+                }).then((result) => {
+                    if (!result.committed) return;
+                    const bonus = data.storyPhase2ManaBonus || 0;
+                    if (bonus > 0) {
+                        update(ref(state.db, 'battles/' + battleId), {
+                            'p2/mana': increment(bonus),
+                            'p2/maxMana': increment(bonus),
+                        }).catch(() => {});
+                    }
+                    showTerrariaToast('Вторая фаза!', (data.p2.name || 'Босс') + ' становится сильнее', '⚡');
+                }).catch(() => {});
+            }
+        }
+
         if (data.isStory && data.status === 'finished' && !storyResultHandled) {
             storyResultHandled = true;
-            handleStoryBattleFinish(data);
+            handleStoryBattleFinish(data, battleId);
         }
 
         const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
