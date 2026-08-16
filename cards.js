@@ -13,6 +13,15 @@ function rarityBadge(rarity) {
 
 // ===================== КАРТОЧКИ =====================
 
+// Возвращает строку со статистикой карты (винрейт/использование) для админ-списка
+function cardStatsLabel(cardId) {
+    const s = (state.cardStatsData || {})[cardId];
+    if (!s || !s.played) return ' · <span style="opacity:.5;">нет данных</span>';
+    const winrate = Math.round(((s.wins || 0) / s.played) * 100);
+    const color = winrate >= 55 ? '#32d74b' : winrate <= 40 ? '#ff453a' : 'var(--text-secondary)';
+    return ` · <span style="color:${color};font-weight:700;">${winrate}% винрейт</span> · сыграна ${s.played}×`;
+}
+
 export function renderAdminCardsList() {
     const el = document.getElementById('admin-cards-list');
     if (!el) return;
@@ -33,7 +42,8 @@ export function renderAdminCardsList() {
                     <div class="admin-item-title">${escapeHtml(c.name || '(без названия)')} ${rarityBadge(c.rarity)} ${classTag}</div>
                     <div class="admin-item-sub">
                         💧${c.mana || 0}
-                        ${c.type === 'minion' ? ` · ⚔️${c.attack || 0} · ❤️${c.health || 0}` : ' · Заклинание'}
+                        ${c.type === 'minion' ? ` · ⚔️${c.attack || 0} · ❤️${c.health || 0}` : c.type === 'weapon' ? ` · ⚔️${c.attack || 0} · 🛡️${c.health || 0} прочности` : ' · Заклинание'}
+                        ${cardStatsLabel(c.id)}
                     </div>
                 </div>
                 <div class="admin-item-actions">
@@ -85,6 +95,10 @@ window.editCard = function (id) {
     document.getElementById('card-windfury').checked = !!c.windfury;
     document.getElementById('card-poison').checked = !!c.poison;
     document.getElementById('card-stealth').checked = !!c.stealth;
+    document.getElementById('card-shield').checked = !!c.shield;
+    document.getElementById('card-freeze').checked = !!c.freezeOnHit;
+    document.getElementById('card-reborn').checked = !!c.reborn;
+    document.getElementById('card-overload').value = c.overload ?? '';
     document.getElementById('card-form-heading').textContent = 'Редактировать карточку';
     document.getElementById('btn-add-card').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-card').classList.remove('hidden');
@@ -106,11 +120,34 @@ document.getElementById('btn-cancel-edit-card').onclick = function () {
     document.getElementById('card-windfury').checked = false;
     document.getElementById('card-poison').checked = false;
     document.getElementById('card-stealth').checked = false;
+    document.getElementById('card-shield').checked = false;
+    document.getElementById('card-freeze').checked = false;
+    document.getElementById('card-reborn').checked = false;
+    document.getElementById('card-overload').value = '';
     document.getElementById('card-rarity').value = 'common';
     document.getElementById('card-form-heading').textContent = 'Добавить карточку';
     document.getElementById('btn-add-card').textContent = 'Добавить карточку';
     document.getElementById('btn-cancel-edit-card').classList.add('hidden');
 };
+
+// ===================== ПРОВЕРКА БАЛАНСА (МАНА-КРИВАЯ) =====================
+// Грубая эвристика: суммарные статы существа/оружия обычно ≈ 2×мана + бонус за редкость.
+// Не блокирует сохранение — просто предупреждает админа, если карта сильно выбивается.
+const RARITY_STAT_BONUS = { common: 0, rare: 1, epic: 2, legendary: 3 };
+const RARITY_STAT_SLACK = { common: 1, rare: 1, epic: 2, legendary: 3 };
+
+function manaCurveWarning(type, rarity, mana, attack, health) {
+    if (type !== 'minion' && type !== 'weapon') return null;
+    const total = (attack || 0) + (health || 0);
+    const expected = mana * 2 + (RARITY_STAT_BONUS[rarity] ?? 0);
+    const slack = RARITY_STAT_SLACK[rarity] ?? 1;
+    const diff = total - expected;
+    if (Math.abs(diff) <= slack) return null;
+    const kind = type === 'weapon' ? 'оружия (атака+прочность)' : 'существа (атака+здоровье)';
+    return diff > 0
+        ? `Статы ${kind} выше нормы для ${mana} маны (${total} против ожидаемых ~${expected}). Карта может оказаться имбовой.`
+        : `Статы ${kind} ниже нормы для ${mana} маны (${total} против ожидаемых ~${expected}). Карта может оказаться слабой.`;
+}
 
 document.getElementById('btn-add-card').onclick = function () {
     const name = document.getElementById('card-name').value.trim();
@@ -131,11 +168,18 @@ document.getElementById('btn-add-card').onclick = function () {
     const windfury = document.getElementById('card-windfury').checked;
     const poison = document.getElementById('card-poison').checked;
     const stealth = document.getElementById('card-stealth').checked;
+    const shield = document.getElementById('card-shield').checked;
+    const freezeOnHit = document.getElementById('card-freeze').checked;
+    const reborn = document.getElementById('card-reborn').checked;
+    const overload = parseInt(document.getElementById('card-overload').value, 10) || 0;
 
     if (!name) return tg.showAlert('Укажи название карточки');
     if (mana < 0 || mana > 10) return tg.showAlert('Стоимость маны от 0 до 10');
 
-    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth };
+    const warning = manaCurveWarning(type, rarity, mana, attack, health);
+    if (warning && !confirm(`⚠️ ${warning}\n\nВсё равно сохранить?`)) return;
+
+    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth, shield, freezeOnHit, reborn, overload };
 
     if (state.editingCardId) {
         update(ref(state.db, 'cards/' + state.editingCardId), data).then(() => {
@@ -153,6 +197,54 @@ document.getElementById('btn-add-card').onclick = function () {
 window.deleteCard = function (id) {
     if (!confirm('Удалить карточку? Она также пропадёт из всех комбо, где участвует.')) return;
     remove(ref(state.db, 'cards/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+// ===================== ЭКСПОРТ / ИМПОРТ (БЭКАП ПЕРЕД ПАТЧЕМ) =====================
+
+document.getElementById('btn-export-cards').onclick = function () {
+    const payload = JSON.stringify(state.cardsData || [], null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cards-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+};
+
+document.getElementById('import-cards-file').onchange = function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        let list;
+        try {
+            list = JSON.parse(reader.result);
+            if (!Array.isArray(list)) throw new Error('not an array');
+        } catch (err) {
+            tg.showAlert('Файл повреждён или это не экспорт карточек');
+            e.target.value = '';
+            return;
+        }
+        if (!confirm(`Импортировать ${list.length} карточек? Карточки с существующим id будут перезаписаны, остальные добавлены как новые.`)) {
+            e.target.value = '';
+            return;
+        }
+        const jobs = list.map(c => {
+            const { id, ...data } = c;
+            const existing = id && state.cardsData.some(x => x.id === id);
+            return existing
+                ? update(ref(state.db, 'cards/' + id), data)
+                : push(ref(state.db, 'cards'), { ...data, createdAt: Date.now() });
+        });
+        Promise.all(jobs).then(() => {
+            tg.showPopup({ title: 'Готово', message: `Импортировано карточек: ${list.length}`, buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка импорта: ' + friendlyDbError(err)));
+        e.target.value = '';
+    };
+    reader.readAsText(file);
 };
 
 // ===================== КОМБО =====================

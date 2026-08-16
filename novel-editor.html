@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Редактор новелл</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+    }
+    .container { max-width: 680px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0; cursor: pointer; border: none; font-size: 18px;
+    }
+    h1 { font-size: 19px; margin: 0; }
+    .card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    .input {
+        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
+        font-size: 14px; background: #f4f6f7; font-family: inherit;
+    }
+    textarea.input { min-height: 80px; resize: vertical; }
+    select.input { appearance: none; }
+    label.field-label { font-size: 12px; font-weight: 700; color: #7f8c8d; margin: 4px 0 4px; display: block; }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .btn-secondary { background: #f1f2f6; color: #2c3e50; }
+    .btn-danger { background: #fdecea; color: #e74c3c; }
+    .btn-small { width: auto; padding: 8px 14px; font-size: 12px; margin: 0; }
+    .upload-row { display: flex; gap: 8px; }
+    .upload-row .input { flex: 1; margin-bottom: 0; }
+    .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .divider { height: 1px; background: #f0f0f0; margin: 16px 0; }
+    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; cursor: pointer; }
+    .admin-item.active-novel { background: #fff4e0; border: 2px solid #ffb75e; }
+    .admin-item img, .cover-fallback-sm { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .cover-fallback-sm { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; background: #ed8f03; }
+    .admin-item-info { flex: 1; font-size: 13px; min-width: 0; }
+    .admin-item-info .t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-item-info .s { color: #95a5a6; font-size: 12px; }
+    .admin-item-actions { display: flex; gap: 6px; }
+    .admin-item-actions button { border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; background: #f1f2f6; }
+    .admin-item-actions button.danger { background: #fdecea; color: #e74c3c; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 20px 0; font-size: 14px; }
+    .locked { text-align: center; padding: 40px 20px; }
+    #editor-root, #locked-view { display: none; }
+
+    .node-card { background: #f8f9fa; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; }
+    .node-card.editing { border-color: #ffb75e; background: #fff4e0; }
+    .node-card .n-title { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .node-card .n-preview { font-size: 12px; color: #7f8c8d; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .node-tag { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 7px; }
+    .tag-start { background: #eafaf1; color: #27ae60; }
+    .tag-ending { background: #f4f1fe; color: #8a2fc9; }
+
+    .line-row { background: #f8f9fa; border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+    .line-row-top { display: flex; gap: 8px; margin-bottom: 6px; }
+    .line-row-top .input { margin-bottom: 0; }
+    .line-row-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
+    .line-row-actions button { border: none; border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; background: #eee; }
+    .line-row-actions button.danger { background: #fdecea; color: #e74c3c; }
+    .sprite-thumb { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; background: #eee; }
+
+    .choice-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+    .choice-row .input { margin-bottom: 0; }
+    .choice-row button { border: none; border-radius: 8px; width: 30px; height: 40px; cursor: pointer; background: #fdecea; color: #e74c3c; flex-shrink: 0; }
+
+    .type-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+    .type-tab {
+        flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; background: #f4f6f7;
+        font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid transparent; color: #7f8c8d;
+    }
+    .type-tab.active { background: #fff4e0; border-color: #ffb75e; color: #ed8f03; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="topbar">
+        <button class="back-link" onclick="history.back()">←</button>
+        <h1>🖋️ Редактор новелл</h1>
+    </div>
+
+    <div class="locked" id="locked-view">
+        <div class="empty-state">Эта страница доступна только администраторам.</div>
+    </div>
+
+    <div id="editor-root">
+        <!-- Список новелл -->
+        <div class="card" id="novels-list-card">
+            <label class="field-label">Все новеллы</label>
+            <div id="novels-admin-list"></div>
+            <button class="btn btn-secondary" id="btn-new-novel">➕ Новая новелла</button>
+            <div class="upload-row" style="margin-top:8px;">
+                <button class="btn btn-secondary btn-small" id="btn-import-novel" style="flex:1;">⬆️ Импорт JSON</button>
+                <input type="file" id="import-novel-file" accept="application/json" style="display:none;">
+            </div>
+        </div>
+
+        <!-- Метаданные новеллы -->
+        <div class="card" id="novel-meta-card" style="display:none;">
+            <label class="field-label">Название</label>
+            <input type="text" id="novel-title" class="input" placeholder="Название новеллы">
+            <label class="field-label">Описание</label>
+            <textarea id="novel-description" class="input" placeholder="Краткое описание для списка"></textarea>
+            <label class="field-label">Обложка</label>
+            <div class="upload-row">
+                <input type="text" id="novel-cover" class="input" placeholder="URL картинки обложки">
+                <label class="upload-btn" for="novel-cover-file">📁</label>
+                <input type="file" id="novel-cover-file" accept="image/*" class="input" style="display:none;">
+            </div>
+            <label class="field-label">Цена открытия (🪙 монет, 0 = бесплатно)</label>
+            <input type="number" id="novel-unlock-cost" class="input" min="0" value="0">
+            <label class="field-label">Доп. условие открытия (необязательно)</label>
+            <select id="novel-requires-novel" class="input"><option value="">— без условия —</option></select>
+            <select id="novel-requires-ending" class="input"><option value="">— любая концовка той новеллы —</option></select>
+            <label class="field-label">Стартовый узел</label>
+            <select id="novel-start-node" class="input"></select>
+            <div class="upload-row">
+                <button class="btn btn-secondary btn-small" id="btn-duplicate-novel" style="flex:1;">📄 Дублировать</button>
+                <button class="btn btn-secondary btn-small" id="btn-export-novel" style="flex:1;">⬇️ Экспорт</button>
+            </div>
+            <button class="btn" id="btn-save-novel-meta">Сохранить новеллу</button>
+            <button class="btn btn-danger" id="btn-delete-novel">Удалить новеллу</button>
+        </div>
+
+        <!-- Персонажи (пресеты) -->
+        <div class="card" id="characters-card" style="display:none;">
+            <label class="field-label">🎭 Персонажи новеллы (для быстрой вставки в реплики)</label>
+            <div id="characters-list"></div>
+            <button class="btn btn-secondary btn-small" id="btn-add-character" style="width:100%;">➕ Добавить персонажа</button>
+        </div>
+
+        <!-- Узлы сценария -->
+        <div class="card" id="nodes-card" style="display:none;">
+            <label class="field-label" id="nodes-stats-label">Узлы сценария (сцены)</label>
+            <input type="text" id="node-search" class="input" placeholder="🔍 Поиск по названию, тексту, тегу...">
+            <div id="nodes-list"></div>
+            <button class="btn btn-secondary" id="btn-new-node">➕ Новая сцена</button>
+        </div>
+
+        <!-- Редактор узла -->
+        <div class="card" id="node-editor-card" style="display:none;">
+            <div class="upload-row">
+                <input type="text" id="node-title" class="input" placeholder="Название сцены (для навигации, необязательно)" style="flex:2;">
+                <input type="text" id="node-tag" class="input" placeholder="Тег/глава" style="flex:1;">
+            </div>
+            <label class="field-label">Фон сцены</label>
+            <div class="upload-row">
+                <input type="text" id="node-bg" class="input" placeholder="URL фонового изображения">
+                <label class="upload-btn" for="node-bg-file">📁</label>
+                <input type="file" id="node-bg-file" accept="image/*" class="input" style="display:none;">
+            </div>
+            <label class="field-label">Фоновая музыка (необязательно)</label>
+            <div class="upload-row">
+                <input type="text" id="node-music" class="input" placeholder="URL аудиофайла (mp3/ogg)">
+                <button class="upload-btn" id="btn-preview-music" type="button">▶️</button>
+            </div>
+            <audio id="music-preview-player" style="display:none;"></audio>
+
+            <label class="field-label">Реплики (фон + спрайт + текст)</label>
+            <div id="lines-list"></div>
+            <datalist id="sprite-suggestions"></datalist>
+            <button class="btn btn-secondary btn-small" id="btn-add-line" style="width:100%;">➕ Добавить реплику</button>
+
+            <div class="divider"></div>
+
+            <div class="type-tabs">
+                <div class="type-tab active" data-type="normal" id="tab-type-normal">Обычная сцена</div>
+                <div class="type-tab" data-type="ending" id="tab-type-ending">🏁 Концовка</div>
+            </div>
+
+            <div id="normal-node-fields">
+                <label class="field-label">Ветвление</label>
+                <div class="type-tabs">
+                    <div class="type-tab active" data-branch="auto" id="tab-branch-auto">Автоматически (одна сцена дальше)</div>
+                    <div class="type-tab" data-branch="choice" id="tab-branch-choice">Дать выбор игроку</div>
+                </div>
+                <div id="auto-next-field">
+                    <label class="field-label">Следующая сцена</label>
+                    <select id="node-next" class="input"></select>
+                </div>
+                <div id="choices-field" style="display:none;">
+                    <div id="choices-list"></div>
+                    <button class="btn btn-secondary btn-small" id="btn-add-choice" style="width:100%;">➕ Добавить вариант выбора</button>
+                </div>
+            </div>
+
+            <div id="ending-node-fields" style="display:none;">
+                <label class="field-label">Название концовки</label>
+                <input type="text" id="ending-name" class="input" placeholder="Например: Путь героя">
+                <label class="field-label">Награда за первое прохождение (монеты)</label>
+                <input type="number" id="ending-reward-coins" class="input" min="0" value="0">
+                <label class="field-label">Награда за первое прохождение (карточка)</label>
+                <select id="ending-reward-card" class="input"><option value="">— без карточки —</option></select>
+                <input type="number" id="ending-reward-card-count" class="input" min="1" value="1" placeholder="Количество карточек">
+            </div>
+
+            <div class="divider"></div>
+            <div class="upload-row">
+                <button class="btn btn-secondary btn-small" id="btn-duplicate-node" style="flex:1;">📄 Дублировать сцену</button>
+                <button class="btn btn-secondary btn-small" id="btn-test-node" style="flex:1;">▶️ Проверить с этой сцены</button>
+            </div>
+            <button class="btn" id="btn-save-node">Сохранить сцену</button>
+            <button class="btn btn-danger" id="btn-delete-node">Удалить сцену</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null;
+    if (tgUser) myId = String(tgUser.id);
+    else if (params.get('uid')) myId = params.get('uid');
+    else if (authUser) myId = authUser.id;
+
+    function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+    function safeAlert(msg) { try { if (tg && tg.showAlert) { tg.showAlert(msg); return; } } catch (e) {} alert(msg); }
+    function safeToast(title, msg) { try { if (tg && tg.showPopup) { tg.showPopup({ title, message: msg, buttons: [{ type: 'ok' }] }); return; } } catch (e) {} alert(title + ': ' + msg); }
+
+    async function uploadImageToField(file, fieldId) {
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+            const json = await res.json();
+            if (json.success) document.getElementById(fieldId).value = json.data.url;
+            else safeAlert('Ошибка загрузки: ' + (json.error?.message || 'неизвестная'));
+        } catch (err) { safeAlert('Ошибка сети при загрузке картинки'); }
+    }
+
+    const savedAuth = sessionStorage.getItem('nv_editor_admin') === '1';
+    if (savedAuth) {
+        document.getElementById('editor-root').style.display = 'block';
+        startEditor();
+    } else {
+        const pwd = prompt('Пароль администратора:');
+        if (pwd === 'admin123') {
+            sessionStorage.setItem('nv_editor_admin', '1');
+            document.getElementById('editor-root').style.display = 'block';
+            startEditor();
+        } else {
+            document.getElementById('locked-view').style.display = 'block';
+        }
+    }
+
+    let editorStarted = false;
+    function startEditor() {
+        if (editorStarted) return;
+        editorStarted = true;
+
+        let novelsData = [];
+        let cardsData = [];
+        let editingNovelId = null;
+        let editingNodeId = null;
+        let currentLines = [];      // редактируемые реплики текущего узла
+        let currentChoices = [];    // редактируемые варианты выбора текущего узла
+        let branchMode = 'auto';    // 'auto' | 'choice'
+        let nodeType = 'normal';    // 'normal' | 'ending'
+
+        onValue(ref(db, 'novels'), (snap) => {
+            const data = snap.val() || {};
+            novelsData = Object.entries(data).map(([id, v]) => ({ id, ...v, nodes: v.nodes || {} }));
+            renderNovelsList();
+            populateRequiresNovelSelect();
+            if (editingNovelId) {
+                const stillExists = novelsData.find(n => n.id === editingNovelId);
+                if (stillExists) { renderNodesList(); renderCharactersList(); } else { editingNovelId = null; hideNovelPanels(); }
+            }
+        });
+        onValue(ref(db, 'cards'), (snap) => {
+            const data = snap.val() || {};
+            cardsData = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+            const sel = document.getElementById('ending-reward-card');
+            sel.innerHTML = '<option value="">— без карточки —</option>' + cardsData.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        });
+
+        function currentNovel() { return novelsData.find(n => n.id === editingNovelId); }
+
+        // ===================== СПИСОК НОВЕЛЛ =====================
+        function renderNovelsList() {
+            const list = document.getElementById('novels-admin-list');
+            if (!novelsData.length) { list.innerHTML = '<div class="empty-state">Пока нет новелл</div>'; return; }
+            list.innerHTML = novelsData.map(n => `
+                <div class="admin-item ${n.id === editingNovelId ? 'active-novel' : ''}" onclick="window.__selectNovel('${n.id}')">
+                    ${n.coverImage ? `<img src="${n.coverImage}">` : `<div class="cover-fallback-sm">${escapeHtml((n.title || '?')[0] || '?')}</div>`}
+                    <div class="admin-item-info">
+                        <div class="t">${escapeHtml(n.title || 'Без названия')}</div>
+                        <div class="s">${Object.keys(n.nodes || {}).length} сцен · 🪙 ${n.unlockCost || 0}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="danger" onclick="event.stopPropagation(); window.__deleteNovel('${n.id}')">🗑️</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        let novelDirty = false;
+        let nodeDirty = false;
+
+        window.__selectNovel = function (id) {
+            editingNovelId = id;
+            renderNovelsList();
+            const n = currentNovel();
+            document.getElementById('novel-meta-card').style.display = 'block';
+            document.getElementById('characters-card').style.display = 'block';
+            document.getElementById('nodes-card').style.display = 'block';
+            document.getElementById('node-editor-card').style.display = 'none';
+            document.getElementById('novel-title').value = n.title || '';
+            document.getElementById('novel-description').value = n.description || '';
+            document.getElementById('novel-cover').value = n.coverImage || '';
+            document.getElementById('novel-unlock-cost').value = n.unlockCost || 0;
+            populateRequiresNovelSelect();
+            document.getElementById('novel-requires-novel').value = n.unlockRequiresNovelId || '';
+            populateRequiresEndingSelect();
+            document.getElementById('novel-requires-ending').value = n.unlockRequiresEndingKey || '';
+            renderNodesList();
+            renderCharactersList();
+            novelDirty = false;
+        };
+
+        function populateRequiresNovelSelect() {
+            const sel = document.getElementById('novel-requires-novel');
+            const prev = sel.value;
+            sel.innerHTML = '<option value="">— без условия —</option>' + novelsData
+                .filter(n => n.id !== editingNovelId)
+                .map(n => `<option value="${n.id}">${escapeHtml(n.title || 'Без названия')}</option>`).join('');
+            sel.value = prev;
+        }
+        function populateRequiresEndingSelect() {
+            const sel = document.getElementById('novel-requires-ending');
+            const reqId = document.getElementById('novel-requires-novel').value;
+            const reqNovel = novelsData.find(n => n.id === reqId);
+            const endings = reqNovel ? Object.entries(reqNovel.nodes || {}).filter(([, node]) => node.isEnding) : [];
+            sel.innerHTML = '<option value="">— любая концовка той новеллы —</option>' + endings
+                .map(([nid, node]) => `<option value="${nid}">${escapeHtml(node.endingName || nid.slice(0, 8))}</option>`).join('');
+        }
+        document.getElementById('novel-requires-novel').onchange = populateRequiresEndingSelect;
+        ['novel-title', 'novel-description', 'novel-cover', 'novel-unlock-cost', 'novel-requires-ending', 'novel-start-node'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => { novelDirty = true; });
+            document.getElementById(id).addEventListener('change', () => { novelDirty = true; });
+        });
+
+        function hideNovelPanels() {
+            document.getElementById('novel-meta-card').style.display = 'none';
+            document.getElementById('nodes-card').style.display = 'none';
+            document.getElementById('node-editor-card').style.display = 'none';
+        }
+
+        window.__deleteNovel = function (id) {
+            if (!confirm('Удалить новеллу целиком со всеми сценами? Это необратимо.')) return;
+            remove(ref(db, 'novels/' + id)).then(() => {
+                if (editingNovelId === id) { editingNovelId = null; hideNovelPanels(); }
+            }).catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-new-novel').onclick = function () {
+            push(ref(db, 'novels'), { title: 'Новая новелла', description: '', unlockCost: 0, createdAt: Date.now(), nodes: {} })
+                .then(snap => window.__selectNovel(snap.key))
+                .catch(err => safeAlert('Ошибка создания новеллы: ' + err.message));
+        };
+
+        document.getElementById('novel-cover-file').addEventListener('change', (e) => {
+            if (e.target.files[0]) uploadImageToField(e.target.files[0], 'novel-cover');
+        });
+
+        document.getElementById('btn-save-novel-meta').onclick = function () {
+            if (!editingNovelId) return;
+            const title = document.getElementById('novel-title').value.trim();
+            if (!title) return safeAlert('Укажи название новеллы');
+            update(ref(db, 'novels/' + editingNovelId), {
+                title,
+                description: document.getElementById('novel-description').value.trim(),
+                coverImage: document.getElementById('novel-cover').value.trim(),
+                unlockCost: Math.max(0, parseInt(document.getElementById('novel-unlock-cost').value, 10) || 0),
+                unlockRequiresNovelId: document.getElementById('novel-requires-novel').value || null,
+                unlockRequiresEndingKey: document.getElementById('novel-requires-ending').value || null,
+                startNodeId: document.getElementById('novel-start-node').value || null,
+            }).then(() => { novelDirty = false; safeToast('Сохранено', 'Новелла обновлена'); })
+              .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-delete-novel').onclick = function () {
+            if (editingNovelId) window.__deleteNovel(editingNovelId);
+        };
+
+        document.getElementById('btn-duplicate-novel').onclick = function () {
+            const n = currentNovel();
+            if (!n) return;
+            const { id, ...data } = n;
+            data.title = (data.title || 'Новелла') + ' (копия)';
+            data.createdAt = Date.now();
+            push(ref(db, 'novels'), data)
+                .then(snap => { window.__selectNovel(snap.key); safeToast('Готово', 'Новелла продублирована вместе со всеми сценами'); })
+                .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-export-novel').onclick = function () {
+            const n = currentNovel();
+            if (!n) return;
+            const blob = new Blob([JSON.stringify(n, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `novel-${(n.title || 'export').replace(/[^a-zа-яё0-9]+/gi, '_')}.json`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        };
+
+        document.getElementById('btn-import-novel').onclick = () => document.getElementById('import-novel-file').click();
+        document.getElementById('import-novel-file').onchange = function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                let data;
+                try { data = JSON.parse(reader.result); } catch (err) { safeAlert('Файл повреждён или это не экспорт новеллы'); return; }
+                const { id, ...clean } = data;
+                clean.createdAt = Date.now();
+                push(ref(db, 'novels'), clean)
+                    .then(snap => { window.__selectNovel(snap.key); safeToast('Готово', 'Новелла импортирована'); })
+                    .catch(err => safeAlert('Ошибка импорта: ' + err.message));
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        // ===================== ПЕРСОНАЖИ (ПРЕСЕТЫ) =====================
+        function renderCharactersList() {
+            const n = currentNovel();
+            const chars = (n && n.characters) || {};
+            const encodedNames = Object.keys(chars); // ключи уже закодированы через encodeURIComponent при сохранении
+            const list = document.getElementById('characters-list');
+            if (!encodedNames.length) { list.innerHTML = '<div class="empty-state">Нет персонажей — добавь, чтобы быстро вставлять в реплики</div>'; }
+            else {
+                list.innerHTML = encodedNames.map(key => {
+                    const displayName = decodeURIComponent(key);
+                    return `
+                    <div class="admin-item">
+                        ${chars[key].sprite ? `<img src="${chars[key].sprite}">` : `<div class="cover-fallback-sm" style="background:${chars[key].color || '#ed8f03'}">${escapeHtml(displayName[0] || '?')}</div>`}
+                        <div class="admin-item-info">
+                            <div class="t" style="color:${chars[key].color || 'inherit'}">${escapeHtml(displayName)}</div>
+                        </div>
+                        <div class="admin-item-actions">
+                            <button class="danger" onclick="window.__removeCharacter('${key}')">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            // Обновляем datalist со спрайтами, собранными из всех реплик и персонажей новеллы, для быстрой подстановки
+            const allSprites = new Set();
+            encodedNames.forEach(key => { if (chars[key].sprite) allSprites.add(chars[key].sprite); });
+            Object.values((n && n.nodes) || {}).forEach(node => (node.lines || []).forEach(l => { if (l.sprite) allSprites.add(l.sprite); }));
+            document.getElementById('sprite-suggestions').innerHTML = [...allSprites].map(u => `<option value="${u}">`).join('');
+        }
+
+        window.__removeCharacter = function (encodedName) {
+            if (!editingNovelId) return;
+            remove(ref(db, 'novels/' + editingNovelId + '/characters/' + encodedName)).catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        document.getElementById('btn-add-character').onclick = function () {
+            const name = prompt('Имя персонажа:');
+            if (!name || !name.trim()) return;
+            const color = prompt('Цвет имени в HEX (например #ffb75e), можно оставить пустым:') || '';
+            if (!editingNovelId) return;
+            set(ref(db, 'novels/' + editingNovelId + '/characters/' + encodeURIComponent(name.trim())), { sprite: '', color: color.trim() })
+                .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        // ===================== СПИСОК УЗЛОВ =====================
+        function wordCount(node) {
+            return (node.lines || []).reduce((s, l) => s + (l.text || '').trim().split(/\s+/).filter(Boolean).length, 0);
+        }
+
+        function nodeLabel(node, id) {
+            if (node.title && node.title.trim()) return node.title.trim();
+            const firstLine = (node.lines && node.lines[0]) ? node.lines[0].text : '';
+            return firstLine ? firstLine.slice(0, 34) : `Сцена ${id.slice(0, 6)}`;
+        }
+
+        // Проверяет ссылки узла (choices/nextNodeId) на существование целевых сцен
+        function findBrokenLinks(node, nodes) {
+            const broken = [];
+            if (node.nextNodeId && !nodes[node.nextNodeId]) broken.push(node.nextNodeId);
+            (node.choices || []).forEach(c => { if (c.nextNodeId && !nodes[c.nextNodeId]) broken.push(c.nextNodeId); });
+            return broken;
+        }
+
+        function renderNodesList() {
+            const n = currentNovel();
+            if (!n) return;
+            const nodes = n.nodes || {};
+            let ids = Object.keys(nodes);
+            const query = (document.getElementById('node-search').value || '').trim().toLowerCase();
+            const list = document.getElementById('nodes-list');
+            const totalWords = ids.reduce((s, id) => s + wordCount(nodes[id]), 0);
+            const totalEndings = ids.filter(id => nodes[id].isEnding).length;
+            document.getElementById('nodes-stats-label').textContent = `Узлы сценария — ${ids.length} сцен, ${totalEndings} концовок, ~${totalWords} слов`;
+
+            if (query) {
+                ids = ids.filter(id => {
+                    const node = nodes[id];
+                    const hay = [node.title, node.tag, node.endingName, ...(node.lines || []).map(l => l.text + ' ' + l.speaker)].join(' ').toLowerCase();
+                    return hay.includes(query);
+                });
+            }
+            // Сортировка по полю order (если задано), иначе по времени создания/порядку ключей
+            ids.sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
+
+            if (!ids.length) { list.innerHTML = `<div class="empty-state">${query ? 'Ничего не найдено' : 'Пока нет сцен — добавь первую'}</div>`; }
+            else {
+                list.innerHTML = ids.map(id => {
+                    const node = nodes[id];
+                    const broken = findBrokenLinks(node, nodes);
+                    return `
+                    <div class="node-card ${id === editingNodeId ? 'editing' : ''}" onclick="window.__selectNode('${id}')">
+                        <div class="n-title">
+                            ${escapeHtml(nodeLabel(node, id))}
+                            ${n.startNodeId === id ? '<span class="node-tag tag-start">СТАРТ</span>' : ''}
+                            ${node.isEnding ? '<span class="node-tag tag-ending">🏁 КОНЦОВКА</span>' : ''}
+                            ${node.tag ? `<span class="node-tag" style="background:#eef2f5;color:#5a6b7a;">${escapeHtml(node.tag)}</span>` : ''}
+                            ${broken.length ? `<span class="node-tag" style="background:#fdecea;color:#e74c3c;" title="Ссылается на несуществующую сцену">❗ битая ссылка</span>` : ''}
+                        </div>
+                        <div class="n-preview">${escapeHtml((node.lines && node.lines[0]) ? node.lines[0].text : '(пусто)')} · ${wordCount(node)} слов</div>
+                        <div class="line-row-actions" style="justify-content:flex-start;margin-top:6px;">
+                            <button onclick="event.stopPropagation(); window.__moveNodeOrder('${id}', -1)">↑</button>
+                            <button onclick="event.stopPropagation(); window.__moveNodeOrder('${id}', 1)">↓</button>
+                            <button onclick="event.stopPropagation(); window.__duplicateNode('${id}')">📄</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            // Обновляем выпадающие списки узлов (стартовый узел / следующая сцена / выборы)
+            const allIds = Object.keys(nodes).sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
+            const options = '<option value="">— выбери сцену —</option>' + allIds.map(id => `<option value="${id}">${escapeHtml(nodeLabel(nodes[id], id))}</option>`).join('');
+            document.getElementById('novel-start-node').innerHTML = options;
+            document.getElementById('novel-start-node').value = n.startNodeId || '';
+            document.getElementById('node-next').innerHTML = options;
+        }
+        document.getElementById('node-search').oninput = renderNodesList;
+
+        document.getElementById('btn-new-node').onclick = function () {
+            if (!editingNovelId) return;
+            const n = currentNovel();
+            const maxOrder = Math.max(0, ...Object.values(n.nodes || {}).map(nd => nd.order || 0));
+            push(ref(db, 'novels/' + editingNovelId + '/nodes'), { lines: [], isEnding: false, order: maxOrder + 1 })
+                .then(snap => window.__selectNode(snap.key))
+                .catch(err => safeAlert('Ошибка создания сцены: ' + err.message));
+        };
+
+        window.__duplicateNode = function (id) {
+            const n = currentNovel();
+            const node = (n.nodes || {})[id];
+            if (!node) return;
+            const maxOrder = Math.max(0, ...Object.values(n.nodes || {}).map(nd => nd.order || 0));
+            const clone = JSON.parse(JSON.stringify(node));
+            clone.title = (clone.title || '') + ' (копия)';
+            clone.order = maxOrder + 1;
+            push(ref(db, 'novels/' + editingNovelId + '/nodes'), clone)
+                .then(snap => { window.__selectNode(snap.key); safeToast('Готово', 'Сцена продублирована'); })
+                .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        window.__moveNodeOrder = function (id, dir) {
+            const n = currentNovel();
+            const nodes = n.nodes || {};
+            const ids = Object.keys(nodes).sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
+            const idx = ids.indexOf(id);
+            const swapIdx = idx + dir;
+            if (swapIdx < 0 || swapIdx >= ids.length) return;
+            const otherId = ids[swapIdx];
+            const myOrder = nodes[id].order ?? idx;
+            const otherOrder = nodes[otherId].order ?? swapIdx;
+            update(ref(db), {
+                ['novels/' + editingNovelId + '/nodes/' + id + '/order']: otherOrder,
+                ['novels/' + editingNovelId + '/nodes/' + otherId + '/order']: myOrder,
+            }).catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+
+        // ===================== РЕДАКТОР УЗЛА =====================
+        window.__selectNode = function (id) {
+            if (nodeDirty && editingNodeId !== id && !confirm('Есть несохранённые изменения в текущей сцене. Перейти без сохранения?')) return;
+            editingNodeId = id;
+            renderNodesList();
+            const n = currentNovel();
+            const node = (n.nodes || {})[id] || {};
+            document.getElementById('node-editor-card').style.display = 'block';
+            document.getElementById('node-title').value = node.title || '';
+            document.getElementById('node-tag').value = node.tag || '';
+            document.getElementById('node-bg').value = node.background || '';
+            document.getElementById('node-music').value = node.music || '';
+            currentLines = (node.lines || []).map(l => ({ ...l }));
+            currentChoices = (node.choices || []).map(c => ({ ...c }));
+            nodeType = node.isEnding ? 'ending' : 'normal';
+            branchMode = (node.choices && node.choices.length) ? 'choice' : 'auto';
+            setNodeType(nodeType);
+            setBranchMode(branchMode);
+            document.getElementById('node-next').value = node.nextNodeId || '';
+            document.getElementById('ending-name').value = node.endingName || '';
+            document.getElementById('ending-reward-coins').value = node.endingRewardCoins || 0;
+            document.getElementById('ending-reward-card').value = node.endingRewardCardId || '';
+            document.getElementById('ending-reward-card-count').value = node.endingRewardCardCount || 1;
+            renderLinesList();
+            renderChoicesList();
+            nodeDirty = false;
+        };
+
+        // Помечаем несохранённые изменения при правке любого поля сцены
+        ['node-title', 'node-tag', 'node-bg', 'node-music', 'ending-name', 'ending-reward-coins', 'ending-reward-card', 'ending-reward-card-count', 'node-next'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => { nodeDirty = true; });
+            document.getElementById(id).addEventListener('change', () => { nodeDirty = true; });
+        });
+        window.addEventListener('beforeunload', (e) => { if (nodeDirty || novelDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+        document.getElementById('node-bg-file').addEventListener('change', (e) => {
+            if (e.target.files[0]) uploadImageToField(e.target.files[0], 'node-bg');
+        });
+
+        document.getElementById('btn-preview-music').onclick = function () {
+            const url = document.getElementById('node-music').value.trim();
+            if (!url) return;
+            const player = document.getElementById('music-preview-player');
+            if (player.src !== url) { player.src = url; }
+            if (player.paused) { player.play().catch(() => safeAlert('Не удалось воспроизвести — проверь ссылку')); this.textContent = '⏸️'; }
+            else { player.pause(); this.textContent = '▶️'; }
+        };
+        document.getElementById('music-preview-player').addEventListener('ended', () => { document.getElementById('btn-preview-music').textContent = '▶️'; });
+
+        document.getElementById('btn-duplicate-node').onclick = function () {
+            if (editingNodeId) window.__duplicateNode(editingNodeId);
+        };
+
+        document.getElementById('btn-test-node').onclick = function () {
+            if (!editingNovelId || !editingNodeId) return safeAlert('Сначала выбери и сохрани сцену');
+            const dir = window.location.pathname.replace(/[^/]*$/, '');
+            window.open(`${window.location.origin}${dir}novels.html?adminPreview=1&novelId=${editingNovelId}&nodeId=${editingNodeId}`, '_blank');
+        };
+
+        function setNodeType(type) {
+            nodeType = type;
+            document.getElementById('tab-type-normal').classList.toggle('active', type === 'normal');
+            document.getElementById('tab-type-ending').classList.toggle('active', type === 'ending');
+            document.getElementById('normal-node-fields').style.display = type === 'normal' ? 'block' : 'none';
+            document.getElementById('ending-node-fields').style.display = type === 'ending' ? 'block' : 'none';
+        }
+        document.getElementById('tab-type-normal').onclick = () => setNodeType('normal');
+        document.getElementById('tab-type-ending').onclick = () => setNodeType('ending');
+
+        function setBranchMode(mode) {
+            branchMode = mode;
+            document.getElementById('tab-branch-auto').classList.toggle('active', mode === 'auto');
+            document.getElementById('tab-branch-choice').classList.toggle('active', mode === 'choice');
+            document.getElementById('auto-next-field').style.display = mode === 'auto' ? 'block' : 'none';
+            document.getElementById('choices-field').style.display = mode === 'choice' ? 'block' : 'none';
+        }
+        document.getElementById('tab-branch-auto').onclick = () => setBranchMode('auto');
+        document.getElementById('tab-branch-choice').onclick = () => setBranchMode('choice');
+
+        // --- реплики ---
+        function characterOptions() {
+            const n = currentNovel();
+            const chars = (n && n.characters) || {};
+            return '<option value="">🎭 Вставить из персонажей...</option>' + Object.keys(chars).map(key => `<option value="${key}">${escapeHtml(decodeURIComponent(key))}</option>`).join('');
+        }
+        function renderLinesList() {
+            const list = document.getElementById('lines-list');
+            if (!currentLines.length) { list.innerHTML = '<div class="empty-state">Нет реплик — добавь первую</div>'; return; }
+            list.innerHTML = currentLines.map((l, i) => `
+                <div class="line-row">
+                    <select class="input" onchange="window.__applyCharacterPreset(${i}, this.value); this.selectedIndex=0;">${characterOptions()}</select>
+                    <div class="line-row-top">
+                        <input type="text" class="input" placeholder="Кто говорит" value="${escapeHtml(l.speaker || '')}" oninput="window.__updateLine(${i}, 'speaker', this.value)" style="flex:1;">
+                        <select class="input" style="flex:1;" onchange="window.__updateLine(${i}, 'spritePosition', this.value)">
+                            <option value="left" ${l.spritePosition === 'left' ? 'selected' : ''}>Спрайт слева</option>
+                            <option value="center" ${(!l.spritePosition || l.spritePosition === 'center') ? 'selected' : ''}>Спрайт по центру</option>
+                            <option value="right" ${l.spritePosition === 'right' ? 'selected' : ''}>Спрайт справа</option>
+                        </select>
+                    </div>
+                    <textarea class="input" placeholder="Текст реплики" oninput="window.__updateLine(${i}, 'text', this.value)" style="min-height:50px;">${escapeHtml(l.text || '')}</textarea>
+                    <div class="line-row-top">
+                        <input type="text" class="input" list="sprite-suggestions" placeholder="URL спрайта персонажа (необязательно)" value="${escapeHtml(l.sprite || '')}" oninput="window.__updateLine(${i}, 'sprite', this.value)" style="flex:1;">
+                        <label class="upload-btn" for="line-sprite-file-${i}">📁</label>
+                        <input type="file" id="line-sprite-file-${i}" accept="image/*" style="display:none;" onchange="window.__uploadLineSprite(${i}, this.files[0])">
+                        ${l.sprite ? `<img class="sprite-thumb" src="${l.sprite}">` : ''}
+                    </div>
+                    <div class="line-row-actions">
+                        <button onclick="window.__moveLine(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+                        <button onclick="window.__moveLine(${i}, 1)" ${i === currentLines.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="danger" onclick="window.__removeLine(${i})">Удалить</button>
+                    </div>
+                </div>`).join('');
+        }
+        window.__applyCharacterPreset = function (i, key) {
+            if (!key || !currentLines[i]) return;
+            const name = decodeURIComponent(key);
+            const n = currentNovel();
+            const preset = ((n && n.characters) || {})[key];
+            if (!preset) return;
+            currentLines[i].speaker = name;
+            currentLines[i].sprite = preset.sprite || '';
+            currentLines[i].speakerColor = preset.color || '';
+            nodeDirty = true;
+            renderLinesList();
+        };
+        window.__updateLine = function (i, key, val) { if (currentLines[i]) { currentLines[i][key] = val; nodeDirty = true; } };
+        window.__uploadLineSprite = async function (i, file) {
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.success) { currentLines[i].sprite = json.data.url; renderLinesList(); }
+                else safeAlert('Ошибка загрузки спрайта');
+            } catch (err) { safeAlert('Ошибка сети при загрузке спрайта'); }
+        };
+        window.__moveLine = function (i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= currentLines.length) return;
+            [currentLines[i], currentLines[j]] = [currentLines[j], currentLines[i]];
+            nodeDirty = true;
+            renderLinesList();
+        };
+        window.__removeLine = function (i) { currentLines.splice(i, 1); nodeDirty = true; renderLinesList(); };
+        document.getElementById('btn-add-line').onclick = function () {
+            currentLines.push({ speaker: '', text: '', sprite: '', spritePosition: 'center' });
+            nodeDirty = true;
+            renderLinesList();
+        };
+
+        // --- варианты выбора ---
+        function renderChoicesList() {
+            const n = currentNovel();
+            const nodes = (n && n.nodes) || {};
+            const options = '<option value="">— выбери сцену —</option>' + Object.keys(nodes)
+                .filter(id => id !== editingNodeId)
+                .map(id => `<option value="${id}">${escapeHtml(nodeLabel(nodes[id], id))}</option>`).join('');
+            const list = document.getElementById('choices-list');
+            if (!currentChoices.length) { list.innerHTML = '<div class="empty-state">Нет вариантов — добавь хотя бы 2</div>'; return; }
+            list.innerHTML = currentChoices.map((c, i) => `
+                <div class="choice-row">
+                    <input type="text" class="input" placeholder="Текст варианта" value="${escapeHtml(c.text || '')}" oninput="window.__updateChoice(${i}, 'text', this.value)" style="flex:1;">
+                    <select class="input" style="flex:1;" onchange="window.__updateChoice(${i}, 'nextNodeId', this.value)">${options.replace(`value="${c.nextNodeId}"`, `value="${c.nextNodeId}" selected`)}</select>
+                    <button onclick="window.__removeChoice(${i})">✕</button>
+                </div>`).join('');
+        }
+        window.__updateChoice = function (i, key, val) { if (currentChoices[i]) { currentChoices[i][key] = val; nodeDirty = true; } };
+        window.__removeChoice = function (i) { currentChoices.splice(i, 1); nodeDirty = true; renderChoicesList(); };
+        document.getElementById('btn-add-choice').onclick = function () {
+            currentChoices.push({ text: '', nextNodeId: '' });
+            nodeDirty = true;
+            renderChoicesList();
+        };
+
+        document.getElementById('btn-save-node').onclick = function () {
+            if (!editingNovelId || !editingNodeId) return;
+            const existingOrder = ((currentNovel().nodes || {})[editingNodeId] || {}).order;
+            const data = {
+                title: document.getElementById('node-title').value.trim(),
+                tag: document.getElementById('node-tag').value.trim(),
+                background: document.getElementById('node-bg').value.trim(),
+                music: document.getElementById('node-music').value.trim(),
+                lines: currentLines.filter(l => l.text && l.text.trim()),
+                isEnding: nodeType === 'ending',
+                order: existingOrder ?? 0,
+            };
+            if (nodeType === 'ending') {
+                data.endingName = document.getElementById('ending-name').value.trim();
+                data.endingRewardCoins = Math.max(0, parseInt(document.getElementById('ending-reward-coins').value, 10) || 0);
+                data.endingRewardCardId = document.getElementById('ending-reward-card').value || null;
+                data.endingRewardCardCount = Math.max(1, parseInt(document.getElementById('ending-reward-card-count').value, 10) || 1);
+                data.choices = [];
+                data.nextNodeId = null;
+            } else if (branchMode === 'choice') {
+                data.choices = currentChoices.filter(c => c.text && c.text.trim() && c.nextNodeId);
+                data.nextNodeId = null;
+            } else {
+                data.choices = [];
+                data.nextNodeId = document.getElementById('node-next').value || null;
+            }
+            set(ref(db, 'novels/' + editingNovelId + '/nodes/' + editingNodeId), data)
+                .then(() => { nodeDirty = false; safeToast('Сохранено', 'Сцена обновлена'); })
+                .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('node-editor-card').style.display !== 'none') {
+                e.preventDefault();
+                document.getElementById('btn-save-node').click();
+            }
+        });
+
+        document.getElementById('btn-delete-node').onclick = function () {
+            if (!editingNovelId || !editingNodeId) return;
+            const n = currentNovel();
+            const nodes = n.nodes || {};
+            const referrers = Object.keys(nodes).filter(id => id !== editingNodeId && findBrokenLinksTargetsInclude(nodes[id], editingNodeId));
+            const warn = referrers.length
+                ? `\n\n⚠️ На эту сцену ссылаются ${referrers.length} других сцен(ы) — после удаления эти ссылки станут битыми, поправь их вручную.`
+                : '';
+            if (!confirm('Удалить эту сцену?' + warn)) return;
+            remove(ref(db, 'novels/' + editingNovelId + '/nodes/' + editingNodeId)).then(() => {
+                editingNodeId = null;
+                nodeDirty = false;
+                document.getElementById('node-editor-card').style.display = 'none';
+            }).catch(err => safeAlert('Ошибка: ' + err.message));
+        };
+        function findBrokenLinksTargetsInclude(node, targetId) {
+            if (node.nextNodeId === targetId) return true;
+            return (node.choices || []).some(c => c.nextNodeId === targetId);
+        }
+    }
+</script>
+</body>
+</html>

@@ -2,6 +2,33 @@ import { ref, push, set, update, remove, increment } from "https://www.gstatic.c
 import { state, tg } from './state.js';
 import { escapeHtml, colorFor, initialOf, cardFrameStyle } from './utils.js';
 import { startMatchmaking } from './battle.js';
+import { CARD_LEVEL_THRESHOLDS, CARD_MAX_LEVEL, DUST_VALUES, CRAFT_COSTS } from './constants.js';
+
+// ===================== УРОВНИ КАРТ =====================
+// Уровень карты определяется количеством копий в коллекции игрока.
+export function cardLevelFor(count) {
+    if (!count) return 0;
+    let level = 1;
+    for (let i = CARD_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (count >= CARD_LEVEL_THRESHOLDS[i]) { level = i + 1; break; }
+    }
+    return level;
+}
+
+// Бонус к атаке/здоровью существа за уровень (используется в battle.js при сборке колоды)
+export function cardLevelStatBonus(cardId) {
+    const count = (state.myCollection || {})[cardId] || 0;
+    return Math.max(0, cardLevelFor(count) - 1);
+}
+
+function levelBadge(level) {
+    if (!level || level <= 1) return '';
+    const names = { 2: '🥈 Ур.2', 3: '🥇 Ур.3', 4: '🌈 Ур.4' };
+    const colors = { 2: '#b0b8c1', 3: '#ffd60a', 4: 'linear-gradient(90deg,#ff453a,#ff9f0a,#ffd60a,#30d158,#0a84ff,#bf5af2)' };
+    const label = names[Math.min(level, 4)] || `Ур.${level}`;
+    const bg = colors[Math.min(level, 4)] || '#0a84ff';
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;color:#000;background:${bg};">${label}</span>`;
+}
 
 function deckCardCount(cards) {
     return Object.values(cards || {}).reduce((sum, n) => sum + n, 0);
@@ -228,6 +255,18 @@ export function renderCardCollectionView() {
     const body = document.getElementById('card-collection-body');
     if (!body) return;
 
+    const titleEl = document.getElementById('card-collection-title-text');
+    if (titleEl) titleEl.textContent = state.craftingView ? 'Крафт карт' : 'Коллекция';
+    const dustLabel = document.getElementById('collection-dust-label');
+    if (dustLabel) dustLabel.textContent = `✨ ${state.myDust || 0}`;
+    const craftBtn = document.getElementById('btn-toggle-craft');
+    if (craftBtn) craftBtn.textContent = state.craftingView ? '📦 Коллекция' : '🛠 Крафт';
+
+    if (state.craftingView) {
+        renderCraftView(body);
+        return;
+    }
+
     const owned = Object.entries(state.myCollection || {}).filter(([, n]) => n > 0);
     if (!owned.length) {
         body.innerHTML = '<div class="empty-state"><span class="icon">📭</span><div class="title">Коллекция пуста</div><div class="sub">Купи набор в магазине или получи карты из пасса</div></div>';
@@ -244,19 +283,94 @@ export function renderCardCollectionView() {
         const classTag = cls
             ? `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;color:#fff;background:${cls.color || '#0a84ff'};">${cls.icon || ''} ${escapeHtml(cls.name || '')}</span>`
             : `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;color:var(--text-secondary);background:rgba(127,127,127,.2);">Нейтральная</span>`;
+        const level = cardLevelFor(count);
+        const bonus = Math.max(0, level - 1);
+        const nextThreshold = CARD_LEVEL_THRESHOLDS[level] || null; // порог следующего уровня (level - индекс со сдвигом на 1)
+        const progressLine = nextThreshold
+            ? `<div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">До след. уровня: ${count}/${nextThreshold}</div>`
+            : `<div style="font-size:10px;color:#ffd60a;margin-top:2px;">Максимальный уровень</div>`;
+        const canDisenchant = count > 1;
         return `
         <div class="admin-item">
             ${card.image ? `<img src="${card.image}" class="admin-item-thumb" style="${cardFrameStyle(card.rarity)}" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(card.name || '')};${cardFrameStyle(card.rarity)}">${initialOf(card.name)}</div>`}
             <div class="admin-item-info">
-                <div class="admin-item-title">${escapeHtml(card.name || '')} ${classTag}</div>
-                <div class="admin-item-sub">💧${card.mana || 0}${card.type === 'minion' ? ` · ⚔️${card.attack || 0} · ❤️${card.health || 0}` : ' · Заклинание'}</div>
+                <div class="admin-item-title">${escapeHtml(card.name || '')} ${classTag} ${levelBadge(level)}</div>
+                <div class="admin-item-sub">💧${card.mana || 0}${card.type === 'minion' ? ` · ⚔️${(card.attack || 0) + bonus} · ❤️${(card.health || 0) + bonus}` : ' · Заклинание'}${bonus ? ` <span style="color:#30d158;">(+${bonus} от уровня)</span>` : ''}</div>
+                ${progressLine}
             </div>
-            <div class="admin-item-actions">
+            <div class="admin-item-actions" style="flex-direction:column;align-items:flex-end;gap:4px;">
                 <span style="font-weight:800;color:var(--text-primary);">×${count}</span>
+                ${canDisenchant ? `<button class="icon-btn" style="font-size:10px;padding:4px 6px;" onclick="disenchantCard('${card.id}')" title="Разобрать 1 копию на пыль">✨${DUST_VALUES[card.rarity] || DUST_VALUES.common}</button>` : ''}
             </div>
         </div>`;
     }).join('');
 }
+
+window.toggleCraftView = function () {
+    state.craftingView = !state.craftingView;
+    renderCardCollectionView();
+};
+
+function renderCraftView(body) {
+    if (!state.cardsData.length) {
+        body.innerHTML = '<div class="empty-state"><span class="icon">🛠</span><div class="title">Карточек пока нет</div></div>';
+        return;
+    }
+    const rows = state.cardsData
+        .map(card => ({ card, count: (state.myCollection || {})[card.id] || 0 }))
+        .filter(x => cardLevelFor(x.count) < CARD_MAX_LEVEL)
+        .sort((a, b) => (CRAFT_COSTS[a.card.rarity] || 0) - (CRAFT_COSTS[b.card.rarity] || 0));
+
+    if (!rows.length) {
+        body.innerHTML = '<div class="empty-state"><span class="icon">🌈</span><div class="title">Все карты прокачаны до максимума!</div></div>';
+        return;
+    }
+
+    body.innerHTML = `<div style="font-size:12px;color:var(--text-secondary);padding:0 4px 10px;">Трать пыль ✨, полученную за лишние копии карт, чтобы докрафтить нужные карты и поднять их уровень.</div>` +
+        rows.map(({ card, count }) => {
+            const cost = CRAFT_COSTS[card.rarity] || CRAFT_COSTS.common;
+            const canAfford = (state.myDust || 0) >= cost;
+            const level = cardLevelFor(count);
+            return `
+            <div class="admin-item">
+                ${card.image ? `<img src="${card.image}" class="admin-item-thumb" style="${cardFrameStyle(card.rarity)}" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(card.name || '')};${cardFrameStyle(card.rarity)}">${initialOf(card.name)}</div>`}
+                <div class="admin-item-info">
+                    <div class="admin-item-title">${escapeHtml(card.name || '')} ${levelBadge(level)}</div>
+                    <div class="admin-item-sub">×${count} в коллекции · стоимость ✨${cost}</div>
+                </div>
+                <div class="admin-item-actions">
+                    <button class="icon-btn ${canAfford ? '' : 'danger'}" onclick="craftCard('${card.id}')" ${canAfford ? '' : 'disabled style="opacity:.4;"'}>Скрафтить</button>
+                </div>
+            </div>`;
+        }).join('');
+}
+
+window.craftCard = function (cardId) {
+    const card = state.cardsData.find(c => c.id === cardId);
+    if (!card || !state.currentUser) return;
+    const cost = CRAFT_COSTS[card.rarity] || CRAFT_COSTS.common;
+    if ((state.myDust || 0) < cost) return tg.showAlert('Не хватает пыли ✨');
+
+    const have = (state.myCollection || {})[cardId] || 0;
+    update(ref(state.db, 'users/' + state.currentUser.id), {
+        cardDust: increment(-cost),
+        ['cardCollection/' + cardId]: have + 1,
+    }).then(() => {
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+    }).catch(err => tg.showAlert('Ошибка: ' + err.message));
+};
+
+window.disenchantCard = function (cardId) {
+    const card = state.cardsData.find(c => c.id === cardId);
+    const have = (state.myCollection || {})[cardId] || 0;
+    if (!card || have <= 1 || !state.currentUser) return;
+    const dust = DUST_VALUES[card.rarity] || DUST_VALUES.common;
+    if (!confirm(`Разобрать 1 копию «${card.name}» за ✨${dust} пыли?`)) return;
+    update(ref(state.db, 'users/' + state.currentUser.id), {
+        cardDust: increment(dust),
+        ['cardCollection/' + cardId]: have - 1,
+    }).catch(err => tg.showAlert('Ошибка: ' + err.message));
+};
 
 window.openCardCollection = function () {
     state.activeOverlay = 'cardCollection';

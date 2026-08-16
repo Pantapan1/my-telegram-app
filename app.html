@@ -198,6 +198,7 @@
             <button class="btn btn-secondary" id="btn-open-shop">🛍 Магазин</button>
             <button class="btn btn-secondary" id="btn-open-events" onclick="openEventsCalendar()">📅 Календарь событий</button>
             <button class="btn btn-secondary" id="btn-open-decks" onclick="openCardGameMenu()">🃏 Карточная игра</button>
+            <button class="btn btn-secondary" id="btn-open-novels">📖 Новеллы</button>
             <button class="btn btn-secondary" id="btn-open-publisher-app">📝 Подать заявку на публикацию</button>
             <button class="btn btn-secondary hidden" id="btn-open-book-editor">📚 Редактор моих книг</button>
             <div id="profile-edit-panel" class="hidden">
@@ -264,6 +265,11 @@
                 <div id="stats-story-wins" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
             </div>
 
+            <div class="card" id="story-endings-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+                <div style="font-weight:700;color:var(--text-primary);">🏁 Концовок открыто</div>
+                <div id="stats-story-endings" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
+            </div>
+
             <div class="card" id="time-spent-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
                 <div style="font-weight:700;color:var(--text-primary);">⏱ Время на сайте</div>
                 <div id="stats-time-spent" style="font-weight:800;font-size:16px;color:var(--text-primary);">—</div>
@@ -302,6 +308,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-arenas" onclick="switchAdminTab('arenas')">🗺️ Арены</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-story" onclick="switchAdminTab('story')">📖 Сюжет</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-users" onclick="switchAdminTab('users')">👥 Пользователи</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-novels" style="background:linear-gradient(135deg,#c98fff,#6a1fb8);color:#fff;">🖋️ Новеллы (редактор) ↗</button>
                 </div>
 
                 <!-- ВКЛАДКА: НОВОСТИ -->
@@ -711,6 +718,7 @@
                     <select id="card-type" class="input">
                         <option value="minion">Существо</option>
                         <option value="spell">Заклинание</option>
+                        <option value="weapon">Оружие</option>
                     </select>
                     <select id="card-rarity" class="input">
                         <option value="common">Обычная</option>
@@ -719,8 +727,8 @@
                         <option value="legendary">Легендарная</option>
                     </select>
                     <input type="number" id="card-mana" class="input" placeholder="Стоимость маны (0-10)" min="0" max="10">
-                    <input type="number" id="card-attack" class="input" placeholder="Атака (для существ)" min="0">
-                    <input type="number" id="card-health" class="input" placeholder="Здоровье (для существ)" min="0">
+                    <input type="number" id="card-attack" class="input" placeholder="Атака (для существ и оружия)" min="0">
+                    <input type="number" id="card-health" class="input" placeholder="Здоровье / Прочность оружия" min="0">
                     <textarea id="card-effect" class="input" placeholder="Описание эффекта (текстом, для игроков)" style="min-height:70px;"></textarea>
                     <select id="card-effect-type" class="input">
                         <option value="">Без игрового эффекта</option>
@@ -782,6 +790,7 @@
                         <option value="deathrattle_shield_hero">Предсмертный хрип: щит своему герою</option>
                         <option value="deathrattle_reduce_enemy_mana">Предсмертный хрип: -N маны сопернику в этом ходу</option>
                         <option value="aura_buff_attack_own">Аура: пока существо живо, все другие свои существа +N атаки</option>
+                        <option value="battlecry_discover">Боевой клич: открытие — выбрать 1 из N случайных карт в руку</option>
                     </select>
                     <input type="number" id="card-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
                     <input type="number" id="card-cooldown" class="input" placeholder="Кулдаун активной способности (ходов)" min="1" value="2">
@@ -803,11 +812,26 @@
                     <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
                         <input type="checkbox" id="card-stealth" style="width:18px;height:18px;"> 👻 Скрытность (нельзя выбрать целью, пока само не атакует)
                     </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-shield" style="width:18px;height:18px;"> 🔵 Божественный щит (гасит первый полученный урон)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-freeze" style="width:18px;height:18px;"> 🥶 Мороз (замораживает существо, которое атакует)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;color:var(--text-primary);font-size:13px;font-weight:700;margin:8px 0;">
+                        <input type="checkbox" id="card-reborn" style="width:18px;height:18px;"> 🔁 Перерождение (1 раз воскресает с 1 ❤️)
+                    </label>
+                    <input type="number" id="card-overload" class="input" placeholder="Перегрузка: -N маны в след. ход (0 = нет)" min="0">
                     <button class="btn" id="btn-add-card">Добавить карточку</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
 
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Все карточки</h3>
+                    <div style="display:flex;gap:8px;margin-bottom:10px;">
+                        <button class="btn btn-secondary" id="btn-export-cards" style="flex:1;">⬇️ Экспорт JSON</button>
+                        <label class="btn btn-secondary" for="import-cards-file" style="flex:1;text-align:center;cursor:pointer;">⬆️ Импорт JSON</label>
+                        <input type="file" id="import-cards-file" accept="application/json" class="hidden">
+                    </div>
                     <div id="admin-cards-list"></div>
 
                     <div class="divider"></div>
@@ -975,6 +999,18 @@
 
                     <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">При поражении игрока</label>
                     <textarea id="story-dialogue-lose" class="input" rows="3" placeholder="Тёмный Рыцарь: Ты ещё не готов к схватке со мной."></textarea>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:6px; color:var(--text-primary);">🔀 Ветвление сюжета</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">По умолчанию победа открывает следующую по порядку главу, а поражение просто позволяет попробовать снова. Здесь можно задать конкретные главы вручную — например, чтобы поражение тоже продолжало сюжет (герой обязан проиграть здесь) или чтобы победа вела в другую ветку, а не по порядку.</div>
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Глава при победе (необязательно)</label>
+                    <select id="story-next-on-win" class="input"><option value="">По умолчанию — следующая по порядку</option></select>
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Глава при поражении (если задано — поражение продолжает сюжет!)</label>
+                    <select id="story-next-on-lose" class="input"><option value="">Обычное поражение — можно попробовать снова</option></select>
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Награда за сюжетное поражение (монеты, необязательно)</label>
+                    <input type="number" id="story-lose-reward-coins" class="input" placeholder="0" min="0" value="0">
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Название концовки (если это финал ветки — глава без продолжений)</label>
+                    <input type="text" id="story-ending-name" class="input" placeholder="Например: Путь искупления">
 
                     <div class="divider"></div>
                     <div id="story-boss-deck-picker"></div>
@@ -1203,8 +1239,10 @@
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="card-collection-back-btn" onclick="closeCardCollection()">←</button>
             <div style="flex:1;min-width:0;">
-                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Коллекция</div>
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="card-collection-title-text">Коллекция</div>
             </div>
+            <div id="collection-dust-label" style="font-weight:800;color:var(--text-primary);font-size:13px;padding:6px 10px;background:rgba(127,127,127,.15);border-radius:10px;">✨ 0</div>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0 0 0 8px;border-radius:12px;font-size:12px;" id="btn-toggle-craft" onclick="toggleCraftView()">🛠 Крафт</button>
         </div>
         <div class="reader-content" id="card-collection-body"></div>
     </div>
@@ -1275,6 +1313,7 @@
             <button class="btn btn-secondary" id="btn-prev-chapter" style="margin:0;flex:1; border-radius:14px;">←</button>
             <button class="btn btn-secondary" id="btn-share-chapter" style="margin:0;flex:1; border-radius:14px;">📤</button>
             <button class="btn btn-secondary" id="btn-bookmark" style="margin:0;flex:1; border-radius:14px;">🔖</button>
+            <button class="btn btn-secondary" id="btn-chapter-note" style="margin:0;flex:1; border-radius:14px;">📝</button>
             <button class="btn" id="btn-read" style="margin:0;flex:1; border-radius:14px;">✅</button>
             <button class="btn btn-secondary" id="btn-next-chapter" style="margin:0;flex:1; border-radius:14px;">→</button>
         </div>
@@ -1295,19 +1334,23 @@
     <div id="pass-pet-widget" class="hidden">🐾</div>
 
     <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="switchTab('feed')">
+        <button class="nav-btn active" data-tab="feed" onclick="switchTab('feed')">
             <span class="icon">🏠<span class="nav-badge hidden" id="feed-nav-badge"></span></span>
             <span>Лента</span>
         </button>
-        <button class="nav-btn" onclick="switchTab('books')">
+        <button class="nav-btn" data-tab="books" onclick="switchTab('books')">
             <span class="icon">📚</span>
             <span>Книги</span>
         </button>
-        <button class="nav-btn" onclick="switchTab('chats')">
+        <button class="nav-btn" id="nav-btn-novels">
+            <span class="icon">📖</span>
+            <span>Новеллы</span>
+        </button>
+        <button class="nav-btn" data-tab="chats" onclick="switchTab('chats')">
             <span class="icon">💬<span class="nav-badge hidden" id="chats-nav-badge"></span></span>
             <span>Чаты</span>
         </button>
-        <button class="nav-btn" onclick="switchTab('profile')">
+        <button class="nav-btn" data-tab="profile" onclick="switchTab('profile')">
             <span class="icon">👤</span>
             <span>Профиль</span>
         </button>

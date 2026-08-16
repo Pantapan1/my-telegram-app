@@ -1,11 +1,35 @@
 import { ref, onValue, off, update, remove, set, get, push, increment, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { escapeHtml, colorFor, initialOf, cardFrameStyle, showStoryDialogue, showTerrariaToast } from './utils.js';
-import { maybeShowStoryCompletionBanner, maybeToastNextChapterUnlocked } from './story.js';
+import { handleStoryChapterOutcome } from './story.js';
+import { cardLevelStatBonus } from './decks.js';
 
 const BOT_NAMES = ['Артём', 'Максим', 'Соня', 'Данил', 'Егор', 'Полина', 'Тимур', 'Вика'];
 
 // ===================== АНИМАЦИИ И МУЗЫКА =====================
+
+// Короткая вспышка частиц вокруг элемента — используется для боевых кличей/эффектов
+window.spawnBattleParticles = function(elId, color) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const n = 8;
+    for (let i = 0; i < n; i++) {
+        const p = document.createElement('div');
+        p.className = 'battle-effect-particle';
+        p.style.left = cx + 'px';
+        p.style.top = cy + 'px';
+        p.style.background = color || '#ffd60a';
+        const angle = (Math.PI * 2 * i) / n;
+        const dist = 34 + Math.random() * 18;
+        p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+        p.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 650);
+    }
+};
 
 window.showBattleFloatingText = function(elId, text, color) {
     const el = document.getElementById(elId);
@@ -587,11 +611,13 @@ function hasTaunt(boardObj) {
 
 function makeBoardEntry(card) {
     const isActive = card.effectType && card.effectType.startsWith('active_');
+    const lvlBonus = cardLevelStatBonus(card.id); // бонус атаки/здоровья от уровня карты (по копиям в коллекции)
     return {
-        cardId: card.id, name: card.name, image: card.image || '',
-        attack: card.attack || 0, health: card.health || 1, maxHealth: card.health || 1,
-        canAttack: !!card.charge, taunt: !!card.taunt, lifesteal: !!card.lifesteal, shielded: false,
+        cardId: card.id, name: card.name, image: card.image || '', rarity: card.rarity || 'common',
+        attack: (card.attack || 0) + lvlBonus, health: (card.health || 1) + lvlBonus, maxHealth: (card.health || 1) + lvlBonus,
+        canAttack: !!card.charge, taunt: !!card.taunt, lifesteal: !!card.lifesteal, shielded: !!card.shield,
         windfury: !!card.windfury, poison: !!card.poison, stealth: !!card.stealth, attacksThisTurn: 0,
+        freezeOnHit: !!card.freezeOnHit, reborn: !!card.reborn,
         deathrattleType: card.effectType && card.effectType.startsWith('deathrattle_') ? card.effectType : null,
         deathrattleValue: card.effectValue || 0,
         activeType: isActive ? card.effectType : null,
@@ -730,12 +756,16 @@ export function startStoryBattle(chapter, deckId) {
     const myUid = state.currentUser.id;
     const botUid = 'BOSS_' + randId();
     const alreadyCleared = !!(state.storyCleared || {})[chapter.id];
+    const alreadyLost = !!(state.storyLost || {})[chapter.id];
     // Если глава уже пройдена раньше — это фарм-повтор: выдаём отдельную (обычно меньшую)
     // награду за повтор вместо основной, чтобы бой не терял смысла, но и не давал дублировать
     // главную награду за прохождение.
     const reward = alreadyCleared
         ? { coins: chapter.replayCoins || 0, cardId: null, cardCount: 0, isReplay: true }
         : { coins: chapter.rewardCoins || 0, cardId: chapter.rewardCardId || null, cardCount: chapter.rewardCardCount || 1, isReplay: false };
+    // Награда за "сюжетное" поражение (если для главы задана ветка на поражение) — выдаётся
+    // только один раз, как и основная награда за победу.
+    const loseReward = { coins: alreadyLost ? 0 : (chapter.loseRewardCoins || 0), isReplay: alreadyLost };
     createBattle(
         { uid: myUid, name: state.currentUser.name || 'Игрок', deckId },
         { uid: botUid, name: chapter.bossName || 'Соперник', deckId: null, isBot: true },
@@ -752,6 +782,8 @@ export function startStoryBattle(chapter, deckId) {
             storyWin: chapter.winDialogue || [],
             storyLose: chapter.loseDialogue || [],
             storyReward: reward,
+            storyLoseAdvances: !!chapter.nextChapterOnLose,
+            storyLoseReward: loseReward,
         }
     ).then(battleId => enterBattle(battleId));
 }
@@ -852,6 +884,8 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
             if (overrides.storyWin) battle.storyWin = overrides.storyWin;
             if (overrides.storyLose) battle.storyLose = overrides.storyLose;
             if (overrides.storyReward) battle.storyReward = overrides.storyReward;
+            if (overrides.storyLoseAdvances) battle.storyLoseAdvances = true;
+            if (overrides.storyLoseReward) battle.storyLoseReward = overrides.storyLoseReward;
         }
 
         const battleRef = push(ref(state.db, 'battles'));
@@ -861,6 +895,7 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
 
 // Обрабатывает завершение боя сюжетного режима: показывает диалог победы/поражения
 // и один раз выдаёт награду за бой (при первом просмотре результата этого конкретного боя).
+// Поражение тоже может продвигать сюжет — если для главы задана ветка "при поражении".
 function handleStoryBattleFinish(data, battleId) {
     const iWon = data.winner === 'p1';
     const lines = iWon
@@ -868,18 +903,24 @@ function handleStoryBattleFinish(data, battleId) {
         : (data.storyLose && data.storyLose.length ? data.storyLose : [{ speaker: data.p2.name, text: 'Ты ещё не готов к схватке со мной.' }]);
 
     const finish = () => showStoryDialogue(lines, data.bossAvatar, data.p2.name, () => {
-        if (iWon && data.storyChapterId) {
-            maybeShowStoryCompletionBanner();
-            maybeToastNextChapterUnlocked(data.storyChapterId, !(data.storyReward && data.storyReward.isReplay));
+        if (!data.storyChapterId) return;
+        if (iWon) {
+            handleStoryChapterOutcome(data.storyChapterId, true, !(data.storyReward && data.storyReward.isReplay));
+        } else if (data.storyLoseAdvances) {
+            handleStoryChapterOutcome(data.storyChapterId, false, !(data.storyLoseReward && data.storyLoseReward.isReplay));
         }
     });
 
-    if (!iWon || !data.storyChapterId) { finish(); return; }
+    // Продвигает сюжет либо победа, либо "сюжетное" поражение (для главы явно задана ветка
+    // на поражение) — во всех остальных случаях поражение просто позволяет попробовать снова.
+    const advancesStory = iWon || data.storyLoseAdvances;
+    if (!advancesStory || !data.storyChapterId) { finish(); return; }
 
     // Идемпотентная защита прямо на записи боя: даже если экран результата открыть
     // повторно (быстрая перезагрузка страницы, переподключение), этот КОНКРЕТНЫЙ бой
     // выдаёт награду не более одного раза. Награда за первое прохождение и за повтор
-    // ("фарм") уже посчитана заранее в startStoryBattle и записана в data.storyReward.
+    // ("фарм") уже посчитана заранее в startStoryBattle и записана в data.storyReward
+    // (для победы) или data.storyLoseReward (для сюжетного поражения).
     const grantedRef = ref(state.db, 'battles/' + battleId + '/rewardGranted');
     runTransaction(grantedRef, (current) => {
         if (current === true) return; // abort — награда за этот бой уже выдана
@@ -887,12 +928,16 @@ function handleStoryBattleFinish(data, battleId) {
     }).then((result) => {
         if (!result.committed) return;
 
-        const reward = data.storyReward || {};
+        const reward = iWon ? (data.storyReward || {}) : (data.storyLoseReward || {});
         const updates = {};
-        updates['users/' + data.p1.uid + '/storyCleared/' + data.storyChapterId] = true;
+        if (iWon) {
+            updates['users/' + data.p1.uid + '/storyCleared/' + data.storyChapterId] = true;
+            if (!reward.isReplay) updates['users/' + data.p1.uid + '/storyChaptersWon'] = increment(1);
+        } else {
+            updates['users/' + data.p1.uid + '/storyLost/' + data.storyChapterId] = true;
+        }
         if (reward.coins) updates['users/' + data.p1.uid + '/coins'] = increment(reward.coins);
         if (reward.cardId && reward.cardCount) updates['users/' + data.p1.uid + '/cardCollection/' + reward.cardId] = increment(reward.cardCount);
-        if (!reward.isReplay) updates['users/' + data.p1.uid + '/storyChaptersWon'] = increment(1);
         return update(ref(state.db), updates);
     }).catch(() => {}).then(finish);
 }
@@ -900,8 +945,10 @@ function handleStoryBattleFinish(data, battleId) {
 let battleRefListener = null;
 let activeBotRunKey = null;
 let recentlyPlayedIid = null;
+let pendingDiscover = null; // { battleId, actorSlot, opponentSlot, actorSnapshot, opponentSnapshot, log, options }
 let recentlyPlayedAt = 0;
 let currentArenaBgUrl = null;
+let lastBattleHtml = null; // кэш последней отрисованной разметки — пропускаем перерисовку, если ничего видимого не изменилось
 
 // ===================== ТАЙМЕР ХОДА =====================
 const TURN_DURATION_SEC = 60;
@@ -956,12 +1003,15 @@ function enterBattle(battleId) {
     battleRefListener = ref(state.db, 'battles/' + battleId);
     startTurnTimer();
     lastShownReactionAt = Date.now();
+    lastBattleHtml = null;
+    emojiPickerOpen = false;
 
     let introShown = false;
     const shownStoryTurns = new Set();
     const shownHpTriggers = new Set();
     let phase2LocalTriggered = false;
     let storyResultHandled = false;
+    let cardStatsLogged = false;
 
     onValue(battleRefListener, (snap) => {
         const data = snap.val();
@@ -1018,6 +1068,21 @@ function enterBattle(battleId) {
             handleStoryBattleFinish(data, battleId);
         }
 
+        // Логируем статистику побед/использования карт (только свою сторону, один раз за бой)
+        if (data.status === 'finished' && !cardStatsLogged) {
+            cardStatsLogged = true;
+            const mine = data[state.mySlot];
+            if (mine && !mine.isBot && mine.playedCardIds) {
+                const iWon = data.winner === state.mySlot;
+                const statUpdates = {};
+                Object.entries(mine.playedCardIds).forEach(([cardId, n]) => {
+                    statUpdates['cardStats/' + cardId + '/played'] = increment(n);
+                    if (iWon) statUpdates['cardStats/' + cardId + '/wins'] = increment(n);
+                });
+                if (Object.keys(statUpdates).length) update(ref(state.db), statUpdates).catch(() => {});
+            }
+        }
+
         const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
         currentArenaBgUrl = (arena && arena.bgUrl) || null;
 
@@ -1064,6 +1129,7 @@ function enterBattle(battleId) {
 
 // ===================== СМАЙЛИКИ В БОЮ =====================
 let lastShownReactionAt = 0;
+let emojiPickerOpen = false; // хранится отдельно от DOM, чтобы попап не закрывался при каждом ре-рендере поля боя
 const BATTLE_REACTION_EMOJIS = ['😂', '🔥', '😭', '👍', '💀', '❤️', '😡', '🤔'];
 
 function showBattleReaction(reaction) {
@@ -1081,15 +1147,15 @@ function showBattleReaction(reaction) {
 }
 
 window.toggleBattleEmojiPicker = function () {
+    emojiPickerOpen = !emojiPickerOpen;
     const el = document.getElementById('battle-emoji-picker');
     if (!el) return;
-    if (el.classList.contains('active')) { el.classList.remove('active'); return; }
-    el.innerHTML = BATTLE_REACTION_EMOJIS.map(e => `<span onclick="sendBattleReaction('${e}')">${e}</span>`).join('');
-    el.classList.add('active');
+    el.classList.toggle('active', emojiPickerOpen);
 };
 
 window.sendBattleReaction = function (emoji) {
     if (!state.activeBattleId) return;
+    emojiPickerOpen = false;
     update(ref(state.db, 'battles/' + state.activeBattleId), { reaction: { by: state.mySlot, emoji, t: Date.now() } }).catch(() => {});
     const picker = document.getElementById('battle-emoji-picker');
     if (picker) picker.classList.remove('active');
@@ -1156,39 +1222,52 @@ function renderMinion(iid, m, isMine, canSelect, board) {
     }
 
     return `
-    <div id="minion-${iid}" class="battle-minion ${canSelect || isAbilitySelected ? 'can-attack' : ''} ${selected || isAbilitySelected ? 'selected' : ''} ${justPlayed ? 'just-played' : ''} ${m.stealth && !isMine ? 'is-stealthed' : ''}"
+    <div id="minion-${iid}" class="battle-minion ${canSelect || isAbilitySelected ? 'can-attack' : ''} ${selected || isAbilitySelected ? 'selected' : ''} ${justPlayed ? 'just-played' : ''} ${m.stealth && !isMine ? 'is-stealthed' : ''} ${m.rarity === 'legendary' ? 'is-legendary' : ''}"
          onclick="${isMine ? `battleMinionTap('${iid}')` : `battleAttackTarget('${iid}')`}">
         <div class="bm-portrait">
-            ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
-            ${m.frozen ? '<div class="battle-frozen-badge">❄️</div>' : ''}
-            ${m.shielded ? '<div class="battle-shield-badge">🔵</div>' : ''}
-            ${m.lifesteal ? '<div class="battle-lifesteal-badge">🩸</div>' : ''}
-            ${abilityBtn}
             <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
-            ${m.image ? `<img src="${m.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
+            ${m.image ? `<img src="${m.image}" onerror="this.remove()">` : ''}
         </div>
-        ${(m.windfury || m.poison || (m.stealth && isMine) || m.auraAttackAllOwn) ? `<div class="bm-keyword-row">
+        ${m.taunt ? '<div class="battle-taunt-badge">🛡️</div>' : ''}
+        ${m.frozen ? '<div class="battle-frozen-badge">❄️</div>' : ''}
+        ${m.shielded ? '<div class="battle-shield-badge">🔵</div>' : ''}
+        ${m.lifesteal ? '<div class="battle-lifesteal-badge">🩸</div>' : ''}
+        ${abilityBtn}
+        <div class="bm-atk ${auraBuffed ? 'buffed' : ''}">⚔${atk}</div>
+        <div class="bm-hp">❤${m.health}</div>
+        ${(m.windfury || m.poison || (m.stealth && isMine) || m.auraAttackAllOwn || m.freezeOnHit || m.reborn) ? `<div class="bm-keyword-row">
             ${m.windfury ? '<span title="Ярость ветра">🌪️</span>' : ''}
             ${m.poison ? '<span title="Яд">☠️</span>' : ''}
             ${m.stealth && isMine ? '<span title="Скрытность">👻</span>' : ''}
             ${m.auraAttackAllOwn ? '<span title="Даёт другим существам +атаку">✨</span>' : ''}
+            ${m.freezeOnHit ? '<span title="Мороз: замораживает того, кого бьёт">🥶</span>' : ''}
+            ${m.reborn ? '<span title="Перерождение: 1 раз воскреснет с 1 ❤️">🔁</span>' : ''}
         </div>` : ''}
-        <div class="bm-badges">
-            <div class="bm-atk ${auraBuffed ? 'buffed' : ''}">⚔${atk}</div>
-            <div class="bm-hp">❤${m.health}</div>
-        </div>
         <div class="battle-minion-name">${escapeHtml(displayName)}</div>
     </div>`;
 }
 
-function renderHandCard(iid, cardId, playable) {
+// Проверяет, довершит ли эта карта в руке ещё не сработавшее комбо (остальные карты комбо уже на столе)
+function cardCompletesCombo(cardId, me) {
+    if (!cardId) return false;
+    const ownedCardIds = new Set(Object.values(me.board || {}).map(m => m.cardId));
+    const fired = me.firedCombos || {};
+    return state.cardCombosData.some(combo => {
+        if (fired[combo.id]) return false;
+        const ids = combo.cardIds || [];
+        if (ids.length < 2 || !ids.includes(cardId)) return false;
+        return ids.every(id => id === cardId || ownedCardIds.has(id));
+    });
+}
+
+function renderHandCard(iid, cardId, playable, comboReady) {
     const card = cardById(cardId);
     if (!card) return '';
     const isMinion = card.type === 'minion';
     const displayName = card.name || 'Карта';
     const effectText = (card.effect || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     return `
-    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'}" onclick="battlePlayCard('${iid}')">
+    <div class="battle-hand-card ${playable ? 'playable' : 'unplayable'} ${comboReady ? 'combo-ready' : ''} ${card.rarity === 'legendary' ? 'is-legendary' : ''}" onclick="battlePlayCard('${iid}')">
         <div class="bhc-portrait" style="${cardFrameStyle(card.rarity)}">
             <div class="battle-minion-fallback" style="background:${colorFor(displayName)}">${initialOf(displayName)}</div>
             ${card.image ? `<img src="${card.image}" style="position:absolute;top:0;left:0;" onerror="this.remove()">` : ''}
@@ -1199,6 +1278,7 @@ function renderHandCard(iid, cardId, playable) {
             ? `<div class="bhc-atk">${card.attack || 0}</div><div class="bhc-hp">${card.health || 0}</div>`
             : `<div class="bhc-spell-tag">✨ Закл.</div>`}
         ${card.effectType ? `<div class="bhc-ability-badge" onclick="showCardEffectInfo(event, '${escapeHtml(displayName)}', '${effectText}')">✨</div>` : ''}
+        ${comboReady ? `<div class="bhc-combo-badge" title="Завершает комбо">🔗</div>` : ''}
     </div>`;
 }
 
@@ -1206,7 +1286,6 @@ function renderBattleView() {
     const body = document.getElementById('battle-body');
     const data = state.battleData;
     if (!body || !data) return;
-
     const mySlot = state.mySlot;
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
@@ -1243,14 +1322,15 @@ function renderBattleView() {
     const myHandHtml = Object.entries(me.hand || {}).map(([iid, cardId]) => {
         const card = cardById(cardId);
         const playable = myTurn && card && card.mana <= me.mana;
-        return renderHandCard(iid, cardId, playable);
+        const comboReady = cardCompletesCombo(cardId, me);
+        return renderHandCard(iid, cardId, playable, comboReady);
     }).join('') || '<div class="battle-empty-zone">Рука пуста</div>';
 
     const showHint = !state.battleHintShown;
     state.battleHintShown = true;
     const hintHtml = showHint ? `<div class="battle-hint">Тапни карту в руке, чтобы разыграть · тапни своё существо, потом цель, чтобы атаковать</div>` : '';
 
-    body.innerHTML = `
+    const html = `
     <div class="battle-arena">
         <div class="battle-hand-strip opp">
             <div class="battle-hand-row">${oppHandBacksHtml}</div>
@@ -1276,12 +1356,77 @@ function renderBattleView() {
             <button class="btn btn-secondary" onclick="surrenderBattle()">Сдаться</button>
             <div class="battle-emoji-wrap">
                 <button class="btn btn-secondary" style="padding:10px 14px;" onclick="toggleBattleEmojiPicker()">😊</button>
-                <div class="battle-emoji-picker" id="battle-emoji-picker"></div>
+                <div class="battle-emoji-picker ${emojiPickerOpen ? 'active' : ''}" id="battle-emoji-picker">${BATTLE_REACTION_EMOJIS.map(e => `<span onclick="sendBattleReaction('${e}')">${e}</span>`).join('')}</div>
             </div>
             <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
         </div>
     </div>`;
+
+    // Пропускаем запись в DOM, если видимая разметка не изменилась (например, обновился только
+    // технический таймстамп или чужая эмоция) — так поле боя не мигает картинками/анимациями зря.
+    if (html === lastBattleHtml) return;
+    lastBattleHtml = html;
+    body.innerHTML = html;
 }
+
+// ===================== ОТКРЫТИЕ (DISCOVER) =====================
+// Боевой клич "Discover": игроку показываются N случайных карт, он выбирает одну в руку.
+function showDiscoverPicker(count) {
+    if (!pendingDiscover) return;
+    const pool = state.cardsData.filter(c => c.type !== 'weapon' || true);
+    const options = [];
+    const usedIds = new Set();
+    let guard = 0;
+    while (options.length < Math.min(count, pool.length) && guard < 50) {
+        guard++;
+        const c = pool[Math.floor(Math.random() * pool.length)];
+        if (usedIds.has(c.id)) continue;
+        usedIds.add(c.id);
+        options.push(c);
+    }
+    pendingDiscover.options = options;
+
+    const overlay = document.getElementById('battle-discover-overlay');
+    const body = document.getElementById('battle-discover-body');
+    if (!overlay || !body) return;
+    body.innerHTML = options.map(c => `
+        <div class="battle-discover-card" onclick="battleDiscoverPick('${c.id}')">
+            ${c.image ? `<img src="${c.image}" onerror="this.style.display='none'">` : `<div class="battle-discover-fallback" style="background:${colorFor(c.name || '')}">${initialOf(c.name)}</div>`}
+            <div class="battle-discover-name">${escapeHtml(c.name || '')}</div>
+            <div class="battle-discover-mana">💧${c.mana || 0}</div>
+        </div>`).join('');
+    overlay.classList.add('active');
+}
+
+window.battleDiscoverPick = function (cardId) {
+    if (!pendingDiscover) return;
+    const { battleId, actorSlot, opponentSlot, actorSnapshot: actor, opponentSnapshot: opponent, log } = pendingDiscover;
+    const overlay = document.getElementById('battle-discover-overlay');
+    if (overlay) overlay.classList.remove('active');
+
+    actor.hand = actor.hand || {};
+    actor.hand[randId()] = cardId;
+    const picked = cardById(cardId);
+    log.push(`${actor.name}: выбирает «${picked ? picked.name : '?'}» из открытия`);
+    checkCombos(actor, opponent, log);
+
+    const updates = {};
+    updates['battles/' + battleId + '/' + actorSlot] = actor;
+    updates['battles/' + battleId + '/' + opponentSlot] = opponent;
+    updates['battles/' + battleId + '/log/' + randId()] = { t: Date.now(), text: log.join('; ') };
+    updates['battles/' + battleId + '/lastActionAt'] = Date.now();
+
+    if (opponent.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = actorSlot;
+    } else if (actor.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = opponentSlot;
+    }
+
+    update(ref(state.db), updates).catch(e => tg.showAlert('Ошибка сохранения хода: ' + (e && e.message ? e.message : e)));
+    pendingDiscover = null;
+};
 
 // ===================== ДЕЙСТВИЯ ИГРОКА =====================
 
@@ -1332,6 +1477,8 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
 
     actor.mana -= card.mana;
     delete actor.hand[iid];
+    actor.playedCardIds = actor.playedCardIds || {};
+    actor.playedCardIds[card.id] = (actor.playedCardIds[card.id] || 0) + 1;
 
     let newIid = null;
     if (card.type === 'minion') {
@@ -1339,10 +1486,28 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
         actor.board[newIid] = makeBoardEntry(card);
         recentlyPlayedIid = newIid;
         recentlyPlayedAt = Date.now();
+    } else if (card.type === 'weapon') {
+        const lvlBonus = cardLevelStatBonus(card.id);
+        actor.weaponAttack = (card.attack || 0) + lvlBonus;
+        actor.weaponDurability = (card.health || 1) + lvlBonus;
+        log.push(`⚔️ Экипировано «${card.name}» (${actor.weaponAttack} атаки, ${actor.weaponDurability} прочности)`);
+    }
+
+    if (card.overload) {
+        actor.manaDebuff = (actor.manaDebuff || 0) + card.overload;
+        log.push(`Перегрузка: -${card.overload} маны в следующий ход`);
+    }
+
+    if (card.effectType && card.effectType === 'battlecry_discover') {
+        pendingDiscover = { battleId, actorSlot, opponentSlot, actorSnapshot: actor, opponentSnapshot: opponent, log };
+        showDiscoverPicker(card.effectValue || 3);
+        return; // сохранение отложено до выбора карты игроком
     }
 
     if (card.effectType && card.effectType.startsWith('battlecry_')) {
         applyEffect(actor, opponent, card.effectType, card.effectValue, log, newIid);
+        const heroElId = actorSlot === state.mySlot ? 'battle-hero-mine' : 'battle-hero-opp';
+        setTimeout(() => window.spawnBattleParticles(heroElId, '#ffd60a'), 60);
     }
     checkCombos(actor, opponent, log);
 
@@ -1385,9 +1550,6 @@ window.battleAttackTarget = function (targetIid) {
     const oppSlot = mySlot === 'p1' ? 'p2' : 'p1';
     const me = data[mySlot];
     const opp = data[oppSlot];
-    const attacker = (me.board || {})[state.selectedAttackerIid];
-
-    if (!attacker || !attacker.canAttack) return;
 
     if (targetIid !== 'hero' && (opp.board || {})[targetIid] && (opp.board || {})[targetIid].stealth) {
         tg.showAlert ? tg.showAlert('Это существо скрытно — его нельзя выбрать целью') : alert('Существо в скрытности');
@@ -1399,9 +1561,91 @@ window.battleAttackTarget = function (targetIid) {
         if (!targetIsTaunt) { tg.showAlert ? tg.showAlert('Сначала нужно атаковать существо с провокацией') : alert('Провокация мешает'); return; }
     }
 
+    if (state.selectedAttackerIid === 'hero') {
+        if (!me.weaponAttack || !me.weaponDurability || me.heroAttackedThisTurn) { state.selectedAttackerIid = null; return; }
+        resolveHeroAttack(state.activeBattleId, data, mySlot, oppSlot, targetIid);
+        state.selectedAttackerIid = null;
+        return;
+    }
+
+    const attacker = (me.board || {})[state.selectedAttackerIid];
+    if (!attacker || !attacker.canAttack) return;
+
     resolveAttack(state.activeBattleId, data, mySlot, oppSlot, state.selectedAttackerIid, targetIid);
     state.selectedAttackerIid = null;
 };
+
+// Клик по своей "плашке" героя — выбрать героя атакующим, если есть годное оружие
+window.battleSelectHero = function () {
+    const data = state.battleData;
+    if (!data || data.turnPlayer !== state.mySlot) return;
+    const me = data[state.mySlot];
+    if (!me.weaponAttack || !me.weaponDurability || me.heroAttackedThisTurn) return;
+    state.selectedAbilityIid = null;
+    state.selectedAttackerIid = state.selectedAttackerIid === 'hero' ? null : 'hero';
+    renderBattleView();
+};
+
+function resolveHeroAttack(battleId, data, mySlot, oppSlot, targetIid) {
+    if (state.actionLocked) return;
+    state.actionLocked = true;
+
+    const me = normalizePlayerState(JSON.parse(JSON.stringify(data[mySlot])));
+    const opp = normalizePlayerState(JSON.parse(JSON.stringify(data[oppSlot])));
+    const val = me.weaponAttack || 0;
+    const log = [];
+
+    if (targetIid === 'hero') {
+        if (opp.heroShielded) { opp.heroShielded = false; log.push(`${me.name}: удар оружием, но щит поглощает урон`); }
+        else { opp.heroHealth -= val; log.push(`${me.name}: атакует героя оружием на ${val}`); }
+    } else {
+        const target = opp.board[targetIid];
+        if (target) {
+            if (target.shielded) { target.shielded = false; log.push(`${me.name}: удар оружием, но щит поглощает урон`); }
+            else {
+                target.health -= val;
+                log.push(`${me.name}: атакует «${target.name}» оружием на ${val}`);
+                if (target.health <= 0) {
+                    if (target.reborn) { target.reborn = false; target.health = 1; log.push(`«${target.name}» перерождается с 1 ❤️`); }
+                    else {
+                        delete opp.board[targetIid];
+                        log.push(`«${target.name}» погибает`);
+                        if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                    }
+                }
+            }
+            // существо, атаковавшее оружием героя, бьёт в ответ по герою (если оно ещё живо)
+            if (opp.board[targetIid]) {
+                me.heroHealth -= (target.attack || 0);
+                log.push(`«${target.name}» отвечает герою на ${target.attack || 0}`);
+            }
+        }
+    }
+
+    me.heroAttackedThisTurn = true;
+    me.weaponDurability = Math.max(0, (me.weaponDurability || 0) - 1);
+    if (me.weaponDurability <= 0) { me.weaponAttack = 0; log.push(`Оружие сломалось`); }
+
+    const updates = {};
+    updates['battles/' + battleId + '/' + mySlot] = me;
+    updates['battles/' + battleId + '/' + oppSlot] = opp;
+    updates['battles/' + battleId + '/log/' + randId()] = { t: Date.now(), text: log.join('; ') };
+    updates['battles/' + battleId + '/lastActionAt'] = Date.now();
+
+    if (opp.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = mySlot;
+        if (!data[mySlot].isBot) update(ref(state.db, 'users/' + me.uid), { coins: increment(20), wins: increment(1) }).catch(() => {});
+    } else if (me.heroHealth <= 0) {
+        updates['battles/' + battleId + '/status'] = 'finished';
+        updates['battles/' + battleId + '/winner'] = oppSlot;
+    }
+
+    setTimeout(() => {
+        update(ref(state.db), updates);
+        state.actionLocked = false;
+    }, 400);
+}
 
 function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) {
     if (state.actionLocked) return;
@@ -1453,10 +1697,21 @@ function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) 
                     target.health = 0;
                     log.push(`«${attacker.name}» (яд): «${target.name}» гибнет мгновенно`);
                 }
+                if (attacker.freezeOnHit && target.health > 0) {
+                    target.frozen = true;
+                    target.canAttack = false;
+                    log.push(`«${attacker.name}» (мороз): «${target.name}» заморожен`);
+                }
                 if (target.health <= 0) {
-                    delete opp.board[targetIid];
-                    log.push(`«${target.name}» погибает`);
-                    if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                    if (target.reborn) {
+                        target.reborn = false;
+                        target.health = 1;
+                        log.push(`«${target.name}» перерождается с 1 ❤️`);
+                    } else {
+                        delete opp.board[targetIid];
+                        log.push(`«${target.name}» погибает`);
+                        if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                    }
                 }
             }
         }
@@ -1466,9 +1721,15 @@ function resolveAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIid) 
     attacker.canAttack = !!(attacker.windfury && attacker.attacksThisTurn < 2);
     if (attacker.canAttack) log.push(`«${attacker.name}» (ярость ветра): может атаковать ещё раз`);
     if (attacker.health <= 0) {
-        delete me.board[attackerIid];
-        log.push(`«${attacker.name}» погибает`);
-        if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
+        if (attacker.reborn) {
+            attacker.reborn = false;
+            attacker.health = 1;
+            log.push(`«${attacker.name}» перерождается с 1 ❤️`);
+        } else {
+            delete me.board[attackerIid];
+            log.push(`«${attacker.name}» погибает`);
+            if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
+        }
     }
 
     const updates = {};
@@ -1721,9 +1982,13 @@ function resolveBotAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIi
                 target.health -= val;
                 if (attacker.lifesteal) me.heroHealth = Math.min(me.maxHealth, me.heroHealth + val);
                 if (attacker.poison && target.health > 0) target.health = 0;
+                if (attacker.freezeOnHit && target.health > 0) { target.frozen = true; target.canAttack = false; }
                 if (target.health <= 0) {
-                    delete opp.board[targetIid];
-                    if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                    if (target.reborn) { target.reborn = false; target.health = 1; }
+                    else {
+                        delete opp.board[targetIid];
+                        if (target.deathrattleType) applyEffect(opp, me, target.deathrattleType, target.deathrattleValue, log);
+                    }
                 }
             }
         }
@@ -1732,8 +1997,11 @@ function resolveBotAttack(battleId, data, mySlot, oppSlot, attackerIid, targetIi
     attacker.attacksThisTurn = (attacker.attacksThisTurn || 0) + 1;
     attacker.canAttack = !!(attacker.windfury && attacker.attacksThisTurn < 2);
     if (attacker.health <= 0) {
-        delete me.board[attackerIid];
-        if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
+        if (attacker.reborn) { attacker.reborn = false; attacker.health = 1; }
+        else {
+            delete me.board[attackerIid];
+            if (attacker.deathrattleType) applyEffect(me, opp, attacker.deathrattleType, attacker.deathrattleValue, log);
+        }
     }
 
     const updates = {};

@@ -34,6 +34,21 @@ export const sessionStartTime = Date.now();
 
 export const notifiedIds = new Set();
 
+// ===================== ПРОКАЧКА КАРТ И ПЫЛЬ =====================
+// Сколько копий карты нужно накопить в коллекции для каждого уровня.
+// Уровень определяется по количеству копий: индекс массива = уровень-1.
+export const CARD_LEVEL_THRESHOLDS = [1, 2, 4, 8]; // ур.1 с 1 копии, ур.2 с 2х, ур.3 с 4х, ур.4 (макс/радужный) с 8х
+export const CARD_MAX_LEVEL = CARD_LEVEL_THRESHOLDS.length;
+// Бонус к атаке/здоровью существа за каждый уровень выше первого
+export const CARD_LEVEL_STAT_BONUS = 1;
+
+// Сколько пыли даёт "разбор" одной лишней копии карты, по редкости
+export const DUST_VALUES = { common: 5, rare: 20, epic: 100, legendary: 400 };
+// Сколько пыли стоит скрафтить одну карту нужной редкости
+export const CRAFT_COSTS = { common: 40, rare: 100, epic: 400, legendary: 1600 };
+// После скольки копий карты новые копии из паков сразу превращаются в пыль
+export const DUST_CONVERT_AFTER_COPIES = 8;
+
 export const TERRARIA_PIXEL_BITMAPS = [
             ['00100', '01110', '11111', '10101', '11111'], // 🏠 Лента
             ['11011', '10001', '10001', '10001', '11111'], // 📚 Книги

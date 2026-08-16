@@ -1,6 +1,6 @@
 import { ref, push, update, remove, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, escapeHtml, friendlyDbError, initialOf, showStoryDialogue } from './utils.js';
+import { colorFor, escapeHtml, friendlyDbError, initialOf, showStoryDialogue, showTerrariaToast } from './utils.js';
 import { startStoryBattle } from './battle.js';
 
 // ===================== ОБЩЕЕ =====================
@@ -12,7 +12,46 @@ function sortedStoryChapters() {
 function isChapterUnlocked(chapters, idx) {
     if (idx <= 0) return true;
     const cleared = state.storyCleared || {};
-    return !!cleared[chapters[idx - 1].id];
+    const lost = state.storyLost || {};
+    const thisId = chapters[idx].id;
+
+    // Явные ветки (заданы в админке): ищем главу, которая ведёт именно сюда через
+    // победу или через "сюжетное поражение".
+    const explicitlyUnlocked = chapters.some(c =>
+        (c.nextChapterOnWin === thisId && cleared[c.id]) ||
+        (c.nextChapterOnLose === thisId && lost[c.id])
+    );
+    if (explicitlyUnlocked) return true;
+
+    // Если хоть одна глава явно ссылается на эту (веткой) — она не откроется просто по
+    // порядку, только через нужную ветку (чтобы не спойлерить и не давать обходной путь).
+    const isBranchTarget = chapters.some(c => c.nextChapterOnWin === thisId || c.nextChapterOnLose === thisId);
+    if (isBranchTarget) return false;
+
+    // Запасной вариант — обычный линейный порядок, если у предыдущей главы нет
+    // собственной ветки на победу, уводящей в другое место.
+    const prev = chapters[idx - 1];
+    if (!prev) return false;
+    if (prev.nextChapterOnWin && prev.nextChapterOnWin !== thisId) return false;
+    return !!cleared[prev.id];
+}
+
+// Определяет, к какой главе ведёт исход БОЯ (победа/поражение) для конкретной главы —
+// с учётом явных веток, а без них — следующая по порядку (только для победы).
+function resolveNextChapter(chapters, chapter, won) {
+    const targetId = won ? chapter.nextChapterOnWin : chapter.nextChapterOnLose;
+    if (targetId) return chapters.find(c => c.id === targetId) || null;
+    if (!won) return null; // без явной ветки поражение никуда не ведёт (обычная попытка/ретрай)
+    const idx = chapters.findIndex(c => c.id === chapter.id);
+    return chapters[idx + 1] || null;
+}
+
+// Глава считается "концовкой", если из неё нет пути дальше вообще ни при каком исходе
+// (ни явной ветки, ни следующей по порядку главы).
+function isEndingChapter(chapters, chapter) {
+    if (chapter.nextChapterOnWin || chapter.nextChapterOnLose) return false;
+    const idx = chapters.findIndex(c => c.id === chapter.id);
+    return !chapters[idx + 1];
 }
 
 // Простая оценка сложности главы по колоде босса: считаем суммарную ману карт —
@@ -36,27 +75,31 @@ function difficultyStarsHtml(n) {
     return '⭐'.repeat(n) + '<span style="opacity:.25;">' + '⭐'.repeat(3 - n) + '</span>';
 }
 
-// Показывает поздравительный баннер один раз, когда игрок проходит самую последнюю главу.
-export function maybeShowStoryCompletionBanner() {
+// Показывает тост «Новая глава открыта!» или экран концовки после боя, который продвинул
+// сюжет (победа, либо «сюжетное» поражение с заданной веткой). isFirstTime=false для
+// farm-повторов уже пройденной ветки — тогда ничего нового не показываем.
+export function handleStoryChapterOutcome(chapterId, won, isFirstTime) {
     const chapters = sortedStoryChapters();
-    if (!chapters.length) return;
-    const cleared = state.storyCleared || {};
-    const allCleared = chapters.every(c => cleared[c.id]);
-    if (!allCleared) return;
-    if (state.storyCompletionBannerShown) return;
-    state.storyCompletionBannerShown = true;
+    const chapter = chapters.find(c => c.id === chapterId);
+    if (!chapter) return;
 
-    tg.showPopup({ title: '🏆 Сюжет пройден!', message: 'Ты одолел всех соперников сюжетного режима. Главы остаются доступны для повторного фарма наград.', buttons: [{ type: 'ok' }] });
-}
+    if (isEndingChapter(chapters, chapter)) {
+        if (!isFirstTime) return;
+        setTimeout(() => {
+            tg.showPopup({
+                title: '🏁 Конец пути' + (chapter.endingName ? ': ' + chapter.endingName : ''),
+                message: 'Эта ветка сюжета завершена. Другие главы и решения могут вести к другим концовкам.',
+                buttons: [{ type: 'ok' }],
+            });
+        }, 400);
+        if (state.currentUser) {
+            update(ref(state.db, 'users/' + state.currentUser.id + '/storyEndingsReached'), { [chapterId]: true }).catch(() => {});
+        }
+        return;
+    }
 
-// Показывает тост «Новая глава открыта!», если это было первое прохождение этой главы
-// (isFirstClear=false для повторов/фарма — тогда следующая глава уже была открыта раньше).
-export function maybeToastNextChapterUnlocked(chapterId, isFirstClear) {
-    if (!isFirstClear) return;
-    const chapters = sortedStoryChapters();
-    const idx = chapters.findIndex(c => c.id === chapterId);
-    if (idx === -1) return;
-    const next = chapters[idx + 1];
+    if (!isFirstTime) return;
+    const next = resolveNextChapter(chapters, chapter, won);
     if (!next) return;
     setTimeout(() => showTerrariaToast('Новая глава открыта!', next.name || '', '🔓'), 400);
 }
@@ -84,8 +127,8 @@ export function renderStoryListView() {
     }
 
     const cleared = state.storyCleared || {};
+    const lost = state.storyLost || {};
     const clearedCount = chapters.filter(c => cleared[c.id]).length;
-    const allCleared = clearedCount === chapters.length;
 
     // Общий прогресс по сюжету — показываем, только если глав больше одной
     if (progressWrap) {
@@ -107,25 +150,35 @@ export function renderStoryListView() {
     }
 
     const term = (searchInput && !searchInput.classList.contains('hidden') ? searchInput.value : '').trim().toLowerCase();
+
+    // Главы, на которые ведёт чья-то ЯВНАЯ ветка (победа/поражение) и которые ещё не открыты,
+    // скрываем из списка полностью — чтобы не спойлерить, куда ведёт та или иная развилка.
+    // Обычные "следующие по порядку" заблокированные главы, наоборот, остаются видны как раньше.
+    const visibleChapters = chapters.filter(c => {
+        const idx = chapters.indexOf(c);
+        if (isChapterUnlocked(chapters, idx)) return true;
+        const isBranchTarget = chapters.some(o => o.nextChapterOnWin === c.id || o.nextChapterOnLose === c.id);
+        return !isBranchTarget;
+    });
+
     const filtered = term
-        ? chapters.filter(c =>
+        ? visibleChapters.filter(c =>
             (c.name || '').toLowerCase().includes(term) ||
             (c.bossName || '').toLowerCase().includes(term))
-        : chapters;
+        : visibleChapters;
 
     if (term && !filtered.length) {
         body.innerHTML = '<div class="empty-state"><span class="icon">🔍</span><div class="title">Ничего не найдено</div><div class="sub">Попробуй другой запрос</div></div>';
         return;
     }
 
-    const completionBadge = (allCleared && !term)
-        ? `<div class="story-completion-badge"><span style="font-size:22px;">🏆</span><div>Сюжет пройден полностью!<br><span style="font-weight:600;font-size:11px;opacity:.85;">Главы остаются доступны для повторного фарма наград</span></div></div>`
-        : '';
-
-    body.innerHTML = completionBadge + filtered.map((c, i) => {
+    body.innerHTML = filtered.map((c, i) => {
         const idx = chapters.indexOf(c);
         const isCleared = !!cleared[c.id];
+        const isLost = !!lost[c.id];
         const unlocked = isChapterUnlocked(chapters, idx);
+        const ending = isEndingChapter(chapters, c);
+        const hasBranch = !!(c.nextChapterOnWin || c.nextChapterOnLose);
         const statusClass = isCleared ? 'cleared' : (unlocked ? 'available' : 'locked');
         const statusText = isCleared ? '✅ Пройдено' : (unlocked ? '⚔️ Доступно' : '🔒 Заблокировано');
         const stars = difficultyStarsHtml(chapterDifficultyStars(c));
@@ -152,12 +205,14 @@ export function renderStoryListView() {
                 <div class="story-chapter-number">${idx + 1}</div>
             </div>
             <div class="story-chapter-body">
-                <div class="story-chapter-name">${escapeHtml(c.name || 'Глава')}</div>
+                <div class="story-chapter-name">${escapeHtml(c.name || 'Глава')}${isLost && !isCleared ? ' <span style="opacity:.6;font-weight:600;font-size:11px;">(пройдена через поражение)</span>' : ''}</div>
                 <div class="story-chapter-boss">Соперник: ${escapeHtml(c.bossName || '—')}</div>
                 <div class="story-chapter-meta">
                     <span class="story-status-pill ${statusClass}">${statusText}</span>
                     <span class="story-chapter-stars">${stars}</span>
                     ${c.phase2Threshold ? '<span style="color:#ff9f0a;font-weight:700;">⚡ 2 фазы</span>' : ''}
+                    ${hasBranch ? '<span style="color:#a970ff;font-weight:700;">🔀 Развилка</span>' : ''}
+                    ${ending ? '<span style="color:#ff6b6b;font-weight:700;">🏁 Концовка</span>' : ''}
                     ${rewardHtml}
                 </div>
             </div>
@@ -245,6 +300,7 @@ function renderStoryChapterPreview(chapter, idx) {
             <div style="font-size:14px;">${stars}</div>
         </div>
         ${chapter.phase2Threshold ? `<div style="font-size:12px;font-weight:700;color:#ff9f0a;margin:-4px 0 10px;">⚡ У этого босса есть вторая фаза — при ${chapter.phase2Threshold}% HP он станет сильнее</div>` : ''}
+        ${chapter.nextChapterOnLose ? `<div style="font-size:12px;font-weight:700;color:#a970ff;margin:-4px 0 10px;">🔀 Кажется, исход этого боя может повернуть сюжет по-разному...</div>` : ''}
         ${chapter.description ? `<div class="story-preview-lore">${escapeHtml(chapter.description)}</div>` : ''}
         ${deckPreview ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin:12px 0 6px;">Колода соперника</div><div class="story-deck-preview-row">${deckPreview}${extraCount ? `<div class="story-deck-chip" style="opacity:.6;">+${extraCount}</div>` : ''}</div>` : ''}
         ${rewardHtml ? `<div style="margin-top:14px;padding:10px 14px;border-radius:12px;background:rgba(237,143,3,.12);color:var(--text-primary);font-size:13px;">${rewardHtml}</div>` : ''}
@@ -418,18 +474,41 @@ export function renderAdminStoryList() {
         return;
     }
 
-    el.innerHTML = chapters.map(c => `
+    el.innerHTML = chapters.map(c => {
+        const branchBits = [];
+        if (c.nextChapterOnWin) {
+            const t = chapters.find(x => x.id === c.nextChapterOnWin);
+            branchBits.push(`победа → «${escapeHtml(t ? t.name : '?')}»`);
+        }
+        if (c.nextChapterOnLose) {
+            const t = chapters.find(x => x.id === c.nextChapterOnLose);
+            branchBits.push(`поражение → «${escapeHtml(t ? t.name : '?')}»`);
+        }
+        const ending = isEndingChapter(chapters, c);
+        return `
         <div class="admin-item">
             ${c.bossAvatar ? `<img src="${c.bossAvatar}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(c.bossName || '')};">${initialOf(c.bossName || '?')}</div>`}
             <div class="admin-item-info">
-                <div class="admin-item-title">#${c.order ?? 0} · ${escapeHtml(c.name || 'Глава')}</div>
-                <div class="admin-item-sub">Босс: ${escapeHtml(c.bossName || '—')} · Карт в колоде: ${Object.values(c.bossDeck || {}).reduce((s, n) => s + n, 0)} · 🔁 ${c.replayCoins || 0}🪙 за повтор${c.phase2Threshold ? ` · ⚡ Фаза 2 при ${c.phase2Threshold}% HP` : ''}</div>
+                <div class="admin-item-title">#${c.order ?? 0} · ${escapeHtml(c.name || 'Глава')}${ending ? ' · 🏁' : ''}</div>
+                <div class="admin-item-sub">Босс: ${escapeHtml(c.bossName || '—')} · Карт в колоде: ${Object.values(c.bossDeck || {}).reduce((s, n) => s + n, 0)} · 🔁 ${c.replayCoins || 0}🪙 за повтор${c.phase2Threshold ? ` · ⚡ Фаза 2 при ${c.phase2Threshold}% HP` : ''}${branchBits.length ? ' · 🔀 ' + branchBits.join(', ') : ''}</div>
             </div>
             <div class="admin-item-actions">
                 <button class="icon-btn" onclick="window.editStoryChapter('${c.id}')">✏️</button>
                 <button class="icon-btn danger" onclick="window.deleteStoryChapter('${c.id}')">🗑</button>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
+}
+
+// Заполняет выпадающие списки веток ("глава при победе/поражении") всеми главами,
+// кроме той, что сейчас редактируется (чтобы не создавать ветку главы саму на себя).
+export function populateStoryBranchSelects(excludeId) {
+    const chapters = sortedStoryChapters().filter(c => c.id !== excludeId);
+    const optionsHtml = chapters.map(c => `<option value="${c.id}">${escapeHtml(c.name || 'Глава')}</option>`).join('');
+    const winSel = document.getElementById('story-next-on-win');
+    const loseSel = document.getElementById('story-next-on-lose');
+    if (winSel) winSel.innerHTML = '<option value="">По умолчанию — следующая по порядку</option>' + optionsHtml;
+    if (loseSel) loseSel.innerHTML = '<option value="">Обычное поражение — можно попробовать снова</option>' + optionsHtml;
 }
 
 window.editStoryChapter = function (id) {
@@ -456,6 +535,11 @@ window.editStoryChapter = function (id) {
     document.getElementById('story-reward-replay-coins').value = c.replayCoins || 0;
     populateStoryRewardCardSelect();
     document.getElementById('story-reward-card').value = c.rewardCardId || '';
+    populateStoryBranchSelects(id);
+    document.getElementById('story-next-on-win').value = c.nextChapterOnWin || '';
+    document.getElementById('story-next-on-lose').value = c.nextChapterOnLose || '';
+    document.getElementById('story-lose-reward-coins').value = c.loseRewardCoins || 0;
+    document.getElementById('story-ending-name').value = c.endingName || '';
     renderStoryBossDeckPicker();
 
     document.getElementById('story-chapter-form-heading').textContent = 'Редактировать главу';
@@ -468,7 +552,7 @@ window.cancelEditStoryChapter = function () {
     state.editingStoryChapterId = null;
     state.storyBossDeckDraft = {};
 
-    ['story-chapter-name', 'story-boss-name', 'story-boss-image', 'story-chapter-description', 'story-dialogue-intro', 'story-dialogue-during', 'story-dialogue-hp', 'story-dialogue-win', 'story-dialogue-lose'].forEach(id => {
+    ['story-chapter-name', 'story-boss-name', 'story-boss-image', 'story-chapter-description', 'story-dialogue-intro', 'story-dialogue-during', 'story-dialogue-hp', 'story-dialogue-win', 'story-dialogue-lose', 'story-ending-name'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -478,8 +562,10 @@ window.cancelEditStoryChapter = function () {
     document.getElementById('story-reward-replay-coins').value = 0;
     document.getElementById('story-phase2-threshold').value = 0;
     document.getElementById('story-phase2-mana-bonus').value = 0;
+    document.getElementById('story-lose-reward-coins').value = 0;
     const sel = document.getElementById('story-reward-card');
     if (sel) sel.value = '';
+    populateStoryBranchSelects(null);
     renderStoryBossDeckPicker();
 
     document.getElementById('story-chapter-form-heading').textContent = 'Создать главу';
@@ -499,6 +585,10 @@ window.saveStoryChapter = function () {
     const replayCoins = parseInt(document.getElementById('story-reward-replay-coins').value, 10) || 0;
     const phase2Threshold = Math.min(99, Math.max(0, parseInt(document.getElementById('story-phase2-threshold').value, 10) || 0));
     const phase2ManaBonus = parseInt(document.getElementById('story-phase2-mana-bonus').value, 10) || 0;
+    const nextChapterOnWin = document.getElementById('story-next-on-win').value || null;
+    const nextChapterOnLose = document.getElementById('story-next-on-lose').value || null;
+    const loseRewardCoins = parseInt(document.getElementById('story-lose-reward-coins').value, 10) || 0;
+    const endingName = document.getElementById('story-ending-name').value.trim();
 
     if (!name) return tg.showAlert('Укажи название главы');
     if (!bossName) return tg.showAlert('Укажи имя соперника');
@@ -514,6 +604,7 @@ window.saveStoryChapter = function () {
         loseDialogue: parseDialogueLines(document.getElementById('story-dialogue-lose').value),
         hpDialogue: parseDuringDialogueLines(document.getElementById('story-dialogue-hp').value),
         rewardCoins, rewardCardId, rewardCardCount, replayCoins, phase2Threshold, phase2ManaBonus,
+        nextChapterOnWin, nextChapterOnLose, loseRewardCoins, endingName,
     };
 
     if (state.editingStoryChapterId) {

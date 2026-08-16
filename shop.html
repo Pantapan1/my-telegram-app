@@ -441,6 +441,9 @@
         const RARITY_LABELS_SHOP = { common: 'Обычная', rare: 'Редкая', epic: 'Эпическая', legendary: 'Легендарная' };
         const RARITY_WEIGHTS_SHOP = { common: 60, rare: 25, epic: 12, legendary: 3 };
         const RARITY_ORDER_SHOP = ['common', 'rare', 'epic', 'legendary'];
+        // Пыль: после DUST_CONVERT_AFTER_COPIES копий карты новые копии сразу идут в пыль вместо коллекции
+        const DUST_VALUES_SHOP = { common: 5, rare: 20, epic: 100, legendary: 400 };
+        const DUST_CONVERT_AFTER_COPIES_SHOP = 8;
 
         function renderPacksGrid() {
             const el = document.getElementById('packs-grid');
@@ -506,16 +509,28 @@
             received.forEach(c => { counts[c.id] = (counts[c.id] || 0) + 1; });
 
             const existingCollection = myUser.cardCollection || {};
+            const cardById = Object.fromEntries(cardsData.map(c => [c.id, c]));
+            let dustGained = 0;
             const updates = { coins: increment(-price) };
             Object.entries(counts).forEach(([cardId, n]) => {
-                updates['cardCollection/' + cardId] = (existingCollection[cardId] || 0) + n;
+                const have = existingCollection[cardId] || 0;
+                const room = Math.max(0, DUST_CONVERT_AFTER_COPIES_SHOP - have);
+                const toCollection = Math.min(n, room);
+                const toDust = n - toCollection;
+                if (toCollection > 0) updates['cardCollection/' + cardId] = have + toCollection;
+                if (toDust > 0) {
+                    const rarity = (cardById[cardId] && cardById[cardId].rarity) || 'common';
+                    dustGained += toDust * (DUST_VALUES_SHOP[rarity] || DUST_VALUES_SHOP.common);
+                }
             });
+            if (dustGained > 0) updates.cardDust = increment(dustGained);
 
             update(ref(db, 'users/' + myId), updates).then(() => {
                 playSound('coin'); confettiBurst();
                 const list = received.map(c => `${RARITY_LABELS_SHOP[c.rarity] || ''}: ${c.name}`).join('\n');
-                if (tg.showPopup) tg.showPopup({ title: '🃏 Набор открыт!', message: list, buttons: [{ type: 'ok' }] });
-                else alert('Получено:\n' + list);
+                const dustLine = dustGained > 0 ? `\n\n✨ +${dustGained} пыли за лишние копии` : '';
+                if (tg.showPopup) tg.showPopup({ title: '🃏 Набор открыт!', message: list + dustLine, buttons: [{ type: 'ok' }] });
+                else alert('Получено:\n' + list + dustLine);
             }).catch(err => alert('Ошибка: ' + err.message));
         }
 

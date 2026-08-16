@@ -217,6 +217,7 @@ export function getChapters(book) {
             document.getElementById('btn-prev-chapter').disabled = idx === 0; 
             document.getElementById('btn-next-chapter').disabled = idx === state.currentChapters.length - 1;
             document.getElementById('btn-bookmark').textContent = state.bookmarkedBooks.includes(bookId) ? '🔖✓' : '🔖';
+            updateChapterNoteButton();
         }
 
         window.openChapter = openChapter;
@@ -378,7 +379,38 @@ export function getChapters(book) {
             saveLocal('sr_bookmarks', state.bookmarkedBooks); 
             document.getElementById('btn-bookmark').textContent = state.bookmarkedBooks.includes(state.currentBookId) ? '🔖✓' : '🔖';
         };
-        
+
+        // ===================== ЗАМЕТКИ НА ГЛАВАХ =====================
+        // Личные заметки читателя, привязанные к конкретной главе конкретной книги.
+        // Хранятся локально (как и прогресс чтения) — не синхронизируются между устройствами.
+        function chapterNoteKey(bookId, chapterIdx) {
+            return bookId + ':' + chapterIdx;
+        }
+
+        function updateChapterNoteButton() {
+            const btn = document.getElementById('btn-chapter-note');
+            if (!btn) return;
+            const key = chapterNoteKey(state.currentBookId, state.currentChapterIndex);
+            const hasNote = !!(state.chapterNotes || {})[key];
+            btn.textContent = hasNote ? '📝✓' : '📝';
+        }
+
+        document.getElementById('btn-chapter-note').onclick = function() {
+            const key = chapterNoteKey(state.currentBookId, state.currentChapterIndex);
+            const existing = (state.chapterNotes || {})[key] || '';
+            const text = prompt('Заметка к этой главе (оставь пустым, чтобы удалить):', existing);
+            if (text === null) return; // отмена
+
+            if (!state.chapterNotes) state.chapterNotes = {};
+            if (text.trim()) {
+                state.chapterNotes[key] = text.trim();
+            } else {
+                delete state.chapterNotes[key];
+            }
+            saveLocal('sr_chapter_notes', state.chapterNotes);
+            updateChapterNoteButton();
+        };
+
         document.getElementById('close-reader-btn').onclick = function() { 
             document.getElementById('reader-overlay').classList.remove('active'); 
             state.activeOverlay = null; 

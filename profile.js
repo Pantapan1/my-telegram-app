@@ -1,4 +1,4 @@
-import { ref, update, remove, runTransaction, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, push, update, remove, runTransaction, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, initialOf, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge, renderPassButton } from './pass.js';
@@ -7,7 +7,7 @@ import { startChatWith } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, populateThemeAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList, renderAdminUsersList } from './admin.js';
 import { populateDeckSettingsForm, populateFramesForm, renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList } from './cards.js';
 import { populateStickerPackSelect } from './chats.js';
-import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, populateStoryAdminSettingsForm } from './story.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, populateStoryAdminSettingsForm, populateStoryBranchSelects } from './story.js';
 
 export function checkDailyCoinReward() {
             if (state.dailyRewardChecked) return;
@@ -37,6 +37,7 @@ export function checkDailyCoinReward() {
                 if (amount <= 0) return;
 
                 update(ref(state.db, 'users/' + state.currentUser.id), { coins: increment(amount) }).then(() => {
+                    logCoinTransaction(amount, 'Ежедневная награда');
                     tg.showPopup({ title: `🪙 +${amount} монет!`, message: 'Награда за ежедневный вход в приложение', buttons: [{ type: 'ok' }] });
                     playSound('coin');
                     confettiBurst();
@@ -204,6 +205,9 @@ export function checkDailyCoinReward() {
 
 
         document.getElementById('btn-open-shop').onclick = () => goToSubpage('shop.html');
+        document.getElementById('btn-open-novels').onclick = () => goToSubpage('novels.html');
+        document.getElementById('nav-btn-novels').onclick = () => goToSubpage('novels.html');
+        document.getElementById('admin-tab-btn-novels').onclick = () => goToSubpage('novel-editor.html');
         document.getElementById('btn-open-publisher-app').onclick = () => goToSubpage('publisher-application.html');
         document.getElementById('btn-open-book-editor').onclick = () => goToSubpage('book-editor.html');
         
@@ -317,6 +321,7 @@ export function checkDailyCoinReward() {
             document.getElementById('stats-coins').textContent = (me && me.coins) || 0;
             document.getElementById('stats-trophies').textContent = (me && me.wins) || 0;
             document.getElementById('stats-story-wins').textContent = (me && me.storyChaptersWon) || 0;
+            document.getElementById('stats-story-endings').textContent = (me && me.storyEndingsReached) ? Object.keys(me.storyEndingsReached).length : 0;
             document.getElementById('stats-time-spent').textContent = formatTimeSpent((me && me.totalTimeSpent) || 0);
             
             const genreCounts = {}; 
@@ -389,6 +394,7 @@ export function checkDailyCoinReward() {
                 renderAdminStoryList();
                 renderStoryBossDeckPicker();
                 populateStoryRewardCardSelect();
+                populateStoryBranchSelects(null);
                 renderAdminUsersList();
                 populateStoryAdminSettingsForm();
             } else if (pwd) { 

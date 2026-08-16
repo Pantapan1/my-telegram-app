@@ -138,10 +138,9 @@ window.switchTab = function(tabName) {
     const targetSection = document.getElementById('section-' + tabName);
     if (targetSection) targetSection.classList.add('active');
 
-    const order = ['feed', 'books', 'chats', 'profile'];
-    document.querySelectorAll('.nav-btn').forEach((btn, index) => {
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
         btn.classList.remove('active');
-        if (order[index] === tabName) btn.classList.add('active');
+        if (btn.dataset.tab === tabName) btn.classList.add('active');
     });
 
     if (tabName === 'feed') {
@@ -376,6 +375,11 @@ export function startFirebaseListeners() {
         if (state.isAdmin && window.renderAdminArenasList) window.renderAdminArenasList();
     });
 
+    onValue(ref(state.db, 'cardStats'), (snapshot) => {
+        state.cardStatsData = snapshot.val() || {};
+        if (state.isAdmin) renderAdminCardsList();
+    });
+
     onValue(ref(state.db, 'cardCombos'), (snapshot) => {
         const data = snapshot.val();
         state.cardCombosData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -412,6 +416,13 @@ export function startFirebaseListeners() {
             if (state.activeOverlay === 'cardCollection') renderCardCollectionView();
         });
 
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/cardDust'), (snapshot) => {
+            state.myDust = snapshot.val() || 0;
+            if (state.activeOverlay === 'cardCollection') renderCardCollectionView();
+            const dustLabel = document.getElementById('collection-dust-label');
+            if (dustLabel) dustLabel.textContent = `✨ ${state.myDust}`;
+        });
+
         onValue(ref(state.db, 'users/' + state.currentUser.id + '/decks'), (snapshot) => {
             const data = snapshot.val();
             state.myDecks = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -420,6 +431,11 @@ export function startFirebaseListeners() {
 
         onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyCleared'), (snapshot) => {
             state.storyCleared = snapshot.val() || {};
+            if (state.activeOverlay === 'storyMode') renderStoryListView();
+        });
+
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyLost'), (snapshot) => {
+            state.storyLost = snapshot.val() || {};
             if (state.activeOverlay === 'storyMode') renderStoryListView();
         });
     }
