@@ -74,14 +74,115 @@
         font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid transparent; color: #7f8c8d;
     }
     .type-tab.active { background: #fff4e0; border-color: #ffb75e; color: #ed8f03; }
+
+    /* ===================== ЖИВОЕ ПРЕВЬЮ ===================== */
+    .preview-widget {
+        position: relative; width: 100%; aspect-ratio: 9/13; max-height: 420px; border-radius: 16px; overflow: hidden;
+        background: #14141f; margin-bottom: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    .preview-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity .2s ease; }
+    .preview-sprite {
+        position: absolute; bottom: 0; height: 76%; max-width: 62%; object-fit: contain; transition: all .2s ease; filter: brightness(.55);
+    }
+    .preview-sprite.speaking { filter: brightness(1); }
+    .preview-sprite.pos-left { left: 1%; }
+    .preview-sprite.pos-center { left: 50%; transform: translateX(-50%); }
+    .preview-sprite.pos-right { right: 1%; }
+    .preview-topbar { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; z-index: 5; }
+    .preview-badge { background: rgba(0,0,0,.5); color: #fff; font-size: 10px; padding: 4px 8px; border-radius: 8px; font-weight: 700; }
+    .preview-box {
+        position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px;
+        background: linear-gradient(0deg, rgba(0,0,0,.92) 40%, rgba(0,0,0,.6) 80%, rgba(0,0,0,0)); z-index: 4;
+    }
+    .preview-speaker { font-weight: 800; font-size: 12px; margin-bottom: 4px; }
+    .preview-text { color: #fff; font-size: 13px; line-height: 1.4; min-height: 34px; }
+    .preview-choices { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .preview-choice-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 7px 10px; border-radius: 9px; font-size: 11px; text-align: left; }
+    .preview-choice-btn.disabled { opacity: .35; }
+    .preview-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .preview-controls button { flex: 1; padding: 10px; border-radius: 10px; border: none; background: #f1f2f6; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .preview-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255,255,255,.4); font-size: 12px; }
+
+    /* ===================== СБОРНАЯ СЦЕНА (МУЛЬТИПЕРСОНАЖ) ===================== */
+    .stage-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; background: #f8f9fa; border-radius: 10px; padding: 8px; }
+    .stage-row select { flex: 1; }
+
+    /* ===================== ФЛАГИ / ВЕТВЛЕНИЕ ПО УСЛОВИЯМ ===================== */
+    .flag-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .flag-row select, .flag-row input { flex: 1; }
+
+    /* ===================== СВОРАЧИВАНИЕ СЕКЦИЙ ===================== */
+    .card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .card-header .chevron { transition: transform .2s ease; font-size: 12px; color: #95a5a6; }
+    .card.collapsed .card-body { display: none; }
+    .card.collapsed .card-header .chevron { transform: rotate(-90deg); }
+    #node-graph-svg { background: #fafbfc; border-radius: 12px; }
+    #node-graph-svg text { user-select: none; }
+
+    /* ===================== АНИМАЦИИ ПОЯВЛЕНИЯ СПРАЙТА ===================== */
+    @keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fxSlideLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxSlideRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+    @keyframes fxBounce { 0% { transform: translateY(-24px); opacity: 0; } 60% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(0); } }
+    @keyframes fxPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .preview-sprite.fx-fade, .reader-sprite.fx-fade { animation: fxFadeIn .4s ease both; }
+    .preview-sprite.fx-slide.pos-left, .reader-sprite.fx-slide.pos-left { animation: fxSlideLeft .35s ease both; }
+    .preview-sprite.fx-slide.pos-right, .reader-sprite.fx-slide.pos-right { animation: fxSlideRight .35s ease both; }
+    .preview-sprite.fx-slide.pos-center, .reader-sprite.fx-slide.pos-center { animation: fxFadeIn .35s ease both; }
+    .preview-sprite.fx-shake, .reader-sprite.fx-shake { animation: fxShake .4s ease; }
+    .preview-sprite.fx-bounce, .reader-sprite.fx-bounce { animation: fxBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .preview-sprite.fx-pulse, .reader-sprite.fx-pulse { animation: fxPulse .5s ease; }
+
+    /* ===================== ФИЛЬТРЫ И ПЕРЕХОДЫ ФОНА ===================== */
+    .preview-bg.bgf-dark, .reader-bg.bgf-dark { filter: brightness(.5); }
+    .preview-bg.bgf-warm, .reader-bg.bgf-warm { filter: sepia(.5) saturate(1.4) brightness(1.05); }
+    .preview-bg.bgf-cold, .reader-bg.bgf-cold { filter: saturate(1.2) hue-rotate(160deg) brightness(.9); }
+    .preview-bg.bgf-gray, .reader-bg.bgf-gray { filter: grayscale(1) contrast(1.1); }
+    .preview-bg.bgf-blur, .reader-bg.bgf-blur { filter: blur(3px) brightness(.85); }
+    .preview-bg.bgf-red, .reader-bg.bgf-red { filter: saturate(1.6) hue-rotate(-30deg) brightness(.85) contrast(1.15); }
+    @keyframes bgtFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes bgtShake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-6px,3px); } 40% { transform: translate(6px,-3px); } 60% { transform: translate(-4px,2px); } 80% { transform: translate(4px,-2px); } }
+    .bg-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 3; pointer-events: none; animation: bgtFlash .35s ease; }
+    .preview-widget.bgt-shake, #reader.bgt-shake { animation: bgtShake .4s ease; }
+
+    /* ===================== СКРИПТ-РЕДАКТОР (repy) ===================== */
+    .script-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .script-toolbar button {
+        border: none; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700;
+        background: #f1f2f6; color: #2c3e50; cursor: pointer;
+    }
+    .script-toolbar button.primary { background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; }
+    #novel-script {
+        width: 100%; min-height: 380px; resize: vertical; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 12.5px; line-height: 1.55; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0;
+        background: #14141f; color: #e6e6e6; tab-size: 4; white-space: pre; overflow: auto;
+    }
+    .script-status { border-radius: 12px; padding: 10px 12px; font-size: 12.5px; margin-top: 8px; }
+    .script-status.ok { background: #eafaf1; color: #1e8449; }
+    .script-status.err { background: #fdecea; color: #c0392b; }
+    .script-status ul { margin: 6px 0 0; padding-left: 18px; }
+    .script-status li { margin-bottom: 3px; cursor: pointer; text-decoration: underline; }
+    .script-outline { margin-top: 10px; font-size: 12px; }
+    .script-outline .lbl-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; background: #f8f9fa; margin-bottom: 5px; cursor: pointer; }
+    .script-outline .lbl-row:hover { background: #fff4e0; }
+    .script-outline .lbl-name { font-weight: 700; flex: 1; }
+    .script-outline .lbl-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 7px; background: #eafaf1; color: #27ae60; }
+    .script-outline .lbl-badge.ending { background: #f4f1fe; color: #8a2fc9; }
+    .script-outline .lbl-badge.dead { background: #fdecea; color: #e74c3c; }
+    .script-outline .lbl-arrows { color: #95a5a6; font-size: 11px; }
+    .cheatsheet { font-size: 12px; color: #556; background: #f8f9fa; border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; font-family: Consolas, monospace; line-height: 1.5; }
+    .script-preview-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .script-preview-row select { flex: 1; }
 </style>
+
 </head>
 <body>
 
 <div class="container">
     <div class="topbar">
         <button class="back-link" onclick="history.back()">←</button>
-        <h1>🖋️ Редактор новелл</h1>
+        <h1>🖋️ Редактор новелл (repy)</h1>
     </div>
 
     <div class="locked" id="locked-view">
@@ -114,11 +215,16 @@
             </div>
             <label class="field-label">Цена открытия (🪙 монет, 0 = бесплатно)</label>
             <input type="number" id="novel-unlock-cost" class="input" min="0" value="0">
+            <label class="field-label">Скорость печати текста (эффект «печатной машинки»)</label>
+            <select id="novel-text-speed" class="input">
+                <option value="0">Мгновенно (без анимации)</option>
+                <option value="15">Быстро</option>
+                <option value="30">Средне</option>
+                <option value="50">Медленно (кинематографично)</option>
+            </select>
             <label class="field-label">Доп. условие открытия (необязательно)</label>
             <select id="novel-requires-novel" class="input"><option value="">— без условия —</option></select>
             <select id="novel-requires-ending" class="input"><option value="">— любая концовка той новеллы —</option></select>
-            <label class="field-label">Стартовый узел</label>
-            <select id="novel-start-node" class="input"></select>
             <div class="upload-row">
                 <button class="btn btn-secondary btn-small" id="btn-duplicate-novel" style="flex:1;">📄 Дублировать</button>
                 <button class="btn btn-secondary btn-small" id="btn-export-novel" style="flex:1;">⬇️ Экспорт</button>
@@ -127,85 +233,41 @@
             <button class="btn btn-danger" id="btn-delete-novel">Удалить новеллу</button>
         </div>
 
-        <!-- Персонажи (пресеты) -->
-        <div class="card" id="characters-card" style="display:none;">
-            <label class="field-label">🎭 Персонажи новеллы (для быстрой вставки в реплики)</label>
-            <div id="characters-list"></div>
-            <button class="btn btn-secondary btn-small" id="btn-add-character" style="width:100%;">➕ Добавить персонажа</button>
+        <!-- Шпаргалка по языку -->
+        <div class="card" id="cheatsheet-card" style="display:none;">
+            <div class="card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <label class="field-label" style="margin:0;">📖 Шпаргалка по языку repy</label>
+                <span class="chevron">▼</span>
+            </div>
+            <div class="card-body">
+                <div class="cheatsheet" id="cheatsheet-text"></div>
+            </div>
         </div>
 
-        <!-- Узлы сценария -->
-        <div class="card" id="nodes-card" style="display:none;">
-            <label class="field-label" id="nodes-stats-label">Узлы сценария (сцены)</label>
-            <input type="text" id="node-search" class="input" placeholder="🔍 Поиск по названию, тексту, тегу...">
-            <div id="nodes-list"></div>
-            <button class="btn btn-secondary" id="btn-new-node">➕ Новая сцена</button>
-        </div>
-
-        <!-- Редактор узла -->
-        <div class="card" id="node-editor-card" style="display:none;">
-            <div class="upload-row">
-                <input type="text" id="node-title" class="input" placeholder="Название сцены (для навигации, необязательно)" style="flex:2;">
-                <input type="text" id="node-tag" class="input" placeholder="Тег/глава" style="flex:1;">
+        <!-- Сценарий новеллы (repy) -->
+        <div class="card" id="script-card" style="display:none;">
+            <label class="field-label">📝 Сценарий новеллы (язык repy)</label>
+            <div class="script-toolbar">
+                <button type="button" id="btn-upload-image">📁 Загрузить картинку</button>
+                <input type="file" id="script-image-file" accept="image/*" style="display:none;">
+                <button type="button" id="btn-upload-audio">🎵 Загрузить звук</button>
+                <input type="file" id="script-audio-file" accept="audio/*" style="display:none;">
+                <button type="button" id="btn-insert-scene">➕ Вставить сцену</button>
+                <button type="button" id="btn-insert-example">✨ Пример новеллы</button>
+                <button type="button" id="btn-check-script">🧪 Проверить</button>
+                <button type="button" class="primary" id="btn-save-script">💾 Сохранить сценарий</button>
             </div>
-            <label class="field-label">Фон сцены</label>
-            <div class="upload-row">
-                <input type="text" id="node-bg" class="input" placeholder="URL фонового изображения">
-                <label class="upload-btn" for="node-bg-file">📁</label>
-                <input type="file" id="node-bg-file" accept="image/*" class="input" style="display:none;">
-            </div>
-            <label class="field-label">Фоновая музыка (необязательно)</label>
-            <div class="upload-row">
-                <input type="text" id="node-music" class="input" placeholder="URL аудиофайла (mp3/ogg)">
-                <button class="upload-btn" id="btn-preview-music" type="button">▶️</button>
-            </div>
-            <audio id="music-preview-player" style="display:none;"></audio>
+            <textarea id="novel-script" spellcheck="false" placeholder="label start:&#10;    &quot;Однажды...&quot;"></textarea>
+            <div id="script-status"></div>
 
-            <label class="field-label">Реплики (фон + спрайт + текст)</label>
-            <div id="lines-list"></div>
-            <datalist id="sprite-suggestions"></datalist>
-            <button class="btn btn-secondary btn-small" id="btn-add-line" style="width:100%;">➕ Добавить реплику</button>
-
-            <div class="divider"></div>
-
-            <div class="type-tabs">
-                <div class="type-tab active" data-type="normal" id="tab-type-normal">Обычная сцена</div>
-                <div class="type-tab" data-type="ending" id="tab-type-ending">🏁 Концовка</div>
-            </div>
-
-            <div id="normal-node-fields">
-                <label class="field-label">Ветвление</label>
-                <div class="type-tabs">
-                    <div class="type-tab active" data-branch="auto" id="tab-branch-auto">Автоматически (одна сцена дальше)</div>
-                    <div class="type-tab" data-branch="choice" id="tab-branch-choice">Дать выбор игроку</div>
-                </div>
-                <div id="auto-next-field">
-                    <label class="field-label">Следующая сцена</label>
-                    <select id="node-next" class="input"></select>
-                </div>
-                <div id="choices-field" style="display:none;">
-                    <div id="choices-list"></div>
-                    <button class="btn btn-secondary btn-small" id="btn-add-choice" style="width:100%;">➕ Добавить вариант выбора</button>
-                </div>
-            </div>
-
-            <div id="ending-node-fields" style="display:none;">
-                <label class="field-label">Название концовки</label>
-                <input type="text" id="ending-name" class="input" placeholder="Например: Путь героя">
-                <label class="field-label">Награда за первое прохождение (монеты)</label>
-                <input type="number" id="ending-reward-coins" class="input" min="0" value="0">
-                <label class="field-label">Награда за первое прохождение (карточка)</label>
-                <select id="ending-reward-card" class="input"><option value="">— без карточки —</option></select>
-                <input type="number" id="ending-reward-card-count" class="input" min="1" value="1" placeholder="Количество карточек">
+            <div class="script-preview-row" style="margin-top:12px;">
+                <button type="button" class="btn btn-secondary btn-small" id="btn-save-and-preview" style="flex:1;">▶️ Сохранить и открыть предпросмотр со сцены:</button>
+                <select id="preview-label-select" style="flex:1;"></select>
             </div>
 
             <div class="divider"></div>
-            <div class="upload-row">
-                <button class="btn btn-secondary btn-small" id="btn-duplicate-node" style="flex:1;">📄 Дублировать сцену</button>
-                <button class="btn btn-secondary btn-small" id="btn-test-node" style="flex:1;">▶️ Проверить с этой сцены</button>
-            </div>
-            <button class="btn" id="btn-save-node">Сохранить сцену</button>
-            <button class="btn btn-danger" id="btn-delete-node">Удалить сцену</button>
+            <label class="field-label">🗺️ Карта сцен (клик — перейти к сцене в тексте)</label>
+            <div class="script-outline" id="script-outline"></div>
         </div>
     </div>
 </div>
@@ -226,6 +288,8 @@
     const db = getDatabase(app);
 
     const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
+    const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
+    const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
 
     const tg = window.Telegram.WebApp;
     try { tg.expand(); tg.ready(); } catch (e) {}
@@ -240,8 +304,53 @@
     else if (authUser) myId = authUser.id;
 
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
-    function safeAlert(msg) { try { if (tg && tg.showAlert) { tg.showAlert(msg); return; } } catch (e) {} alert(msg); }
-    function safeToast(title, msg) { try { if (tg && tg.showPopup) { tg.showPopup({ title, message: msg, buttons: [{ type: 'ok' }] }); return; } } catch (e) {} alert(title + ': ' + msg); }
+    const inRealTelegram = !!(tg && tg.initData);
+    function safeAlert(msg) { try { if (inRealTelegram && tg.showAlert) { tg.showAlert(msg); return; } } catch (e) {} alert(msg); }
+    function safeToast(title, msg) { try { if (inRealTelegram && tg.showPopup) { tg.showPopup({ title, message: msg, buttons: [{ type: 'ok' }] }); return; } } catch (e) {} alert(title + ': ' + msg); }
+
+    // Вставляет строку text в textarea в позицию курсора (или в конец, если фокуса не было)
+    function insertAtCursor(textarea, text) {
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? textarea.value.length;
+        const before = textarea.value.slice(0, start);
+        const after = textarea.value.slice(end);
+        const needsNewlineBefore = before.length && !before.endsWith('\n');
+        const insertion = (needsNewlineBefore ? '\n' : '') + text + (text.endsWith('\n') ? '' : '\n');
+        textarea.value = before + insertion + after;
+        const pos = (before + insertion).length;
+        textarea.selectionStart = textarea.selectionEnd = pos;
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input'));
+    }
+
+    async function uploadImageAndInsert(file, textarea) {
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+            const json = await res.json();
+            if (json.success) {
+                const name = 'img_' + Math.random().toString(36).slice(2, 8);
+                insertAtCursor(textarea, `image ${name} "${json.data.url}"`);
+                safeToast('Готово', `Картинка загружена как "${name}" — используй её в scene/show/sprite`);
+            } else safeAlert('Ошибка загрузки: ' + (json.error?.message || 'неизвестная'));
+        } catch (err) { safeAlert('Ошибка сети при загрузке картинки'); }
+    }
+
+    async function uploadAudioAndInsert(file, textarea) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, { method: 'POST', body: formData });
+            const json = await res.json();
+            if (json.secure_url) {
+                const name = 'snd_' + Math.random().toString(36).slice(2, 8);
+                insertAtCursor(textarea, `audio ${name} "${json.secure_url}"`);
+                safeToast('Готово', `Звук загружен как "${name}" — используй его в music/sfx`);
+            } else safeAlert('Ошибка загрузки звука: ' + (json.error?.message || 'неизвестная'));
+        } catch (err) { safeAlert('Ошибка сети при загрузке звука'); }
+    }
 
     async function uploadImageToField(file, fieldId) {
         const formData = new FormData();
@@ -254,34 +363,763 @@
         } catch (err) { safeAlert('Ошибка сети при загрузке картинки'); }
     }
 
-    const savedAuth = sessionStorage.getItem('nv_editor_admin') === '1';
-    if (savedAuth) {
-        document.getElementById('editor-root').style.display = 'block';
-        startEditor();
-    } else {
-        const pwd = prompt('Пароль администратора:');
-        if (pwd === 'admin123') {
-            sessionStorage.setItem('nv_editor_admin', '1');
-            document.getElementById('editor-root').style.display = 'block';
-            startEditor();
-        } else {
-            document.getElementById('locked-view').style.display = 'block';
+    // ======================================================================
+    // ЯЗЫК repy — парсер и компилятор в структуру данных новеллы (nodes/…)
+    // Поддерживает переменные (var/set/add/sub), условия (==, !=, >, >=, <, <=)
+    // и условные блоки текста if/elif/else — как в Ren'Py.
+    // ======================================================================
+
+    const FX_MAP = { fade: 'fx-fade', slide: 'fx-slide', bounce: 'fx-bounce', shake: 'fx-shake', pulse: 'fx-pulse' };
+    const FX_MAP_REV = { 'fx-fade': 'fade', 'fx-slide': 'slide', 'fx-bounce': 'bounce', 'fx-shake': 'shake', 'fx-pulse': 'pulse' };
+    const VALID_KEY_RE = /^[^.#$\[\]\/]+$/;
+
+    function stripComment(line) {
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') inQuotes = !inQuotes;
+            else if (c === '#' && !inQuotes) return { code: line.slice(0, i), comment: line.slice(i + 1).trim() };
+        }
+        return { code: line, comment: '' };
+    }
+
+    function splitTokens(str) {
+        const tokens = [];
+        let i = 0;
+        while (i < str.length) {
+            const c = str[i];
+            if (/\s/.test(c)) { i++; continue; }
+            if (c === '"') {
+                let j = i + 1; let buf = '';
+                while (j < str.length && str[j] !== '"') {
+                    if (str[j] === '\\' && str[j + 1] === '"') { buf += '"'; j += 2; continue; }
+                    buf += str[j]; j++;
+                }
+                tokens.push({ type: 'str', value: buf });
+                i = j + 1;
+            } else {
+                let j = i;
+                while (j < str.length && !/\s/.test(str[j])) j++;
+                tokens.push({ type: 'word', value: str.slice(i, j) });
+                i = j;
+            }
+        }
+        return tokens;
+    }
+
+    // "текст" -> строка; true/false -> булево; число -> Number; голое слово -> строка как есть
+    function parseLiteralValue(raw) {
+        const t = (raw || '').trim();
+        if (/^".*"$/.test(t)) return t.slice(1, -1).replace(/\\"/g, '"');
+        if (t === 'true') return true;
+        if (t === 'false') return false;
+        if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
+        return t;
+    }
+
+    // "trust >= 5" | "chose_kindness" | "not seen_villain" | 'path == "left"'
+    function parseCondExpr(str) {
+        const t = (str || '').trim();
+        let m;
+        if ((m = t.match(/^not\s+([A-Za-z_][A-Za-z0-9_]*)$/))) return { name: m[1], op: 'falsy' };
+        if ((m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(==|!=|>=|<=|>|<)\s*(.+)$/))) return { name: m[1], op: m[2], value: parseLiteralValue(m[3]) };
+        if ((m = t.match(/^([A-Za-z_][A-Za-z0-9_]*)$/))) return { name: m[1], op: 'truthy' };
+        return null;
+    }
+
+    // "set score = 10 add trust 2 set flagname" -> [{op,name,value}, ...]
+    function parseEffectsString(str) {
+        const effects = [];
+        if (!str || !str.trim()) return effects;
+        const re = /(set|add|sub)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:=\s*)?("(?:[^"\\]|\\.)*"|true|false|-?\d+(?:\.\d+)?)?/g;
+        let m;
+        while ((m = re.exec(str))) {
+            const [, kw, name, rawVal] = m;
+            if (kw === 'set') effects.push({ op: 'set', name, value: rawVal !== undefined ? parseLiteralValue(rawVal) : true });
+            else effects.push({ op: kw, name, value: rawVal !== undefined ? Number(parseLiteralValue(rawVal)) || 0 : 0 });
+        }
+        return effects;
+    }
+
+    // ---- Первый проход: построчный разбор в статьи (statements) --------
+    function parseScriptStructure(text) {
+        const lines = text.split('\n');
+        const characters = {};   // alias -> {alias, name, color, sprite}
+        const images = {};       // name -> url
+        const audioMap = {};     // name -> url
+        const flags = {};        // name -> true (для отображения в статусе; сами флаги теперь просто var = false)
+        const variables = {};    // name -> defaultValue
+        let explicitStart = null;
+        const labels = [];
+        let currentLabel = null;
+        let menuState = null;    // {indent, choices}
+        let ifState = null;      // {indent, groupId, branchIndex}
+        let condGroupCounter = 0;
+        const errors = [];
+        const warnings = [];
+
+        function pushStmt(stmt) {
+            if (ifState) { stmt.condGroup = ifState.groupId; stmt.condBranch = ifState.branchIndex; }
+            currentLabel.statements.push(stmt);
+        }
+
+        lines.forEach((rawLine, idx) => {
+            const lineNo = idx + 1;
+            const withTabs = rawLine.replace(/\t/g, '    ');
+            const indent = (withTabs.match(/^ */) || [''])[0].length;
+            const { code, comment } = stripComment(withTabs);
+            const trimmed = code.trim();
+            if (!trimmed) return;
+
+            let m;
+            if ((m = trimmed.match(/^label\s+([A-Za-z_][A-Za-z0-9_]*)\s*:$/))) {
+                currentLabel = { name: m[1], idFromComment: null, statements: [], lineNo, order: labels.length };
+                const idm = comment.match(/id=(\S+)/);
+                if (idm) currentLabel.idFromComment = idm[1];
+                labels.push(currentLabel);
+                menuState = null; ifState = null;
+                return;
+            }
+
+            if (trimmed.startsWith('character ')) {
+                const toks = splitTokens(trimmed.slice('character '.length));
+                if (toks.length < 2 || toks[0].type !== 'word' || toks[1].type !== 'str') {
+                    errors.push({ line: lineNo, msg: 'неверный формат character, ожидается: character alias "Имя" [color #hex] [image "url"]' });
+                    return;
+                }
+                const alias = toks[0].value;
+                const name = toks[1].value;
+                let color = '', sprite = '';
+                for (let i = 2; i < toks.length; i++) {
+                    if (toks[i].value === 'color' && toks[i + 1]) { color = toks[i + 1].value; i++; }
+                    else if (toks[i].value === 'image' && toks[i + 1]) { sprite = toks[i + 1].value; i++; }
+                }
+                characters[alias] = { alias, name, color, sprite };
+                return;
+            }
+
+            if (trimmed.startsWith('image ')) {
+                const m2 = trimmed.match(/^image\s+([A-Za-z_][A-Za-z0-9_]*)\s*=?\s*"([^"]*)"$/);
+                if (!m2) { errors.push({ line: lineNo, msg: 'неверный формат image, ожидается: image name "url"' }); return; }
+                images[m2[1]] = m2[2];
+                return;
+            }
+            if (trimmed.startsWith('audio ')) {
+                const m2 = trimmed.match(/^audio\s+([A-Za-z_][A-Za-z0-9_]*)\s*=?\s*"([^"]*)"$/);
+                if (!m2) { errors.push({ line: lineNo, msg: 'неверный формат audio, ожидается: audio name "url"' }); return; }
+                audioMap[m2[1]] = m2[2];
+                return;
+            }
+            if (trimmed.startsWith('flag ')) {
+                const name = trimmed.slice(5).trim();
+                if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { errors.push({ line: lineNo, msg: 'имя флага должно быть латиницей без пробелов' }); return; }
+                flags[name] = true;
+                variables[name] = false;
+                return;
+            }
+            if (trimmed.startsWith('var ')) {
+                const m2 = trimmed.match(/^var\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:=\s*(.+))?$/);
+                if (!m2) { errors.push({ line: lineNo, msg: 'неверный формат var, ожидается: var name = значение' }); return; }
+                variables[m2[1]] = m2[2] !== undefined ? parseLiteralValue(m2[2]) : 0;
+                return;
+            }
+            if (trimmed.startsWith('start ')) {
+                explicitStart = trimmed.slice(6).trim();
+                return;
+            }
+
+            if (!currentLabel) {
+                errors.push({ line: lineNo, msg: `текст вне label — "${trimmed}"` });
+                return;
+            }
+
+            // --- закрытие меню, если строка вышла из его отступа ---
+            if (menuState && indent > menuState.indent) {
+                const mch = trimmed.match(/^"((?:[^"\\]|\\.)*)"\s*(?:if\s+(.+?)\s*)?->\s*([A-Za-z_][A-Za-z0-9_]*)\s*(.*)$/);
+                if (!mch) { errors.push({ line: lineNo, msg: 'неверный формат варианта выбора в menu, ожидается: "текст" [if условие] -> label [set/add/sub ...]' }); return; }
+                const cond = mch[2] ? parseCondExpr(mch[2]) : null;
+                if (mch[2] && !cond) errors.push({ line: lineNo, msg: `не удалось разобрать условие "${mch[2]}"` });
+                menuState.choices.push({
+                    text: mch[1].replace(/\\"/g, '"'),
+                    cond,
+                    targetLabel: mch[3],
+                    effects: parseEffectsString(mch[4]),
+                    lineNo,
+                });
+                return;
+            }
+            menuState = null;
+
+            // --- закрытие if/elif/else блока, если строка вышла из его отступа ---
+            if (ifState && indent <= ifState.indent) {
+                if (trimmed.startsWith('elif ') && indent === ifState.indent) {
+                    const condStr = trimmed.slice(5).replace(/:\s*$/, '');
+                    const cond = parseCondExpr(condStr);
+                    if (!cond) { errors.push({ line: lineNo, msg: `не удалось разобрать условие "${condStr}"` }); return; }
+                    ifState.branchIndex++;
+                    ifState.group.branches.push({ cond });
+                    return;
+                }
+                if (trimmed === 'else:' && indent === ifState.indent) {
+                    ifState.branchIndex++;
+                    ifState.group.branches.push({ cond: null });
+                    return;
+                }
+                ifState = null; // обычная строка — блок закончился, разбираем её как всегда ниже
+            }
+
+            if (trimmed === 'menu:') {
+                if (ifState) { errors.push({ line: lineNo, msg: 'menu нельзя использовать внутри if-блока — вынеси развилку после блока' }); return; }
+                const st = { type: 'menu', choices: [], lineNo };
+                pushStmt(st);
+                menuState = { indent, choices: st.choices };
+                return;
+            }
+
+            if ((m = trimmed.match(/^if\s+(.+):$/))) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'вложенные if внутри if пока не поддерживаются' }); return; }
+                const cond = parseCondExpr(m[1]);
+                if (!cond) { errors.push({ line: lineNo, msg: `не удалось разобрать условие "${m[1]}"` }); return; }
+                const group = { id: 'cg' + (++condGroupCounter), branches: [{ cond }] };
+                currentLabel.condGroups = currentLabel.condGroups || [];
+                currentLabel.condGroups.push(group);
+                ifState = { indent, groupId: group.id, branchIndex: 0, group };
+                return;
+            }
+
+            if ((m = trimmed.match(/^tag\s+"((?:[^"\\]|\\.)*)"$/))) { pushStmt({ type: 'tag', value: m[1], lineNo }); return; }
+
+            if (trimmed.startsWith('set ') || trimmed.startsWith('add ') || trimmed.startsWith('sub ')) {
+                const effects = parseEffectsString(trimmed);
+                if (!effects.length) { errors.push({ line: lineNo, msg: 'не удалось разобрать set/add/sub — ожидается: set имя = значение | add имя число | sub имя число' }); return; }
+                effects.forEach(eff => pushStmt({ type: 'effect', eff, lineNo }));
+                return;
+            }
+
+            if (trimmed.startsWith('scene ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'scene нельзя использовать внутри if-блока' }); return; }
+                const toks = splitTokens(trimmed.slice(6));
+                if (!toks.length) { errors.push({ line: lineNo, msg: 'scene требует картинку' }); return; }
+                const bgToken = toks[0];
+                let filter = '', transition = '';
+                for (let i = 1; i < toks.length; i++) {
+                    if (toks[i].value === 'filter' && toks[i + 1]) { filter = toks[i + 1].value; i++; }
+                    else if (toks[i].value === 'transition' && toks[i + 1]) { transition = toks[i + 1].value; i++; }
+                }
+                pushStmt({ type: 'scene', bgToken, filter, transition, lineNo });
+                return;
+            }
+
+            if (trimmed.startsWith('music ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'music нельзя использовать внутри if-блока' }); return; }
+                const toks = splitTokens(trimmed.slice(6));
+                if (!toks.length) { errors.push({ line: lineNo, msg: 'music требует значение (имя аудио, "url" или off)' }); return; }
+                pushStmt({ type: 'music', token: toks[0], lineNo });
+                return;
+            }
+
+            if ((m = trimmed.match(/^show\s+([A-Za-z_][A-Za-z0-9_]*)(.*)$/))) {
+                const alias = m[1];
+                const rest = splitTokens(m[2]);
+                let position = 'center', fx = '', asTok = null;
+                for (let i = 0; i < rest.length; i++) {
+                    if (rest[i].value === 'at' && rest[i + 1]) { position = rest[i + 1].value; i++; }
+                    else if (rest[i].value === 'fx' && rest[i + 1]) { fx = rest[i + 1].value; i++; }
+                    else if (rest[i].value === 'as' && rest[i + 1]) { asTok = rest[i + 1]; i++; }
+                }
+                pushStmt({ type: 'show', alias, position, fx, asTok, lineNo });
+                return;
+            }
+            if ((m = trimmed.match(/^hide\s+([A-Za-z_][A-Za-z0-9_]*)$/))) { pushStmt({ type: 'hide', alias: m[1], lineNo }); return; }
+
+            if ((m = trimmed.match(/^jump\s+([A-Za-z_][A-Za-z0-9_]*)$/))) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'jump нельзя использовать внутри if-блока — вынеси переход после блока' }); return; }
+                pushStmt({ type: 'jump', target: m[1], lineNo });
+                return;
+            }
+
+            if (trimmed.startsWith('ending ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'ending нельзя использовать внутри if-блока — вынеси концовку после блока' }); return; }
+                const toks = splitTokens(trimmed.slice(7));
+                if (!toks.length || toks[0].type !== 'str') { errors.push({ line: lineNo, msg: 'ending требует название в кавычках' }); return; }
+                let rewardCoins = 0, rewardCard = '', rewardCount = 1;
+                for (let i = 1; i < toks.length; i++) {
+                    if (toks[i].value === 'reward_coins' && toks[i + 1]) { rewardCoins = parseInt(toks[i + 1].value, 10) || 0; i++; }
+                    else if (toks[i].value === 'reward_card' && toks[i + 1]) {
+                        rewardCard = toks[i + 1].value; i++;
+                        if (toks[i + 1] && toks[i + 1].value === 'x' && toks[i + 2]) { rewardCount = parseInt(toks[i + 2].value, 10) || 1; i += 2; }
+                    }
+                }
+                pushStmt({ type: 'ending', name: toks[0].value, rewardCoins, rewardCard, rewardCount, lineNo });
+                return;
+            }
+
+            if (trimmed.startsWith('menu:') === false) { /* no-op, falls through below */ }
+
+            // реплика или строка рассказчика
+            const toks = splitTokens(trimmed);
+            if (!toks.length) return;
+            let speakerAlias = null, speakerLiteral = null, asTok = null, textIdx;
+            if (toks[0].type === 'word') {
+                speakerAlias = toks[0].value;
+                textIdx = 1;
+                if (toks[textIdx] && toks[textIdx].type === 'word' && toks[textIdx].value === 'as' && toks[textIdx + 1]) {
+                    asTok = toks[textIdx + 1];
+                    textIdx += 2;
+                }
+            }
+            else if (toks[0].type === 'str' && toks[1] && toks[1].type === 'str') { speakerLiteral = toks[0].value; textIdx = 1; }
+            else if (toks[0].type === 'str') { textIdx = 0; }
+            else { errors.push({ line: lineNo, msg: `не удалось разобрать строку — "${trimmed}"` }); return; }
+            const textTok = toks[textIdx];
+            if (!textTok || textTok.type !== 'str') { errors.push({ line: lineNo, msg: 'ожидался текст реплики в кавычках' }); return; }
+            let position = '', fx = '', spriteTok = null, sfxTok = null;
+            for (let i = textIdx + 1; i < toks.length; i++) {
+                const t = toks[i];
+                if (t.value === 'at' && toks[i + 1]) { position = toks[i + 1].value; i++; }
+                else if (t.value === 'fx' && toks[i + 1]) { fx = toks[i + 1].value; i++; }
+                else if (t.value === 'sprite' && toks[i + 1]) { spriteTok = toks[i + 1]; i++; }
+                else if (t.value === 'sfx' && toks[i + 1]) { sfxTok = toks[i + 1]; i++; }
+            }
+            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, lineNo });
+        });
+
+        return { characters, images, audioMap, flags, variables, explicitStart, labels, errors, warnings };
+    }
+
+    function resolveToken(tok, mapObj, errors, lineNo, what) {
+        if (!tok) return '';
+        if (tok.type === 'str') return tok.value;
+        if (Object.prototype.hasOwnProperty.call(mapObj, tok.value)) return mapObj[tok.value];
+        errors.push({ line: lineNo, msg: `неизвестный ${what} "${tok.value}" — объяви его через image/audio или используй "url" в кавычках` });
+        return '';
+    }
+
+    function checkVarKnown(name, variables, lineNo, warnings) {
+        if (name && !Object.prototype.hasOwnProperty.call(variables, name)) {
+            warnings.push({ line: lineNo, msg: `переменная "${name}" не объявлена через var/flag — по умолчанию будет считаться пустой` });
         }
     }
+
+    // novelId нужен только чтобы синхронно сгенерировать firebase push-ключ для новых сцен
+    function compileScript(text, novelId) {
+        const parsed = parseScriptStructure(text);
+        const errors = [...parsed.errors];
+        const warnings = [...parsed.warnings];
+        const { characters, images, audioMap, flags, variables, labels } = parsed;
+
+        // --- проверка дублей имён label ---
+        const nameCount = {};
+        labels.forEach(l => { nameCount[l.name] = (nameCount[l.name] || 0) + 1; });
+        Object.entries(nameCount).forEach(([name, count]) => {
+            if (count > 1) errors.push({ line: labels.find(l => l.name === name).lineNo, msg: `повторяющееся имя сцены "${name}" — имена label должны быть уникальны` });
+        });
+
+        // --- назначаем id каждому label (используем существующий из комментария либо генерируем новый) ---
+        let textChanged = false;
+        const lines = text.split('\n');
+        labels.forEach(l => {
+            let id = l.idFromComment;
+            if (!id || !VALID_KEY_RE.test(id)) {
+                id = push(ref(db, 'novels/' + novelId + '/nodes')).key;
+                const original = lines[l.lineNo - 1];
+                const { code } = stripComment(original.replace(/\t/g, '    '));
+                lines[l.lineNo - 1] = code.replace(/\s*$/, '') + `  # id=${id}`;
+                textChanged = true;
+            }
+            l.id = id;
+        });
+        const updatedText = textChanged ? lines.join('\n') : text;
+
+        const labelByName = {};
+        labels.forEach(l => { labelByName[l.name] = l; });
+
+        // --- стартовая сцена ---
+        let startLabel = null;
+        if (parsed.explicitStart) {
+            startLabel = labelByName[parsed.explicitStart];
+            if (!startLabel) errors.push({ line: 1, msg: `start ссылается на несуществующую сцену "${parsed.explicitStart}"` });
+        } else if (labels.length) {
+            startLabel = labels[0];
+        } else {
+            errors.push({ line: 1, msg: 'в сценарии нет ни одной сцены (label ...:)' });
+        }
+
+        function compileCond(cond, lineNo) {
+            if (!cond) return null;
+            checkVarKnown(cond.name, variables, lineNo, warnings);
+            return cond;
+        }
+        function compileEffects(effects, lineNo) {
+            (effects || []).forEach(e => checkVarKnown(e.name, variables, lineNo, warnings));
+            return effects || [];
+        }
+
+        // --- компиляция каждой сцены ---
+        const nodes = {};
+        labels.forEach(l => {
+            const node = {
+                title: l.name, tag: '', background: '', bgFilter: null, bgTransition: null, music: '',
+                lines: [], stage: [], isEnding: false, order: l.order,
+                choices: [], nextNodeId: null, effects: [], conditionGroups: [],
+            };
+            (l.condGroups || []).forEach(g => {
+                node.conditionGroups.push({ id: g.id, branches: g.branches.map(b => ({ cond: compileCond(b.cond, l.lineNo) })) });
+            });
+
+            let terminated = false;
+            const stageAliases = []; // порядок появления на сцене
+            const stageSet = {};     // alias -> true, если сейчас на сцене
+
+            l.statements.forEach(st => {
+                if (st.type === 'tag') { node.tag = st.value; return; }
+                if (st.type === 'effect') {
+                    checkVarKnown(st.eff.name, variables, st.lineNo, warnings);
+                    node.effects.push(st.eff);
+                    return;
+                }
+                if (st.type === 'scene') {
+                    node.background = resolveToken(st.bgToken, images, errors, st.lineNo, 'фон (image)');
+                    if (st.filter) node.bgFilter = st.filter;
+                    if (st.transition) node.bgTransition = st.transition;
+                    return;
+                }
+                if (st.type === 'music') {
+                    if (st.token.type === 'word' && st.token.value === 'off') node.music = '';
+                    else node.music = resolveToken(st.token, audioMap, errors, st.lineNo, 'звук (audio)');
+                    return;
+                }
+                if (st.type === 'show') {
+                    if (!characters[st.alias]) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.alias}" — объяви его через character` }); return; }
+                    if (!stageSet[st.alias]) stageAliases.push(st.alias);
+                    let sprite = characters[st.alias].sprite || '';
+                    if (st.asTok) sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)');
+                    else if (stageSet[st.alias] && stageSet[st.alias].sprite) sprite = stageSet[st.alias].sprite;
+                    stageSet[st.alias] = { position: st.position || 'center', sprite };
+                    return;
+                }
+                if (st.type === 'hide') { delete stageSet[st.alias]; return; }
+                if (st.type === 'line') {
+                    let line;
+                    const fxClass = st.fx ? (FX_MAP[st.fx] || '') : '';
+                    if (st.fx && !fxClass) warnings.push({ line: st.lineNo, msg: `неизвестная анимация fx "${st.fx}"` });
+                    const sfxUrl = st.sfxTok ? resolveToken(st.sfxTok, audioMap, errors, st.lineNo, 'звук (audio)') : '';
+                    if (st.speakerAlias) {
+                        const charDef = characters[st.speakerAlias];
+                        if (!charDef) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.speakerAlias}" — объяви его через character` }); return; }
+                        if (stageSet[st.speakerAlias]) {
+                            // персонаж уже на сцене — "as" меняет его выражение лица тут и на всех следующих репликах, пока не сменится снова
+                            if (st.asTok) stageSet[st.speakerAlias].sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)');
+                            line = { speakerKey: encodeURIComponent(charDef.name), text: st.text, spriteEffect: fxClass, sfx: sfxUrl };
+                        } else {
+                            const emotionTok = st.spriteTok || st.asTok;
+                            line = {
+                                speaker: charDef.name,
+                                sprite: emotionTok ? resolveToken(emotionTok, images, errors, st.lineNo, 'спрайт (image)') : (charDef.sprite || ''),
+                                spritePosition: st.position || 'center',
+                                speakerColor: charDef.color || '',
+                                text: st.text, spriteEffect: fxClass, sfx: sfxUrl,
+                            };
+                        }
+                    } else if (st.speakerLiteral) {
+                        line = {
+                            speaker: st.speakerLiteral,
+                            sprite: st.spriteTok ? resolveToken(st.spriteTok, images, errors, st.lineNo, 'спрайт (image)') : '',
+                            spritePosition: st.position || 'center',
+                            text: st.text, spriteEffect: fxClass, sfx: sfxUrl,
+                        };
+                    } else {
+                        line = { speaker: '', sprite: '', spritePosition: 'center', text: st.text, spriteEffect: fxClass, sfx: sfxUrl };
+                    }
+                    if (st.condGroup) { line.condGroup = st.condGroup; line.condBranch = st.condBranch; }
+                    // Снимок состава сцены на момент именно этой реплики — так меняющиеся эмоции/выходы/уходы видны по ходу диалога, а не только в конце сцены
+                    line.stage = stageAliases.filter(a => stageSet[a]).map(a => ({
+                        key: encodeURIComponent(characters[a].name),
+                        position: stageSet[a].position || 'center',
+                        sprite: stageSet[a].sprite || characters[a].sprite || '',
+                    }));
+                    node.lines.push(line);
+                    return;
+                }
+                if (st.type === 'menu') {
+                    node.choices = st.choices.map(c => {
+                        const target = labelByName[c.targetLabel];
+                        if (!target) errors.push({ line: c.lineNo, msg: `menu ссылается на несуществующую сцену "${c.targetLabel}"` });
+                        return {
+                            text: c.text,
+                            nextNodeId: target ? target.id : '',
+                            requireCond: compileCond(c.cond, c.lineNo),
+                            effects: compileEffects(c.effects, c.lineNo),
+                        };
+                    });
+                    node.nextNodeId = null;
+                    terminated = true;
+                    return;
+                }
+                if (st.type === 'jump') {
+                    const target = labelByName[st.target];
+                    if (!target) { errors.push({ line: st.lineNo, msg: `jump ссылается на несуществующую сцену "${st.target}"` }); return; }
+                    node.nextNodeId = target.id;
+                    node.choices = [];
+                    terminated = true;
+                    return;
+                }
+                if (st.type === 'ending') {
+                    node.isEnding = true;
+                    node.endingName = st.name;
+                    node.endingRewardCoins = st.rewardCoins || 0;
+                    node.endingRewardCardId = st.rewardCard || null;
+                    node.endingRewardCardCount = st.rewardCount || 1;
+                    node.choices = [];
+                    node.nextNodeId = null;
+                    terminated = true;
+                    return;
+                }
+            });
+
+            node.stage = stageAliases.filter(a => stageSet[a]).map(a => ({ key: encodeURIComponent(characters[a].name), position: stageSet[a].position || 'center' }));
+            if (!terminated) warnings.push({ line: l.lineNo, msg: `сцена "${l.name}" ничем не заканчивается (нет menu/jump/ending) — читатель упрётся в тупик` });
+            if (!node.lines.length) warnings.push({ line: l.lineNo, msg: `сцена "${l.name}" без единой реплики` });
+
+            nodes[l.id] = node;
+        });
+
+        const outCharacters = {};
+        Object.values(characters).forEach(c => { outCharacters[encodeURIComponent(c.name)] = { sprite: c.sprite || '', color: c.color || '' }; });
+        const outFlags = {};
+        Object.keys(flags).forEach(f => { outFlags[f] = true; });
+
+        return {
+            errors, warnings, updatedText,
+            labels,
+            compiled: {
+                flags: outFlags,
+                variables,
+                characters: outCharacters,
+                nodes,
+                startNodeId: startLabel ? startLabel.id : null,
+            },
+        };
+    }
+
+    // ======================================================================
+    // Декомпилятор: старые новеллы (созданные визуальным редактором и ещё
+    // не имеющие сохранённого novelScript) превращаем в текст repy один раз,
+    // чтобы админ мог продолжить работу в новом редакторе без потери данных.
+    // ======================================================================
+
+    function slugify(str, used) {
+        let base = (str || 'scene').toLowerCase()
+            .replace(/[^a-z0-9а-яё]+/gi, '_')
+            .replace(/^_+|_+$/g, '');
+        base = base.replace(/[а-яё]/gi, c => ({ а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya' }[c] || ''));
+        if (!base) base = 'scene';
+        if (!/^[a-z_]/.test(base)) base = 's_' + base;
+        let name = base, i = 2;
+        while (used.has(name)) { name = base + '_' + i; i++; }
+        used.add(name);
+        return name;
+    }
+
+    function decompileNovel(novel) {
+        const nodes = novel.nodes || {};
+        const characters = novel.characters || {};
+        const flags = novel.flags || {};
+        const out = [];
+
+        const usedAliases = new Set();
+        const aliasByKey = {}; // encodeURIComponent(name) -> alias
+        Object.entries(characters).forEach(([key, c]) => {
+            const name = decodeURIComponent(key);
+            const alias = slugify(name, usedAliases);
+            aliasByKey[key] = alias;
+            let line = `character ${alias} "${name}"`;
+            if (c.color) line += ` color ${c.color}`;
+            if (c.sprite) line += ` image "${c.sprite}"`;
+            out.push(line);
+        });
+        if (Object.keys(characters).length) out.push('');
+
+        Object.keys(flags).forEach(f => out.push(`flag ${f}`));
+        if (Object.keys(flags).length) out.push('');
+
+        const usedSlugs = new Set();
+        const slugById = {};
+        const ids = Object.keys(nodes).sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
+        ids.forEach(id => { slugById[id] = slugify(nodes[id].title || 'scene', usedSlugs); });
+
+        if (novel.startNodeId && slugById[novel.startNodeId]) out.push(`start ${slugById[novel.startNodeId]}`, '');
+
+        ids.forEach(id => {
+            const node = nodes[id];
+            out.push(`label ${slugById[id]}:  # id=${id}`);
+            if (node.tag) out.push(`    tag "${node.tag.replace(/"/g, '\\"')}"`);
+            if (node.background) {
+                let l = `    scene "${node.background}"`;
+                if (node.bgFilter) l += ` filter ${node.bgFilter}`;
+                if (node.bgTransition) l += ` transition ${node.bgTransition}`;
+                out.push(l);
+            }
+            if (node.music) out.push(`    music "${node.music}"`);
+            (node.stage || []).forEach(s => {
+                const alias = aliasByKey[s.key];
+                if (alias) out.push(`    show ${alias} at ${s.position || 'center'}`);
+            });
+            (node.lines || []).forEach(line => {
+                const text = (line.text || '').replace(/"/g, '\\"');
+                let head;
+                if (line.speakerKey) {
+                    const alias = aliasByKey[line.speakerKey];
+                    head = alias ? `    ${alias} "${text}"` : `    "${decodeURIComponent(line.speakerKey)}" "${text}"`;
+                } else if (line.speaker) {
+                    head = `    "${line.speaker.replace(/"/g, '\\"')}" "${text}"`;
+                } else {
+                    head = `    "${text}"`;
+                }
+                const opts = [];
+                if (!line.speakerKey && line.spritePosition && line.spritePosition !== 'center') opts.push(`at ${line.spritePosition}`);
+                if (!line.speakerKey && line.sprite) opts.push(`sprite "${line.sprite}"`);
+                if (line.spriteEffect && FX_MAP_REV[line.spriteEffect]) opts.push(`fx ${FX_MAP_REV[line.spriteEffect]}`);
+                if (line.sfx) opts.push(`sfx "${line.sfx}"`);
+                out.push(head + (opts.length ? ' ' + opts.join(' ') : ''));
+            });
+            if (node.isEnding) {
+                let l = `    ending "${(node.endingName || '').replace(/"/g, '\\"')}"`;
+                if (node.endingRewardCoins) l += ` reward_coins ${node.endingRewardCoins}`;
+                if (node.endingRewardCardId) l += ` reward_card ${node.endingRewardCardId} x ${node.endingRewardCardCount || 1}`;
+                out.push(l);
+            } else if (node.choices && node.choices.length) {
+                out.push('    menu:');
+                node.choices.forEach(c => {
+                    let l = `        "${(c.text || '').replace(/"/g, '\\"')}"`;
+                    if (c.requireFlag) l += ` if ${c.requireFlag}`;
+                    l += ` -> ${slugById[c.nextNodeId] || ('UNKNOWN_' + c.nextNodeId)}`;
+                    if (c.setFlag) l += ` set ${c.setFlag}`;
+                    out.push(l);
+                });
+            } else if (node.nextNodeId) {
+                out.push(`    jump ${slugById[node.nextNodeId] || ('UNKNOWN_' + node.nextNodeId)}`);
+            } else {
+                out.push('    # ⚠️ тупик — нет ни menu, ни jump, ни ending, добавь продолжение');
+            }
+            out.push('');
+        });
+
+        return out.join('\n').trim() + '\n';
+    }
+
+    const EXAMPLE_SCRIPT = `# Пример короткой новеллы на repy — можно стереть и написать свою
+
+character alice "Алиса" color #ff6699
+character boris "Борис" color #3498db
+
+image bg_forest "https://images.unsplash.com/photo-1441974231531-c6227db76b6e"
+image alice_neutral "https://i.imgur.com/alice_neutral.png"
+image alice_happy "https://i.imgur.com/alice_happy.png"
+image alice_worried "https://i.imgur.com/alice_worried.png"
+
+var trust = 0
+flag chose_kindness
+
+start forest_intro
+
+label forest_intro:
+    tag "Пролог"
+    scene bg_forest filter dark transition fade
+    show alice at left as alice_worried fx fade
+    "Тихий лес встретил их молчанием."
+    alice "Кажется, мы заблудились..."
+    show boris at right fx slide
+    boris "Не паникуй. Я помню дорогу."
+    alice as alice_neutral "Ну, если ты уверен..."
+    menu:
+        "Довериться Борису" -> follow_boris set chose_kindness add trust 2
+        "Пойти самой" -> go_alone sub trust 1
+
+label follow_boris:
+    alice as alice_happy "Хорошо, веди."
+    jump crossroads
+
+label go_alone:
+    hide boris
+    alice as alice_worried "Я справлюсь сама."
+    jump crossroads
+
+label crossroads:
+    # Текст меняется в зависимости от накопленного доверия (переменная trust)
+    if trust >= 2:
+        alice "Знаешь, с тобой действительно спокойнее."
+    elif trust >= 0:
+        alice "Ладно, идём дальше вместе."
+    else:
+        alice "Я справлюсь и без чьей-то помощи."
+    menu:
+        "Хороший финал" if chose_kindness -> ending_good
+        "Финал в одиночку" -> ending_lost
+
+label ending_good:
+    scene bg_forest filter warm
+    alice "Мы выбрались вместе!"
+    ending "Вместе до конца" reward_coins 20
+
+label ending_lost:
+    scene bg_forest filter gray
+    alice "Кажется, я потерялась..."
+    ending "Заблудилась" reward_coins 0
+`;
+
+    const CHEATSHEET = `character alias "Имя" [color #hex] [image "url"]   — персонаж
+image name "url"                                    — загруженная картинка
+audio name "url"                                     — загруженный звук
+var name = 0                                         — числовая/строковая переменная (по Ren'Py)
+flag name                                            — то же самое, что var name = false (булева переменная)
+start label_name                                     — с какой сцены начать (иначе — первая по тексту)
+
+label имя:                                           — новая сцена
+    tag "Глава 1"                                     — метка сцены (необязательно)
+    scene bg_name filter dark transition fade         — фон, фильтр, переход
+    music track_name                                  — фоновая музыка ("off" — выключить)
+    show alias at left|center|right [as emotion] fx fade  — персонаж выходит на сцену (emotion — имя объявленной картинки-выражения)
+    hide alias                                          — персонаж уходит со сцены
+
+    alias "текст" fx fade sfx snd_name                — реплика персонажа на сцене
+    alias as happy "текст"                              — та же реплика, но меняет выражение лица (держится, пока не сменишь снова)
+    "Имя" "текст" at left sprite img_name              — реплика без show (разово, свой портрет на одну реплику)
+    "текст рассказчика"                                — текст без говорящего (остальные персонажи на сцене остаются видны, притухшие)
+
+    set name = значение                                — присвоить переменной значение (число/строку/true/false)
+    add name число                                      — прибавить к переменной
+    sub name число                                      — вычесть из переменной
+
+    if name == значение:                                — условный текст (как Ren'Py if/elif/else)
+        "текст, если условие верно"
+    elif name > 5:
+        "другой текст"
+    else:
+        "текст по умолчанию"
+    # операторы условий: == != > >= < <=, а также просто "name" (истина, если не 0/false/"")
+    # и "not name" (истина, если 0/false/"")
+    # внутри if/elif/else можно использовать только реплики и show/hide — без menu/jump/ending
+
+    menu:                                              — развилка
+        "вариант" if trust >= 2 -> label set flag add score 10
+        "другой вариант" -> label
+
+    jump label                                         — переход дальше без выбора
+    ending "Название" reward_coins 50 reward_card id x1 — конец, награда`;
 
     let editorStarted = false;
     function startEditor() {
         if (editorStarted) return;
         editorStarted = true;
 
+        document.getElementById('cheatsheet-text').textContent = CHEATSHEET;
+
         let novelsData = [];
         let cardsData = [];
         let editingNovelId = null;
-        let editingNodeId = null;
-        let currentLines = [];      // редактируемые реплики текущего узла
-        let currentChoices = [];    // редактируемые варианты выбора текущего узла
-        let branchMode = 'auto';    // 'auto' | 'choice'
-        let nodeType = 'normal';    // 'normal' | 'ending'
+        let novelDirty = false;
+        let lastCompile = null; // результат последней успешной/неуспешной компиляции
 
         onValue(ref(db, 'novels'), (snap) => {
             const data = snap.val() || {};
@@ -290,14 +1128,12 @@
             populateRequiresNovelSelect();
             if (editingNovelId) {
                 const stillExists = novelsData.find(n => n.id === editingNovelId);
-                if (stillExists) { renderNodesList(); renderCharactersList(); } else { editingNovelId = null; hideNovelPanels(); }
+                if (!stillExists) { editingNovelId = null; hideNovelPanels(); }
             }
         });
         onValue(ref(db, 'cards'), (snap) => {
             const data = snap.val() || {};
             cardsData = Object.entries(data).map(([id, v]) => ({ id, ...v }));
-            const sel = document.getElementById('ending-reward-card');
-            sel.innerHTML = '<option value="">— без карточки —</option>' + cardsData.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
         });
 
         function currentNovel() { return novelsData.find(n => n.id === editingNovelId); }
@@ -319,28 +1155,31 @@
                 </div>`).join('');
         }
 
-        let novelDirty = false;
-        let nodeDirty = false;
-
         window.__selectNovel = function (id) {
+            if (novelDirty && editingNovelId !== id && !confirm('Есть несохранённые изменения в сценарии. Перейти без сохранения?')) return;
             editingNovelId = id;
             renderNovelsList();
             const n = currentNovel();
             document.getElementById('novel-meta-card').style.display = 'block';
-            document.getElementById('characters-card').style.display = 'block';
-            document.getElementById('nodes-card').style.display = 'block';
-            document.getElementById('node-editor-card').style.display = 'none';
+            document.getElementById('cheatsheet-card').style.display = 'block';
+            document.getElementById('script-card').style.display = 'block';
             document.getElementById('novel-title').value = n.title || '';
             document.getElementById('novel-description').value = n.description || '';
             document.getElementById('novel-cover').value = n.coverImage || '';
             document.getElementById('novel-unlock-cost').value = n.unlockCost || 0;
+            document.getElementById('novel-text-speed').value = n.textSpeed || 0;
             populateRequiresNovelSelect();
             document.getElementById('novel-requires-novel').value = n.unlockRequiresNovelId || '';
             populateRequiresEndingSelect();
             document.getElementById('novel-requires-ending').value = n.unlockRequiresEndingKey || '';
-            renderNodesList();
-            renderCharactersList();
+
+            const textarea = document.getElementById('novel-script');
+            if (n.novelScript) textarea.value = n.novelScript;
+            else if (Object.keys(n.nodes || {}).length) textarea.value = decompileNovel(n);
+            else textarea.value = EXAMPLE_SCRIPT;
+
             novelDirty = false;
+            runCheck(false);
         };
 
         function populateRequiresNovelSelect() {
@@ -360,15 +1199,15 @@
                 .map(([nid, node]) => `<option value="${nid}">${escapeHtml(node.endingName || nid.slice(0, 8))}</option>`).join('');
         }
         document.getElementById('novel-requires-novel').onchange = populateRequiresEndingSelect;
-        ['novel-title', 'novel-description', 'novel-cover', 'novel-unlock-cost', 'novel-requires-ending', 'novel-start-node'].forEach(id => {
+        ['novel-title', 'novel-description', 'novel-cover', 'novel-unlock-cost', 'novel-text-speed', 'novel-requires-ending'].forEach(id => {
             document.getElementById(id).addEventListener('input', () => { novelDirty = true; });
             document.getElementById(id).addEventListener('change', () => { novelDirty = true; });
         });
 
         function hideNovelPanels() {
             document.getElementById('novel-meta-card').style.display = 'none';
-            document.getElementById('nodes-card').style.display = 'none';
-            document.getElementById('node-editor-card').style.display = 'none';
+            document.getElementById('cheatsheet-card').style.display = 'none';
+            document.getElementById('script-card').style.display = 'none';
         }
 
         window.__deleteNovel = function (id) {
@@ -379,9 +1218,19 @@
         };
 
         document.getElementById('btn-new-novel').onclick = function () {
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Создаём...';
+            let done = false;
+            const timeout = setTimeout(() => {
+                if (done) return;
+                btn.disabled = false; btn.textContent = originalText;
+                safeAlert('Нет ответа от базы данных дольше 8 секунд — проверь интернет-соединение.');
+            }, 8000);
             push(ref(db, 'novels'), { title: 'Новая новелла', description: '', unlockCost: 0, createdAt: Date.now(), nodes: {} })
-                .then(snap => window.__selectNovel(snap.key))
-                .catch(err => safeAlert('Ошибка создания новеллы: ' + err.message));
+                .then(snap => { done = true; clearTimeout(timeout); btn.disabled = false; btn.textContent = originalText; window.__selectNovel(snap.key); })
+                .catch(err => { done = true; clearTimeout(timeout); btn.disabled = false; btn.textContent = originalText; safeAlert('Ошибка создания новеллы: ' + err.message); });
         };
 
         document.getElementById('novel-cover-file').addEventListener('change', (e) => {
@@ -397,9 +1246,9 @@
                 description: document.getElementById('novel-description').value.trim(),
                 coverImage: document.getElementById('novel-cover').value.trim(),
                 unlockCost: Math.max(0, parseInt(document.getElementById('novel-unlock-cost').value, 10) || 0),
+                textSpeed: parseInt(document.getElementById('novel-text-speed').value, 10) || 0,
                 unlockRequiresNovelId: document.getElementById('novel-requires-novel').value || null,
                 unlockRequiresEndingKey: document.getElementById('novel-requires-ending').value || null,
-                startNodeId: document.getElementById('novel-start-node').value || null,
             }).then(() => { novelDirty = false; safeToast('Сохранено', 'Новелла обновлена'); })
               .catch(err => safeAlert('Ошибка: ' + err.message));
         };
@@ -414,8 +1263,10 @@
             const { id, ...data } = n;
             data.title = (data.title || 'Новелла') + ' (копия)';
             data.createdAt = Date.now();
+            // при дублировании выкидываем # id=... комментарии, чтобы у копии сгенерировались собственные сцены
+            if (data.novelScript) data.novelScript = data.novelScript.replace(/[ \t]*#\s*id=\S+/g, '');
             push(ref(db, 'novels'), data)
-                .then(snap => { window.__selectNovel(snap.key); safeToast('Готово', 'Новелла продублирована вместе со всеми сценами'); })
+                .then(snap => { window.__selectNovel(snap.key); safeToast('Готово', 'Новелла продублирована вместе со сценарием'); })
                 .catch(err => safeAlert('Ошибка: ' + err.message));
         };
 
@@ -447,389 +1298,169 @@
             reader.readAsText(file);
         };
 
-        // ===================== ПЕРСОНАЖИ (ПРЕСЕТЫ) =====================
-        function renderCharactersList() {
-            const n = currentNovel();
-            const chars = (n && n.characters) || {};
-            const encodedNames = Object.keys(chars); // ключи уже закодированы через encodeURIComponent при сохранении
-            const list = document.getElementById('characters-list');
-            if (!encodedNames.length) { list.innerHTML = '<div class="empty-state">Нет персонажей — добавь, чтобы быстро вставлять в реплики</div>'; }
-            else {
-                list.innerHTML = encodedNames.map(key => {
-                    const displayName = decodeURIComponent(key);
-                    return `
-                    <div class="admin-item">
-                        ${chars[key].sprite ? `<img src="${chars[key].sprite}">` : `<div class="cover-fallback-sm" style="background:${chars[key].color || '#ed8f03'}">${escapeHtml(displayName[0] || '?')}</div>`}
-                        <div class="admin-item-info">
-                            <div class="t" style="color:${chars[key].color || 'inherit'}">${escapeHtml(displayName)}</div>
-                        </div>
-                        <div class="admin-item-actions">
-                            <button class="danger" onclick="window.__removeCharacter('${key}')">🗑️</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-            // Обновляем datalist со спрайтами, собранными из всех реплик и персонажей новеллы, для быстрой подстановки
-            const allSprites = new Set();
-            encodedNames.forEach(key => { if (chars[key].sprite) allSprites.add(chars[key].sprite); });
-            Object.values((n && n.nodes) || {}).forEach(node => (node.lines || []).forEach(l => { if (l.sprite) allSprites.add(l.sprite); }));
-            document.getElementById('sprite-suggestions').innerHTML = [...allSprites].map(u => `<option value="${u}">`).join('');
-        }
-
-        window.__removeCharacter = function (encodedName) {
-            if (!editingNovelId) return;
-            remove(ref(db, 'novels/' + editingNovelId + '/characters/' + encodedName)).catch(err => safeAlert('Ошибка: ' + err.message));
-        };
-
-        document.getElementById('btn-add-character').onclick = function () {
-            const name = prompt('Имя персонажа:');
-            if (!name || !name.trim()) return;
-            const color = prompt('Цвет имени в HEX (например #ffb75e), можно оставить пустым:') || '';
-            if (!editingNovelId) return;
-            set(ref(db, 'novels/' + editingNovelId + '/characters/' + encodeURIComponent(name.trim())), { sprite: '', color: color.trim() })
-                .catch(err => safeAlert('Ошибка: ' + err.message));
-        };
-
-        // ===================== СПИСОК УЗЛОВ =====================
-        function wordCount(node) {
-            return (node.lines || []).reduce((s, l) => s + (l.text || '').trim().split(/\s+/).filter(Boolean).length, 0);
-        }
-
-        function nodeLabel(node, id) {
-            if (node.title && node.title.trim()) return node.title.trim();
-            const firstLine = (node.lines && node.lines[0]) ? node.lines[0].text : '';
-            return firstLine ? firstLine.slice(0, 34) : `Сцена ${id.slice(0, 6)}`;
-        }
-
-        // Проверяет ссылки узла (choices/nextNodeId) на существование целевых сцен
-        function findBrokenLinks(node, nodes) {
-            const broken = [];
-            if (node.nextNodeId && !nodes[node.nextNodeId]) broken.push(node.nextNodeId);
-            (node.choices || []).forEach(c => { if (c.nextNodeId && !nodes[c.nextNodeId]) broken.push(c.nextNodeId); });
-            return broken;
-        }
-
-        function renderNodesList() {
-            const n = currentNovel();
-            if (!n) return;
-            const nodes = n.nodes || {};
-            let ids = Object.keys(nodes);
-            const query = (document.getElementById('node-search').value || '').trim().toLowerCase();
-            const list = document.getElementById('nodes-list');
-            const totalWords = ids.reduce((s, id) => s + wordCount(nodes[id]), 0);
-            const totalEndings = ids.filter(id => nodes[id].isEnding).length;
-            document.getElementById('nodes-stats-label').textContent = `Узлы сценария — ${ids.length} сцен, ${totalEndings} концовок, ~${totalWords} слов`;
-
-            if (query) {
-                ids = ids.filter(id => {
-                    const node = nodes[id];
-                    const hay = [node.title, node.tag, node.endingName, ...(node.lines || []).map(l => l.text + ' ' + l.speaker)].join(' ').toLowerCase();
-                    return hay.includes(query);
-                });
-            }
-            // Сортировка по полю order (если задано), иначе по времени создания/порядку ключей
-            ids.sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
-
-            if (!ids.length) { list.innerHTML = `<div class="empty-state">${query ? 'Ничего не найдено' : 'Пока нет сцен — добавь первую'}</div>`; }
-            else {
-                list.innerHTML = ids.map(id => {
-                    const node = nodes[id];
-                    const broken = findBrokenLinks(node, nodes);
-                    return `
-                    <div class="node-card ${id === editingNodeId ? 'editing' : ''}" onclick="window.__selectNode('${id}')">
-                        <div class="n-title">
-                            ${escapeHtml(nodeLabel(node, id))}
-                            ${n.startNodeId === id ? '<span class="node-tag tag-start">СТАРТ</span>' : ''}
-                            ${node.isEnding ? '<span class="node-tag tag-ending">🏁 КОНЦОВКА</span>' : ''}
-                            ${node.tag ? `<span class="node-tag" style="background:#eef2f5;color:#5a6b7a;">${escapeHtml(node.tag)}</span>` : ''}
-                            ${broken.length ? `<span class="node-tag" style="background:#fdecea;color:#e74c3c;" title="Ссылается на несуществующую сцену">❗ битая ссылка</span>` : ''}
-                        </div>
-                        <div class="n-preview">${escapeHtml((node.lines && node.lines[0]) ? node.lines[0].text : '(пусто)')} · ${wordCount(node)} слов</div>
-                        <div class="line-row-actions" style="justify-content:flex-start;margin-top:6px;">
-                            <button onclick="event.stopPropagation(); window.__moveNodeOrder('${id}', -1)">↑</button>
-                            <button onclick="event.stopPropagation(); window.__moveNodeOrder('${id}', 1)">↓</button>
-                            <button onclick="event.stopPropagation(); window.__duplicateNode('${id}')">📄</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            }
-            // Обновляем выпадающие списки узлов (стартовый узел / следующая сцена / выборы)
-            const allIds = Object.keys(nodes).sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
-            const options = '<option value="">— выбери сцену —</option>' + allIds.map(id => `<option value="${id}">${escapeHtml(nodeLabel(nodes[id], id))}</option>`).join('');
-            document.getElementById('novel-start-node').innerHTML = options;
-            document.getElementById('novel-start-node').value = n.startNodeId || '';
-            document.getElementById('node-next').innerHTML = options;
-        }
-        document.getElementById('node-search').oninput = renderNodesList;
-
-        document.getElementById('btn-new-node').onclick = function () {
-            if (!editingNovelId) return;
-            const n = currentNovel();
-            const maxOrder = Math.max(0, ...Object.values(n.nodes || {}).map(nd => nd.order || 0));
-            push(ref(db, 'novels/' + editingNovelId + '/nodes'), { lines: [], isEnding: false, order: maxOrder + 1 })
-                .then(snap => window.__selectNode(snap.key))
-                .catch(err => safeAlert('Ошибка создания сцены: ' + err.message));
-        };
-
-        window.__duplicateNode = function (id) {
-            const n = currentNovel();
-            const node = (n.nodes || {})[id];
-            if (!node) return;
-            const maxOrder = Math.max(0, ...Object.values(n.nodes || {}).map(nd => nd.order || 0));
-            const clone = JSON.parse(JSON.stringify(node));
-            clone.title = (clone.title || '') + ' (копия)';
-            clone.order = maxOrder + 1;
-            push(ref(db, 'novels/' + editingNovelId + '/nodes'), clone)
-                .then(snap => { window.__selectNode(snap.key); safeToast('Готово', 'Сцена продублирована'); })
-                .catch(err => safeAlert('Ошибка: ' + err.message));
-        };
-
-        window.__moveNodeOrder = function (id, dir) {
-            const n = currentNovel();
-            const nodes = n.nodes || {};
-            const ids = Object.keys(nodes).sort((a, b) => (nodes[a].order ?? 0) - (nodes[b].order ?? 0));
-            const idx = ids.indexOf(id);
-            const swapIdx = idx + dir;
-            if (swapIdx < 0 || swapIdx >= ids.length) return;
-            const otherId = ids[swapIdx];
-            const myOrder = nodes[id].order ?? idx;
-            const otherOrder = nodes[otherId].order ?? swapIdx;
-            update(ref(db), {
-                ['novels/' + editingNovelId + '/nodes/' + id + '/order']: otherOrder,
-                ['novels/' + editingNovelId + '/nodes/' + otherId + '/order']: myOrder,
-            }).catch(err => safeAlert('Ошибка: ' + err.message));
-        };
-
-        // ===================== РЕДАКТОР УЗЛА =====================
-        window.__selectNode = function (id) {
-            if (nodeDirty && editingNodeId !== id && !confirm('Есть несохранённые изменения в текущей сцене. Перейти без сохранения?')) return;
-            editingNodeId = id;
-            renderNodesList();
-            const n = currentNovel();
-            const node = (n.nodes || {})[id] || {};
-            document.getElementById('node-editor-card').style.display = 'block';
-            document.getElementById('node-title').value = node.title || '';
-            document.getElementById('node-tag').value = node.tag || '';
-            document.getElementById('node-bg').value = node.background || '';
-            document.getElementById('node-music').value = node.music || '';
-            currentLines = (node.lines || []).map(l => ({ ...l }));
-            currentChoices = (node.choices || []).map(c => ({ ...c }));
-            nodeType = node.isEnding ? 'ending' : 'normal';
-            branchMode = (node.choices && node.choices.length) ? 'choice' : 'auto';
-            setNodeType(nodeType);
-            setBranchMode(branchMode);
-            document.getElementById('node-next').value = node.nextNodeId || '';
-            document.getElementById('ending-name').value = node.endingName || '';
-            document.getElementById('ending-reward-coins').value = node.endingRewardCoins || 0;
-            document.getElementById('ending-reward-card').value = node.endingRewardCardId || '';
-            document.getElementById('ending-reward-card-count').value = node.endingRewardCardCount || 1;
-            renderLinesList();
-            renderChoicesList();
-            nodeDirty = false;
-        };
-
-        // Помечаем несохранённые изменения при правке любого поля сцены
-        ['node-title', 'node-tag', 'node-bg', 'node-music', 'ending-name', 'ending-reward-coins', 'ending-reward-card', 'ending-reward-card-count', 'node-next'].forEach(id => {
-            document.getElementById(id).addEventListener('input', () => { nodeDirty = true; });
-            document.getElementById(id).addEventListener('change', () => { nodeDirty = true; });
-        });
-        window.addEventListener('beforeunload', (e) => { if (nodeDirty || novelDirty) { e.preventDefault(); e.returnValue = ''; } });
-
-        document.getElementById('node-bg-file').addEventListener('change', (e) => {
-            if (e.target.files[0]) uploadImageToField(e.target.files[0], 'node-bg');
-        });
-
-        document.getElementById('btn-preview-music').onclick = function () {
-            const url = document.getElementById('node-music').value.trim();
-            if (!url) return;
-            const player = document.getElementById('music-preview-player');
-            if (player.src !== url) { player.src = url; }
-            if (player.paused) { player.play().catch(() => safeAlert('Не удалось воспроизвести — проверь ссылку')); this.textContent = '⏸️'; }
-            else { player.pause(); this.textContent = '▶️'; }
-        };
-        document.getElementById('music-preview-player').addEventListener('ended', () => { document.getElementById('btn-preview-music').textContent = '▶️'; });
-
-        document.getElementById('btn-duplicate-node').onclick = function () {
-            if (editingNodeId) window.__duplicateNode(editingNodeId);
-        };
-
-        document.getElementById('btn-test-node').onclick = function () {
-            if (!editingNovelId || !editingNodeId) return safeAlert('Сначала выбери и сохрани сцену');
-            const dir = window.location.pathname.replace(/[^/]*$/, '');
-            window.open(`${window.location.origin}${dir}novels.html?adminPreview=1&novelId=${editingNovelId}&nodeId=${editingNodeId}`, '_blank');
-        };
-
-        function setNodeType(type) {
-            nodeType = type;
-            document.getElementById('tab-type-normal').classList.toggle('active', type === 'normal');
-            document.getElementById('tab-type-ending').classList.toggle('active', type === 'ending');
-            document.getElementById('normal-node-fields').style.display = type === 'normal' ? 'block' : 'none';
-            document.getElementById('ending-node-fields').style.display = type === 'ending' ? 'block' : 'none';
-        }
-        document.getElementById('tab-type-normal').onclick = () => setNodeType('normal');
-        document.getElementById('tab-type-ending').onclick = () => setNodeType('ending');
-
-        function setBranchMode(mode) {
-            branchMode = mode;
-            document.getElementById('tab-branch-auto').classList.toggle('active', mode === 'auto');
-            document.getElementById('tab-branch-choice').classList.toggle('active', mode === 'choice');
-            document.getElementById('auto-next-field').style.display = mode === 'auto' ? 'block' : 'none';
-            document.getElementById('choices-field').style.display = mode === 'choice' ? 'block' : 'none';
-        }
-        document.getElementById('tab-branch-auto').onclick = () => setBranchMode('auto');
-        document.getElementById('tab-branch-choice').onclick = () => setBranchMode('choice');
-
-        // --- реплики ---
-        function characterOptions() {
-            const n = currentNovel();
-            const chars = (n && n.characters) || {};
-            return '<option value="">🎭 Вставить из персонажей...</option>' + Object.keys(chars).map(key => `<option value="${key}">${escapeHtml(decodeURIComponent(key))}</option>`).join('');
-        }
-        function renderLinesList() {
-            const list = document.getElementById('lines-list');
-            if (!currentLines.length) { list.innerHTML = '<div class="empty-state">Нет реплик — добавь первую</div>'; return; }
-            list.innerHTML = currentLines.map((l, i) => `
-                <div class="line-row">
-                    <select class="input" onchange="window.__applyCharacterPreset(${i}, this.value); this.selectedIndex=0;">${characterOptions()}</select>
-                    <div class="line-row-top">
-                        <input type="text" class="input" placeholder="Кто говорит" value="${escapeHtml(l.speaker || '')}" oninput="window.__updateLine(${i}, 'speaker', this.value)" style="flex:1;">
-                        <select class="input" style="flex:1;" onchange="window.__updateLine(${i}, 'spritePosition', this.value)">
-                            <option value="left" ${l.spritePosition === 'left' ? 'selected' : ''}>Спрайт слева</option>
-                            <option value="center" ${(!l.spritePosition || l.spritePosition === 'center') ? 'selected' : ''}>Спрайт по центру</option>
-                            <option value="right" ${l.spritePosition === 'right' ? 'selected' : ''}>Спрайт справа</option>
-                        </select>
-                    </div>
-                    <textarea class="input" placeholder="Текст реплики" oninput="window.__updateLine(${i}, 'text', this.value)" style="min-height:50px;">${escapeHtml(l.text || '')}</textarea>
-                    <div class="line-row-top">
-                        <input type="text" class="input" list="sprite-suggestions" placeholder="URL спрайта персонажа (необязательно)" value="${escapeHtml(l.sprite || '')}" oninput="window.__updateLine(${i}, 'sprite', this.value)" style="flex:1;">
-                        <label class="upload-btn" for="line-sprite-file-${i}">📁</label>
-                        <input type="file" id="line-sprite-file-${i}" accept="image/*" style="display:none;" onchange="window.__uploadLineSprite(${i}, this.files[0])">
-                        ${l.sprite ? `<img class="sprite-thumb" src="${l.sprite}">` : ''}
-                    </div>
-                    <div class="line-row-actions">
-                        <button onclick="window.__moveLine(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
-                        <button onclick="window.__moveLine(${i}, 1)" ${i === currentLines.length - 1 ? 'disabled' : ''}>↓</button>
-                        <button class="danger" onclick="window.__removeLine(${i})">Удалить</button>
-                    </div>
-                </div>`).join('');
-        }
-        window.__applyCharacterPreset = function (i, key) {
-            if (!key || !currentLines[i]) return;
-            const name = decodeURIComponent(key);
-            const n = currentNovel();
-            const preset = ((n && n.characters) || {})[key];
-            if (!preset) return;
-            currentLines[i].speaker = name;
-            currentLines[i].sprite = preset.sprite || '';
-            currentLines[i].speakerColor = preset.color || '';
-            nodeDirty = true;
-            renderLinesList();
-        };
-        window.__updateLine = function (i, key, val) { if (currentLines[i]) { currentLines[i][key] = val; nodeDirty = true; } };
-        window.__uploadLineSprite = async function (i, file) {
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('image', file);
-            try {
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
-                const json = await res.json();
-                if (json.success) { currentLines[i].sprite = json.data.url; renderLinesList(); }
-                else safeAlert('Ошибка загрузки спрайта');
-            } catch (err) { safeAlert('Ошибка сети при загрузке спрайта'); }
-        };
-        window.__moveLine = function (i, dir) {
-            const j = i + dir;
-            if (j < 0 || j >= currentLines.length) return;
-            [currentLines[i], currentLines[j]] = [currentLines[j], currentLines[i]];
-            nodeDirty = true;
-            renderLinesList();
-        };
-        window.__removeLine = function (i) { currentLines.splice(i, 1); nodeDirty = true; renderLinesList(); };
-        document.getElementById('btn-add-line').onclick = function () {
-            currentLines.push({ speaker: '', text: '', sprite: '', spritePosition: 'center' });
-            nodeDirty = true;
-            renderLinesList();
-        };
-
-        // --- варианты выбора ---
-        function renderChoicesList() {
-            const n = currentNovel();
-            const nodes = (n && n.nodes) || {};
-            const options = '<option value="">— выбери сцену —</option>' + Object.keys(nodes)
-                .filter(id => id !== editingNodeId)
-                .map(id => `<option value="${id}">${escapeHtml(nodeLabel(nodes[id], id))}</option>`).join('');
-            const list = document.getElementById('choices-list');
-            if (!currentChoices.length) { list.innerHTML = '<div class="empty-state">Нет вариантов — добавь хотя бы 2</div>'; return; }
-            list.innerHTML = currentChoices.map((c, i) => `
-                <div class="choice-row">
-                    <input type="text" class="input" placeholder="Текст варианта" value="${escapeHtml(c.text || '')}" oninput="window.__updateChoice(${i}, 'text', this.value)" style="flex:1;">
-                    <select class="input" style="flex:1;" onchange="window.__updateChoice(${i}, 'nextNodeId', this.value)">${options.replace(`value="${c.nextNodeId}"`, `value="${c.nextNodeId}" selected`)}</select>
-                    <button onclick="window.__removeChoice(${i})">✕</button>
-                </div>`).join('');
-        }
-        window.__updateChoice = function (i, key, val) { if (currentChoices[i]) { currentChoices[i][key] = val; nodeDirty = true; } };
-        window.__removeChoice = function (i) { currentChoices.splice(i, 1); nodeDirty = true; renderChoicesList(); };
-        document.getElementById('btn-add-choice').onclick = function () {
-            currentChoices.push({ text: '', nextNodeId: '' });
-            nodeDirty = true;
-            renderChoicesList();
-        };
-
-        document.getElementById('btn-save-node').onclick = function () {
-            if (!editingNovelId || !editingNodeId) return;
-            const existingOrder = ((currentNovel().nodes || {})[editingNodeId] || {}).order;
-            const data = {
-                title: document.getElementById('node-title').value.trim(),
-                tag: document.getElementById('node-tag').value.trim(),
-                background: document.getElementById('node-bg').value.trim(),
-                music: document.getElementById('node-music').value.trim(),
-                lines: currentLines.filter(l => l.text && l.text.trim()),
-                isEnding: nodeType === 'ending',
-                order: existingOrder ?? 0,
-            };
-            if (nodeType === 'ending') {
-                data.endingName = document.getElementById('ending-name').value.trim();
-                data.endingRewardCoins = Math.max(0, parseInt(document.getElementById('ending-reward-coins').value, 10) || 0);
-                data.endingRewardCardId = document.getElementById('ending-reward-card').value || null;
-                data.endingRewardCardCount = Math.max(1, parseInt(document.getElementById('ending-reward-card-count').value, 10) || 1);
-                data.choices = [];
-                data.nextNodeId = null;
-            } else if (branchMode === 'choice') {
-                data.choices = currentChoices.filter(c => c.text && c.text.trim() && c.nextNodeId);
-                data.nextNodeId = null;
-            } else {
-                data.choices = [];
-                data.nextNodeId = document.getElementById('node-next').value || null;
-            }
-            set(ref(db, 'novels/' + editingNovelId + '/nodes/' + editingNodeId), data)
-                .then(() => { nodeDirty = false; safeToast('Сохранено', 'Сцена обновлена'); })
-                .catch(err => safeAlert('Ошибка: ' + err.message));
-        };
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('node-editor-card').style.display !== 'none') {
+        // ===================== СКРИПТ-РЕДАКТОР =====================
+        const textarea = document.getElementById('novel-script');
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
                 e.preventDefault();
-                document.getElementById('btn-save-node').click();
+                const s = textarea.selectionStart, en = textarea.selectionEnd;
+                textarea.value = textarea.value.slice(0, s) + '    ' + textarea.value.slice(en);
+                textarea.selectionStart = textarea.selectionEnd = s + 4;
             }
         });
 
-        document.getElementById('btn-delete-node').onclick = function () {
-            if (!editingNovelId || !editingNodeId) return;
-            const n = currentNovel();
-            const nodes = n.nodes || {};
-            const referrers = Object.keys(nodes).filter(id => id !== editingNodeId && findBrokenLinksTargetsInclude(nodes[id], editingNodeId));
-            const warn = referrers.length
-                ? `\n\n⚠️ На эту сцену ссылаются ${referrers.length} других сцен(ы) — после удаления эти ссылки станут битыми, поправь их вручную.`
-                : '';
-            if (!confirm('Удалить эту сцену?' + warn)) return;
-            remove(ref(db, 'novels/' + editingNovelId + '/nodes/' + editingNodeId)).then(() => {
-                editingNodeId = null;
-                nodeDirty = false;
-                document.getElementById('node-editor-card').style.display = 'none';
-            }).catch(err => safeAlert('Ошибка: ' + err.message));
+        let checkTimer = null;
+        textarea.addEventListener('input', () => {
+            novelDirty = true;
+            clearTimeout(checkTimer);
+            checkTimer = setTimeout(() => runCheck(false), 500);
+        });
+
+        function runCheck(applyIdFixups) {
+            if (!editingNovelId) return null;
+            const result = compileScript(textarea.value, editingNovelId);
+            lastCompile = result;
+            if (applyIdFixups && result.updatedText !== textarea.value) {
+                textarea.value = result.updatedText;
+            }
+            renderStatus(result);
+            renderOutline(result);
+            renderPreviewSelect(result);
+            return result;
+        }
+
+        function renderStatus(result) {
+            const el = document.getElementById('script-status');
+            if (result.errors.length) {
+                el.className = 'script-status err';
+                el.innerHTML = `❌ Ошибок: ${result.errors.length} — сценарий не сохранится, пока они не исправлены<ul>${
+                    result.errors.map(e => `<li onclick="window.__goToLine(${e.line})">Строка ${e.line}: ${escapeHtml(e.msg)}</li>`).join('')
+                }</ul>` + (result.warnings.length ? `<div style="margin-top:6px;opacity:.8;">⚠️ ${result.warnings.length} предупреждени${result.warnings.length === 1 ? 'е' : 'я'}</div>` : '');
+            } else {
+                const c = result.compiled;
+                el.className = 'script-status ok';
+                el.innerHTML = `✅ Разобрано: ${Object.keys(c.nodes).length} сцен, ${Object.keys(c.characters).length} персонажей, ${Object.keys(c.variables || {}).length} переменных`
+                    + (result.warnings.length ? `<ul>${result.warnings.map(w => `<li onclick="window.__goToLine(${w.line})">⚠️ Строка ${w.line}: ${escapeHtml(w.msg)}</li>`).join('')}</ul>` : '');
+            }
+        }
+
+        window.__goToLine = function (lineNo) {
+            const val = textarea.value;
+            const lines = val.split('\n');
+            let pos = 0;
+            for (let i = 0; i < lineNo - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+            textarea.focus();
+            textarea.selectionStart = pos;
+            textarea.selectionEnd = pos + (lines[lineNo - 1] ? lines[lineNo - 1].length : 0);
+            const lineHeight = 18;
+            textarea.scrollTop = Math.max(0, (lineNo - 5) * lineHeight);
         };
-        function findBrokenLinksTargetsInclude(node, targetId) {
-            if (node.nextNodeId === targetId) return true;
-            return (node.choices || []).some(c => c.nextNodeId === targetId);
+
+        function renderOutline(result) {
+            const el = document.getElementById('script-outline');
+            if (!result.labels.length) { el.innerHTML = '<div class="empty-state">Сцен пока нет</div>'; return; }
+            el.innerHTML = result.labels.map(l => {
+                const node = result.compiled.nodes[l.id];
+                let badge = '', arrows = '';
+                if (!node) { badge = '<span class="lbl-badge dead">?</span>'; }
+                else if (node.isEnding) { badge = '<span class="lbl-badge ending">🏁 конец</span>'; }
+                else if (node.choices && node.choices.length) { arrows = '→ ' + node.choices.map(c => escapeHtml(c.text || '…')).join(' / '); }
+                else if (node.nextNodeId) {
+                    const nextLabel = result.labels.find(x => x.id === node.nextNodeId);
+                    arrows = '→ ' + escapeHtml(nextLabel ? nextLabel.name : '?');
+                } else { badge = '<span class="lbl-badge dead">тупик</span>'; }
+                return `<div class="lbl-row" onclick="window.__goToLine(${l.lineNo})">
+                    <span class="lbl-name">${l.id === result.compiled.startNodeId ? '🏳️ ' : ''}${escapeHtml(l.name)}</span>
+                    ${badge}<span class="lbl-arrows">${arrows}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function renderPreviewSelect(result) {
+            const sel = document.getElementById('preview-label-select');
+            const prev = sel.value;
+            sel.innerHTML = result.labels.map(l => `<option value="${l.name}">${l.id === result.compiled.startNodeId ? '🏳️ ' : ''}${escapeHtml(l.name)}</option>`).join('');
+            if (result.labels.some(l => l.name === prev)) sel.value = prev;
+        }
+
+        document.getElementById('btn-check-script').onclick = () => runCheck(true);
+
+        document.getElementById('btn-upload-image').onclick = () => document.getElementById('script-image-file').click();
+        document.getElementById('script-image-file').addEventListener('change', (e) => {
+            if (e.target.files[0]) uploadImageAndInsert(e.target.files[0], textarea);
+            e.target.value = '';
+        });
+        document.getElementById('btn-upload-audio').onclick = () => document.getElementById('script-audio-file').click();
+        document.getElementById('script-audio-file').addEventListener('change', (e) => {
+            if (e.target.files[0]) uploadAudioAndInsert(e.target.files[0], textarea);
+            e.target.value = '';
+        });
+
+        document.getElementById('btn-insert-scene').onclick = () => {
+            insertAtCursor(textarea, `label новая_сцена:\n    "Текст сцены."\n    jump другая_сцена`);
+        };
+        document.getElementById('btn-insert-example').onclick = () => {
+            if (!textarea.value.trim() || confirm('Заменить текущий сценарий примером? Несохранённые изменения будут потеряны.')) {
+                textarea.value = EXAMPLE_SCRIPT;
+                novelDirty = true;
+                runCheck(false);
+            }
+        };
+
+        function saveScript(onSuccess) {
+            if (!editingNovelId) return;
+            const result = runCheck(true);
+            if (!result || result.errors.length) {
+                safeAlert('Есть ошибки в сценарии — исправь их (см. список ниже) перед сохранением.');
+                return;
+            }
+            update(ref(db, 'novels/' + editingNovelId), {
+                novelScript: textarea.value,
+                flags: result.compiled.flags,
+                variables: result.compiled.variables,
+                characters: result.compiled.characters,
+                nodes: result.compiled.nodes,
+                startNodeId: result.compiled.startNodeId,
+            }).then(() => {
+                novelDirty = false;
+                safeToast('Сохранено', 'Сценарий скомпилирован и сохранён');
+                if (onSuccess) onSuccess(result);
+            }).catch(err => safeAlert('Ошибка: ' + err.message));
+        }
+
+        document.getElementById('btn-save-script').onclick = () => saveScript();
+
+        document.getElementById('btn-save-and-preview').onclick = () => {
+            saveScript((result) => {
+                const chosenName = document.getElementById('preview-label-select').value;
+                const chosenLabel = result.labels.find(l => l.name === chosenName) || result.labels.find(l => l.id === result.compiled.startNodeId);
+                if (!chosenLabel) return;
+                const dir = window.location.pathname.replace(/[^/]*$/, '');
+                window.open(`${window.location.origin}${dir}novels.html?adminPreview=1&novelId=${editingNovelId}&nodeId=${chosenLabel.id}`, '_blank');
+            });
+        };
+
+        window.addEventListener('beforeunload', (e) => { if (novelDirty) { e.preventDefault(); e.returnValue = ''; } });
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && document.getElementById('script-card').style.display !== 'none') {
+                e.preventDefault();
+                saveScript();
+            }
+        });
+    }
+
+    const savedAuth = sessionStorage.getItem('nv_editor_admin') === '1';
+    if (savedAuth) {
+        document.getElementById('editor-root').style.display = 'block';
+        startEditor();
+    } else {
+        const pwd = prompt('Пароль администратора:');
+        if (pwd === 'admin123') {
+            sessionStorage.setItem('nv_editor_admin', '1');
+            document.getElementById('editor-root').style.display = 'block';
+            startEditor();
+        } else {
+            document.getElementById('locked-view').style.display = 'block';
         }
     }
 </script>

@@ -96,6 +96,43 @@
     .unlock-modal p { color: #7f8c8d; font-size: 13px; margin-bottom: 18px; }
     .unlock-modal .btn-row { display: flex; gap: 8px; }
     .unlock-modal button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
+
+    /* ===================== АНИМАЦИИ ПОЯВЛЕНИЯ СПРАЙТА ===================== */
+    @keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fxSlideLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxSlideRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+    @keyframes fxBounce { 0% { transform: translateY(-24px); opacity: 0; } 60% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(0); } }
+    @keyframes fxPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .reader-sprite.fx-fade { animation: fxFadeIn .4s ease both; }
+    .reader-sprite.fx-slide.pos-left { animation: fxSlideLeft .35s ease both; }
+    .reader-sprite.fx-slide.pos-right { animation: fxSlideRight .35s ease both; }
+    .reader-sprite.fx-slide.pos-center { animation: fxFadeIn .35s ease both; }
+    .reader-sprite.fx-shake { animation: fxShake .4s ease; }
+    .reader-sprite.fx-bounce { animation: fxBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .reader-sprite.fx-pulse { animation: fxPulse .5s ease; }
+
+    /* ===================== ФИЛЬТРЫ И ПЕРЕХОДЫ ФОНА ===================== */
+    .reader-bg.bgf-dark { filter: brightness(.5); }
+    .reader-bg.bgf-warm { filter: sepia(.5) saturate(1.4) brightness(1.05); }
+    .reader-bg.bgf-cold { filter: saturate(1.2) hue-rotate(160deg) brightness(.9); }
+    .reader-bg.bgf-gray { filter: grayscale(1) contrast(1.1); }
+    .reader-bg.bgf-blur { filter: blur(3px) brightness(.85); }
+    .reader-bg.bgf-red { filter: saturate(1.6) hue-rotate(-30deg) brightness(.85) contrast(1.15); }
+    @keyframes bgtFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes bgtShake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-6px,3px); } 40% { transform: translate(6px,-3px); } 60% { transform: translate(-4px,2px); } 80% { transform: translate(4px,-2px); } }
+    .bg-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 3; pointer-events: none; animation: bgtFlash .35s ease; }
+    #reader.bgt-shake { animation: bgtShake .4s ease; }
+
+    .reader-log-overlay {
+        position: absolute; inset: 0; background: rgba(0,0,0,.75); z-index: 15; display: flex; align-items: flex-end;
+    }
+    .reader-log-box {
+        background: #14141f; width: 100%; max-height: 70%; border-radius: 18px 18px 0 0; padding: 16px; overflow-y: auto;
+    }
+    .reader-log-title { color: #ffb75e; font-weight: 800; font-size: 14px; margin-bottom: 10px; }
+    .reader-log-line { color: #fff; font-size: 13px; margin-bottom: 10px; line-height: 1.4; }
+    .reader-log-line .rl-speaker { color: #ffb75e; font-weight: 700; margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -128,6 +165,13 @@
     <div class="reader-topbar">
         <button class="reader-close" onclick="closeReader()">✕</button>
         <div class="reader-skip-hint">Тапни, чтобы продолжить</div>
+        <button class="reader-close" onclick="event.stopPropagation(); toggleReaderLog()">📜</button>
+    </div>
+    <div class="reader-log-overlay" id="reader-log-overlay" style="display:none;" onclick="event.stopPropagation(); toggleReaderLog()">
+        <div class="reader-log-box" onclick="event.stopPropagation()">
+            <div class="reader-log-title">История реплик</div>
+            <div id="reader-log-content"></div>
+        </div>
     </div>
     <div class="reader-dialogue-box" id="reader-box" onclick="advanceReader()">
         <div class="reader-speaker" id="reader-speaker"></div>
@@ -328,14 +372,104 @@
         a.id = 'reader-music'; a.loop = true; document.body.appendChild(a); return a;
     })();
 
+    // ===================== ПЕРЕМЕННЫЕ (var/set/add/sub, условия if/elif/else) =====================
+    let previewVars = {}; // для админ-предпросмотра — не пишем в БД, храним только в памяти вкладки
+
+    function myVars() {
+        if (isAdminPreview) return previewVars;
+        return ((myProgress[currentNovel.id] || {}).vars) || {};
+    }
+
+    function varValue(name, vars) {
+        if (Object.prototype.hasOwnProperty.call(vars, name)) return vars[name];
+        const def = (currentNovel.variables || {})[name];
+        return def !== undefined ? def : undefined;
+    }
+
+    function evalCond(cond, vars) {
+        if (!cond) return true;
+        const val = varValue(cond.name, vars);
+        switch (cond.op) {
+            case 'truthy': return !!val;
+            case 'falsy': return !val;
+            case '==': return val == cond.value;
+            case '!=': return val != cond.value;
+            case '>': return Number(val) > Number(cond.value);
+            case '>=': return Number(val) >= Number(cond.value);
+            case '<': return Number(val) < Number(cond.value);
+            case '<=': return Number(val) <= Number(cond.value);
+            default: return true;
+        }
+    }
+
+    // Применяет set/add/sub — либо к памяти предпросмотра, либо к прогрессу читателя (локально + в БД)
+    function applyEffects(effects) {
+        if (!effects || !effects.length) return;
+        if (isAdminPreview) {
+            effects.forEach(eff => {
+                let newVal;
+                if (eff.op === 'set') newVal = eff.value;
+                else { const cur = Number(varValue(eff.name, previewVars)) || 0; newVal = eff.op === 'add' ? cur + Number(eff.value) : cur - Number(eff.value); }
+                previewVars[eff.name] = newVal;
+            });
+            return;
+        }
+        if (!myId) return;
+        myProgress[currentNovel.id] = myProgress[currentNovel.id] || {};
+        myProgress[currentNovel.id].vars = myProgress[currentNovel.id].vars || {};
+        const vars = myProgress[currentNovel.id].vars;
+        const updates = {};
+        effects.forEach(eff => {
+            let newVal;
+            if (eff.op === 'set') newVal = eff.value;
+            else { const cur = Number(varValue(eff.name, vars)) || 0; newVal = eff.op === 'add' ? cur + Number(eff.value) : cur - Number(eff.value); }
+            vars[eff.name] = newVal;
+            updates['users/' + myId + '/novelProgress/' + currentNovel.id + '/vars/' + eff.name] = newVal;
+        });
+        update(ref(db), updates).catch(() => {});
+    }
+
+    // Из всех строк сцены оставляет только те, что относятся к «выигравшей» ветке каждого if/elif/else
+    function filterConditionalLines(lines, groups, vars) {
+        if (!groups || !groups.length) return lines;
+        const active = {};
+        groups.forEach(g => {
+            let chosen = -1;
+            for (let i = 0; i < g.branches.length; i++) {
+                if (evalCond(g.branches[i].cond, vars)) { chosen = i; break; }
+            }
+            active[g.id] = chosen;
+        });
+        return lines.filter(l => !l.condGroup || l.condBranch === active[l.condGroup]);
+    }
+
     function loadNode(nodeId) {
         const nodes = currentNovel.nodes || {};
         const node = nodes[nodeId];
         if (!node) { closeReader(); return; }
         currentNode = { ...node, id: nodeId };
+        applyEffects(node.effects);
+        currentNode.lines = filterConditionalLines(node.lines || [], node.conditionGroups || [], myVars());
         lineIndex = 0;
-        document.getElementById('reader-bg').style.background = node.background ? '' : '#1a1a2e';
-        if (node.background) document.getElementById('reader-bg').style.backgroundImage = `url('${node.background}')`;
+        sceneLog = [];
+        const bgEl = document.getElementById('reader-bg');
+        // Плавный кроссфейд: гасим текущий фон, подменяем картинку, снова показываем
+        bgEl.style.opacity = '0';
+        setTimeout(() => {
+            bgEl.style.background = node.background ? '' : '#1a1a2e';
+            if (node.background) bgEl.style.backgroundImage = `url('${node.background}')`;
+            bgEl.className = 'reader-bg' + (node.bgFilter ? ' bgf-' + node.bgFilter : '');
+            bgEl.style.opacity = '1';
+        }, 220);
+        if (node.bgTransition === 'flash') {
+            const flash = document.createElement('div');
+            flash.className = 'bg-flash-overlay';
+            document.getElementById('reader').appendChild(flash);
+            setTimeout(() => flash.remove(), 400);
+        } else if (node.bgTransition === 'shake') {
+            const readerEl = document.getElementById('reader');
+            readerEl.classList.remove('bgt-shake'); void readerEl.offsetWidth; readerEl.classList.add('bgt-shake');
+        }
         document.getElementById('reader-choices').style.display = 'none';
         if (node.music && musicPlayer.src !== node.music) { musicPlayer.src = node.music; musicPlayer.play().catch(() => {}); }
         else if (!node.music) { musicPlayer.pause(); musicPlayer.src = ''; }
@@ -344,22 +478,96 @@
         renderLine();
     }
 
+    let sfxPlayer = null;
+    let typewriterTimer = null;
+    let isTyping = false;
+    let sceneLog = []; // журнал реплик текущей сцены — для кнопки "история"
+
+    function substitutePlaceholders(text) {
+        return (text || '').replace(/\{playerName\}/g, myName || 'Читатель');
+    }
+
+    function typeText(el, fullText, speedMs, onDone) {
+        clearInterval(typewriterTimer);
+        if (!speedMs) { el.textContent = fullText; isTyping = false; if (onDone) onDone(); return; }
+        el.textContent = '';
+        isTyping = true;
+        let i = 0;
+        typewriterTimer = setInterval(() => {
+            i++;
+            el.textContent = fullText.slice(0, i);
+            if (i >= fullText.length) {
+                clearInterval(typewriterTimer);
+                isTyping = false;
+                if (onDone) onDone();
+            }
+        }, speedMs);
+    }
+
     function renderLine() {
         const lines = currentNode.lines || [];
         const line = lines[lineIndex];
         const sprite = document.getElementById('reader-sprite');
         if (!line) { finishNode(); return; }
         const speakerEl = document.getElementById('reader-speaker');
-        speakerEl.textContent = line.speaker || '';
-        speakerEl.style.color = line.speakerColor || '#ffb75e';
-        document.getElementById('reader-text').textContent = line.text || '';
-        document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
-        if (line.sprite) {
-            sprite.src = line.sprite;
-            sprite.style.display = 'block';
-            sprite.className = 'reader-sprite speaking pos-' + (line.spritePosition || 'center');
-        } else {
+        const textEl = document.getElementById('reader-text');
+        const fullText = substitutePlaceholders(line.text);
+        const lineKey = currentNode.id + ':' + lineIndex;
+        const alreadyRead = !isAdminPreview && myId && !!((myProgress[currentNovel.id] || {}).readLines || {})[lineKey];
+        const speedMs = alreadyRead ? 0 : (currentNovel.textSpeed || 0);
+        typeText(textEl, fullText, speedMs, () => {
+            document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
+        });
+        document.getElementById('reader-hint').textContent = speedMs ? '' : ((lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓'));
+        if (!alreadyRead && myId && !isAdminPreview) {
+            set(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id + '/readLines/' + lineKey), true).catch(() => {});
+            myProgress[currentNovel.id] = myProgress[currentNovel.id] || {};
+            myProgress[currentNovel.id].readLines = myProgress[currentNovel.id].readLines || {};
+            myProgress[currentNovel.id].readLines[lineKey] = true;
+        }
+
+        sceneLog.push({ speaker: line.speakerKey ? decodeURIComponent(line.speakerKey) : (line.speaker || ''), text: fullText });
+
+        if (line.sfx) {
+            if (!sfxPlayer) sfxPlayer = new Audio();
+            sfxPlayer.src = line.sfx;
+            sfxPlayer.play().catch(() => {});
+        }
+
+        // Убираем спрайты сборной сцены с прошлой реплики
+        document.querySelectorAll('.reader-sprite.stage-sprite').forEach(el => el.remove());
+
+        const chars = (currentNovel.characters) || {};
+        const stage = line.stage || currentNode.stage || [];
+        const fx = line.spriteEffect ? ' ' + line.spriteEffect : '';
+
+        // Состав сцены рисуем всегда (даже когда говорит рассказчик или гость без show) — не участвующие в реплике просто притухают
+        stage.filter(s => s.key).forEach(s => {
+            const preset = chars[s.key] || {};
+            const spriteUrl = s.sprite || preset.sprite;
+            if (!spriteUrl) return;
+            const img = document.createElement('img');
+            const speaking = !!(line.speakerKey && s.key === line.speakerKey);
+            img.className = 'reader-sprite stage-sprite pos-' + (s.position || 'center') + (speaking ? ' speaking' + fx : '');
+            img.src = spriteUrl;
+            document.getElementById('reader').insertBefore(img, document.querySelector('.reader-topbar'));
+        });
+
+        if (line.speakerKey) {
             sprite.style.display = 'none';
+            const activePreset = chars[line.speakerKey] || {};
+            speakerEl.textContent = decodeURIComponent(line.speakerKey);
+            speakerEl.style.color = activePreset.color || '#ffb75e';
+        } else {
+            speakerEl.textContent = line.speaker || '';
+            speakerEl.style.color = line.speakerColor || '#ffb75e';
+            if (line.sprite) {
+                sprite.src = line.sprite;
+                sprite.style.display = 'block';
+                sprite.className = 'reader-sprite speaking pos-' + (line.spritePosition || 'center') + fx;
+            } else {
+                sprite.style.display = 'none';
+            }
         }
     }
 
@@ -367,8 +575,31 @@
         return !!(currentNode.choices && currentNode.choices.length) || !currentNode.isEnding;
     }
 
+    window.toggleReaderLog = function () {
+        const overlay = document.getElementById('reader-log-overlay');
+        const opening = overlay.style.display === 'none';
+        if (opening) {
+            document.getElementById('reader-log-content').innerHTML = sceneLog.length
+                ? sceneLog.map(l => `<div class="reader-log-line">${l.speaker ? `<div class="rl-speaker">${escapeHtml(l.speaker)}</div>` : ''}${escapeHtml(l.text)}</div>`).join('')
+                : '<div style="color:rgba(255,255,255,.5);font-size:12px;">Пока пусто</div>';
+        }
+        overlay.style.display = opening ? 'flex' : 'none';
+    };
+
     window.advanceReader = function () {
         if (!currentNode) return;
+        if (isTyping) {
+            // Тап во время печати — сразу дописываем текущую реплику целиком, не переходя дальше
+            clearInterval(typewriterTimer);
+            isTyping = false;
+            const lines = currentNode.lines || [];
+            const line = lines[lineIndex];
+            if (line) {
+                document.getElementById('reader-text').textContent = substitutePlaceholders(line.text);
+                document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
+            }
+            return;
+        }
         const lines = currentNode.lines || [];
         if (lineIndex < lines.length - 1) { lineIndex++; renderLine(); return; }
         finishNode();
@@ -382,17 +613,41 @@
         showEnding();
     }
 
+    function choiceCondOf(c) {
+        // requireCond — новый общий формат (сравнения); requireFlag — старый формат (просто булево имя), поддержан для совместимости
+        if (c.requireCond) return c.requireCond;
+        if (c.requireFlag) return { name: c.requireFlag, op: 'truthy' };
+        return null;
+    }
+    function choiceEffectsOf(c) {
+        if (c.effects && c.effects.length) return c.effects;
+        if (c.setFlag) return [{ op: 'set', name: c.setFlag, value: true }];
+        return [];
+    }
+
     function showChoices() {
+        const vars = myVars();
+        const visibleChoices = (currentNode.choices || []).filter(c => evalCond(choiceCondOf(c), vars));
         const box = document.getElementById('reader-choices');
         box.style.display = 'flex';
-        box.innerHTML = (currentNode.choices || []).map((c, i) =>
-            `<button class="reader-choice-btn" onclick="event.stopPropagation(); window.__pickChoice(${i})">${escapeHtml(c.text || '...')}</button>`
-        ).join('');
+        if (!visibleChoices.length) {
+            // Все варианты скрыты условиями — не должно случаться при аккуратной настройке новеллы, но подстрахуемся
+            box.innerHTML = '<div style="color:rgba(255,255,255,.5);font-size:12px;">Нет доступных вариантов</div>';
+            return;
+        }
+        box.innerHTML = visibleChoices.map((c) => {
+            const realIndex = (currentNode.choices || []).indexOf(c);
+            return `<button class="reader-choice-btn" onclick="event.stopPropagation(); window.__pickChoice(${realIndex})">${escapeHtml(c.text || '...')}</button>`;
+        }).join('');
     }
 
     window.__pickChoice = function (i) {
         const choice = (currentNode.choices || [])[i];
         if (!choice || !choice.nextNodeId) return;
+        applyEffects(choiceEffectsOf(choice));
+        if (!isAdminPreview) {
+            update(ref(db), { ['novelStats/' + currentNovel.id + '/choices/' + currentNode.id + '/' + i]: increment(1) }).catch(() => {});
+        }
         loadNode(choice.nextNodeId);
     };
 
@@ -411,6 +666,7 @@
         if (already) {
             rewardEl.style.display = 'none';
         } else {
+            update(ref(db), { ['novelStats/' + currentNovel.id + '/endings/' + endingKey]: increment(1) }).catch(() => {});
             const parts = [];
             if (currentNode.endingRewardCoins) parts.push(`🪙 ${currentNode.endingRewardCoins}`);
             if (currentNode.endingRewardCardId && currentNode.endingRewardCardCount) parts.push(`🃏 ×${currentNode.endingRewardCardCount}`);
