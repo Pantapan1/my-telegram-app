@@ -124,6 +124,27 @@
     .bg-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 3; pointer-events: none; animation: bgtFlash .35s ease; }
     #reader.bgt-shake { animation: bgtShake .4s ease; }
 
+    /* ===================== VFX: разовые эффекты и погода ===================== */
+    .vfx-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 40; pointer-events: none; animation: bgtFlash ease forwards; }
+    @keyframes vfxFade { 0% { opacity: 0; } 45%, 55% { opacity: 1; } 100% { opacity: 0; } }
+    .vfx-fade-overlay { position: absolute; inset: 0; z-index: 40; pointer-events: none; animation: vfxFade ease forwards; }
+    .vfx-fade-overlay.blackout { background: #000; }
+    .vfx-fade-overlay.whiteout { background: #fff; }
+    #reader.vfx-shake { animation: bgtShake .4s ease; }
+    @keyframes vfxBurstRise {
+        0% { transform: translateY(0) scale(.6); opacity: 0; }
+        15% { opacity: 1; }
+        100% { transform: translateY(-160px) scale(1.1); opacity: 0; }
+    }
+    .vfx-burst-item { position: absolute; z-index: 40; pointer-events: none; font-size: 22px; animation: vfxBurstRise ease forwards; }
+
+    #reader-weather { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+    @keyframes weatherFall { 0% { transform: translateY(-10%); } 100% { transform: translateY(110vh); } }
+    .weather-drop { position: absolute; top: -5%; animation: weatherFall linear infinite; }
+    .weather-drop.rain { width: 2px; height: 22px; background: rgba(180,210,255,.55); }
+    .weather-drop.snow { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.85); }
+    .weather-drop.petals { font-size: 16px; }
+
     .reader-log-overlay {
         position: absolute; inset: 0; background: rgba(0,0,0,.75); z-index: 15; display: flex; align-items: flex-end;
     }
@@ -161,6 +182,7 @@
 
 <div id="reader">
     <div class="reader-bg" id="reader-bg"></div>
+    <div id="reader-weather"></div>
     <img class="reader-sprite" id="reader-sprite" style="display:none;">
     <div class="reader-topbar">
         <button class="reader-close" onclick="closeReader()">✕</button>
@@ -443,6 +465,66 @@
         return lines.filter(l => !l.condGroup || l.condBranch === active[l.condGroup]);
     }
 
+    // ===================== ПОГОДА (держится всю сцену) И VFX (разово на реплике) =====================
+    let currentWeather = '';
+    function setWeather(kind) {
+        if (kind === currentWeather) return;
+        currentWeather = kind;
+        const box = document.getElementById('reader-weather');
+        box.innerHTML = '';
+        if (!kind) return;
+        const count = kind === 'snow' ? 26 : kind === 'petals' ? 18 : 40;
+        for (let i = 0; i < count; i++) {
+            const d = document.createElement('div');
+            d.className = 'weather-drop ' + kind;
+            d.style.left = Math.random() * 100 + '%';
+            const dur = kind === 'rain' ? (0.6 + Math.random() * 0.4) : (4 + Math.random() * 4);
+            d.style.animationDuration = dur + 's';
+            d.style.animationDelay = (-Math.random() * dur) + 's';
+            if (kind === 'petals') d.textContent = '🌸';
+            box.appendChild(d);
+        }
+    }
+
+    function triggerVfx(vfx) {
+        if (!vfx || !vfx.name) return;
+        const readerEl = document.getElementById('reader');
+        const dur = vfx.duration || (vfx.name === 'blackout' || vfx.name === 'whiteout' ? 900 : vfx.name === 'flash' ? 400 : 500);
+        if (vfx.name === 'flash') {
+            const el = document.createElement('div');
+            el.className = 'vfx-flash-overlay';
+            el.style.animationDuration = dur + 'ms';
+            if (vfx.color) el.style.background = vfx.color;
+            readerEl.appendChild(el);
+            setTimeout(() => el.remove(), dur);
+        } else if (vfx.name === 'blackout' || vfx.name === 'whiteout') {
+            const el = document.createElement('div');
+            el.className = 'vfx-fade-overlay ' + vfx.name;
+            el.style.animationDuration = dur + 'ms';
+            if (vfx.color) el.style.background = vfx.color;
+            readerEl.appendChild(el);
+            setTimeout(() => el.remove(), dur);
+        } else if (vfx.name === 'shake') {
+            readerEl.classList.remove('vfx-shake'); void readerEl.offsetWidth; readerEl.classList.add('vfx-shake');
+            setTimeout(() => readerEl.classList.remove('vfx-shake'), dur);
+        } else if (vfx.name === 'hearts' || vfx.name === 'sparkle') {
+            const emoji = vfx.name === 'hearts' ? '💗' : '✨';
+            const n = 10;
+            for (let i = 0; i < n; i++) {
+                const s = document.createElement('div');
+                s.className = 'vfx-burst-item';
+                s.textContent = emoji;
+                s.style.left = (30 + Math.random() * 40) + '%';
+                s.style.top = (40 + Math.random() * 30) + '%';
+                s.style.animationDuration = (dur || 700) + 'ms';
+                s.style.animationDelay = (Math.random() * 150) + 'ms';
+                if (vfx.color) s.style.color = vfx.color;
+                readerEl.appendChild(s);
+                setTimeout(() => s.remove(), (dur || 700) + 200);
+            }
+        }
+    }
+
     function loadNode(nodeId) {
         const nodes = currentNovel.nodes || {};
         const node = nodes[nodeId];
@@ -473,6 +555,7 @@
         document.getElementById('reader-choices').style.display = 'none';
         if (node.music && musicPlayer.src !== node.music) { musicPlayer.src = node.music; musicPlayer.play().catch(() => {}); }
         else if (!node.music) { musicPlayer.pause(); musicPlayer.src = ''; }
+        setWeather(node.weather || '');
         // Сохраняем прогресс — при повторном открытии новеллы читатель попадёт на эту сцену (кроме предпросмотра админа)
         if (myId && !isAdminPreview) update(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id), { currentNodeId: nodeId, unlocked: true }).catch(() => {});
         renderLine();
@@ -515,6 +598,7 @@
         const lineKey = currentNode.id + ':' + lineIndex;
         const alreadyRead = !isAdminPreview && myId && !!((myProgress[currentNovel.id] || {}).readLines || {})[lineKey];
         const speedMs = alreadyRead ? 0 : (currentNovel.textSpeed || 0);
+        if (line.vfx) triggerVfx(line.vfx);
         typeText(textEl, fullText, speedMs, () => {
             document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
         });

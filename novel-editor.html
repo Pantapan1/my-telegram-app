@@ -454,6 +454,7 @@
         let currentLabel = null;
         let menuState = null;    // {indent, choices}
         let ifState = null;      // {indent, groupId, branchIndex}
+        let pendingVfx = null;   // одноразовый vfx, ждущий следующую реплику, чтобы сработать именно на ней
         let condGroupCounter = 0;
         const errors = [];
         const warnings = [];
@@ -478,6 +479,7 @@
                 if (idm) currentLabel.idFromComment = idm[1];
                 labels.push(currentLabel);
                 menuState = null; ifState = null;
+                if (pendingVfx) { warnings.push({ line: pendingVfx.lineNo, msg: `vfx "${pendingVfx.name}" ничем не сработал — после него нет реплики в той же сцене` }); pendingVfx = null; }
                 return;
             }
 
@@ -596,6 +598,34 @@
                 return;
             }
 
+            if (trimmed.startsWith('weather ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'weather нельзя использовать внутри if-блока' }); return; }
+                const toks = splitTokens(trimmed.slice(8));
+                if (!toks.length) { errors.push({ line: lineNo, msg: 'weather требует значение: rain, snow, petals или off' }); return; }
+                const kind = toks[0].value;
+                if (!['rain', 'snow', 'petals', 'off'].includes(kind)) warnings.push({ line: lineNo, msg: `неизвестная погода "${kind}" — доступны rain, snow, petals, off` });
+                pushStmt({ type: 'weather', kind: kind === 'off' ? '' : kind, lineNo });
+                return;
+            }
+
+            if (trimmed.startsWith('vfx ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'vfx нельзя использовать внутри if-блока' }); return; }
+                const toks = splitTokens(trimmed.slice(4));
+                if (!toks.length) { errors.push({ line: lineNo, msg: 'vfx требует название эффекта: flash, shake, blackout, whiteout, hearts, sparkle' }); return; }
+                const name = toks[0].value;
+                if (!['flash', 'shake', 'blackout', 'whiteout', 'hearts', 'sparkle'].includes(name)) {
+                    warnings.push({ line: lineNo, msg: `неизвестный vfx "${name}" — доступны flash, shake, blackout, whiteout, hearts, sparkle` });
+                }
+                let color = '', duration = 0;
+                for (let i = 1; i < toks.length; i++) {
+                    if (toks[i].value === 'color' && toks[i + 1]) { color = toks[i + 1].value; i++; }
+                    else if (toks[i].value === 'duration' && toks[i + 1]) { duration = parseInt(toks[i + 1].value, 10) || 0; i++; }
+                }
+                if (pendingVfx) warnings.push({ line: pendingVfx.lineNo, msg: `vfx "${pendingVfx.name}" перекрыт следующим vfx раньше, чем сработал` });
+                pendingVfx = { name, color, duration, lineNo };
+                return;
+            }
+
             if (trimmed.startsWith('scene ')) {
                 if (ifState) { errors.push({ line: lineNo, msg: 'scene нельзя использовать внутри if-блока' }); return; }
                 const toks = splitTokens(trimmed.slice(6));
@@ -681,8 +711,11 @@
                 else if (t.value === 'sprite' && toks[i + 1]) { spriteTok = toks[i + 1]; i++; }
                 else if (t.value === 'sfx' && toks[i + 1]) { sfxTok = toks[i + 1]; i++; }
             }
-            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, lineNo });
+            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, vfx: pendingVfx, lineNo });
+            pendingVfx = null;
         });
+
+        if (pendingVfx) warnings.push({ line: pendingVfx.lineNo, msg: `vfx "${pendingVfx.name}" ничем не сработал — после него нет реплики` });
 
         return { characters, images, audioMap, flags, variables, explicitStart, labels, errors, warnings };
     }
@@ -759,7 +792,7 @@
         const nodes = {};
         labels.forEach(l => {
             const node = {
-                title: l.name, tag: '', background: '', bgFilter: null, bgTransition: null, music: '',
+                title: l.name, tag: '', background: '', bgFilter: null, bgTransition: null, music: '', weather: '',
                 lines: [], stage: [], isEnding: false, order: l.order,
                 choices: [], nextNodeId: null, effects: [], conditionGroups: [],
             };
@@ -789,6 +822,7 @@
                     else node.music = resolveToken(st.token, audioMap, errors, st.lineNo, 'звук (audio)');
                     return;
                 }
+                if (st.type === 'weather') { node.weather = st.kind || ''; return; }
                 if (st.type === 'show') {
                     if (!characters[st.alias]) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.alias}" — объяви его через character` }); return; }
                     if (!stageSet[st.alias]) stageAliases.push(st.alias);
@@ -832,6 +866,7 @@
                         line = { speaker: '', sprite: '', spritePosition: 'center', text: st.text, spriteEffect: fxClass, sfx: sfxUrl };
                     }
                     if (st.condGroup) { line.condGroup = st.condGroup; line.condBranch = st.condBranch; }
+                    if (st.vfx) line.vfx = { name: st.vfx.name, color: st.vfx.color || '', duration: st.vfx.duration || 0 };
                     // Снимок состава сцены на момент именно этой реплики — так меняющиеся эмоции/выходы/уходы видны по ходу диалога, а не только в конце сцены
                     line.stage = stageAliases.filter(a => stageSet[a]).map(a => ({
                         key: encodeURIComponent(characters[a].name),
@@ -1037,11 +1072,14 @@ label forest_intro:
         "Пойти самой" -> go_alone sub trust 1
 
 label follow_boris:
+    weather petals
+    vfx sparkle duration 700
     alice as alice_happy "Хорошо, веди."
     jump crossroads
 
 label go_alone:
     hide boris
+    vfx shake duration 400
     alice as alice_worried "Я справлюсь сама."
     jump crossroads
 
@@ -1059,6 +1097,7 @@ label crossroads:
 
 label ending_good:
     scene bg_forest filter warm
+    vfx flash color #ffd166 duration 500
     alice "Мы выбрались вместе!"
     ending "Вместе до конца" reward_coins 20
 
@@ -1079,6 +1118,7 @@ label имя:                                           — новая сцен�
     tag "Глава 1"                                     — метка сцены (необязательно)
     scene bg_name filter dark transition fade         — фон, фильтр, переход
     music track_name                                  — фоновая музыка ("off" — выключить)
+    weather rain|snow|petals|off                      — погодный эффект на весь экран, держится всю сцену
     show alias at left|center|right [as emotion] fx fade  — персонаж выходит на сцену (emotion — имя объявленной картинки-выражения)
     hide alias                                          — персонаж уходит со сцены
 
@@ -1086,6 +1126,9 @@ label имя:                                           — новая сцен�
     alias as happy "текст"                              — та же реплика, но меняет выражение лица (держится, пока не сменишь снова)
     "Имя" "текст" at left sprite img_name              — реплика без show (разово, свой портрет на одну реплику)
     "текст рассказчика"                                — текст без говорящего (остальные персонажи на сцене остаются видны, притухшие)
+
+    vfx flash|shake|blackout|whiteout|hearts|sparkle [color #hex] [duration 600]
+                                                        — разовый эффект, срабатывает ровно на следующей реплике
 
     set name = значение                                — присвоить переменной значение (число/строку/true/false)
     add name число                                      — прибавить к переменной
