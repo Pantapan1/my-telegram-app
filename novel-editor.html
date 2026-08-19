@@ -153,11 +153,64 @@
         background: #f1f2f6; color: #2c3e50; cursor: pointer;
     }
     .script-toolbar button.primary { background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; }
-    #novel-script {
-        width: 100%; min-height: 380px; resize: vertical; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        font-size: 12.5px; line-height: 1.55; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0;
-        background: #14141f; color: #e6e6e6; tab-size: 4; white-space: pre; overflow: auto;
+    .script-editor-wrap { position: relative; height: 440px; border-radius: 12px; }
+    #script-highlight, #novel-script {
+        position: absolute; top: 0; left: 0; right: 0; height: 440px; margin: 0; box-sizing: border-box;
+        width: 100%; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 12.5px; line-height: 1.55; padding: 12px; border-radius: 12px; tab-size: 4;
+        white-space: pre; overflow: auto;
     }
+    #script-highlight {
+        background: #14141f; color: #e6e6e6; border: 1px solid #e0e0e0; pointer-events: none; z-index: 1;
+    }
+    #script-highlight code { white-space: pre; }
+    #novel-script {
+        background: transparent; color: transparent; caret-color: #ffedd0; -webkit-text-fill-color: transparent;
+        border: 1px solid transparent; resize: none; z-index: 2; position: relative;
+    }
+    #novel-script::placeholder { color: #6c7a89; -webkit-text-fill-color: #6c7a89; }
+    .tok-kw { color: #ff79c6; font-weight: 700; }
+    .tok-str { color: #8bd5ca; }
+    .tok-num { color: #f1c40f; }
+    .tok-op { color: #ff9f43; font-weight: 700; }
+    .tok-comment { color: #6c7a89; font-style: italic; }
+    .tok-id { color: #e6e6e6; }
+
+    /* ===================== Автодополнение и полная проверка — см. .script-suggest-box / .full-check-report ниже ===================== */
+
+    .script-suggest-box { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+    /* ===================== Визуальная расстановка персонажей ===================== */
+    .placement-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .placement-toolbar select { flex: 1; }
+    #placement-stage {
+        position: relative; width: 100%; aspect-ratio: 9/16; max-height: 440px; border-radius: 12px;
+        overflow: hidden; background: #111 center/cover no-repeat; touch-action: none; border: 1px solid #e0e0e0;
+    }
+    .placement-sprite-wrap {
+        position: absolute; bottom: 0; left: 50%; display: flex; flex-direction: column; align-items: center;
+        transform: translateX(-50%); cursor: grab; touch-action: none; transition: filter .15s ease;
+    }
+    .placement-sprite-wrap.dragging { cursor: grabbing; z-index: 5; filter: drop-shadow(0 0 10px rgba(255,183,94,.7)); }
+    .placement-sprite-wrap img { height: 170px; max-height: 55vh; object-fit: contain; pointer-events: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+    .placement-scale-slider { width: 76px; margin-top: 4px; accent-color: #ed8f03; }
+    .placement-hint { font-size: 11px; color: #8a94a6; margin-top: 6px; line-height: 1.4; }
+    .placement-hint code { background: #f1f2f6; padding: 1px 4px; border-radius: 5px; }
+    .ac-chip {
+        border: none; border-radius: 9px; padding: 6px 9px; background: #fff4e0; color: #a15c00;
+        font-size: 11.5px; cursor: pointer; text-align: left; line-height: 1.3;
+    }
+    .ac-chip b { font-weight: 800; }
+    .ac-chip small { display: block; color: #b57a2a; font-weight: 500; margin-top: 1px; }
+
+    .full-check-report { border-radius: 12px; padding: 12px; background: #f8f9fa; font-size: 12.5px; margin-top: 8px; }
+    .full-check-report h4 { margin: 10px 0 5px; font-size: 12px; }
+    .full-check-report h4:first-child { margin-top: 0; }
+    .full-check-report ul { margin: 0 0 4px; padding-left: 18px; }
+    .full-check-report li { margin-bottom: 3px; cursor: pointer; text-decoration: underline; }
+    .full-check-report .fc-ok { color: #1e8449; }
+    .full-check-report .fc-summary { font-weight: 700; margin-bottom: 6px; }
+    .full-check-report .fc-empty { color: #7f8c8d; font-style: italic; }
     .script-status { border-radius: 12px; padding: 10px 12px; font-size: 12.5px; margin-top: 8px; }
     .script-status.ok { background: #eafaf1; color: #1e8449; }
     .script-status.err { background: #fdecea; color: #c0392b; }
@@ -255,10 +308,27 @@
                 <button type="button" id="btn-insert-scene">➕ Вставить сцену</button>
                 <button type="button" id="btn-insert-example">✨ Пример новеллы</button>
                 <button type="button" id="btn-check-script">🧪 Проверить</button>
+                <button type="button" id="btn-full-check">🧭 Полная проверка новеллы</button>
+                <button type="button" id="btn-placement">🖱️ Расстановка персонажей</button>
                 <button type="button" class="primary" id="btn-save-script">💾 Сохранить сценарий</button>
             </div>
-            <textarea id="novel-script" spellcheck="false" placeholder="label start:&#10;    &quot;Однажды...&quot;"></textarea>
+            <div class="script-editor-wrap">
+                <pre id="script-highlight"><code id="script-highlight-code"></code></pre>
+                <textarea id="novel-script" spellcheck="false" placeholder="label start:&#10;    &quot;Однажды...&quot;"></textarea>
+            </div>
+            <div class="script-suggest-box" id="script-suggest-box" style="display:none;"></div>
+
+            <div id="placement-card" style="display:none;">
+                <div class="placement-toolbar">
+                    <label class="field-label" style="margin:0;">Сцена:</label>
+                    <select id="placement-label-select"></select>
+                </div>
+                <div id="placement-stage"></div>
+                <div class="placement-hint">Перетащи персонажа — задаёшь позицию. Ползунок под ним — размер. Если персонажа нет на сцене — сначала добавь его через <code>show</code> в тексте.</div>
+            </div>
+
             <div id="script-status"></div>
+            <div id="full-check-report" style="display:none;"></div>
 
             <div class="script-preview-row" style="margin-top:12px;">
                 <button type="button" class="btn btn-secondary btn-small" id="btn-save-and-preview" style="flex:1;">▶️ Сохранить и открыть предпросмотр со сцены:</button>
@@ -651,13 +721,14 @@
             if ((m = trimmed.match(/^show\s+([A-Za-z_][A-Za-z0-9_]*)(.*)$/))) {
                 const alias = m[1];
                 const rest = splitTokens(m[2]);
-                let position = 'center', fx = '', asTok = null;
+                let position = 'center', fx = '', asTok = null, scale = null;
                 for (let i = 0; i < rest.length; i++) {
                     if (rest[i].value === 'at' && rest[i + 1]) { position = rest[i + 1].value; i++; }
                     else if (rest[i].value === 'fx' && rest[i + 1]) { fx = rest[i + 1].value; i++; }
                     else if (rest[i].value === 'as' && rest[i + 1]) { asTok = rest[i + 1]; i++; }
+                    else if (rest[i].value === 'scale' && rest[i + 1]) { scale = parseFloat(rest[i + 1].value) || 1; i++; }
                 }
-                pushStmt({ type: 'show', alias, position, fx, asTok, lineNo });
+                pushStmt({ type: 'show', alias, position, fx, asTok, scale, lineNo });
                 return;
             }
             if ((m = trimmed.match(/^hide\s+([A-Za-z_][A-Za-z0-9_]*)$/))) { pushStmt({ type: 'hide', alias: m[1], lineNo }); return; }
@@ -703,15 +774,16 @@
             else { errors.push({ line: lineNo, msg: `не удалось разобрать строку — "${trimmed}"` }); return; }
             const textTok = toks[textIdx];
             if (!textTok || textTok.type !== 'str') { errors.push({ line: lineNo, msg: 'ожидался текст реплики в кавычках' }); return; }
-            let position = '', fx = '', spriteTok = null, sfxTok = null;
+            let position = '', fx = '', spriteTok = null, sfxTok = null, scale = null;
             for (let i = textIdx + 1; i < toks.length; i++) {
                 const t = toks[i];
                 if (t.value === 'at' && toks[i + 1]) { position = toks[i + 1].value; i++; }
                 else if (t.value === 'fx' && toks[i + 1]) { fx = toks[i + 1].value; i++; }
                 else if (t.value === 'sprite' && toks[i + 1]) { spriteTok = toks[i + 1]; i++; }
                 else if (t.value === 'sfx' && toks[i + 1]) { sfxTok = toks[i + 1]; i++; }
+                else if (t.value === 'scale' && toks[i + 1]) { scale = parseFloat(toks[i + 1].value) || 1; i++; }
             }
-            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, vfx: pendingVfx, lineNo });
+            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, scale, vfx: pendingVfx, lineNo });
             pendingVfx = null;
         });
 
@@ -720,10 +792,13 @@
         return { characters, images, audioMap, flags, variables, explicitStart, labels, errors, warnings };
     }
 
-    function resolveToken(tok, mapObj, errors, lineNo, what) {
+    function resolveToken(tok, mapObj, errors, lineNo, what, usedSet) {
         if (!tok) return '';
         if (tok.type === 'str') return tok.value;
-        if (Object.prototype.hasOwnProperty.call(mapObj, tok.value)) return mapObj[tok.value];
+        if (Object.prototype.hasOwnProperty.call(mapObj, tok.value)) {
+            if (usedSet) usedSet.add(tok.value);
+            return mapObj[tok.value];
+        }
         errors.push({ line: lineNo, msg: `неизвестный ${what} "${tok.value}" — объяви его через image/audio или используй "url" в кавычках` });
         return '';
     }
@@ -739,6 +814,9 @@
         const parsed = parseScriptStructure(text);
         const errors = [...parsed.errors];
         const warnings = [...parsed.warnings];
+        const usedImages = new Set();
+        const usedAudio = new Set();
+        const usedCharacters = new Set();
         const { characters, images, audioMap, flags, variables, labels } = parsed;
 
         // --- проверка дублей имён label ---
@@ -812,14 +890,14 @@
                     return;
                 }
                 if (st.type === 'scene') {
-                    node.background = resolveToken(st.bgToken, images, errors, st.lineNo, 'фон (image)');
+                    node.background = resolveToken(st.bgToken, images, errors, st.lineNo, 'фон (image)', usedImages);
                     if (st.filter) node.bgFilter = st.filter;
                     if (st.transition) node.bgTransition = st.transition;
                     return;
                 }
                 if (st.type === 'music') {
                     if (st.token.type === 'word' && st.token.value === 'off') node.music = '';
-                    else node.music = resolveToken(st.token, audioMap, errors, st.lineNo, 'звук (audio)');
+                    else node.music = resolveToken(st.token, audioMap, errors, st.lineNo, 'звук (audio)', usedAudio);
                     return;
                 }
                 if (st.type === 'weather') { node.weather = st.kind || ''; return; }
@@ -827,9 +905,12 @@
                     if (!characters[st.alias]) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.alias}" — объяви его через character` }); return; }
                     if (!stageSet[st.alias]) stageAliases.push(st.alias);
                     let sprite = characters[st.alias].sprite || '';
-                    if (st.asTok) sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)');
+                    let scale = (stageSet[st.alias] && stageSet[st.alias].scale) || 1;
+                    usedCharacters.add(st.alias);
+                    if (st.asTok) sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)', usedImages);
                     else if (stageSet[st.alias] && stageSet[st.alias].sprite) sprite = stageSet[st.alias].sprite;
-                    stageSet[st.alias] = { position: st.position || 'center', sprite };
+                    if (st.scale) scale = st.scale;
+                    stageSet[st.alias] = { position: st.position || 'center', sprite, scale };
                     return;
                 }
                 if (st.type === 'hide') { delete stageSet[st.alias]; return; }
@@ -837,20 +918,22 @@
                     let line;
                     const fxClass = st.fx ? (FX_MAP[st.fx] || '') : '';
                     if (st.fx && !fxClass) warnings.push({ line: st.lineNo, msg: `неизвестная анимация fx "${st.fx}"` });
-                    const sfxUrl = st.sfxTok ? resolveToken(st.sfxTok, audioMap, errors, st.lineNo, 'звук (audio)') : '';
+                    const sfxUrl = st.sfxTok ? resolveToken(st.sfxTok, audioMap, errors, st.lineNo, 'звук (audio)', usedAudio) : '';
                     if (st.speakerAlias) {
                         const charDef = characters[st.speakerAlias];
                         if (!charDef) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.speakerAlias}" — объяви его через character` }); return; }
+                        usedCharacters.add(st.speakerAlias);
                         if (stageSet[st.speakerAlias]) {
                             // персонаж уже на сцене — "as" меняет его выражение лица тут и на всех следующих репликах, пока не сменится снова
-                            if (st.asTok) stageSet[st.speakerAlias].sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)');
+                            if (st.asTok) stageSet[st.speakerAlias].sprite = resolveToken(st.asTok, images, errors, st.lineNo, 'эмоция/спрайт (image)', usedImages);
                             line = { speakerKey: encodeURIComponent(charDef.name), text: st.text, spriteEffect: fxClass, sfx: sfxUrl };
                         } else {
                             const emotionTok = st.spriteTok || st.asTok;
                             line = {
                                 speaker: charDef.name,
-                                sprite: emotionTok ? resolveToken(emotionTok, images, errors, st.lineNo, 'спрайт (image)') : (charDef.sprite || ''),
+                                sprite: emotionTok ? resolveToken(emotionTok, images, errors, st.lineNo, 'спрайт (image)', usedImages) : (charDef.sprite || ''),
                                 spritePosition: st.position || 'center',
+                                spriteScale: st.scale || 1,
                                 speakerColor: charDef.color || '',
                                 text: st.text, spriteEffect: fxClass, sfx: sfxUrl,
                             };
@@ -858,8 +941,9 @@
                     } else if (st.speakerLiteral) {
                         line = {
                             speaker: st.speakerLiteral,
-                            sprite: st.spriteTok ? resolveToken(st.spriteTok, images, errors, st.lineNo, 'спрайт (image)') : '',
+                            sprite: st.spriteTok ? resolveToken(st.spriteTok, images, errors, st.lineNo, 'спрайт (image)', usedImages) : '',
                             spritePosition: st.position || 'center',
+                            spriteScale: st.scale || 1,
                             text: st.text, spriteEffect: fxClass, sfx: sfxUrl,
                         };
                     } else {
@@ -872,6 +956,7 @@
                         key: encodeURIComponent(characters[a].name),
                         position: stageSet[a].position || 'center',
                         sprite: stageSet[a].sprite || characters[a].sprite || '',
+                        scale: stageSet[a].scale || 1,
                     }));
                     node.lines.push(line);
                     return;
@@ -912,7 +997,7 @@
                 }
             });
 
-            node.stage = stageAliases.filter(a => stageSet[a]).map(a => ({ key: encodeURIComponent(characters[a].name), position: stageSet[a].position || 'center' }));
+            node.stage = stageAliases.filter(a => stageSet[a]).map(a => ({ key: encodeURIComponent(characters[a].name), position: stageSet[a].position || 'center', scale: stageSet[a].scale || 1, sprite: stageSet[a].sprite || characters[a].sprite || '' }));
             if (!terminated) warnings.push({ line: l.lineNo, msg: `сцена "${l.name}" ничем не заканчивается (нет menu/jump/ending) — читатель упрётся в тупик` });
             if (!node.lines.length) warnings.push({ line: l.lineNo, msg: `сцена "${l.name}" без единой реплики` });
 
@@ -934,7 +1019,227 @@
                 nodes,
                 startNodeId: startLabel ? startLabel.id : null,
             },
+            // сырые данные и статистика использования — только для автодополнения/полной проверки в редакторе, в БД не идут
+            raw: { characters, images, audioMap, variables, flags },
+            usage: { usedImages, usedAudio, usedCharacters },
         };
+    }
+
+    // ======================================================================
+    // ПОДСВЕТКА СИНТАКСИСА
+    // ======================================================================
+
+    const HIGHLIGHT_KEYWORDS = new Set([
+        'label', 'menu', 'if', 'elif', 'else', 'show', 'hide', 'scene', 'music', 'weather', 'vfx',
+        'jump', 'ending', 'var', 'flag', 'set', 'add', 'sub', 'character', 'image', 'audio', 'start',
+        'tag', 'at', 'fx', 'as', 'sprite', 'sfx', 'not', 'filter', 'transition', 'color',
+        'reward_coins', 'reward_card', 'duration', 'true', 'false', 'off', 'x',
+    ]);
+
+    function highlightEscape(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightLine(line) {
+        let inQuotes = false, commentIdx = -1;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') inQuotes = !inQuotes;
+            else if (c === '#' && !inQuotes) { commentIdx = i; break; }
+        }
+        const code = commentIdx >= 0 ? line.slice(0, commentIdx) : line;
+        const comment = commentIdx >= 0 ? line.slice(commentIdx) : '';
+        let out = '';
+        let i = 0;
+        while (i < code.length) {
+            const c = code[i];
+            if (c === '"') {
+                let j = i + 1;
+                while (j < code.length && code[j] !== '"') { if (code[j] === '\\') j++; j++; }
+                j = Math.min(j + 1, code.length);
+                out += `<span class="tok-str">${highlightEscape(code.slice(i, j))}</span>`;
+                i = j; continue;
+            }
+            const wordMatch = code.slice(i).match(/^[A-Za-z_][A-Za-z0-9_]*/);
+            if (wordMatch) {
+                const w = wordMatch[0];
+                out += `<span class="${HIGHLIGHT_KEYWORDS.has(w) ? 'tok-kw' : 'tok-id'}">${highlightEscape(w)}</span>`;
+                i += w.length; continue;
+            }
+            const numMatch = code.slice(i).match(/^-?\d+(\.\d+)?/);
+            if (numMatch) { out += `<span class="tok-num">${highlightEscape(numMatch[0])}</span>`; i += numMatch[0].length; continue; }
+            if (code.slice(i, i + 2) === '->') { out += `<span class="tok-op">-&gt;</span>`; i += 2; continue; }
+            const opMatch = code.slice(i).match(/^(==|!=|>=|<=|[=:<>#])/);
+            if (opMatch) { out += `<span class="tok-op">${highlightEscape(opMatch[0])}</span>`; i += opMatch[0].length; continue; }
+            out += highlightEscape(c); i++;
+        }
+        if (comment) out += `<span class="tok-comment">${highlightEscape(comment)}</span>`;
+        return out;
+    }
+
+    function highlightRepy(text) {
+        return text.split('\n').map(highlightLine).join('\n');
+    }
+
+    // ======================================================================
+    // ПОЛНАЯ ПРОВЕРКА НОВЕЛЛЫ: недостижимые сцены, ветки без концовки,
+    // неиспользуемые ассеты — по всему графу сразу, не по одной сцене
+    // ======================================================================
+
+    function analyzeNovelGraph(result) {
+        const { compiled, labels, raw, usage } = result;
+        const nodes = compiled.nodes;
+        const ids = Object.keys(nodes);
+        const idToLabel = {}; labels.forEach(l => { idToLabel[l.id] = l; });
+
+        const reachable = new Set();
+        if (compiled.startNodeId && nodes[compiled.startNodeId]) {
+            const queue = [compiled.startNodeId];
+            while (queue.length) {
+                const id = queue.shift();
+                if (reachable.has(id) || !nodes[id]) continue;
+                reachable.add(id);
+                const n = nodes[id];
+                if (n.nextNodeId) queue.push(n.nextNodeId);
+                (n.choices || []).forEach(c => { if (c.nextNodeId) queue.push(c.nextNodeId); });
+            }
+        }
+        const unreachable = ids.filter(id => !reachable.has(id));
+
+        const reverseEdges = {}; ids.forEach(id => { reverseEdges[id] = []; });
+        ids.forEach(id => {
+            const n = nodes[id];
+            if (n.nextNodeId && reverseEdges[n.nextNodeId]) reverseEdges[n.nextNodeId].push(id);
+            (n.choices || []).forEach(c => { if (c.nextNodeId && reverseEdges[c.nextNodeId]) reverseEdges[c.nextNodeId].push(id); });
+        });
+        const canReachEnding = new Set();
+        const q2 = ids.filter(id => nodes[id].isEnding);
+        q2.forEach(id => canReachEnding.add(id));
+        while (q2.length) {
+            const id = q2.shift();
+            (reverseEdges[id] || []).forEach(prev => { if (!canReachEnding.has(prev)) { canReachEnding.add(prev); q2.push(prev); } });
+        }
+        const noEndingPath = ids.filter(id => reachable.has(id) && !nodes[id].isEnding && !canReachEnding.has(id));
+
+        const deadEnds = ids.filter(id => reachable.has(id) && !nodes[id].isEnding && !nodes[id].nextNodeId && !(nodes[id].choices && nodes[id].choices.length));
+
+        const unusedImages = raw ? Object.keys(raw.images).filter(n => !usage.usedImages.has(n)) : [];
+        const unusedAudio = raw ? Object.keys(raw.audioMap).filter(n => !usage.usedAudio.has(n)) : [];
+        const unusedCharacters = raw ? Object.keys(raw.characters).filter(a => !usage.usedCharacters.has(a)) : [];
+
+        const endingsCount = ids.filter(id => nodes[id].isEnding).length;
+        const totalWords = ids.reduce((sum, id) => sum + (nodes[id].lines || []).reduce((s, l) => s + (l.text || '').split(/\s+/).filter(Boolean).length, 0), 0);
+        const readingMinutes = Math.max(1, Math.round(totalWords / 130));
+
+        return {
+            unreachable: unreachable.map(id => idToLabel[id]).filter(Boolean),
+            noEndingPath: noEndingPath.map(id => idToLabel[id]).filter(Boolean),
+            deadEnds: deadEnds.map(id => idToLabel[id]).filter(Boolean),
+            unusedImages, unusedAudio, unusedCharacters,
+            stats: { scenes: ids.length, endings: endingsCount, words: totalWords, readingMinutes },
+        };
+    }
+
+    // ======================================================================
+    // ПОДСКАЗКИ ПРИ ВВОДЕ: показывают, что можно написать дальше и зачем
+    // ======================================================================
+
+    const STATEMENT_SUGGESTIONS = [
+        { label: 'label', hint: 'новая сцена: label имя:', insert: 'label ' },
+        { label: 'character', hint: 'персонаж: character alias "Имя"', insert: 'character ' },
+        { label: 'image', hint: 'картинка: image name "url"', insert: 'image ' },
+        { label: 'audio', hint: 'звук: audio name "url"', insert: 'audio ' },
+        { label: 'var', hint: 'переменная: var name = 0', insert: 'var ' },
+        { label: 'flag', hint: 'булева переменная (var name = false)', insert: 'flag ' },
+        { label: 'start', hint: 'с какой сцены начать новеллу', insert: 'start ' },
+        { label: 'show', hint: 'персонаж выходит на сцену', insert: 'show ' },
+        { label: 'hide', hint: 'персонаж уходит со сцены', insert: 'hide ' },
+        { label: 'scene', hint: 'сменить фон сцены', insert: 'scene ' },
+        { label: 'music', hint: 'фоновая музыка ("off" — выключить)', insert: 'music ' },
+        { label: 'weather', hint: 'погода на весь экран: rain/snow/petals/off', insert: 'weather ' },
+        { label: 'vfx', hint: 'разовый эффект на следующей реплике', insert: 'vfx ' },
+        { label: 'tag', hint: 'метка сцены для списка (необязательно)', insert: 'tag "' },
+        { label: 'menu:', hint: 'развилка с вариантами выбора', insert: 'menu:\n    "' },
+        { label: 'if', hint: 'условный текст: if переменная == значение:', insert: 'if ' },
+        { label: 'jump', hint: 'перейти в другую сцену без выбора', insert: 'jump ' },
+        { label: 'ending', hint: 'закончить новеллу этой концовкой', insert: 'ending "' },
+        { label: 'set', hint: 'присвоить переменной значение', insert: 'set ' },
+        { label: 'add', hint: 'прибавить к переменной', insert: 'add ' },
+        { label: 'sub', hint: 'вычесть из переменной', insert: 'sub ' },
+    ];
+    const AT_SUGGESTIONS = [
+        { label: 'left', hint: 'персонаж слева' }, { label: 'center', hint: 'персонаж по центру' }, { label: 'right', hint: 'персонаж справа' },
+    ];
+    const FX_SUGGESTIONS = [
+        { label: 'fade', hint: 'плавное проявление' }, { label: 'slide', hint: 'выезжает сбоку' },
+        { label: 'bounce', hint: 'лёгкий подскок' }, { label: 'shake', hint: 'дрожь (испуг/злость)' }, { label: 'pulse', hint: 'пульсация' },
+    ];
+    const FILTER_SUGGESTIONS = [
+        { label: 'dark', hint: 'затемнение (ночь, тревога)' }, { label: 'warm', hint: 'тёплый оттенок' },
+        { label: 'cold', hint: 'холодный оттенок' }, { label: 'gray', hint: 'обесцвечивание (грусть, флешбек)' },
+        { label: 'blur', hint: 'размытие (сон, воспоминание)' }, { label: 'red', hint: 'красный оттенок (опасность)' },
+    ];
+    const TRANSITION_SUGGESTIONS = [
+        { label: 'flash', hint: 'вспышка при смене фона' }, { label: 'shake', hint: 'тряска при смене фона' },
+    ];
+    const VFX_NAME_SUGGESTIONS = [
+        { label: 'flash', hint: 'быстрая вспышка на весь экран' }, { label: 'shake', hint: 'экран трясётся' },
+        { label: 'blackout', hint: 'затемнение — для скачка во времени' }, { label: 'whiteout', hint: 'высветление экрана' },
+        { label: 'hearts', hint: 'всплеск сердечек 💗' }, { label: 'sparkle', hint: 'всплеск искр ✨' },
+    ];
+    const WEATHER_SUGGESTIONS = [
+        { label: 'rain', hint: 'дождь на весь экран' }, { label: 'snow', hint: 'снег' },
+        { label: 'petals', hint: 'лепестки (романтика, весна)' }, { label: 'off', hint: 'выключить погоду' },
+    ];
+    const MUSIC_EXTRA = [{ label: 'off', hint: 'выключить музыку' }];
+
+    function getSuggestionContext(text, pos) {
+        const before = text.slice(0, pos);
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const linePrefix = before.slice(lineStart);
+        const wordMatch = linePrefix.match(/([A-Za-z_][A-Za-z0-9_]*)$/);
+        const partialWord = wordMatch ? wordMatch[1] : '';
+        const beforeWord = linePrefix.slice(0, linePrefix.length - partialWord.length);
+        const trimmedBeforeWord = beforeWord.replace(/\s+$/, '');
+        const lastTokenMatch = trimmedBeforeWord.match(/([A-Za-z_][A-Za-z0-9_]*|->)\s*$/);
+        const lastToken = lastTokenMatch ? lastTokenMatch[1] : '';
+        const isLineStart = trimmedBeforeWord.trim() === '';
+        return { partialWord, lastToken, isLineStart };
+    }
+
+    function filterByPrefix(list, prefix) {
+        if (!prefix) return list.slice(0, 10);
+        const lower = prefix.toLowerCase();
+        return list.filter(it => it.label.toLowerCase().startsWith(lower)).slice(0, 10);
+    }
+
+    // lastCompileGetter — функция, возвращающая актуальный результат последней компиляции (для списков персонажей/картинок/сцен/переменных)
+    function buildSuggestions(ctx, lastCompileGetter) {
+        const lc = lastCompileGetter();
+        const raw = lc && lc.raw ? lc.raw : { characters: {}, images: {}, audioMap: {}, variables: {} };
+        const labelNames = lc ? lc.labels.map(l => ({ label: l.name, hint: 'сцена' })) : [];
+        const charAliases = Object.keys(raw.characters).map(a => ({ label: a, hint: `персонаж «${raw.characters[a].name}»` }));
+        const imageNames = Object.keys(raw.images).map(n => ({ label: n, hint: (raw.images[n] || '').slice(0, 34) + '…' }));
+        const audioNames = Object.keys(raw.audioMap).map(n => ({ label: n, hint: 'звук' }));
+        const varNames = Object.keys(raw.variables).map(n => ({ label: n, hint: `переменная (по умолч. ${JSON.stringify(raw.variables[n])})` }));
+
+        let list = [];
+        if (ctx.lastToken === 'show' || ctx.lastToken === 'hide') list = charAliases;
+        else if (ctx.lastToken === 'as' || ctx.lastToken === 'sprite' || ctx.lastToken === 'scene') list = imageNames;
+        else if (ctx.lastToken === 'music') list = [...audioNames, ...MUSIC_EXTRA];
+        else if (ctx.lastToken === 'sfx') list = audioNames;
+        else if (ctx.lastToken === 'jump' || ctx.lastToken === '->') list = labelNames;
+        else if (ctx.lastToken === 'if' || ctx.lastToken === 'elif' || ctx.lastToken === 'set' || ctx.lastToken === 'add' || ctx.lastToken === 'sub' || ctx.lastToken === 'not') list = varNames;
+        else if (ctx.lastToken === 'at') list = AT_SUGGESTIONS;
+        else if (ctx.lastToken === 'fx') list = FX_SUGGESTIONS;
+        else if (ctx.lastToken === 'filter') list = FILTER_SUGGESTIONS;
+        else if (ctx.lastToken === 'transition') list = TRANSITION_SUGGESTIONS;
+        else if (ctx.lastToken === 'vfx') list = VFX_NAME_SUGGESTIONS;
+        else if (ctx.lastToken === 'weather') list = WEATHER_SUGGESTIONS;
+        else if (ctx.isLineStart) list = [...STATEMENT_SUGGESTIONS, ...charAliases.map(c => ({ label: c.label, hint: `реплика: ${c.hint}`, insert: c.label + ' "' }))];
+        else return [];
+
+        return filterByPrefix(list, ctx.partialWord);
     }
 
     // ======================================================================
@@ -1119,7 +1424,8 @@ label имя:                                           — новая сцен�
     scene bg_name filter dark transition fade         — фон, фильтр, переход
     music track_name                                  — фоновая музыка ("off" — выключить)
     weather rain|snow|petals|off                      — погодный эффект на весь экран, держится всю сцену
-    show alias at left|center|right [as emotion] fx fade  — персонаж выходит на сцену (emotion — имя объявленной картинки-выражения)
+    show alias at left|center|right [as emotion] [scale 1.2] fx fade  — персонаж выходит на сцену
+    show alias at 35,20                                — точные координаты (x,y в % от левого нижнего угла) — можно расставить мышью в «🖱️ Расстановка персонажей»
     hide alias                                          — персонаж уходит со сцены
 
     alias "текст" fx fade sfx snd_name                — реплика персонажа на сцене
@@ -1150,7 +1456,6 @@ label имя:                                           — новая сцен�
 
     jump label                                         — переход дальше без выбора
     ending "Название" reward_coins 50 reward_card id x1 — конец, награда`;
-
     let editorStarted = false;
     function startEditor() {
         if (editorStarted) return;
@@ -1220,6 +1525,8 @@ label имя:                                           — новая сцен�
             if (n.novelScript) textarea.value = n.novelScript;
             else if (Object.keys(n.nodes || {}).length) textarea.value = decompileNovel(n);
             else textarea.value = EXAMPLE_SCRIPT;
+            document.getElementById('script-highlight-code').innerHTML = highlightRepy(textarea.value) + '\n';
+            document.getElementById('full-check-report').style.display = 'none';
 
             novelDirty = false;
             runCheck(false);
@@ -1343,18 +1650,70 @@ label имя:                                           — новая сцен�
 
         // ===================== СКРИПТ-РЕДАКТОР =====================
         const textarea = document.getElementById('novel-script');
+        const highlightPre = document.getElementById('script-highlight');
+        const highlightCode = document.getElementById('script-highlight-code');
+        const suggestBox = document.getElementById('script-suggest-box');
+        let lastSuggestions = [];
+
+        function syncHighlight() {
+            highlightCode.innerHTML = highlightRepy(textarea.value) + '\n';
+        }
+        function syncScroll() {
+            highlightPre.scrollTop = textarea.scrollTop;
+            highlightPre.scrollLeft = textarea.scrollLeft;
+        }
+        textarea.addEventListener('scroll', syncScroll);
+
+        function updateSuggestions() {
+            const ctx = getSuggestionContext(textarea.value, textarea.selectionStart);
+            lastSuggestions = buildSuggestions(ctx, () => lastCompile);
+            if (!lastSuggestions.length) { suggestBox.style.display = 'none'; suggestBox.innerHTML = ''; return; }
+            suggestBox.style.display = 'flex';
+            suggestBox.innerHTML = lastSuggestions.map((it, idx) =>
+                `<button type="button" class="ac-chip" data-idx="${idx}" data-replace-len="${ctx.partialWord.length}"><b>${escapeHtml(it.label)}</b><small>${escapeHtml(it.hint || '')}</small></button>`
+            ).join('');
+        }
+        suggestBox.addEventListener('click', (e) => {
+            const btn = e.target.closest('.ac-chip');
+            if (!btn) return;
+            const item = lastSuggestions[parseInt(btn.getAttribute('data-idx'), 10)];
+            if (!item) return;
+            const insertText = item.insert !== undefined ? item.insert : (item.label + ' ');
+            const replaceLen = parseInt(btn.getAttribute('data-replace-len'), 10) || 0;
+            const pos = textarea.selectionStart;
+            const before = textarea.value.slice(0, pos - replaceLen);
+            const after = textarea.value.slice(pos);
+            textarea.value = before + insertText + after;
+            const newPos = (before + insertText).length;
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = newPos;
+            textarea.dispatchEvent(new Event('input'));
+        });
+
         textarea.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const s = textarea.selectionStart, en = textarea.selectionEnd;
                 textarea.value = textarea.value.slice(0, s) + '    ' + textarea.value.slice(en);
                 textarea.selectionStart = textarea.selectionEnd = s + 4;
+                syncHighlight();
+                updateSuggestions();
+            } else if (e.key === 'Escape') {
+                suggestBox.style.display = 'none';
             }
         });
+        textarea.addEventListener('keyup', (e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) updateSuggestions();
+        });
+        textarea.addEventListener('click', updateSuggestions);
+        textarea.addEventListener('blur', () => setTimeout(() => { suggestBox.style.display = 'none'; }, 150));
 
         let checkTimer = null;
         textarea.addEventListener('input', () => {
             novelDirty = true;
+            syncHighlight();
+            updateSuggestions();
+            document.getElementById('full-check-report').style.display = 'none';
             clearTimeout(checkTimer);
             checkTimer = setTimeout(() => runCheck(false), 500);
         });
@@ -1365,10 +1724,12 @@ label имя:                                           — новая сцен�
             lastCompile = result;
             if (applyIdFixups && result.updatedText !== textarea.value) {
                 textarea.value = result.updatedText;
+                syncHighlight();
             }
             renderStatus(result);
             renderOutline(result);
             renderPreviewSelect(result);
+            if (document.getElementById('placement-card').style.display !== 'none') renderPlacementStage();
             return result;
         }
 
@@ -1445,10 +1806,204 @@ label имя:                                           — новая сцен�
         document.getElementById('btn-insert-example').onclick = () => {
             if (!textarea.value.trim() || confirm('Заменить текущий сценарий примером? Несохранённые изменения будут потеряны.')) {
                 textarea.value = EXAMPLE_SCRIPT;
+                syncHighlight();
                 novelDirty = true;
                 runCheck(false);
             }
         };
+
+        document.getElementById('btn-full-check').onclick = () => {
+            const result = runCheck(true);
+            const report = document.getElementById('full-check-report');
+            if (!result) return;
+            report.style.display = 'block';
+            report.className = 'full-check-report';
+            if (result.errors.length) {
+                report.innerHTML = '<div class="fc-empty">Сначала исправь ошибки в сценарии (список выше) — полная проверка доступна только для корректно скомпилированного сценария.</div>';
+                return;
+            }
+            const analysis = analyzeNovelGraph(result);
+            const s = analysis.stats;
+            let html = `<div class="fc-summary">📊 ${s.scenes} сцен · ${s.endings} концовок · ~${s.words} слов · ~${s.readingMinutes} мин чтения</div>`;
+            function section(title, items, renderItem) {
+                html += `<h4>${title}</h4>`;
+                if (!items.length) { html += `<div class="fc-ok">✅ всё в порядке</div>`; return; }
+                html += `<ul>${items.map(renderItem).join('')}</ul>`;
+            }
+            section('🧭 Недостижимые сцены (на них никто не ссылается)', analysis.unreachable, l => `<li onclick="window.__goToLine(${l.lineNo})">${escapeHtml(l.name)}</li>`);
+            section('🚧 Тупики (сцена без menu/jump/ending)', analysis.deadEnds, l => `<li onclick="window.__goToLine(${l.lineNo})">${escapeHtml(l.name)}</li>`);
+            section('🔁 Ветки, из которых нет пути ни к одной концовке', analysis.noEndingPath, l => `<li onclick="window.__goToLine(${l.lineNo})">${escapeHtml(l.name)}</li>`);
+            section('🖼️ Неиспользуемые картинки', analysis.unusedImages, n => `<li style="cursor:default;text-decoration:none;">${escapeHtml(n)}</li>`);
+            section('🎵 Неиспользуемые звуки', analysis.unusedAudio, n => `<li style="cursor:default;text-decoration:none;">${escapeHtml(n)}</li>`);
+            section('🎭 Неиспользуемые персонажи', analysis.unusedCharacters, n => `<li style="cursor:default;text-decoration:none;">${escapeHtml(n)}</li>`);
+            report.innerHTML = html;
+        };
+
+        // ===================== Визуальная расстановка персонажей (drag + resize) =====================
+        function positionToXY(position) {
+            if (position && position.indexOf(',') !== -1) {
+                const parts = position.split(',');
+                const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
+                return { x: isNaN(x) ? 50 : x, y: isNaN(y) ? 0 : y };
+            }
+            if (position === 'left') return { x: 15, y: 0 };
+            if (position === 'right') return { x: 85, y: 0 };
+            return { x: 50, y: 0 };
+        }
+
+        function labelNearCursor() {
+            const before = textarea.value.slice(0, textarea.selectionStart ?? 0);
+            const lines = before.split('\n');
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const m = lines[i].match(/^label\s+([A-Za-z_][A-Za-z0-9_]*)\s*:/);
+                if (m) return m[1];
+            }
+            return null;
+        }
+
+        function keyToAliasMap() {
+            const parsed = parseScriptStructure(textarea.value);
+            const map = {};
+            Object.values(parsed.characters).forEach(c => { map[encodeURIComponent(c.name)] = c.alias; });
+            return map;
+        }
+
+        // Находит границы label в тексте и переписывает (или добавляет) at/scale в его последней строке "show alias ..."
+        function upsertShowOptions(text, labelName, alias, patch) {
+            const lines = text.split('\n');
+            let startLine = -1, endLine = lines.length;
+            for (let i = 0; i < lines.length; i++) {
+                const m = lines[i].match(/^label\s+([A-Za-z_][A-Za-z0-9_]*)\s*:/);
+                if (m) {
+                    if (startLine === -1 && m[1] === labelName) { startLine = i; continue; }
+                    if (startLine !== -1) { endLine = i; break; }
+                }
+            }
+            if (startLine === -1) return null;
+            const showRe = new RegExp('^(\\s*)show\\s+' + alias + '\\b(.*)$');
+            let targetIdx = -1;
+            for (let i = startLine + 1; i < endLine; i++) { if (showRe.test(lines[i])) targetIdx = i; }
+            if (targetIdx === -1) return null;
+            const m = lines[targetIdx].match(showRe);
+            const indent = m[1];
+            const rest = m[2];
+            let asVal = (rest.match(/\bas\s+(\S+)/) || [])[1] || null;
+            let fxVal = (rest.match(/\bfx\s+(\S+)/) || [])[1] || null;
+            let atVal = (rest.match(/\bat\s+(\S+)/) || [])[1] || null;
+            let scaleVal = (rest.match(/\bscale\s+(\S+)/) || [])[1] || null;
+            if (patch.x !== undefined && patch.y !== undefined) atVal = `${patch.x},${patch.y}`;
+            if (patch.scale !== undefined) scaleVal = String(patch.scale);
+            let newRest = '';
+            if (asVal) newRest += ` as ${asVal}`;
+            if (atVal) newRest += ` at ${atVal}`;
+            if (scaleVal && Math.abs(Number(scaleVal) - 1) > 0.001) newRest += ` scale ${Number(scaleVal).toFixed(2)}`;
+            if (fxVal) newRest += ` fx ${fxVal}`;
+            lines[targetIdx] = `${indent}show ${alias}${newRest}`;
+            return lines.join('\n');
+        }
+
+        function applyPlacement(labelName, alias, patch) {
+            if (!alias) return;
+            const newText = upsertShowOptions(textarea.value, labelName, alias, patch);
+            if (newText == null) { safeToast('Не получилось', 'Не нашли строку show для этого персонажа в этой сцене — размести вручную в тексте'); return; }
+            textarea.value = newText;
+            novelDirty = true;
+            syncHighlight();
+            runCheck(false);
+        }
+
+        function attachPlacementDrag(wrap, stageBox, labelName) {
+            let dragging = false;
+            wrap.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
+                dragging = true;
+                wrap.classList.add('dragging');
+                try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+            });
+            wrap.addEventListener('pointermove', (e) => {
+                if (!dragging) return;
+                const rect = stageBox.getBoundingClientRect();
+                let x = ((e.clientX - rect.left) / rect.width) * 100;
+                let y = ((rect.bottom - e.clientY) / rect.height) * 100;
+                x = Math.max(2, Math.min(98, x));
+                y = Math.max(0, Math.min(85, y));
+                wrap.style.left = x + '%';
+                wrap.style.bottom = y + '%';
+                wrap.dataset.pendingX = x.toFixed(1);
+                wrap.dataset.pendingY = y.toFixed(1);
+            });
+            const finish = () => {
+                if (!dragging) return;
+                dragging = false;
+                wrap.classList.remove('dragging');
+                if (wrap.dataset.pendingX !== undefined) {
+                    applyPlacement(labelName, wrap.dataset.alias, { x: parseFloat(wrap.dataset.pendingX), y: parseFloat(wrap.dataset.pendingY) });
+                }
+            };
+            wrap.addEventListener('pointerup', finish);
+            wrap.addEventListener('pointercancel', finish);
+        }
+
+        function renderPlacementStage() {
+            const sel = document.getElementById('placement-label-select');
+            const labelName = sel.value;
+            const stageBox = document.getElementById('placement-stage');
+            if (!lastCompile || !labelName) { stageBox.innerHTML = ''; stageBox.style.backgroundImage = ''; return; }
+            const lbl = lastCompile.labels.find(l => l.name === labelName);
+            const node = lbl && lastCompile.compiled.nodes[lbl.id];
+            stageBox.style.backgroundImage = node && node.background ? `url("${node.background}")` : '';
+            stageBox.innerHTML = '';
+            if (!node) return;
+            const aliasByKey = keyToAliasMap();
+            (node.stage || []).forEach(s => {
+                if (!s.sprite) return;
+                const alias = aliasByKey[s.key];
+                const { x, y } = positionToXY(s.position);
+                const scale = s.scale || 1;
+                const wrap = document.createElement('div');
+                wrap.className = 'placement-sprite-wrap';
+                wrap.style.left = x + '%';
+                wrap.style.bottom = y + '%';
+                wrap.style.transform = `translateX(-50%) scale(${scale})`;
+                wrap.dataset.alias = alias || '';
+                const img = document.createElement('img');
+                img.src = s.sprite;
+                wrap.appendChild(img);
+                const slider = document.createElement('input');
+                slider.type = 'range'; slider.min = '0.5'; slider.max = '2'; slider.step = '0.05'; slider.value = String(scale);
+                slider.className = 'placement-scale-slider';
+                slider.addEventListener('pointerdown', (e) => e.stopPropagation());
+                slider.addEventListener('input', () => {
+                    wrap.style.transform = `translateX(-50%) scale(${slider.value})`;
+                });
+                slider.addEventListener('change', () => {
+                    applyPlacement(labelName, alias, { scale: parseFloat(slider.value) });
+                });
+                wrap.appendChild(slider);
+                if (alias) attachPlacementDrag(wrap, stageBox, labelName);
+                stageBox.appendChild(wrap);
+            });
+        }
+
+        function populatePlacementSelect() {
+            const sel = document.getElementById('placement-label-select');
+            if (!lastCompile) return;
+            sel.innerHTML = lastCompile.labels.map(l => `<option value="${escapeHtml(l.name)}">${escapeHtml(l.name)}</option>`).join('');
+            const near = labelNearCursor();
+            if (near && lastCompile.labels.some(l => l.name === near)) sel.value = near;
+        }
+
+        document.getElementById('btn-placement').onclick = () => {
+            const card = document.getElementById('placement-card');
+            const willShow = card.style.display === 'none';
+            card.style.display = willShow ? 'block' : 'none';
+            if (willShow) {
+                if (!lastCompile) runCheck(false);
+                populatePlacementSelect();
+                renderPlacementStage();
+            }
+        };
+        document.getElementById('placement-label-select').addEventListener('change', renderPlacementStage);
 
         function saveScript(onSuccess) {
             if (!editingNovelId) return;
