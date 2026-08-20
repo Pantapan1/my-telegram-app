@@ -53,7 +53,11 @@
     .reader-sprite.pos-left { left: 2%; }
     .reader-sprite.pos-center { left: 50%; transform: translateX(-50%); }
     .reader-sprite.pos-right { right: 2%; }
-    .reader-topbar { position: absolute; top: 0; left: 0; right: 0; padding: 14px; display: flex; justify-content: space-between; z-index: 5; }
+    .reader-topbar { position: absolute; top: 0; left: 0; right: 0; padding: 14px; display: flex; justify-content: space-between; z-index: 5; gap: 8px; }
+    .reader-plugin-btn {
+        border: none; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700;
+        background: rgba(255,255,255,.15); color: #fff; backdrop-filter: blur(6px); cursor: pointer; z-index: 6;
+    }
     .reader-close {
         width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; border: none;
         font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -214,7 +218,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update, increment, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, increment, set, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -356,12 +360,116 @@
     let lineIndex = 0;
     let isAdminPreview = params.get('adminPreview') === '1';
 
+    // ======================================================================
+    // ПЛАГИНЫ — полный доступ к DOM читалки, без песочницы (доверенный контент,
+    // грузится только из твоей собственной базы plugins/*)
+    // ======================================================================
+    const pluginRegistry = {};      // keyword -> { oneShot(args,api), mount(args,api)->cleanupFn }
+    const pluginEventBus = { nodeLoad: [], lineRender: [], beforeAdvance: [], choiceShown: [] };
+    let activeWidgetCleanups = [];  // функции очистки виджетов текущей сцены
+    let pluginsLoadedForNovel = null;
+
+    function fireEvent(name, payload) {
+        let blocked = false;
+        (pluginEventBus[name] || []).forEach(cb => {
+            try { if (cb(payload) === false) blocked = true; } catch (err) { console.error('[plugin] обработчик ' + name + ' упал:', err); }
+        });
+        return !blocked;
+    }
+
+    function teardownWidgets() {
+        activeWidgetCleanups.forEach(fn => { try { fn(); } catch (err) { console.error('[plugin] ошибка очистки виджета:', err); } });
+        activeWidgetCleanups = [];
+    }
+
+    function mountWidgets(widgets) {
+        widgets.forEach(w => {
+            const handler = pluginRegistry[w.keyword];
+            if (!handler || !handler.mount) return;
+            try {
+                const cleanup = handler.mount(w.args || {}, pluginApi);
+                if (typeof cleanup === 'function') activeWidgetCleanups.push(cleanup);
+            } catch (err) { console.error('[plugin] widget "' + w.keyword + '" упал при монтировании:', err); }
+        });
+    }
+
+    function firePluginOneShot(plugin) {
+        const handler = pluginRegistry[plugin.keyword];
+        if (!handler || !handler.oneShot) return;
+        try { handler.oneShot(plugin.args || {}, pluginApi); }
+        catch (err) { console.error('[plugin] plugin "' + plugin.keyword + '" упал:', err); }
+    }
+
+    // API, который получает каждый плагин — прямой доступ к DOM читалки и управлению чтением.
+    // Осознанно без песочницы: плагины грузятся только из своей базы, доверенный контент.
+    const pluginApi = {
+        dom: {
+            get reader() { return document.getElementById('reader'); },
+            get dialogueBox() { return document.getElementById('reader-box'); },
+            get speakerEl() { return document.getElementById('reader-speaker'); },
+            get textEl() { return document.getElementById('reader-text'); },
+            get choicesBox() { return document.getElementById('reader-choices'); },
+            get hintEl() { return document.getElementById('reader-hint'); },
+            get topbar() { return document.querySelector('.reader-topbar'); },
+            get bgEl() { return document.getElementById('reader-bg'); },
+        },
+        // Быстрое добавление кнопки в шапку читалки (или в любой контейнер по выбору)
+        addButton(opts) {
+            const btn = document.createElement('button');
+            btn.textContent = (opts && opts.label) || 'Кнопка';
+            btn.className = 'reader-plugin-btn' + ((opts && opts.className) ? ' ' + opts.className : '');
+            if (opts && opts.style) Object.assign(btn.style, opts.style);
+            btn.onclick = (e) => { e.stopPropagation(); if (opts && opts.onClick) opts.onClick(e); };
+            const parent = (opts && opts.parent) || this.dom.topbar;
+            if (parent) parent.appendChild(btn);
+            return btn;
+        },
+        getVar(name) { return varValue(name, myVars()); },
+        setVar(name, value) { applyEffects([{ op: 'set', name, value }]); },
+        addVar(name, delta) { applyEffects([{ op: 'add', name, value: delta }]); },
+        getVars() { return { ...myVars() }; },
+        getCurrentNode() { return currentNode; },
+        getCurrentNovel() { return currentNovel; },
+        getCurrentLine() { return currentNode ? (currentNode.lines || [])[lineIndex] : null; },
+        triggerVfx(nameOrObj) { triggerVfx(typeof nameOrObj === 'string' ? { name: nameOrObj } : nameOrObj); },
+        setWeather(kind) { setWeather(kind || ''); },
+        advance() { window.advanceReader(); },
+        jumpTo(nodeId) { loadNode(nodeId); },
+        pickChoice(index) { window.__pickChoice(index); },
+        // event: 'nodeLoad' | 'lineRender' | 'beforeAdvance' | 'choiceShown'
+        // вернуть false из обработчика beforeAdvance — заблокировать обычное продвижение по тексту (например, пока не закрыт мини-квиз)
+        on(event, cb) { if (pluginEventBus[event]) pluginEventBus[event].push(cb); },
+        // Регистрирует новый ключ для repy-конструкций `plugin keyword ...` (разово, привязан к реплике)
+        // и `widget keyword ...` (живёт всю сцену, mount должен вернуть функцию очистки)
+        registerStatement(keyword, handlers) { pluginRegistry[keyword] = handlers || {}; },
+    };
+
+    // Плагины хранятся как исходный JS-модуль (export default function install(api){...}) в plugins/{id}/code
+    async function loadNovelPlugins(novel) {
+        const ids = novel.plugins || [];
+        const key = novel.id + ':' + ids.join(',');
+        if (pluginsLoadedForNovel === key) return; // уже загружены для этой новеллы в этой сессии вкладки
+        pluginsLoadedForNovel = key;
+        for (const id of ids) {
+            try {
+                const snap = await get(ref(db, 'plugins/' + id));
+                const p = snap.val();
+                if (!p || !p.code) continue;
+                const blob = new Blob([p.code], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                const mod = await import(url);
+                URL.revokeObjectURL(url);
+                if (typeof mod.default === 'function') mod.default(pluginApi);
+            } catch (err) { console.error('[plugin] не удалось загрузить "' + id + '":', err); }
+        }
+    }
+
     function openReader(novelId, nodeId) {
         currentNovel = novelsData.find(n => n.id === novelId);
         if (!currentNovel) return;
         document.getElementById('reader').classList.add('active');
         document.getElementById('reader-ending').style.display = 'none';
-        loadNode(nodeId || currentNovel.startNodeId);
+        loadNovelPlugins(currentNovel).finally(() => loadNode(nodeId || currentNovel.startNodeId));
     }
 
     // Прямая ссылка из редактора на конкретную сцену для проверки — не трогает прогресс/монеты игрока
@@ -373,12 +481,13 @@
             currentNovel = { id: params.get('novelId'), ...data, nodes: data.nodes || {} };
             document.getElementById('reader').classList.add('active');
             document.getElementById('reader-ending').style.display = 'none';
-            loadNode(params.get('nodeId') || currentNovel.startNodeId);
+            loadNovelPlugins(currentNovel).finally(() => loadNode(params.get('nodeId') || currentNovel.startNodeId));
         }, { onlyOnce: true });
     }
 
     window.closeReader = function () {
         document.getElementById('reader').classList.remove('active');
+        teardownWidgets();
         currentNovel = null; currentNode = null;
         if (isAdminPreview) window.close();
     };
@@ -529,6 +638,7 @@
         const nodes = currentNovel.nodes || {};
         const node = nodes[nodeId];
         if (!node) { closeReader(); return; }
+        teardownWidgets();
         currentNode = { ...node, id: nodeId };
         applyEffects(node.effects);
         currentNode.lines = filterConditionalLines(node.lines || [], node.conditionGroups || [], myVars());
@@ -558,6 +668,8 @@
         setWeather(node.weather || '');
         // Сохраняем прогресс — при повторном открытии новеллы читатель попадёт на эту сцену (кроме предпросмотра админа)
         if (myId && !isAdminPreview) update(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id), { currentNodeId: nodeId, unlocked: true }).catch(() => {});
+        mountWidgets(node.widgets || []);
+        fireEvent('nodeLoad', { node: currentNode });
         renderLine();
     }
 
@@ -599,6 +711,8 @@
         const alreadyRead = !isAdminPreview && myId && !!((myProgress[currentNovel.id] || {}).readLines || {})[lineKey];
         const speedMs = alreadyRead ? 0 : (currentNovel.textSpeed || 0);
         if (line.vfx) triggerVfx(line.vfx);
+        if (line.plugin) firePluginOneShot(line.plugin);
+        fireEvent('lineRender', { line, index: lineIndex });
         typeText(textEl, fullText, speedMs, () => {
             document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
         });
@@ -632,8 +746,9 @@
             if (!spriteUrl) return;
             const img = document.createElement('img');
             const speaking = !!(line.speakerKey && s.key === line.speakerKey);
-            img.className = 'reader-sprite stage-sprite pos-' + (s.position || 'center') + (speaking ? ' speaking' + fx : '');
+            img.className = 'reader-sprite stage-sprite' + (speaking ? ' speaking' + fx : '');
             img.src = spriteUrl;
+            applySpritePlacement(img, s.position, s.scale);
             document.getElementById('reader').insertBefore(img, document.querySelector('.reader-topbar'));
         });
 
@@ -648,11 +763,29 @@
             if (line.sprite) {
                 sprite.src = line.sprite;
                 sprite.style.display = 'block';
-                sprite.className = 'reader-sprite speaking pos-' + (line.spritePosition || 'center') + fx;
+                sprite.className = 'reader-sprite speaking' + fx;
+                applySpritePlacement(sprite, line.spritePosition, line.spriteScale);
             } else {
                 sprite.style.display = 'none';
             }
         }
+    }
+
+    // position: 'left'|'center'|'right' или "x,y" в процентах (x — по горизонтали от центра, y — отступ от низа экрана)
+    function applySpritePlacement(el, position, scale) {
+        let x = 50, y = 0;
+        if (position === 'left') x = 15;
+        else if (position === 'right') x = 85;
+        else if (position && position.indexOf(',') !== -1) {
+            const parts = position.split(',');
+            const px = parseFloat(parts[0]), py = parseFloat(parts[1]);
+            if (!isNaN(px)) x = px;
+            if (!isNaN(py)) y = py;
+        }
+        const s = (scale && scale > 0) ? scale : 1;
+        el.style.left = x + '%';
+        el.style.bottom = y + '%';
+        el.style.transform = `translateX(-50%) scale(${s})`;
     }
 
     function hasMoreAfterLines() {
@@ -672,6 +805,7 @@
 
     window.advanceReader = function () {
         if (!currentNode) return;
+        if (fireEvent('beforeAdvance', {}) === false) return; // плагин может перехватить и заблокировать обычное продвижение
         if (isTyping) {
             // Тап во время печати — сразу дописываем текущую реплику целиком, не переходя дальше
             clearInterval(typewriterTimer);
@@ -723,6 +857,7 @@
             const realIndex = (currentNode.choices || []).indexOf(c);
             return `<button class="reader-choice-btn" onclick="event.stopPropagation(); window.__pickChoice(${realIndex})">${escapeHtml(c.text || '...')}</button>`;
         }).join('');
+        fireEvent('choiceShown', { choices: visibleChoices });
     }
 
     window.__pickChoice = function (i) {

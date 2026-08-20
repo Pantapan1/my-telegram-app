@@ -180,6 +180,20 @@
 
     .script-suggest-box { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
+    /* ===================== Плагины ===================== */
+    .plugin-item { background: #f8f9fa; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+    .plugin-item-head { display: flex; align-items: center; gap: 8px; }
+    .plugin-item-head input[type="text"] { flex: 1; border: none; background: transparent; font-weight: 700; font-size: 13px; padding: 4px; }
+    .plugin-item-head label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #556; white-space: nowrap; }
+    .plugin-item textarea {
+        width: 100%; min-height: 160px; margin-top: 8px; font-family: Consolas, monospace; font-size: 11.5px;
+        background: #14141f; color: #e6e6e6; border-radius: 10px; border: 1px solid #e0e0e0; padding: 10px; box-sizing: border-box;
+    }
+    .plugin-item-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .plugin-item-actions button { flex: 1; border: none; border-radius: 8px; padding: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer; background: #eee; }
+    .plugin-item-actions button.danger { background: #fdecea; color: #c0392b; }
+    .plugin-item-actions button.primary { background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; }
+
     /* ===================== Визуальная расстановка персонажей ===================== */
     .placement-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .placement-toolbar select { flex: 1; }
@@ -284,6 +298,24 @@
             </div>
             <button class="btn" id="btn-save-novel-meta">Сохранить новеллу</button>
             <button class="btn btn-danger" id="btn-delete-novel">Удалить новеллу</button>
+        </div>
+
+        <!-- Плагины (полный доступ к DOM читалки, без песочницы) -->
+        <div class="card" id="plugins-card" style="display:none;">
+            <div class="card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+                <label class="field-label" style="margin:0;">🔌 Плагины</label>
+                <span class="chevron">▼</span>
+            </div>
+            <div class="card-body">
+                <div id="plugins-list"></div>
+                <button class="btn btn-secondary btn-small" id="btn-new-plugin" style="margin-top:8px;">➕ Новый плагин</button>
+                <div class="placement-hint" style="margin-top:8px;">
+                    Плагин — обычный JS-модуль: <code>export default function install(api) { ... }</code>.
+                    У api есть прямой доступ к DOM читалки (<code>api.dom.reader</code>, <code>api.dom.dialogueBox</code>...),
+                    <code>api.addButton(...)</code>, <code>api.getVar/setVar</code>, <code>api.on('nodeLoad'|'lineRender'|'beforeAdvance'|'choiceShown', cb)</code>
+                    и <code>api.registerStatement('ключ', { oneShot(args,api), mount(args,api)→cleanupFn })</code> — под свои <code>plugin</code>/<code>widget</code> в сценарии.
+                </div>
+            </div>
         </div>
 
         <!-- Шпаргалка по языку -->
@@ -511,6 +543,33 @@
         return effects;
     }
 
+    // "quiz_battle hp=100 opponent \"Борис\"" -> { keyword: 'quiz_battle', args: { hp:100, opponent:'Борис' } }
+    // поддерживает и компактную форму key=value, и раздельную key value (в т.ч. в кавычках)
+    function parsePluginArgs(str) {
+        const toks = splitTokens(str);
+        if (!toks.length) return { keyword: '', args: {} };
+        const keyword = toks[0].value;
+        const args = {};
+        const warns = [];
+        let i = 1;
+        while (i < toks.length) {
+            const t = toks[i];
+            if (t.type === 'word' && t.value.includes('=')) {
+                const eq = t.value.indexOf('=');
+                const rawVal = t.value.slice(eq + 1);
+                if (rawVal.startsWith('"') && !rawVal.endsWith('"')) {
+                    warns.push(`похоже, значение "${t.value.slice(0, eq)}" с пробелом внутри — пиши через пробел и кавычки: ${t.value.slice(0, eq)} "текст"`);
+                }
+                args[t.value.slice(0, eq)] = parseLiteralValue(rawVal);
+                i++;
+            } else if (t.type === 'word' && toks[i + 1]) {
+                args[t.value] = toks[i + 1].type === 'str' ? toks[i + 1].value : parseLiteralValue(toks[i + 1].value);
+                i += 2;
+            } else { i++; }
+        }
+        return { keyword, args, warns };
+    }
+
     // ---- Первый проход: построчный разбор в статьи (statements) --------
     function parseScriptStructure(text) {
         const lines = text.split('\n');
@@ -525,6 +584,7 @@
         let menuState = null;    // {indent, choices}
         let ifState = null;      // {indent, groupId, branchIndex}
         let pendingVfx = null;   // одноразовый vfx, ждущий следующую реплику, чтобы сработать именно на ней
+        let pendingPlugin = null; // одноразовый plugin, ждущий следующую реплику, чтобы сработать именно на ней
         let condGroupCounter = 0;
         const errors = [];
         const warnings = [];
@@ -550,6 +610,7 @@
                 labels.push(currentLabel);
                 menuState = null; ifState = null;
                 if (pendingVfx) { warnings.push({ line: pendingVfx.lineNo, msg: `vfx "${pendingVfx.name}" ничем не сработал — после него нет реплики в той же сцене` }); pendingVfx = null; }
+                if (pendingPlugin) { warnings.push({ line: pendingPlugin.lineNo, msg: `plugin "${pendingPlugin.keyword}" ничем не сработал — после него нет реплики в той же сцене` }); pendingPlugin = null; }
                 return;
             }
 
@@ -696,6 +757,27 @@
                 return;
             }
 
+            // plugin keyword arg=value ...  — одноразовое срабатывание плагина ровно на следующей реплике
+            if (trimmed.startsWith('plugin ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'plugin нельзя использовать внутри if-блока' }); return; }
+                const parsed = parsePluginArgs(trimmed.slice(7));
+                if (!parsed.keyword) { errors.push({ line: lineNo, msg: 'plugin требует название: plugin keyword arg1=val1 arg2="текст"' }); return; }
+                (parsed.warns || []).forEach(w => warnings.push({ line: lineNo, msg: w }));
+                if (pendingPlugin) warnings.push({ line: pendingPlugin.lineNo, msg: `plugin "${pendingPlugin.keyword}" перекрыт следующим plugin раньше, чем сработал` });
+                pendingPlugin = { keyword: parsed.keyword, args: parsed.args, lineNo };
+                return;
+            }
+
+            // widget keyword arg=value ...  — держится всю сцену (кнопки, оверлеи и т.п.), пока сцена не сменится
+            if (trimmed.startsWith('widget ')) {
+                if (ifState) { errors.push({ line: lineNo, msg: 'widget нельзя использовать внутри if-блока' }); return; }
+                const parsed = parsePluginArgs(trimmed.slice(7));
+                if (!parsed.keyword) { errors.push({ line: lineNo, msg: 'widget требует название: widget keyword arg1=val1' }); return; }
+                (parsed.warns || []).forEach(w => warnings.push({ line: lineNo, msg: w }));
+                pushStmt({ type: 'widget', keyword: parsed.keyword, args: parsed.args, lineNo });
+                return;
+            }
+
             if (trimmed.startsWith('scene ')) {
                 if (ifState) { errors.push({ line: lineNo, msg: 'scene нельзя использовать внутри if-блока' }); return; }
                 const toks = splitTokens(trimmed.slice(6));
@@ -783,11 +865,13 @@
                 else if (t.value === 'sfx' && toks[i + 1]) { sfxTok = toks[i + 1]; i++; }
                 else if (t.value === 'scale' && toks[i + 1]) { scale = parseFloat(toks[i + 1].value) || 1; i++; }
             }
-            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, scale, vfx: pendingVfx, lineNo });
+            pushStmt({ type: 'line', speakerAlias, speakerLiteral, asTok, text: textTok.value, position, fx, spriteTok, sfxTok, scale, vfx: pendingVfx, plugin: pendingPlugin, lineNo });
             pendingVfx = null;
+            pendingPlugin = null;
         });
 
         if (pendingVfx) warnings.push({ line: pendingVfx.lineNo, msg: `vfx "${pendingVfx.name}" ничем не сработал — после него нет реплики` });
+        if (pendingPlugin) warnings.push({ line: pendingPlugin.lineNo, msg: `plugin "${pendingPlugin.keyword}" ничем не сработал — после него нет реплики` });
 
         return { characters, images, audioMap, flags, variables, explicitStart, labels, errors, warnings };
     }
@@ -901,6 +985,7 @@
                     return;
                 }
                 if (st.type === 'weather') { node.weather = st.kind || ''; return; }
+                if (st.type === 'widget') { node.widgets = node.widgets || []; node.widgets.push({ keyword: st.keyword, args: st.args || {} }); return; }
                 if (st.type === 'show') {
                     if (!characters[st.alias]) { errors.push({ line: st.lineNo, msg: `неизвестный персонаж "${st.alias}" — объяви его через character` }); return; }
                     if (!stageSet[st.alias]) stageAliases.push(st.alias);
@@ -951,6 +1036,7 @@
                     }
                     if (st.condGroup) { line.condGroup = st.condGroup; line.condBranch = st.condBranch; }
                     if (st.vfx) line.vfx = { name: st.vfx.name, color: st.vfx.color || '', duration: st.vfx.duration || 0 };
+                    if (st.plugin) line.plugin = { keyword: st.plugin.keyword, args: st.plugin.args || {} };
                     // Снимок состава сцены на момент именно этой реплики — так меняющиеся эмоции/выходы/уходы видны по ходу диалога, а не только в конце сцены
                     line.stage = stageAliases.filter(a => stageSet[a]).map(a => ({
                         key: encodeURIComponent(characters[a].name),
@@ -1455,7 +1541,14 @@ label имя:                                           — новая сцен�
         "другой вариант" -> label
 
     jump label                                         — переход дальше без выбора
-    ending "Название" reward_coins 50 reward_card id x1 — конец, награда`;
+    ending "Название" reward_coins 50 reward_card id x1 — конец, награда
+
+    plugin keyword arg1=val1 arg2 "текст с пробелом"    — разовое срабатывание плагина ровно на следующей реплике
+    widget keyword arg1=val1                            — плагин-виджет (кнопка/оверлей), живёт всю сцену
+    # значения без пробелов — компактно: key=value (числа, true/false, одно слово)
+    # значения с пробелом — через пробел и кавычки: key "текст с пробелом" (НЕ key="текст с пробелом")
+    # плагины пишутся отдельно как JS-код (export default function install(api){...})
+    # и подключаются к новелле в разделе "🔌 Плагины" редактора`;
     let editorStarted = false;
     function startEditor() {
         if (editorStarted) return;
@@ -1483,6 +1576,12 @@ label имя:                                           — новая сцен�
             const data = snap.val() || {};
             cardsData = Object.entries(data).map(([id, v]) => ({ id, ...v }));
         });
+        let pluginsData = [];
+        onValue(ref(db, 'plugins'), (snap) => {
+            const data = snap.val() || {};
+            pluginsData = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+            if (editingNovelId) renderPluginsList();
+        });
 
         function currentNovel() { return novelsData.find(n => n.id === editingNovelId); }
 
@@ -1509,8 +1608,10 @@ label имя:                                           — новая сцен�
             renderNovelsList();
             const n = currentNovel();
             document.getElementById('novel-meta-card').style.display = 'block';
+            document.getElementById('plugins-card').style.display = 'block';
             document.getElementById('cheatsheet-card').style.display = 'block';
             document.getElementById('script-card').style.display = 'block';
+            renderPluginsList();
             document.getElementById('novel-title').value = n.title || '';
             document.getElementById('novel-description').value = n.description || '';
             document.getElementById('novel-cover').value = n.coverImage || '';
@@ -1556,9 +1657,62 @@ label имя:                                           — новая сцен�
 
         function hideNovelPanels() {
             document.getElementById('novel-meta-card').style.display = 'none';
+            document.getElementById('plugins-card').style.display = 'none';
             document.getElementById('cheatsheet-card').style.display = 'none';
             document.getElementById('script-card').style.display = 'none';
         }
+
+        // ===================== ПЛАГИНЫ =====================
+        function renderPluginsList() {
+            const box = document.getElementById('plugins-list');
+            const n = currentNovel();
+            if (!n) return;
+            const enabledIds = n.plugins || [];
+            if (!pluginsData.length) { box.innerHTML = '<div class="empty-state">Пока нет ни одного плагина</div>'; return; }
+            box.innerHTML = pluginsData.map(p => `
+                <div class="plugin-item" data-plugin-id="${p.id}">
+                    <div class="plugin-item-head">
+                        <input type="text" value="${escapeHtml(p.name || 'Без названия')}" data-role="name">
+                        <label><input type="checkbox" data-role="enabled" ${enabledIds.includes(p.id) ? 'checked' : ''}> для этой новеллы</label>
+                    </div>
+                    <textarea data-role="code" spellcheck="false" placeholder="export default function install(api) {\n    // ...\n}">${escapeHtml(p.code || '')}</textarea>
+                    <div class="plugin-item-actions">
+                        <button class="primary" data-role="save">💾 Сохранить</button>
+                        <button class="danger" data-role="delete">🗑️ Удалить</button>
+                    </div>
+                </div>`).join('');
+
+            box.querySelectorAll('.plugin-item').forEach(item => {
+                const id = item.dataset.pluginId;
+                item.querySelector('[data-role="enabled"]').addEventListener('change', (e) => {
+                    const nv = currentNovel();
+                    if (!nv) return;
+                    const list = new Set(nv.plugins || []);
+                    if (e.target.checked) list.add(id); else list.delete(id);
+                    update(ref(db, 'novels/' + editingNovelId), { plugins: Array.from(list) }).catch(err => safeAlert('Ошибка: ' + err.message));
+                });
+                item.querySelector('[data-role="save"]').onclick = () => {
+                    const name = item.querySelector('[data-role="name"]').value.trim() || 'Без названия';
+                    const code = item.querySelector('[data-role="code"]').value;
+                    update(ref(db, 'plugins/' + id), { name, code }).then(() => safeToast('Сохранено', 'Плагин обновлён')).catch(err => safeAlert('Ошибка: ' + err.message));
+                };
+                item.querySelector('[data-role="delete"]').onclick = () => {
+                    if (!confirm('Удалить плагин совсем? Он отвяжется от всех новелл, где подключён.')) return;
+                    remove(ref(db, 'plugins/' + id)).then(() => {
+                        novelsData.forEach(nv => {
+                            if ((nv.plugins || []).includes(id)) {
+                                update(ref(db, 'novels/' + nv.id), { plugins: (nv.plugins || []).filter(x => x !== id) }).catch(() => {});
+                            }
+                        });
+                    }).catch(err => safeAlert('Ошибка: ' + err.message));
+                };
+            });
+        }
+
+        document.getElementById('btn-new-plugin').onclick = () => {
+            push(ref(db, 'plugins'), { name: 'Новый плагин', code: 'export default function install(api) {\n    // api.dom, api.addButton, api.getVar/setVar,\n    // api.on(\'nodeLoad\'|\'lineRender\'|\'beforeAdvance\'|\'choiceShown\', cb),\n    // api.registerStatement(\'ключ\', { oneShot(args,api), mount(args,api) })\n}\n' })
+                .catch(err => safeAlert('Ошибка: ' + err.message));
+        };
 
         window.__deleteNovel = function (id) {
             if (!confirm('Удалить новеллу целиком со всеми сценами? Это необратимо.')) return;
