@@ -1,4 +1,4 @@
-import { ref, push, update, remove, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, push, update, remove, set, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { colorFor, confettiBurst, escapeHtml, friendlyDbError, initialOf, playSound, saveLocal, showTerrariaToast, updateReaderBossLabel } from './utils.js';
 import { awardPassXP } from './pass.js';
@@ -191,6 +191,9 @@ export function getChapters(book) {
             }
             state.progressStore[bookId].lastIdx = idx; 
             saveLocal('sr_progress', state.progressStore);
+            if (state.db && state.currentUser) {
+                update(ref(state.db, 'users/' + state.currentUser.id + '/bookProgress/' + bookId), { lastIdx: idx }).catch(() => {});
+            }
 
             const chapter = state.currentChapters[idx];
             const isPaged = !!(chapter && chapter.pages && chapter.pages.length);
@@ -208,6 +211,7 @@ export function getChapters(book) {
                 readerBody.textContent = chapter.text;
             }
             document.getElementById('reader-actions-chapter').classList.remove('hidden');
+            attachReaderMilestoneTracking(book);
 
             const readIdx = state.progressStore[bookId].readIdx || [];
             document.getElementById('reader-progress-wrap').classList.remove('hidden');
@@ -221,6 +225,37 @@ export function getChapters(book) {
         }
 
         window.openChapter = openChapter;
+
+        // === Звуковые вехи чтения ===
+        // Лёгкий звук + тихая вспышка по краям текста, когда читатель докручивает главу до 25/50/75/100%.
+        // Ненавязчиво отмечает прогресс прямо во время чтения, отдельно от кнопки "прочитано".
+        // Звук настраивается ПО КНИГЕ (book.milestoneSound из редактора книги); если у книги свой звук
+        // не задан — используется общий звук из настроек оформления (settings/sounds.milestone).
+        let readingMilestonesHit = new Set();
+        let readingMilestoneScrollHandler = null;
+        function attachReaderMilestoneTracking(book) {
+            readingMilestonesHit = new Set();
+            const body = document.getElementById('reader-body');
+            if (!body) return;
+            const milestoneSoundUrl = book && book.milestoneSound ? book.milestoneSound : null;
+            if (readingMilestoneScrollHandler) body.removeEventListener('scroll', readingMilestoneScrollHandler);
+            readingMilestoneScrollHandler = () => {
+                const max = body.scrollHeight - body.clientHeight;
+                if (max <= 4) return; // текст короче экрана — считаем прочитанным сразу, вехи ни к чему
+                const pct = Math.min(100, Math.round((body.scrollTop / max) * 100));
+                [25, 50, 75, 100].forEach(mark => {
+                    if (pct >= mark && !readingMilestonesHit.has(mark)) {
+                        readingMilestonesHit.add(mark);
+                        playSound('milestone', milestoneSoundUrl);
+                        body.classList.remove('milestone-flash');
+                        void body.offsetWidth; // рестарт CSS-анимации
+                        body.classList.add('milestone-flash');
+                        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                    }
+                });
+            };
+            body.addEventListener('scroll', readingMilestoneScrollHandler, { passive: true });
+        }
 
 
 
@@ -312,6 +347,9 @@ export function getChapters(book) {
             if (isNewChapter) { 
                 state.progressStore[state.currentBookId].readIdx.push(state.currentChapterIndex); 
                 saveLocal('sr_progress', state.progressStore); 
+                if (state.db && state.currentUser) {
+                    set(ref(state.db, 'users/' + state.currentUser.id + '/bookProgress/' + state.currentBookId + '/readIdx/' + state.currentChapterIndex), true).catch(() => {});
+                }
                 awardPassXP(15, 'chapter');
             }
 
@@ -331,6 +369,9 @@ export function getChapters(book) {
             if (bookJustCompleted) {
                 state.readBooks.push(state.currentBookId); 
                 saveLocal('sr_read', state.readBooks); 
+                if (state.db && state.currentUser) {
+                    set(ref(state.db, 'users/' + state.currentUser.id + '/readBooks/' + state.currentBookId), true).catch(() => {});
+                }
                 updateStreak(); 
                 renderProfileStats();
                 awardPassXP(30, 'book');
@@ -370,6 +411,7 @@ export function getChapters(book) {
         
         document.getElementById('btn-bookmark').onclick = function() {
             const idx = state.bookmarkedBooks.indexOf(state.currentBookId);
+            const nowBookmarked = idx === -1;
             if (idx > -1) { 
                 state.bookmarkedBooks.splice(idx, 1); 
                 tg.showAlert('Удалено из закладок'); 
@@ -377,6 +419,10 @@ export function getChapters(book) {
                 state.bookmarkedBooks.push(state.currentBookId); 
             }
             saveLocal('sr_bookmarks', state.bookmarkedBooks); 
+            if (state.db && state.currentUser) {
+                const bmRef = ref(state.db, 'users/' + state.currentUser.id + '/bookmarks/' + state.currentBookId);
+                (nowBookmarked ? set(bmRef, true) : remove(bmRef)).catch(() => {});
+            }
             document.getElementById('btn-bookmark').textContent = state.bookmarkedBooks.includes(state.currentBookId) ? '🔖✓' : '🔖';
         };
 

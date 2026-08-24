@@ -1,9 +1,22 @@
 export const tg = window.Telegram.WebApp;
 
+const _tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+const _authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+// Тот же id, что станет state.currentUser.id в core.js — нужен уже здесь, ДО того как currentUser
+// определится, чтобы личные данные (прочитанное, прогресс чтения, стрик, закладки) читались сразу
+// из-под своего пользователя, а не из-под того, кто последним заходил с этого браузера/устройства.
+// Раньше все эти данные хранились под общими ключами localStorage без привязки к пользователю —
+// поэтому при заходе другим аккаунтом на том же устройстве/браузере читалось (и правилось) чужое.
+const _localUid = _tgUser ? String(_tgUser.id) : (_authUser ? String(_authUser.id) : 'guest');
+function _loadUserLocal(key, fallbackJson) {
+  try { return JSON.parse(localStorage.getItem(key + '__u' + _localUid) || fallbackJson); }
+  catch (e) { return JSON.parse(fallbackJson); }
+}
+
 export const state = {
   currentUser: null,
-  tgUser: tg.initDataUnsafe && tg.initDataUnsafe.user,
-  authUser: JSON.parse(localStorage.getItem('sr_auth_user') || 'null'),
+  tgUser: _tgUser,
+  authUser: _authUser,
   badgeColor: '#1da1f2',  // цвет по умолчанию для тех, у кого нет своего
   seasonPassData: null,  // { name, endsAt, premiumPrice, levels:{n:{...}}, weeklyQuests:{id:{...}} }
   myPassState: null,  // локальная копия users/{uid}/pass
@@ -23,14 +36,14 @@ export const state = {
   bossData: null,
   bossParticipantsData: {},
   youtubeVideoId: null,
-  readBooks: JSON.parse(localStorage.getItem('sr_read') || '[]'),
-  bookmarkedBooks: JSON.parse(localStorage.getItem('sr_bookmarks') || '[]'),
-  progressStore: JSON.parse(localStorage.getItem('sr_progress') || '{}'),
-  chapterNotes: JSON.parse(localStorage.getItem('sr_chapter_notes') || '{}'),
-  streakStore: JSON.parse(localStorage.getItem('sr_streak') || '{"count":0,"lastDate":null}'),
-  lastSeenPostsCount: parseInt(localStorage.getItem('sr_last_seen_posts_count') || '0', 10),
+  readBooks: _loadUserLocal('sr_read', '[]'),
+  bookmarkedBooks: _loadUserLocal('sr_bookmarks', '[]'),
+  progressStore: _loadUserLocal('sr_progress', '{}'),
+  chapterNotes: _loadUserLocal('sr_chapter_notes', '{}'),
+  streakStore: _loadUserLocal('sr_streak', '{"count":0,"lastDate":null}'),
+  lastSeenPostsCount: parseInt(localStorage.getItem('sr_last_seen_posts_count__u' + _localUid) || '0', 10),
   readerFontSize: parseInt(localStorage.getItem('sr_fontsize') || '18', 10),
-  chatLastRead: JSON.parse(localStorage.getItem('sr_chat_last_read') || '{}'),
+  chatLastRead: _loadUserLocal('sr_chat_last_read', '{}'),
   currentPostId: null,
   viewingUserId: null,
   dailyRewardChecked: false,
@@ -81,7 +94,7 @@ export const state = {
   battleData: null,
   mySlot: null,
   selectedAttackerIid: null,
-  streakRewardStore: JSON.parse(localStorage.getItem('sr_streak_reward') || '{}'),
+  streakRewardStore: _loadUserLocal('sr_streak_reward', '{}'),
   terrariaDayNightTimer: null,
   renderedChatState: { chatId: null, signature: null },
   replyingTo: null,

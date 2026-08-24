@@ -145,7 +145,7 @@ window.switchTab = function(tabName) {
 
     if (tabName === 'feed') {
         state.lastSeenPostsCount = state.postsData.length;
-        localStorage.setItem('sr_last_seen_posts_count', String(state.lastSeenPostsCount));
+        localStorage.setItem('sr_last_seen_posts_count__u' + ((state.currentUser && state.currentUser.id) || 'guest'), String(state.lastSeenPostsCount));
         const badge = document.getElementById('feed-nav-badge');
         if (badge) badge.classList.add('hidden');
     }
@@ -437,6 +437,37 @@ export function startFirebaseListeners() {
         onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyLost'), (snapshot) => {
             state.storyLost = snapshot.val() || {};
             if (state.activeOverlay === 'storyMode') renderStoryListView();
+        });
+
+        // Прочитанное/прогресс/закладки — источник истины теперь Firebase (ключ = аккаунт), а не
+        // просто localStorage браузера. Раньше эти данные хранились только локально под общим ключом,
+        // из-за чего на одном устройстве/браузере "прочитанность" книги перетекала между аккаунтами.
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/readBooks'), (snapshot) => {
+            state.readBooks = Object.keys(snapshot.val() || {});
+            saveLocal('sr_read', state.readBooks);
+            renderProfileStats();
+            const booksSection = document.getElementById('section-books');
+            if (booksSection && booksSection.classList.contains('active')) renderBooks();
+        });
+
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/bookProgress'), (snapshot) => {
+            const data = snapshot.val() || {};
+            const store = {};
+            Object.entries(data).forEach(([bookId, v]) => {
+                store[bookId] = {
+                    readIdx: Object.keys(v.readIdx || {}).map(Number),
+                    lastIdx: v.lastIdx || 0,
+                };
+            });
+            state.progressStore = store;
+            saveLocal('sr_progress', state.progressStore);
+            const booksSection = document.getElementById('section-books');
+            if (booksSection && booksSection.classList.contains('active')) renderBooks();
+        });
+
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/bookmarks'), (snapshot) => {
+            state.bookmarkedBooks = Object.keys(snapshot.val() || {});
+            saveLocal('sr_bookmarks', state.bookmarkedBooks);
         });
     }
 

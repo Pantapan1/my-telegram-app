@@ -308,6 +308,7 @@ window.switchAdminTab = function(tab) {
             document.getElementById('sound-newMessage').value = state.soundsData.newMessage || '';
             document.getElementById('sound-newPost').value = state.soundsData.newPost || '';
             document.getElementById('sound-coin').value = state.soundsData.coin || '';
+            document.getElementById('sound-milestone').value = state.soundsData.milestone || '';
             document.getElementById('effect-confetti').checked = !!state.effectsData.confetti;
             document.getElementById('effect-particles').checked = !!state.effectsData.particles;
             document.getElementById('yt-video-id').value = state.youtubeVideoId || '';
@@ -343,7 +344,8 @@ window.switchAdminTab = function(tab) {
             const data = {
                 newMessage: document.getElementById('sound-newMessage').value.trim(),
                 newPost: document.getElementById('sound-newPost').value.trim(),
-                coin: document.getElementById('sound-coin').value.trim()
+                coin: document.getElementById('sound-coin').value.trim(),
+                milestone: document.getElementById('sound-milestone').value.trim()
             };
             update(ref(state.db, 'settings/sounds'), data).then(() => {
                 tg.showPopup({ title: 'Готово', message: 'Звуки сохранены', buttons: [{ type: 'ok' }] });

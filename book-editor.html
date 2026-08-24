@@ -96,6 +96,12 @@
                 <input type="file" id="book-cover-file" accept="image/*" style="display:none;">
             </div>
             <input type="text" id="book-genre" class="input" placeholder="Жанр (напр. Фантастика)">
+            <label style="display:block;font-size:12px;font-weight:700;color:#7f8c8d;margin:2px 0 6px;">🔊 Звук вехи чтения (25/50/75/100% главы) — необязательно</label>
+            <div class="upload-row">
+                <input type="text" id="book-milestone-sound" class="input" placeholder="URL звука mp3 — пусто = звук по умолчанию">
+                <label class="upload-btn" for="book-milestone-sound-file">📁</label>
+                <input type="file" id="book-milestone-sound-file" accept="audio/*" style="display:none;">
+            </div>
             <button class="btn" id="btn-add-book">Добавить книгу</button>
             <button class="btn btn-secondary" id="btn-cancel-edit-book" style="display:none;">Отменить редактирование</button>
         </div>
@@ -274,6 +280,7 @@
             document.getElementById('book-title').value = book.title || '';
             document.getElementById('book-cover').value = book.coverImage || '';
             document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-milestone-sound').value = book.milestoneSound || '';
             // На случай если у книги стоит тип, который сейчас скрыт у автора (например, права поменялись) —
             // временно показываем нужную вкладку, чтобы переключение типа не терялось при редактировании.
             const ownTab = typeTabs.find(t => t.dataset.type === (book.type || 'book'));
@@ -291,6 +298,7 @@
             document.getElementById('book-title').value = '';
             document.getElementById('book-cover').value = '';
             document.getElementById('book-genre').value = '';
+            document.getElementById('book-milestone-sound').value = '';
             if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
             document.getElementById('book-form-heading').textContent = 'Добавить книгу';
             document.getElementById('btn-add-book').textContent = 'Добавить книгу';
@@ -317,6 +325,28 @@
             } catch (err) { tg.showAlert('Ошибка сети при загрузке обложки'); }
         });
 
+        // Загрузка звука вехи чтения через Cloudinary (imgbb принимает только картинки)
+        const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
+        const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
+        document.getElementById('book-milestone-sound-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const btn = document.querySelector('label[for="book-milestone-sound-file"]');
+            const original = btn.textContent;
+            btn.textContent = '⏳';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('resource_type', 'video'); // Cloudinary шлёт аудио через эндпоинт video/upload
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.secure_url) document.getElementById('book-milestone-sound').value = json.secure_url;
+                else tg.showAlert('Ошибка загрузки звука');
+            } catch (err) { tg.showAlert('Ошибка сети при загрузке звука'); }
+            finally { btn.textContent = original; e.target.value = ''; }
+        });
+
         document.getElementById('btn-add-book').onclick = function() {
             const title = document.getElementById('book-title').value.trim();
             if (!title) return tg.showAlert('Укажи название книги');
@@ -327,7 +357,8 @@
                 author: myName,
                 authorId: myId,
                 coverImage: document.getElementById('book-cover').value.trim(),
-                genre: document.getElementById('book-genre').value.trim()
+                genre: document.getElementById('book-genre').value.trim(),
+                milestoneSound: document.getElementById('book-milestone-sound').value.trim()
             };
 
             if (editingBookId) {

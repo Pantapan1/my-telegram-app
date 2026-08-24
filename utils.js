@@ -146,8 +146,12 @@ export function colorFor(str) {
             return `<div class="${cls}-fallback" style="background:${colorFor(name || '')}">${initialOf(name)}</div>`;
         }
 
-        export function saveLocal(key, val) { 
-            localStorage.setItem(key, JSON.stringify(val)); 
+        // Личные данные (прочитанное, прогресс, стрик, закладки, непрочитанные чаты и т.п.) пишем
+        // под ключом, привязанным к текущему пользователю — иначе на одном браузере/устройстве эти
+        // данные "перетекают" от одного аккаунта к другому (баг: чужая книга выглядит прочитанной).
+        export function saveLocal(key, val) {
+            const uid = (state.currentUser && state.currentUser.id) || 'guest';
+            localStorage.setItem(key + '__u' + uid, JSON.stringify(val));
         }
 
         export function withTimeout(promise, ms, timeoutMessage) {
@@ -613,9 +617,9 @@ export function colorFor(str) {
             return localStorage.getItem('sr_sound_enabled') !== '0';
         }
 
-        export function playSound(key) {
+        export function playSound(key, overrideUrl) {
             if (!soundAllowed()) return;
-            const url = state.soundsData[key];
+            const url = overrideUrl || state.soundsData[key];
             if (!url) return;
             try {
                 const a = new Audio(url);
@@ -907,6 +911,7 @@ export function colorFor(str) {
         setupSoundUploadField('sound-newMessage-file', 'sound-newMessage', 'sound-newMessage-btn');
         setupSoundUploadField('sound-newPost-file', 'sound-newPost', 'sound-newPost-btn');
         setupSoundUploadField('sound-coin-file', 'sound-coin', 'sound-coin-btn');
+        setupSoundUploadField('sound-milestone-file', 'sound-milestone', 'sound-milestone-btn');
         setupSoundUploadField('arena-bgm-file', 'arena-bgm', 'arena-bgm-upload-btn');
 
         // АДМИН - КНИГИ И ГЛАВЫ
