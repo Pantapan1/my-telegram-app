@@ -845,6 +845,10 @@
         }
         
         .chat-messages-list { position: relative; z-index: 1; padding-top: 10px; font-size: 0; line-height: 0; }
+        .msg-row-action { justify-content: center; margin: 4px 0; }
+        .msg-action-line { max-width: 90%; text-align: center; font-style: italic; font-size: 13px; color: #6b21a8; background: rgba(155,89,255,0.12); border-radius: 12px; padding: 6px 12px; }
+        .msg-action-line .msg-reply-quote { text-align: left; font-style: normal; }
+        .sticker-toggle.active { background: #ff9f0a; color: #fff; }
         .msg-row { display: flex; margin-bottom: 6px; align-items: flex-end; font-size: 15px; line-height: 1.35; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         

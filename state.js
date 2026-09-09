@@ -99,6 +99,12 @@ export const state = {
   renderedChatState: { chatId: null, signature: null },
   replyingTo: null,
   editingMessageId: null,
+  // === Ролевые группы: персонажи, инвентарь, отыгрыш ===
+  editingCharacterId: null,      // персонаж, который сейчас редактируется в character-edit-overlay
+  rpPanelChatId: null,           // группа, для которой открыта ролевая панель
+  rpPanelCharacterId: null,      // персонаж, инвентарь которого сейчас открыт
+  activeCharacterByChat: _loadUserLocal('sr_active_character', '{}'), // { chatId: characterId } — от чьего лица отправляются сообщения
+  actionModeByChat: {},          // { chatId: true } — режим "реплика действия" (*текст*), не сохраняется между сессиями
   lastTypingSent: 0,
   typingClearTimer: null,
   editingQuestId: null,

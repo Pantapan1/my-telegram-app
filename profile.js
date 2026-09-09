@@ -355,6 +355,9 @@ export function checkDailyCoinReward() {
             else if (state.activeOverlay === 'newchat') document.getElementById('close-new-chat-btn').click();
             else if (state.activeOverlay === 'creategroup') document.getElementById('close-create-group-btn').click();
             else if (state.activeOverlay === 'editgroup') document.getElementById('close-edit-group-btn').click();
+            else if (state.activeOverlay === 'rppanel') document.getElementById('close-rp-panel-btn').click();
+            else if (state.activeOverlay === 'charactereditor') document.getElementById('close-character-edit-btn').click();
+            else if (state.activeOverlay === 'characterinventory') document.getElementById('close-character-inventory-btn').click();
             else if (state.activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
             else if (state.activeOverlay === 'userprofile') document.getElementById('close-user-profile-btn').click();
         });
