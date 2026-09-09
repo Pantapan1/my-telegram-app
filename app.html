@@ -1183,6 +1183,7 @@
                 <div id="chat-partner-status" class="online-dot-text"></div>
             </div>
             <button class="btn btn-secondary hidden" id="chat-rp-btn" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Ролевая панель">🎭</button>
+            <button class="btn btn-secondary hidden" id="chat-wiki-btn" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Дроп">📦</button>
             <button class="btn btn-secondary hidden" id="chat-edit-group-btn" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;">⚙️</button>
         </div>
         <div class="ad-banner-top" id="chat-ad-banner">
@@ -1275,6 +1276,73 @@
                 <button class="btn" id="btn-add-inventory-item" style="margin:0;">+ Добавить предмет</button>
             </div>
             <div id="character-inventory-list"></div>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ ("ДРОП"): СПИСОК КАТЕГОРИЙ -->
+    <div id="group-wiki-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-group-wiki-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="group-wiki-title">📦 Дроп</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div id="wiki-add-category-row" class="hidden" style="display:flex;gap:8px;margin-bottom:16px;">
+                <input type="text" id="wiki-category-name" class="input" placeholder="Название категории" style="margin:0;flex:1;">
+                <button class="btn" id="btn-add-wiki-category" style="margin:0;width:auto;padding:0 16px;">+</button>
+            </div>
+            <div id="group-wiki-categories-list"></div>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: ПОСТЫ ВНУТРИ КАТЕГОРИИ -->
+    <div id="wiki-category-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-category-btn">← Назад</button>
+            <div style="flex:1;min-width:0;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="wiki-category-title">Категория</div></div>
+            <button class="btn btn-secondary hidden" id="btn-wiki-add-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Добавить пост">+</button>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div id="wiki-category-posts-list"></div>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: ПРОСМОТР ПОСТА -->
+    <div id="wiki-post-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-post-btn">← Назад</button>
+            <div style="flex:1;min-width:0;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="wiki-post-title">Пост</div></div>
+            <button class="btn btn-secondary hidden" id="btn-wiki-edit-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Редактировать">✏️</button>
+            <button class="btn btn-secondary hidden" id="btn-wiki-delete-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Удалить">🗑</button>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div id="wiki-post-gallery" style="display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;"></div>
+            <div id="wiki-post-text" style="font-size:15px;line-height:1.5;color:var(--text-primary);white-space:pre-wrap;"></div>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: РЕДАКТОР ПОСТА (только создатель чата) -->
+    <div id="wiki-post-editor-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-post-editor-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="wiki-post-editor-title">Новый пост</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <input type="text" id="wiki-editor-post-title" class="input" placeholder="Заголовок поста">
+            <div id="wiki-editor-images-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
+            <label class="upload-btn" for="wiki-editor-image-file" id="wiki-editor-image-upload-btn" style="width:auto;padding:0 16px;display:inline-flex;align-items:center;gap:6px;border-radius:12px;margin-bottom:14px;">📁 Добавить картинки</label>
+            <input type="file" id="wiki-editor-image-file" accept="image/*" multiple class="hidden">
+            <textarea id="wiki-editor-post-text" class="input" placeholder="Текст поста" style="min-height:140px;"></textarea>
+            <button class="btn" id="btn-save-wiki-post">Сохранить пост</button>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: ПОЛНОЭКРАННЫЙ ПРОСМОТР КАРТИНКИ -->
+    <div id="wiki-image-viewer-overlay" class="reader-overlay" style="background:#000;">
+        <div class="reader-header" style="background:transparent;border:none;">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="close-wiki-image-viewer-btn">← Закрыть</button>
+        </div>
+        <div class="reader-content" style="display:flex;align-items:center;justify-content:center;padding:0;white-space:normal;">
+            <img id="wiki-image-viewer-img" style="max-width:100%;max-height:100%;object-fit:contain;">
         </div>
     </div>
 

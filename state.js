@@ -117,4 +117,11 @@ export const state = {
   storyBossDeckDraft: {},
   storyPendingChapterId: null,
   storySettings: {},
+  // === Вики группового чата ("Дроп"): категории и посты ===
+  wikiChatId: null,              // группа, для которой открыта вики
+  wikiCategoryId: null,          // категория, список постов которой сейчас открыт
+  wikiPostId: null,              // пост, который сейчас открыт/редактируется
+  wikiEditingPostId: null,       // id поста, который редактируется в редакторе (null = создание нового)
+  wikiEditorImages: [],          // массив URL картинок в редакторе поста (черновик перед сохранением)
+  wikiImageViewer: { images: [], index: 0 }, // полноэкранный просмотр картинки поста
 };

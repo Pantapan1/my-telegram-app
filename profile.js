@@ -358,6 +358,10 @@ export function checkDailyCoinReward() {
             else if (state.activeOverlay === 'rppanel') document.getElementById('close-rp-panel-btn').click();
             else if (state.activeOverlay === 'charactereditor') document.getElementById('close-character-edit-btn').click();
             else if (state.activeOverlay === 'characterinventory') document.getElementById('close-character-inventory-btn').click();
+            else if (state.activeOverlay === 'groupwiki') document.getElementById('close-group-wiki-btn').click();
+            else if (state.activeOverlay === 'wikicategory') document.getElementById('close-wiki-category-btn').click();
+            else if (state.activeOverlay === 'wikipost') document.getElementById('close-wiki-post-btn').click();
+            else if (state.activeOverlay === 'wikieditor') document.getElementById('close-wiki-post-editor-btn').click();
             else if (state.activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
             else if (state.activeOverlay === 'userprofile') document.getElementById('close-user-profile-btn').click();
         });

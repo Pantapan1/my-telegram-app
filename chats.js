@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { attachmentHtml, avatarHtml, colorFor, escapeHtml, formatDate, friendlyDbError, initialOf, lastSeenText, nickColorStyle, saveLocal, setupAttachmentPicker, shopBadgeHtml, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToImgbb, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -153,6 +153,7 @@ export function otherParticipant(chat) {
                 document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '');
                 document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== state.currentUser.id);
                 document.getElementById('chat-rp-btn').classList.toggle('hidden', !isRoleplayGroup(chat));
+                document.getElementById('chat-wiki-btn').classList.remove('hidden');
             } else {
                 const other = otherParticipant(chat);
                 document.getElementById('chat-partner-name').textContent = other.name;
@@ -160,6 +161,7 @@ export function otherParticipant(chat) {
                 document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
                 document.getElementById('chat-edit-group-btn').classList.add('hidden');
                 document.getElementById('chat-rp-btn').classList.add('hidden');
+                document.getElementById('chat-wiki-btn').classList.add('hidden');
             }
             updateChatRpStatusBar(chat);
 
@@ -1295,5 +1297,352 @@ export function otherParticipant(chat) {
                 document.getElementById('inv-item-note').value = '';
                 document.getElementById('inv-item-usable').checked = false;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        // ===================== ВИКИ ГРУППЫ ("ДРОП"): КАТЕГОРИИ И ПОСТЫ =====================
+        // Смотреть вики может любой участник группы. Добавлять категории и посты — только
+        // создатель группы (isGroupGM). Структура в БД:
+        //   chats/{chatId}/wiki/categories/{catId} = { name, createdAt }
+        //   chats/{chatId}/wiki/posts/{postId}     = { categoryId, title, text, images:[...], authorId, createdAt }
+
+        document.getElementById('chat-wiki-btn').onclick = function() {
+            openGroupWiki();
+        };
+
+        export function openGroupWiki() {
+            const chat = state.chatsData.find(c => c.id === state.currentChatId);
+            if (!chat || chat.type !== 'group') return;
+            state.wikiChatId = chat.id;
+            document.getElementById('chat-overlay').classList.remove('active');
+            document.getElementById('group-wiki-overlay').classList.add('active');
+            state.activeOverlay = 'groupwiki';
+            document.getElementById('group-wiki-title').textContent = '📦 Дроп · ' + (chat.name || '');
+            document.getElementById('wiki-category-name').value = '';
+            renderGroupWiki();
+        }
+
+        document.getElementById('close-group-wiki-btn').onclick = function() {
+            document.getElementById('group-wiki-overlay').classList.remove('active');
+            const chatId = state.wikiChatId;
+            state.wikiChatId = null;
+            if (chatId) openChat(chatId);
+        };
+
+        export function renderGroupWiki() {
+            if (state.activeOverlay !== 'groupwiki' || !state.wikiChatId) return;
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            const list = document.getElementById('group-wiki-categories-list');
+            if (!list) return;
+            if (!chat) { list.innerHTML = ''; return; }
+
+            const owner = isGroupGM(chat);
+            document.getElementById('wiki-add-category-row').classList.toggle('hidden', !owner);
+
+            const categories = chat.wiki && chat.wiki.categories
+                ? Object.entries(chat.wiki.categories).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+                : [];
+
+            if (!categories.length) {
+                list.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:10px;">${owner ? 'Пока нет категорий — добавьте первую выше.' : 'В этом чате пока нет вики.'}</div>`;
+            } else {
+                const posts = chat.wiki && chat.wiki.posts ? Object.values(chat.wiki.posts) : [];
+                list.innerHTML = categories.map(cat => {
+                    const count = posts.filter(p => p.categoryId === cat.id).length;
+                    return `
+                    <div class="admin-item" data-cat-id="${cat.id}" style="cursor:pointer;">
+                        <div class="admin-item-thumb cover-fallback small" style="background:${colorFor(cat.name || '')};">📁</div>
+                        <div class="admin-item-info">
+                            <div class="admin-item-title">${escapeHtml(cat.name || '(без имени)')}</div>
+                            <div class="admin-item-sub">${count ? count + ' пост.' : 'пусто'}</div>
+                        </div>
+                        ${owner ? `<div class="admin-item-actions"><button class="icon-btn danger" data-del-cat="${cat.id}" title="Удалить категорию">🗑</button></div>` : ''}
+                    </div>`;
+                }).join('');
+            }
+
+            list.querySelectorAll('[data-cat-id]').forEach(el => {
+                el.onclick = (e) => {
+                    if (e.target.closest('[data-del-cat]')) return;
+                    openWikiCategory(el.getAttribute('data-cat-id'));
+                };
+            });
+            list.querySelectorAll('[data-del-cat]').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const catId = btn.getAttribute('data-del-cat');
+                    tg.showConfirm('Удалить категорию вместе со всеми постами в ней?', (ok) => {
+                        if (!ok) return;
+                        const updates = {};
+                        updates['chats/' + chat.id + '/wiki/categories/' + catId] = null;
+                        const postsEntries = chat.wiki && chat.wiki.posts ? Object.entries(chat.wiki.posts) : [];
+                        postsEntries.forEach(([pid, p]) => { if (p.categoryId === catId) updates['chats/' + chat.id + '/wiki/posts/' + pid] = null; });
+                        update(ref(state.db), updates).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                    });
+                };
+            });
+        }
+
+        document.getElementById('btn-add-wiki-category').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat || !isGroupGM(chat)) return;
+            const input = document.getElementById('wiki-category-name');
+            const name = input.value.trim();
+            if (!name) return tg.showAlert('Введите название категории');
+            push(ref(state.db, 'chats/' + chat.id + '/wiki/categories'), { name, createdAt: Date.now() })
+                .then(() => {
+                    input.value = '';
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        // ---- Посты внутри категории ----
+
+        export function openWikiCategory(categoryId) {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat) return;
+            state.wikiCategoryId = categoryId;
+            const cat = (chat.wiki && chat.wiki.categories || {})[categoryId];
+            document.getElementById('wiki-category-title').textContent = cat ? cat.name : 'Категория';
+            document.getElementById('btn-wiki-add-post').classList.toggle('hidden', !isGroupGM(chat));
+            document.getElementById('group-wiki-overlay').classList.remove('active');
+            document.getElementById('wiki-category-overlay').classList.add('active');
+            state.activeOverlay = 'wikicategory';
+            renderWikiCategory();
+        }
+
+        document.getElementById('close-wiki-category-btn').onclick = function() {
+            document.getElementById('wiki-category-overlay').classList.remove('active');
+            document.getElementById('group-wiki-overlay').classList.add('active');
+            state.activeOverlay = 'groupwiki';
+            renderGroupWiki();
+        };
+
+        document.getElementById('btn-wiki-add-post').onclick = function() {
+            openWikiPostEditor(null);
+        };
+
+        export function renderWikiCategory() {
+            if (state.activeOverlay !== 'wikicategory' || !state.wikiChatId || !state.wikiCategoryId) return;
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            const list = document.getElementById('wiki-category-posts-list');
+            if (!list) return;
+            if (!chat) { list.innerHTML = ''; return; }
+
+            const owner = isGroupGM(chat);
+            const posts = chat.wiki && chat.wiki.posts
+                ? Object.entries(chat.wiki.posts).map(([id, v]) => ({ id, ...v })).filter(p => p.categoryId === state.wikiCategoryId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                : [];
+
+            if (!posts.length) {
+                list.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:10px;">${owner ? 'Постов пока нет — добавьте первый кнопкой «+».' : 'В этой категории пока пусто.'}</div>`;
+            } else {
+                list.innerHTML = posts.map(p => {
+                    const thumb = (p.images && p.images[0])
+                        ? `<img src="${p.images[0]}" class="admin-item-thumb" onerror="this.style.display='none'">`
+                        : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(p.title || '')};">📝</div>`;
+                    return `
+                    <div class="admin-item" data-post-id="${p.id}" style="cursor:pointer;">
+                        ${thumb}
+                        <div class="admin-item-info">
+                            <div class="admin-item-title">${escapeHtml(p.title || '(без названия)')}</div>
+                            <div class="admin-item-sub">${p.images && p.images.length ? '🖼 ' + p.images.length : ''}</div>
+                        </div>
+                        ${owner ? `<div class="admin-item-actions"><button class="icon-btn danger" data-del-post="${p.id}" title="Удалить">🗑</button></div>` : ''}
+                    </div>`;
+                }).join('');
+            }
+
+            list.querySelectorAll('[data-post-id]').forEach(el => {
+                el.onclick = (e) => {
+                    if (e.target.closest('[data-del-post]')) return;
+                    openWikiPost(el.getAttribute('data-post-id'));
+                };
+            });
+            list.querySelectorAll('[data-del-post]').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const postId = btn.getAttribute('data-del-post');
+                    tg.showConfirm('Удалить этот пост?', (ok) => {
+                        if (!ok) return;
+                        remove(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + postId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                    });
+                };
+            });
+        }
+
+        // ---- Просмотр поста ----
+
+        export function openWikiPost(postId) {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat) return;
+            state.wikiPostId = postId;
+            document.getElementById('wiki-category-overlay').classList.remove('active');
+            document.getElementById('wiki-post-overlay').classList.add('active');
+            state.activeOverlay = 'wikipost';
+            const owner = isGroupGM(chat);
+            document.getElementById('btn-wiki-edit-post').classList.toggle('hidden', !owner);
+            document.getElementById('btn-wiki-delete-post').classList.toggle('hidden', !owner);
+            renderWikiPost();
+        }
+
+        document.getElementById('close-wiki-post-btn').onclick = function() {
+            document.getElementById('wiki-post-overlay').classList.remove('active');
+            document.getElementById('wiki-category-overlay').classList.add('active');
+            state.activeOverlay = 'wikicategory';
+            renderWikiCategory();
+        };
+
+        document.getElementById('btn-wiki-edit-post').onclick = function() {
+            openWikiPostEditor(state.wikiPostId);
+        };
+
+        document.getElementById('btn-wiki-delete-post').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat || !isGroupGM(chat) || !state.wikiPostId) return;
+            tg.showConfirm('Удалить этот пост?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + state.wikiPostId)).then(() => {
+                    document.getElementById('close-wiki-post-btn').click();
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
+        };
+
+        export function renderWikiPost() {
+            if (state.activeOverlay !== 'wikipost' || !state.wikiChatId || !state.wikiPostId) return;
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat) return;
+            const post = (chat.wiki && chat.wiki.posts || {})[state.wikiPostId];
+            if (!post) { document.getElementById('close-wiki-post-btn').click(); return; }
+
+            document.getElementById('wiki-post-title').textContent = post.title || '(без названия)';
+            document.getElementById('wiki-post-text').textContent = post.text || '';
+
+            const gallery = document.getElementById('wiki-post-gallery');
+            const images = post.images || [];
+            if (!images.length) {
+                gallery.innerHTML = '';
+            } else {
+                gallery.innerHTML = images.map((url, i) => `<img src="${url}" data-idx="${i}" style="width:140px;height:140px;object-fit:cover;border-radius:14px;flex-shrink:0;cursor:pointer;">`).join('');
+                gallery.querySelectorAll('img').forEach(img => {
+                    img.onclick = () => openWikiImageViewer(images, parseInt(img.getAttribute('data-idx'), 10));
+                });
+            }
+        }
+
+        // ---- Полноэкранный просмотр картинки (галерея поста) ----
+
+        export function openWikiImageViewer(images, index) {
+            state.wikiImageViewer = { images, index };
+            document.getElementById('wiki-image-viewer-img').src = images[index];
+            document.getElementById('wiki-image-viewer-overlay').classList.add('active');
+        }
+
+        document.getElementById('close-wiki-image-viewer-btn').onclick = function() {
+            document.getElementById('wiki-image-viewer-overlay').classList.remove('active');
+        };
+
+        // Тап по картинке — листаем к следующей, если их несколько
+        document.getElementById('wiki-image-viewer-img').onclick = function() {
+            const { images, index } = state.wikiImageViewer;
+            if (!images || images.length < 2) return;
+            const next = (index + 1) % images.length;
+            state.wikiImageViewer.index = next;
+            document.getElementById('wiki-image-viewer-img').src = images[next];
+        };
+
+        // ---- Редактор поста: создание/редактирование (только создатель группы) ----
+
+        export function openWikiPostEditor(postId) {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat || !isGroupGM(chat) || !state.wikiCategoryId) return;
+            state.wikiEditingPostId = postId;
+            const post = postId ? (chat.wiki && chat.wiki.posts || {})[postId] : null;
+
+            document.getElementById('wiki-post-editor-title').textContent = postId ? 'Редактировать пост' : 'Новый пост';
+            document.getElementById('wiki-editor-post-title').value = post ? (post.title || '') : '';
+            document.getElementById('wiki-editor-post-text').value = post ? (post.text || '') : '';
+            state.wikiEditorImages = post && post.images ? post.images.slice() : [];
+            renderWikiEditorImages();
+
+            document.getElementById('wiki-post-overlay').classList.remove('active');
+            document.getElementById('wiki-category-overlay').classList.remove('active');
+            document.getElementById('wiki-post-editor-overlay').classList.add('active');
+            state.activeOverlay = 'wikieditor';
+        }
+
+        document.getElementById('close-wiki-post-editor-btn').onclick = function() {
+            document.getElementById('wiki-post-editor-overlay').classList.remove('active');
+            if (state.wikiEditingPostId) {
+                state.wikiPostId = state.wikiEditingPostId;
+                document.getElementById('wiki-post-overlay').classList.add('active');
+                state.activeOverlay = 'wikipost';
+                renderWikiPost();
+            } else {
+                document.getElementById('wiki-category-overlay').classList.add('active');
+                state.activeOverlay = 'wikicategory';
+                renderWikiCategory();
+            }
+        };
+
+        function renderWikiEditorImages() {
+            const row = document.getElementById('wiki-editor-images-row');
+            row.innerHTML = state.wikiEditorImages.map((url, i) => `
+                <div style="position:relative;width:72px;height:72px;">
+                    <img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;">
+                    <button data-rm-img="${i}" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:#c62828;color:#fff;font-size:12px;line-height:1;cursor:pointer;">×</button>
+                </div>`).join('');
+            row.querySelectorAll('[data-rm-img]').forEach(btn => {
+                btn.onclick = () => {
+                    state.wikiEditorImages.splice(parseInt(btn.getAttribute('data-rm-img'), 10), 1);
+                    renderWikiEditorImages();
+                };
+            });
+        }
+
+        // Загрузка сразу нескольких картинок в галерею поста — по очереди, со сжатием на устройстве
+        document.getElementById('wiki-editor-image-file').addEventListener('change', async function() {
+            const files = Array.from(this.files || []);
+            this.value = '';
+            if (!files.length) return;
+            const btn = document.getElementById('wiki-editor-image-upload-btn');
+            const origText = btn.textContent;
+            btn.classList.add('uploading');
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                if (file.size > 30 * 1024 * 1024) { tg.showAlert('Файл слишком большой (максимум 30 МБ)'); continue; }
+                try {
+                    const compressed = await compressImage(file);
+                    const url = await uploadToImgbb(compressed, (pct) => {
+                        btn.textContent = pct < 100 ? '⏳ ' + pct + '%' : '⏳';
+                    });
+                    state.wikiEditorImages.push(url);
+                    renderWikiEditorImages();
+                } catch (err) {
+                    tg.showAlert(friendlyUploadError(err));
+                }
+            }
+            btn.classList.remove('uploading');
+            btn.textContent = origText;
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        });
+
+        document.getElementById('btn-save-wiki-post').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+            if (!chat || !isGroupGM(chat) || !state.wikiCategoryId) return;
+
+            const title = document.getElementById('wiki-editor-post-title').value.trim();
+            if (!title) return tg.showAlert('Введите заголовок поста');
+            const text = document.getElementById('wiki-editor-post-text').value.trim();
+            const images = state.wikiEditorImages.slice();
+            const payload = { categoryId: state.wikiCategoryId, title, text, images, authorId: state.currentUser.id };
+
+            const savePromise = state.wikiEditingPostId
+                ? update(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + state.wikiEditingPostId), payload)
+                : push(ref(state.db, 'chats/' + chat.id + '/wiki/posts'), { ...payload, createdAt: Date.now() });
+
+            savePromise.then(() => {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                document.getElementById('close-wiki-post-editor-btn').click();
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };

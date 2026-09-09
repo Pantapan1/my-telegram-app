@@ -7,7 +7,7 @@ import { currentSeasonId, ensurePassSeason, renderPassButton, renderPassPetWidge
 import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBossCard, renderBossParticipantsList, renderEventMultiplierBanner, renderFeed, renderPostOverlay, updateBannerCountdowns } from './feed.js';
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
 import { checkDailyCoinReward, renderOwnProfileHeader, renderProfileStats, renderQuestsList, renderUserProfileOverlay } from './profile.js';
-import { populateStickerPackSelect, renderCharacterInventory, renderChatOverlay, renderChatsList, renderRpPanel, renderStickerPicker, renderUserPickList } from './chats.js';
+import { populateStickerPackSelect, renderCharacterInventory, renderChatOverlay, renderChatsList, renderGroupWiki, renderRpPanel, renderStickerPicker, renderUserPickList, renderWikiCategory, renderWikiPost } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList, renderAdminUsersList } from './admin.js';
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
@@ -574,6 +574,9 @@ export function startFirebaseListeners() {
         }
         if (state.activeOverlay === 'rppanel') renderRpPanel();
         if (state.activeOverlay === 'characterinventory') renderCharacterInventory();
+        if (state.activeOverlay === 'groupwiki') renderGroupWiki();
+        if (state.activeOverlay === 'wikicategory') renderWikiCategory();
+        if (state.activeOverlay === 'wikipost') renderWikiPost();
     });
 
     onValue(ref(state.db, 'stickers'), (snapshot) => {
