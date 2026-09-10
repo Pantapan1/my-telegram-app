@@ -859,7 +859,7 @@
             word-wrap: break-word; word-break: break-word; box-shadow: 0 4px 14px rgba(0,0,0,0.05); text-align: left;
         }
         .msg-row:not(.mine) .msg-bubble { 
-            background: #ffffff; color:var(--text-primary); 
+            background: #ffffff; color:#2c3e50; 
             border-bottom-left-radius: 6px; 
             border: 1px solid rgba(0,0,0,0.03);
         }
