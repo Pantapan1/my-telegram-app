@@ -846,7 +846,7 @@
         
         .chat-messages-list { position: relative; z-index: 1; padding-top: 10px; font-size: 0; line-height: 0; }
         .msg-row-action { justify-content: center; margin: 4px 0; }
-        .msg-action-line { max-width: 90%; text-align: center; font-style: italic; font-size: 13px; color: #6b21a8; background: rgba(155,89,255,0.12); border-radius: 12px; padding: 6px 12px; }
+        .msg-action-line { max-width: 90%; text-align: center; font-style: italic; font-size: 13px; line-height: 1.4; color: #6b21a8; background: rgba(155,89,255,0.12); border-radius: 12px; padding: 6px 12px; }
         .msg-action-line .msg-reply-quote { text-align: left; font-style: normal; }
         .sticker-toggle.active { background: #ff9f0a; color: #fff; }
         .msg-row { display: flex; margin-bottom: 6px; align-items: flex-end; font-size: 15px; line-height: 1.35; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -1617,3 +1617,183 @@
     position: absolute; bottom: 100px; right: 24px; background: rgba(0,0,0,0.45); color: #fff;
     border: none; border-radius: 10px; padding: 7px 12px; font-size: 12px; cursor: pointer; z-index: 1;
 }
+
+/* ============================================================
+   МЕНЮ ДЕЙСТВИЙ ЧАТА — одна кнопка "⋯" вместо кучи кнопок в шапке
+   ============================================================ */
+.chat-actions-wrap { position: relative; flex-shrink: 0; }
+.chat-actions-menu {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
+    background: var(--surface); border: 1px solid var(--border-soft);
+    border-radius: 16px; box-shadow: 0 14px 34px rgba(0,0,0,0.16);
+    padding: 6px; min-width: 216px;
+    display: flex; flex-direction: column; gap: 2px;
+    opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.96);
+    transform-origin: top right;
+    transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+.chat-actions-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+.chat-actions-menu-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border-radius: 12px; border: none; background: none;
+    color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: left;
+    cursor: pointer; transition: background .15s ease;
+}
+.chat-actions-menu-item:active { transform: scale(0.98); }
+.chat-actions-menu-item:not(.hidden):hover { background: var(--input-bg); }
+.chat-actions-menu-item .cam-icon { font-size: 18px; flex-shrink: 0; }
+.chat-actions-menu-item .cam-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#chat-actions-toggle { font-size: 20px; font-weight: 900; line-height: 1; }
+#chat-actions-toggle.active { background: var(--input-bg); }
+
+/* ============================================================
+   ВИКИ ГРУППЫ ("ДРОП")
+   ============================================================ */
+.wiki-hero {
+    padding: 18px 20px 22px; margin: -26px -22px 22px;
+    background: linear-gradient(135deg, #6b21a8 0%, #9333ea 45%, #ed8f03 100%);
+    color: #fff; position: relative; overflow: hidden;
+}
+.wiki-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.25), transparent 60%);
+}
+.wiki-hero-emoji { font-size: 34px; line-height: 1; margin-bottom: 6px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); }
+.wiki-hero-title { font-size: 19px; font-weight: 800; letter-spacing: -0.2px; position: relative; z-index: 1; }
+.wiki-hero-sub { font-size: 12.5px; opacity: 0.85; margin-top: 3px; font-weight: 600; position: relative; z-index: 1; }
+
+.wiki-add-row {
+    display: flex; gap: 8px; margin-bottom: 20px; background: var(--surface);
+    border: 1px solid var(--border-soft); border-radius: 16px; padding: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+.wiki-add-row input {
+    flex: 1; margin: 0; border: none; background: transparent; padding: 10px 12px;
+    font-size: 14px; color: var(--text-primary); border-radius: 10px;
+}
+.wiki-add-row input:focus { outline: none; background: var(--input-bg); }
+.wiki-add-row button {
+    flex-shrink: 0; width: 42px; height: 42px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #ed8f03, #ff9f0a); color: #fff; font-size: 20px;
+    font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(237,143,3,0.35);
+    transition: transform .15s ease;
+}
+.wiki-add-row button:active { transform: scale(0.9); }
+
+.wiki-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wiki-cat-card {
+    position: relative; border-radius: 20px; padding: 16px 14px; min-height: 118px;
+    display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
+    color: #fff; overflow: hidden; box-shadow: 0 8px 20px -6px rgba(0,0,0,0.25);
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.wiki-cat-card:active { transform: scale(0.96); }
+.wiki-cat-card::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.28), transparent 55%);
+    pointer-events: none;
+}
+.wiki-cat-card .wcc-icon { font-size: 26px; position: absolute; top: 12px; left: 14px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
+.wiki-cat-card .wcc-del {
+    position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 9px;
+    border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.wiki-cat-card .wcc-del:active { transform: scale(0.9); }
+.wiki-cat-card .wcc-name {
+    font-size: 15px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.wiki-cat-card .wcc-count {
+    font-size: 11px; font-weight: 700; opacity: 0.9; margin-top: 3px; position: relative; z-index: 1;
+}
+
+.wiki-empty {
+    text-align: center; padding: 46px 20px; color: var(--text-secondary);
+}
+.wiki-empty .we-emoji { font-size: 44px; margin-bottom: 10px; opacity: 0.8; }
+.wiki-empty .we-text { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+
+.wiki-post-list { display: flex; flex-direction: column; gap: 10px; }
+.wiki-post-card {
+    display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px;
+    background: var(--surface); border: 1px solid var(--border-soft); cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.04); transition: transform .15s ease, box-shadow .15s ease;
+}
+.wiki-post-card:active { transform: scale(0.98); }
+.wiki-post-cover {
+    width: 58px; height: 58px; border-radius: 14px; object-fit: cover; flex-shrink: 0;
+    background: var(--input-bg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.wiki-post-cover-fallback {
+    width: 58px; height: 58px; border-radius: 14px; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center; font-size: 22px; color: #fff;
+}
+.wiki-post-info { flex: 1; min-width: 0; }
+.wiki-post-title { font-size: 14.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wiki-post-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; font-weight: 600; }
+.wiki-post-del {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #ffcdd2;
+    background: #ffebee; color: #c62828; font-size: 13px; cursor: pointer;
+}
+.wiki-post-del:active { transform: scale(0.9); }
+
+/* Просмотр поста: карусель-обложка с точками */
+.wiki-post-gallery-wrap { margin: -26px -22px 20px; position: relative; }
+.wiki-post-gallery {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.wiki-post-gallery::-webkit-scrollbar { display: none; }
+.wiki-post-gallery img {
+    width: 100%; flex: 0 0 100%; height: 280px; object-fit: cover; scroll-snap-align: start; cursor: zoom-in;
+}
+.wiki-post-gallery-dots {
+    position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px;
+}
+.wiki-post-gallery-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all .2s ease;
+}
+.wiki-post-gallery-dots span.active { background: #fff; width: 16px; border-radius: 4px; }
+.wiki-post-body-title { font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; letter-spacing: -0.3px; }
+.wiki-post-body-text { font-size: 15px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+
+/* Полноэкранный просмотр картинки поста */
+.wiki-viewer-hint { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 600; }
+
+/* Редактор поста */
+.wiki-editor-images {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.wiki-editor-img-tile { position: relative; width: 78px; height: 78px; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+.wiki-editor-img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wiki-editor-img-tile .wet-rm {
+    position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.wiki-editor-add-tile {
+    width: 78px; height: 78px; border-radius: 14px; border: 2px dashed var(--border-soft);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--text-secondary); font-size: 22px; cursor: pointer; background: var(--input-bg);
+    transition: all .2s ease; flex-shrink: 0;
+}
+.wiki-editor-add-tile span.wet-label { font-size: 10px; font-weight: 700; }
+.wiki-editor-add-tile.uploading { opacity: 0.5; pointer-events: none; }
+.wiki-editor-add-tile:active { transform: scale(0.94); }
+
+/* ============================================================
+   МЕНЮ ИНСТРУМЕНТОВ В СТРОКЕ ВВОДА — одна кнопка "⋯" вместо 🎬 🤩 📎
+   ============================================================ */
+.chat-input-tools-wrap { position: relative; flex-shrink: 0; }
+#chat-input-tools-toggle { font-size: 20px; font-weight: 900; }
+#chat-input-tools-toggle.active { background: #ff9f0a; color: #fff; }
+.chat-input-tools-menu {
+    position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 50;
+    display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--border-soft);
+    border-radius: 18px; padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    opacity: 0; visibility: hidden; transform: translateY(6px) scale(0.94);
+    transform-origin: bottom left;
+    transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+.chat-input-tools-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }

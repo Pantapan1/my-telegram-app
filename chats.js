@@ -18,6 +18,40 @@ export function otherParticipant(chat) {
             };
         }
 
+        // === Меню действий чата: одна кнопка "⋯" показывает/скрывает 🎭 📦 ⚙️ ===
+        document.getElementById('chat-actions-toggle').onclick = function(e) {
+            e.stopPropagation();
+            document.getElementById('chat-actions-menu').classList.toggle('open');
+            this.classList.toggle('active');
+        };
+        document.getElementById('chat-actions-menu').addEventListener('click', () => {
+            document.getElementById('chat-actions-menu').classList.remove('open');
+            document.getElementById('chat-actions-toggle').classList.remove('active');
+        });
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('chat-actions-menu');
+            const wrap = document.getElementById('chat-actions-wrap');
+            if (menu.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+                menu.classList.remove('open');
+                document.getElementById('chat-actions-toggle').classList.remove('active');
+            }
+        });
+
+        // === Меню инструментов строки ввода: одна кнопка "⋯" показывает/скрывает 🎬 🤩 📎 ===
+        document.getElementById('chat-input-tools-toggle').onclick = function(e) {
+            e.stopPropagation();
+            document.getElementById('chat-input-tools-menu').classList.toggle('open');
+            this.classList.toggle('active');
+        };
+        document.addEventListener('click', (e) => {
+            const toolsMenu = document.getElementById('chat-input-tools-menu');
+            const toolsWrap = document.getElementById('chat-input-tools-wrap');
+            if (toolsMenu.classList.contains('open') && toolsWrap && !toolsWrap.contains(e.target)) {
+                toolsMenu.classList.remove('open');
+                document.getElementById('chat-input-tools-toggle').classList.remove('active');
+            }
+        });
+
         // === Ролевые группы: вспомогательные функции ===
 
         export function isGroupGM(chat) {
@@ -151,6 +185,7 @@ export function otherParticipant(chat) {
                 document.getElementById('chat-partner-name').textContent = chat.name;
                 document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
                 document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '');
+                document.getElementById('chat-actions-wrap').classList.remove('hidden');
                 document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== state.currentUser.id);
                 document.getElementById('chat-rp-btn').classList.toggle('hidden', !isRoleplayGroup(chat));
                 document.getElementById('chat-wiki-btn').classList.remove('hidden');
@@ -159,6 +194,9 @@ export function otherParticipant(chat) {
                 document.getElementById('chat-partner-name').textContent = other.name;
                 document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
                 document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
+                document.getElementById('chat-actions-wrap').classList.add('hidden');
+                document.getElementById('chat-actions-menu').classList.remove('open');
+                document.getElementById('chat-actions-toggle').classList.remove('active');
                 document.getElementById('chat-edit-group-btn').classList.add('hidden');
                 document.getElementById('chat-rp-btn').classList.add('hidden');
                 document.getElementById('chat-wiki-btn').classList.add('hidden');
@@ -204,14 +242,13 @@ export function otherParticipant(chat) {
                     <div class="msg-row msg-row-action">
                         <div class="msg-action-line">
                             ${replyPreviewA}
-                            <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}</span>
-                            <span class="msg-time" style="margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span>
+                            <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
                         </div>
                     </div>`;
                 }
 
                 const senderName = (chat.type === 'group' && (!isMine || charOverride))
-                    ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; ${nickColorStyle(m.senderId) || 'color:#ff9f0a;'} margin-bottom:2px; cursor:pointer;">${escapeHtml(displayName)}${charOverride ? '' : verifiedBadge(m.senderId) + shopBadgeHtml(m.senderId) + passVipBadge(m.senderId)}</div>` 
+                    ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; ${isMine ? 'color:rgba(255,255,255,0.92);' : (nickColorStyle(m.senderId) || 'color:#ff9f0a;')} margin-bottom:4px; cursor:pointer;">${escapeHtml(displayName)}${charOverride ? '' : verifiedBadge(m.senderId) + shopBadgeHtml(m.senderId) + passVipBadge(m.senderId)}</div>` 
                     : '';
 
                 const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(charOverride ? displayName : (senderInfo ? senderInfo.name : m.senderName), displayAvatarUrl, 'msg-avatar')}</div>` : '';
@@ -1306,6 +1343,39 @@ export function otherParticipant(chat) {
         //   chats/{chatId}/wiki/categories/{catId} = { name, createdAt }
         //   chats/{chatId}/wiki/posts/{postId}     = { categoryId, title, text, images:[...], authorId, createdAt }
 
+        const WIKI_CAT_GRADIENTS = [
+            'linear-gradient(135deg,#ff9a8b,#ff6a88)',
+            'linear-gradient(135deg,#667eea,#764ba2)',
+            'linear-gradient(135deg,#43cea2,#185a9d)',
+            'linear-gradient(135deg,#f7971e,#ffd200)',
+            'linear-gradient(135deg,#ee0979,#ff6a00)',
+            'linear-gradient(135deg,#4facfe,#00f2fe)',
+            'linear-gradient(135deg,#a18cd1,#fbc2eb)',
+            'linear-gradient(135deg,#0ba360,#3cba92)',
+            'linear-gradient(135deg,#f857a6,#ff5858)',
+            'linear-gradient(135deg,#5f72bd,#9b23ea)',
+        ];
+        function wikiGradientFor(str) {
+            let hash = 0;
+            const s = String(str || '');
+            for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+            return WIKI_CAT_GRADIENTS[Math.abs(hash) % WIKI_CAT_GRADIENTS.length];
+        }
+        // Небольшой набор тематических иконок для категорий — подбирается по ключевым словам в названии,
+        // иначе просто по хэшу, чтобы у одинаковых названий всегда была одна и та же иконка.
+        const WIKI_CAT_ICONS = ['📁', '🎨', '📝', '🐱', '⭐', '🗺️', '📸', '💬', '🎭', '🔖'];
+        function wikiIconFor(name) {
+            const n = (name || '').toLowerCase();
+            if (n.includes('арт')) return '🎨';
+            if (n.includes('кот') || n.includes('cat')) return '🐱';
+            if (n.includes('пост')) return '📝';
+            if (n.includes('карт')) return '🗺️';
+            if (n.includes('фото')) return '📸';
+            let hash = 0;
+            for (let i = 0; i < n.length; i++) hash = n.charCodeAt(i) + ((hash << 5) - hash);
+            return WIKI_CAT_ICONS[Math.abs(hash) % WIKI_CAT_ICONS.length];
+        }
+
         document.getElementById('chat-wiki-btn').onclick = function() {
             openGroupWiki();
         };
@@ -1344,19 +1414,22 @@ export function otherParticipant(chat) {
                 : [];
 
             if (!categories.length) {
-                list.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:10px;">${owner ? 'Пока нет категорий — добавьте первую выше.' : 'В этом чате пока нет вики.'}</div>`;
+                list.className = '';
+                list.innerHTML = `<div class="wiki-empty">
+                    <div class="we-emoji">📦</div>
+                    <div class="we-text">${owner ? 'Пока нет категорий —<br>добавьте первую выше' : 'В этом чате пока нет вики'}</div>
+                </div>`;
             } else {
+                list.className = 'wiki-cat-grid';
                 const posts = chat.wiki && chat.wiki.posts ? Object.values(chat.wiki.posts) : [];
                 list.innerHTML = categories.map(cat => {
                     const count = posts.filter(p => p.categoryId === cat.id).length;
                     return `
-                    <div class="admin-item" data-cat-id="${cat.id}" style="cursor:pointer;">
-                        <div class="admin-item-thumb cover-fallback small" style="background:${colorFor(cat.name || '')};">📁</div>
-                        <div class="admin-item-info">
-                            <div class="admin-item-title">${escapeHtml(cat.name || '(без имени)')}</div>
-                            <div class="admin-item-sub">${count ? count + ' пост.' : 'пусто'}</div>
-                        </div>
-                        ${owner ? `<div class="admin-item-actions"><button class="icon-btn danger" data-del-cat="${cat.id}" title="Удалить категорию">🗑</button></div>` : ''}
+                    <div class="wiki-cat-card" data-cat-id="${cat.id}" style="background:${wikiGradientFor(cat.name || cat.id)};">
+                        <div class="wcc-icon">${wikiIconFor(cat.name)}</div>
+                        ${owner ? `<button class="wcc-del" data-del-cat="${cat.id}" title="Удалить категорию">🗑</button>` : ''}
+                        <div class="wcc-name">${escapeHtml(cat.name || '(без имени)')}</div>
+                        <div class="wcc-count">${count ? count + ' пост' + (count === 1 ? '' : count < 5 ? 'а' : 'ов') : 'пока пусто'}</div>
                     </div>`;
                 }).join('');
             }
@@ -1395,6 +1468,9 @@ export function otherParticipant(chat) {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
+        document.getElementById('wiki-category-name').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-add-wiki-category').click();
+        });
 
         // ---- Посты внутри категории ----
 
@@ -1403,7 +1479,7 @@ export function otherParticipant(chat) {
             if (!chat) return;
             state.wikiCategoryId = categoryId;
             const cat = (chat.wiki && chat.wiki.categories || {})[categoryId];
-            document.getElementById('wiki-category-title').textContent = cat ? cat.name : 'Категория';
+            document.getElementById('wiki-category-title').textContent = (cat ? wikiIconFor(cat.name) + ' ' + cat.name : 'Категория');
             document.getElementById('btn-wiki-add-post').classList.toggle('hidden', !isGroupGM(chat));
             document.getElementById('group-wiki-overlay').classList.remove('active');
             document.getElementById('wiki-category-overlay').classList.add('active');
@@ -1435,20 +1511,23 @@ export function otherParticipant(chat) {
                 : [];
 
             if (!posts.length) {
-                list.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:10px;">${owner ? 'Постов пока нет — добавьте первый кнопкой «+».' : 'В этой категории пока пусто.'}</div>`;
+                list.innerHTML = `<div class="wiki-empty">
+                    <div class="we-emoji">📝</div>
+                    <div class="we-text">${owner ? 'Постов пока нет —<br>добавьте первый кнопкой «+ Пост»' : 'В этой категории пока пусто'}</div>
+                </div>`;
             } else {
                 list.innerHTML = posts.map(p => {
                     const thumb = (p.images && p.images[0])
-                        ? `<img src="${p.images[0]}" class="admin-item-thumb" onerror="this.style.display='none'">`
-                        : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(p.title || '')};">📝</div>`;
+                        ? `<img src="${p.images[0]}" class="wiki-post-cover" onerror="this.outerHTML='<div class=&quot;wiki-post-cover-fallback&quot; style=&quot;background:${wikiGradientFor(p.title||'')}&quot;>📝</div>'">`
+                        : `<div class="wiki-post-cover-fallback" style="background:${wikiGradientFor(p.title || '')};">📝</div>`;
                     return `
-                    <div class="admin-item" data-post-id="${p.id}" style="cursor:pointer;">
+                    <div class="wiki-post-card" data-post-id="${p.id}">
                         ${thumb}
-                        <div class="admin-item-info">
-                            <div class="admin-item-title">${escapeHtml(p.title || '(без названия)')}</div>
-                            <div class="admin-item-sub">${p.images && p.images.length ? '🖼 ' + p.images.length : ''}</div>
+                        <div class="wiki-post-info">
+                            <div class="wiki-post-title">${escapeHtml(p.title || '(без названия)')}</div>
+                            <div class="wiki-post-meta">${p.images && p.images.length ? '🖼 ' + p.images.length + ' фото' : 'только текст'}</div>
                         </div>
-                        ${owner ? `<div class="admin-item-actions"><button class="icon-btn danger" data-del-post="${p.id}" title="Удалить">🗑</button></div>` : ''}
+                        ${owner ? `<button class="wiki-post-del" data-del-post="${p.id}" title="Удалить">🗑</button>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -1516,17 +1595,32 @@ export function otherParticipant(chat) {
             if (!post) { document.getElementById('close-wiki-post-btn').click(); return; }
 
             document.getElementById('wiki-post-title').textContent = post.title || '(без названия)';
+            document.getElementById('wiki-post-body-title').textContent = post.title || '(без названия)';
             document.getElementById('wiki-post-text').textContent = post.text || '';
 
+            const wrap = document.getElementById('wiki-post-gallery-wrap');
             const gallery = document.getElementById('wiki-post-gallery');
+            const dots = document.getElementById('wiki-post-gallery-dots');
             const images = post.images || [];
+
             if (!images.length) {
+                wrap.classList.add('hidden');
                 gallery.innerHTML = '';
+                dots.innerHTML = '';
             } else {
-                gallery.innerHTML = images.map((url, i) => `<img src="${url}" data-idx="${i}" style="width:140px;height:140px;object-fit:cover;border-radius:14px;flex-shrink:0;cursor:pointer;">`).join('');
+                wrap.classList.remove('hidden');
+                gallery.innerHTML = images.map((url, i) => `<img src="${url}" data-idx="${i}">`).join('');
+                dots.innerHTML = images.length > 1
+                    ? images.map((_, i) => `<span class="${i === 0 ? 'active' : ''}"></span>`).join('')
+                    : '';
                 gallery.querySelectorAll('img').forEach(img => {
                     img.onclick = () => openWikiImageViewer(images, parseInt(img.getAttribute('data-idx'), 10));
                 });
+                // Точки-индикаторы переключаются по прокрутке карусели
+                gallery.onscroll = () => {
+                    const idx = Math.round(gallery.scrollLeft / gallery.clientWidth);
+                    dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('active', i === idx));
+                };
             }
         }
 
@@ -1535,6 +1629,7 @@ export function otherParticipant(chat) {
         export function openWikiImageViewer(images, index) {
             state.wikiImageViewer = { images, index };
             document.getElementById('wiki-image-viewer-img').src = images[index];
+            document.getElementById('wiki-viewer-hint').textContent = images.length > 1 ? `Тап по фото — следующее (${index + 1}/${images.length})` : '';
             document.getElementById('wiki-image-viewer-overlay').classList.add('active');
         }
 
@@ -1549,6 +1644,7 @@ export function otherParticipant(chat) {
             const next = (index + 1) % images.length;
             state.wikiImageViewer.index = next;
             document.getElementById('wiki-image-viewer-img').src = images[next];
+            document.getElementById('wiki-viewer-hint').textContent = `Тап по фото — следующее (${next + 1}/${images.length})`;
         };
 
         // ---- Редактор поста: создание/редактирование (только создатель группы) ----
@@ -1559,7 +1655,7 @@ export function otherParticipant(chat) {
             state.wikiEditingPostId = postId;
             const post = postId ? (chat.wiki && chat.wiki.posts || {})[postId] : null;
 
-            document.getElementById('wiki-post-editor-title').textContent = postId ? 'Редактировать пост' : 'Новый пост';
+            document.getElementById('wiki-post-editor-title').textContent = postId ? '✏️ Редактировать пост' : '✨ Новый пост';
             document.getElementById('wiki-editor-post-title').value = post ? (post.title || '') : '';
             document.getElementById('wiki-editor-post-text').value = post ? (post.text || '') : '';
             state.wikiEditorImages = post && post.images ? post.images.slice() : [];
@@ -1588,9 +1684,9 @@ export function otherParticipant(chat) {
         function renderWikiEditorImages() {
             const row = document.getElementById('wiki-editor-images-row');
             row.innerHTML = state.wikiEditorImages.map((url, i) => `
-                <div style="position:relative;width:72px;height:72px;">
-                    <img src="${url}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;">
-                    <button data-rm-img="${i}" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:#c62828;color:#fff;font-size:12px;line-height:1;cursor:pointer;">×</button>
+                <div class="wiki-editor-img-tile">
+                    <img src="${url}">
+                    <button class="wet-rm" data-rm-img="${i}">×</button>
                 </div>`).join('');
             row.querySelectorAll('[data-rm-img]').forEach(btn => {
                 btn.onclick = () => {
@@ -1605,16 +1701,17 @@ export function otherParticipant(chat) {
             const files = Array.from(this.files || []);
             this.value = '';
             if (!files.length) return;
-            const btn = document.getElementById('wiki-editor-image-upload-btn');
-            const origText = btn.textContent;
-            btn.classList.add('uploading');
+            const tile = document.getElementById('wiki-editor-image-upload-btn');
+            const labelSpan = tile.querySelector('.wet-label');
+            const origLabel = labelSpan.textContent;
+            tile.classList.add('uploading');
             for (const file of files) {
                 if (!file.type.startsWith('image/')) continue;
                 if (file.size > 30 * 1024 * 1024) { tg.showAlert('Файл слишком большой (максимум 30 МБ)'); continue; }
                 try {
                     const compressed = await compressImage(file);
                     const url = await uploadToImgbb(compressed, (pct) => {
-                        btn.textContent = pct < 100 ? '⏳ ' + pct + '%' : '⏳';
+                        labelSpan.textContent = pct < 100 ? pct + '%' : '…';
                     });
                     state.wikiEditorImages.push(url);
                     renderWikiEditorImages();
@@ -1622,8 +1719,8 @@ export function otherParticipant(chat) {
                     tg.showAlert(friendlyUploadError(err));
                 }
             }
-            btn.classList.remove('uploading');
-            btn.textContent = origText;
+            tile.classList.remove('uploading');
+            labelSpan.textContent = origLabel;
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         });
 
@@ -1646,3 +1743,4 @@ export function otherParticipant(chat) {
                 document.getElementById('close-wiki-post-editor-btn').click();
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
+
