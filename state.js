@@ -44,6 +44,7 @@ export const state = {
   lastSeenPostsCount: parseInt(localStorage.getItem('sr_last_seen_posts_count__u' + _localUid) || '0', 10),
   readerFontSize: parseInt(localStorage.getItem('sr_fontsize') || '18', 10),
   chatLastRead: _loadUserLocal('sr_chat_last_read', '{}'),
+  wikiLastRead: _loadUserLocal('sr_wiki_last_read', '{}'),
   currentPostId: null,
   viewingUserId: null,
   dailyRewardChecked: false,
@@ -124,4 +125,6 @@ export const state = {
   wikiEditingPostId: null,       // id поста, который редактируется в редакторе (null = создание нового)
   wikiEditorImages: [],          // массив URL картинок в редакторе поста (черновик перед сохранением)
   wikiImageViewer: { images: [], index: 0 }, // полноэкранный просмотр картинки поста
+  communityTab: 'mine', // 'mine' | 'discover' — подвкладка экрана "Сообщество" (бывшие "Чаты")
+  previewGroupId: null, // id группы, чьё превью сейчас открыто (до вступления)
 };

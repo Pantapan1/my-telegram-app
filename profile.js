@@ -362,6 +362,9 @@ export function checkDailyCoinReward() {
             else if (state.activeOverlay === 'wikicategory') document.getElementById('close-wiki-category-btn').click();
             else if (state.activeOverlay === 'wikipost') document.getElementById('close-wiki-post-btn').click();
             else if (state.activeOverlay === 'wikieditor') document.getElementById('close-wiki-post-editor-btn').click();
+            else if (state.activeOverlay === 'grouppreview') document.getElementById('close-group-preview-btn').click();
+            else if (state.activeOverlay === 'wikisettings') document.getElementById('close-wiki-settings-btn').click();
+            else if (state.activeOverlay === 'subchatcreate') document.getElementById('close-subchat-create-btn').click();
             else if (state.activeOverlay === 'compose') document.getElementById('close-compose-btn').click();
             else if (state.activeOverlay === 'userprofile') document.getElementById('close-user-profile-btn').click();
         });

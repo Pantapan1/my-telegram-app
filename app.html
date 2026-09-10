@@ -147,19 +147,53 @@
         </div>
     </div>
 
-    <!-- ЧАТЫ -->
+    <!-- СООБЩЕСТВО (бывшие "Чаты") -->
     <div id="section-chats" class="section">
         <div class="container">
             <div class="header">
                 <div>
-                    <h1>Чаты</h1>
-                    <p>Общение с читателями</p>
+                    <h1>Сообщество</h1>
+                    <p>Личные чаты и открытые группы</p>
                 </div>
                 <div class="fab-row">
                     <button class="icon-btn-refresh" id="btn-new-chat" title="Новый чат" style="background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; border:none; box-shadow: 0 4px 12px rgba(237, 143, 3, 0.3);">➕</button>
                 </div>
             </div>
-            <div id="chats-container"><div class="empty-state"><span class="icon">💬</span><div class="title">Загрузка...</div></div></div>
+
+            <div class="tab-mini">
+                <button class="tab-mini-btn active" id="community-tab-mine">💬 Мои чаты</button>
+                <button class="tab-mini-btn" id="community-tab-discover">🌐 Все группы</button>
+            </div>
+
+            <div id="community-mine-view">
+                <div id="chats-container"><div class="empty-state"><span class="icon">💬</span><div class="title">Загрузка...</div></div></div>
+            </div>
+
+            <div id="community-discover-view" class="hidden">
+                <div id="community-popular-wrap" class="hidden">
+                    <h3 class="community-section-title">🔥 Популярные</h3>
+                    <div id="community-popular-rail" class="community-rail"></div>
+                </div>
+                <h3 class="community-section-title">Все открытые группы</h3>
+                <div id="community-groups-grid" class="community-groups-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПРЕВЬЮ ПУБЛИЧНОЙ ГРУППЫ (до вступления) -->
+    <div id="group-preview-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-group-preview-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;">О группе</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div style="text-align:center;margin-bottom:14px;">
+                <div id="group-preview-avatar-wrap" style="display:inline-block;margin-bottom:10px;"></div>
+                <div id="group-preview-name" style="font-size:19px;font-weight:800;color:var(--text-primary);"></div>
+                <div id="group-preview-meta" style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;font-weight:600;"></div>
+            </div>
+            <div id="group-preview-desc" style="font-size:14px;line-height:1.55;color:var(--text-primary);background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;padding:14px;margin-bottom:16px;"></div>
+            <button class="btn" id="btn-join-group-preview">Вступить</button>
         </div>
     </div>
 
@@ -190,7 +224,7 @@
             </div>
             <div id="pass-title-display" class="pass-title-text hidden"></div>
             <div class="profile-bio" id="profile-display-bio"></div>
-            <div id="profile-decorations-row" style="display:flex;gap:6px;margin-bottom:10px;"></div>
+            <div id="profile-decorations-row" style="display:flex;gap:6px;margin-bottom:10px;justify-content:center;"></div>
 
             <button class="btn btn-secondary" id="btn-edit-profile">✏️ Редактировать профиль</button>
             <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления: ...</button>
@@ -222,58 +256,18 @@
 
             <div class="divider"></div>
 
-            <div class="card stats-grid">
-                <div>
-                    <div class="stats-num" style="color:#2e7d32;" id="stats-read">0</div>
-                    <div class="stats-label">Прочитано</div>
-                </div>
-                <div class="stats-divider"></div>
-                <div>
-                    <div class="stats-num" style="color:#1565c0;" id="stats-bookmarks">0</div>
-                    <div class="stats-label">Закладки</div>
-                </div>
-                <div class="stats-divider"></div>
-                <div>
-                    <div class="stats-num" style="color:#e65100;" id="stats-streak">0</div>
-                    <div class="stats-label">Дней подряд</div>
-                </div>
+            <div class="card profile-stats-grid">
+                <div class="psg-item"><div class="psg-icon">📖</div><div class="psg-num" style="color:#2e7d32;" id="stats-read">0</div><div class="psg-label">Прочитано</div></div>
+                <div class="psg-item"><div class="psg-icon">🔖</div><div class="psg-num" style="color:#1565c0;" id="stats-bookmarks">0</div><div class="psg-label">Закладки</div></div>
+                <div class="psg-item"><div class="psg-icon">🔥</div><div class="psg-num" style="color:#e65100;" id="stats-streak">0</div><div class="psg-label">Дней подряд</div></div>
+                <div class="psg-item"><div class="psg-icon">✍️</div><div class="psg-num" style="color:#8e44ad;" id="stats-posts">0</div><div class="psg-label">Постов</div></div>
+                <div class="psg-item"><div class="psg-icon">💬</div><div class="psg-num" style="color:#0097e6;" id="stats-chats">0</div><div class="psg-label">Чатов</div></div>
+                <div class="psg-item" id="coins-card"><div class="psg-icon">🪙</div><div class="psg-num" style="color:#ed8f03;" id="stats-coins">0</div><div class="psg-label">Монеты</div></div>
+                <div class="psg-item" id="trophies-card"><div class="psg-icon">🏆</div><div class="psg-num" style="color:#ed8f03;" id="stats-trophies">0</div><div class="psg-label">Кубки</div></div>
+                <div class="psg-item" id="story-wins-card"><div class="psg-icon">📖</div><div class="psg-num" style="color:#ed8f03;" id="stats-story-wins">0</div><div class="psg-label">Глав пройдено</div></div>
+                <div class="psg-item" id="story-endings-card"><div class="psg-icon">🏁</div><div class="psg-num" style="color:#ed8f03;" id="stats-story-endings">0</div><div class="psg-label">Концовок</div></div>
             </div>
-            <div class="card stats-grid" style="padding:16px 12px;">
-                <div>
-                    <div class="stats-num" style="color:#8e44ad;font-size:24px;" id="stats-posts">0</div>
-                    <div class="stats-label">Постов</div>
-                </div>
-                <div class="stats-divider"></div>
-                <div>
-                    <div class="stats-num" style="color:#0097e6;font-size:24px;" id="stats-chats">0</div>
-                    <div class="stats-label">Чатов</div>
-                </div>
-            </div>
-
-            <div class="card" id="coins-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                <div style="font-weight:700;color:var(--text-primary);">🪙 Монеты</div>
-                <div id="stats-coins" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
-            </div>
-
-            <div class="card" id="trophies-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                <div style="font-weight:700;color:var(--text-primary);">🏆 Кубки за победы</div>
-                <div id="stats-trophies" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
-            </div>
-
-            <div class="card" id="story-wins-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                <div style="font-weight:700;color:var(--text-primary);">📖 Глав сюжета пройдено</div>
-                <div id="stats-story-wins" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
-            </div>
-
-            <div class="card" id="story-endings-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                <div style="font-weight:700;color:var(--text-primary);">🏁 Концовок открыто</div>
-                <div id="stats-story-endings" style="font-weight:800;font-size:22px;color:#ed8f03;">0</div>
-            </div>
-
-            <div class="card" id="time-spent-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                <div style="font-weight:700;color:var(--text-primary);">⏱ Время на сайте</div>
-                <div id="stats-time-spent" style="font-weight:800;font-size:16px;color:var(--text-primary);">—</div>
-            </div>
+            <div class="profile-time-row" id="time-spent-card">⏱ Время на сайте: <b id="stats-time-spent">—</b></div>
 
             <button class="btn hidden" id="btn-open-yt" style="display:flex;align-items:center;justify-content:center;gap:8px;">📺 Отдохнуть — смотреть видео</button>
 
@@ -1135,6 +1129,13 @@
             </div>
             <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">В ролевой группе можно создавать персонажей, отыгрывать реплики действия и вести игровой инвентарь. Создатель группы станет её ГМ.</div>
 
+            <h4 style="margin: 10px 0; color:var(--text-primary); font-size: 15px;">Видимость:</h4>
+            <div class="chip-row" id="group-visibility-picker">
+                <div class="chip active" data-visibility="private">🔒 Приватная</div>
+                <div class="chip" data-visibility="public">🌐 Открытая</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Открытую группу видят все во вкладке «Сообщество» и могут вступить сами, без приглашения.</div>
+
             <h4 style="margin: 10px 0; color:var(--text-primary); font-size: 15px;">Выберите участников:</h4>
             <div id="group-user-pick-list" style="max-height: 240px; overflow-y:auto; border:1px solid rgba(0,0,0,0.08); border-radius:16px; padding:8px; margin-bottom:12px; background:#fff;"></div>
             
@@ -1163,6 +1164,13 @@
                 <div class="chip" data-type="roleplay">🎭 Ролевая</div>
             </div>
             <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 14px;">Можно переключать тип в любой момент. В ролевой группе для вас как ГМ откроется отдельная ролевая панель — персонажи игроков и их инвентарь.</div>
+
+            <h4 style="margin: 10px 0; color:var(--text-primary); font-size: 15px;">Видимость:</h4>
+            <div class="chip-row" id="edit-group-visibility-picker">
+                <div class="chip active" data-visibility="private">🔒 Приватная</div>
+                <div class="chip" data-visibility="public">🌐 Открытая</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 14px;">Открытую группу видят все во вкладке «Сообщество» и могут вступить сами.</div>
 
             <button class="btn" id="btn-save-edit-group">Сохранить изменения</button>
 
@@ -1294,18 +1302,81 @@
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-group-wiki-btn">← Назад</button>
             <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="group-wiki-title">📦 Дроп</div></div>
+            <button class="btn btn-secondary hidden" id="btn-wiki-settings" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Настройки вики">⚙️</button>
         </div>
         <div class="reader-content" style="white-space:normal;">
-            <div class="wiki-hero">
+            <div class="wiki-hero" id="wiki-hero">
                 <div class="wiki-hero-emoji">📦</div>
                 <div class="wiki-hero-title">Дроп этого чата</div>
                 <div class="wiki-hero-sub">Мини-вики: категории, арты и посты от создателя чата</div>
             </div>
+
+            <div id="wiki-subchats-section">
+                <div class="wiki-section-head">
+                    <h3 class="community-section-title" style="margin:0;">💬 Доп. чаты</h3>
+                    <button class="wiki-mini-add-btn hidden" id="btn-add-subchat" title="Создать доп. чат">+</button>
+                </div>
+                <div id="wiki-subchats-rail" class="community-rail"></div>
+            </div>
+
             <div id="wiki-add-category-row" class="wiki-add-row hidden">
                 <input type="text" id="wiki-category-name" placeholder="Название новой категории">
                 <button id="btn-add-wiki-category">+</button>
             </div>
             <div id="group-wiki-categories-list" class="wiki-cat-grid"></div>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: НАСТРОЙКИ (баннер, цвет, модераторы) — только для модераторов вики -->
+    <div id="wiki-settings-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-settings-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;">Настройки вики</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <h4 style="margin: 4px 0 10px; color:var(--text-primary); font-size: 15px;">Баннер вики</h4>
+            <div class="image-field-row">
+                <input type="text" id="wiki-settings-banner" class="input" placeholder="Ссылка на баннер (URL)">
+                <label class="upload-btn" for="wiki-settings-banner-file" id="wiki-settings-banner-upload-btn">📁</label>
+                <input type="file" id="wiki-settings-banner-file" accept="image/*" class="hidden">
+            </div>
+
+            <h4 style="margin: 10px 0; color:var(--text-primary); font-size: 15px;">Цвет оформления</h4>
+            <div class="wiki-accent-row" id="wiki-accent-picker">
+                <div class="wiki-accent-chip" data-accent="" style="background:linear-gradient(135deg,#6b21a8,#9333ea,#ed8f03);" title="По умолчанию"></div>
+                <div class="wiki-accent-chip" data-accent="#e11d48" style="background:#e11d48;"></div>
+                <div class="wiki-accent-chip" data-accent="#ea580c" style="background:#ea580c;"></div>
+                <div class="wiki-accent-chip" data-accent="#16a34a" style="background:#16a34a;"></div>
+                <div class="wiki-accent-chip" data-accent="#0891b2" style="background:#0891b2;"></div>
+                <div class="wiki-accent-chip" data-accent="#2563eb" style="background:#2563eb;"></div>
+                <div class="wiki-accent-chip" data-accent="#7c3aed" style="background:#7c3aed;"></div>
+                <div class="wiki-accent-chip" data-accent="#db2777" style="background:#db2777;"></div>
+                <div class="wiki-accent-chip" data-accent="#334155" style="background:#334155;"></div>
+            </div>
+
+            <h4 style="margin: 14px 0 10px; color:var(--text-primary); font-size: 15px;">Модераторы вики</h4>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Модераторы могут добавлять и удалять категории, посты, закреплять их, менять оформление и создавать доп. чаты — наравне с вами.</div>
+            <div id="wiki-moderators-list" style="max-height: 220px; overflow-y:auto; border:1px solid var(--border-soft); border-radius:16px; padding:8px; margin-bottom:14px; background:var(--surface);"></div>
+
+            <button class="btn" id="btn-save-wiki-settings">Сохранить</button>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: СОЗДАНИЕ ДОП. ЧАТА -->
+    <div id="subchat-create-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-subchat-create-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;">Новый доп. чат</div></div>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <div class="image-field-row">
+                <input type="text" id="subchat-avatar" class="input" placeholder="Ссылка на аватар (URL)">
+                <label class="upload-btn" for="subchat-avatar-file" id="subchat-avatar-upload-btn">📁</label>
+                <input type="file" id="subchat-avatar-file" accept="image/*" class="hidden">
+            </div>
+            <input type="text" id="subchat-name" class="input" placeholder="Название чата (например «Флуд»)">
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 14px;">Все нынешние участники основного чата сразу попадут в этот доп. чат. Новые участники смогут зайти в него из вики одним тапом.</div>
+            <button class="btn" id="btn-submit-subchat">Создать</button>
         </div>
     </div>
 
@@ -1326,6 +1397,7 @@
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-post-btn">← Назад</button>
             <div style="flex:1;min-width:0;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="wiki-post-title">Пост</div></div>
+            <button class="btn btn-secondary hidden" id="btn-wiki-pin-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Закрепить">📌</button>
             <button class="btn btn-secondary hidden" id="btn-wiki-edit-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Редактировать">✏️</button>
             <button class="btn btn-secondary hidden" id="btn-wiki-delete-post" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Удалить">🗑</button>
         </div>
@@ -1335,7 +1407,23 @@
                 <div id="wiki-post-gallery-dots" class="wiki-post-gallery-dots"></div>
             </div>
             <div class="wiki-post-body-title" id="wiki-post-body-title"></div>
+
+            <button class="wiki-like-btn" id="btn-wiki-like-post">
+                <span id="wiki-like-icon">🤍</span> <span id="wiki-like-count">0</span>
+            </button>
+
             <div class="wiki-post-body-text" id="wiki-post-text"></div>
+
+            <div class="comments-block">
+                <div class="comments-title" id="wiki-comments-title">Комментарии (0)</div>
+                <div id="wiki-post-comments-list"></div>
+            </div>
+        </div>
+        <div class="reader-actions" style="padding: 10px 16px;">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <textarea id="wiki-comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px; padding: 10px;"></textarea>
+                <button class="chat-send-btn" id="btn-send-wiki-comment">➤</button>
+            </div>
         </div>
     </div>
 
@@ -1369,6 +1457,7 @@
             <div class="wiki-viewer-hint" id="wiki-viewer-hint"></div>
         </div>
     </div>
+
 
     <!-- КОЛОДЫ (КАРТОЧНАЯ ИГРА) -->
     <div id="card-game-menu-overlay" class="reader-overlay">
@@ -1525,7 +1614,7 @@
         </button>
         <button class="nav-btn" data-tab="chats" onclick="switchTab('chats')">
             <span class="icon">💬<span class="nav-badge hidden" id="chats-nav-badge"></span></span>
-            <span>Чаты</span>
+            <span>Сообщ.</span>
         </button>
         <button class="nav-btn" data-tab="profile" onclick="switchTab('profile')">
             <span class="icon">👤</span>
