@@ -118,7 +118,9 @@ export function updateChatRpStatusBar(chat) {
         return;
     }
     actionBtn.classList.remove('hidden');
-    actionBtn.classList.toggle('active', !!state.actionModeByChat[chat.id]);
+    const curMode = state.actionModeByChat[chat.id];
+    actionBtn.classList.toggle('active', !!curMode);
+    actionBtn.textContent = curMode === 'thought' ? '💭' : '🎬';
 
     const activeChar = getActiveCharacter(chat);
     bar.classList.remove('hidden');
@@ -365,6 +367,7 @@ export function renderChatOverlay(chat) {
         document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '') + (isReadonlyChannel ? ' · 📢 только чтение' : '');
         document.getElementById('chat-actions-wrap').classList.remove('hidden');
         document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== state.currentUser.id);
+        document.getElementById('chat-leave-group-btn').classList.remove('hidden');
         document.getElementById('chat-rp-btn').classList.toggle('hidden', !isRoleplayGroup(chat));
         document.getElementById('chat-economy-btn').classList.toggle('hidden', !iAmModerator);
         document.getElementById('chat-wiki-btn').classList.remove('hidden');
@@ -378,6 +381,7 @@ export function renderChatOverlay(chat) {
         document.getElementById('chat-actions-menu').classList.remove('open');
         document.getElementById('chat-actions-toggle').classList.remove('active');
         document.getElementById('chat-edit-group-btn').classList.add('hidden');
+        document.getElementById('chat-leave-group-btn').classList.add('hidden');
         document.getElementById('chat-rp-btn').classList.add('hidden');
         document.getElementById('chat-economy-btn').classList.add('hidden');
         document.getElementById('chat-wiki-btn').classList.add('hidden');
@@ -427,6 +431,18 @@ export function renderChatOverlay(chat) {
                 <div class="msg-action-line">
                     ${replyPreviewA}
                     <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
+                </div>
+            </div>`;
+        }
+
+        const isThought = m.messageStyle === 'thought';
+        if (isThought) {
+            const replyPreviewT = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+            return `
+            <div class="msg-row msg-row-action">
+                <div class="msg-thought-line">
+                    ${replyPreviewT}
+                    <span>💭 <b>${escapeHtml(displayName)}</b> думает: «${escapeHtml(m.text)}»<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
                 </div>
             </div>`;
         }
@@ -693,7 +709,7 @@ export function sendChatMessage() {
     }
     
     const activeChar = chat ? getActiveCharacter(chat) : null;
-    const isActionMode = !!state.actionModeByChat[state.currentChatId];
+    const rpMode = state.actionModeByChat[state.currentChatId]; // 'action' | 'thought' | false
 
     const payload = { 
         senderId: state.currentUser.id, 
@@ -702,10 +718,12 @@ export function sendChatMessage() {
         createdAt: Date.now() 
     };
     if (activeChar) payload.asCharacterId = activeChar.id;
-    if (isActionMode) payload.messageStyle = 'action';
+    if (rpMode === 'action' || rpMode === 'thought') payload.messageStyle = rpMode;
     if (state.replyingTo) payload.replyTo = { id: state.replyingTo.id, author: state.replyingTo.author, text: state.replyingTo.text };
 
-    const previewText = isActionMode ? `🎬 ${(activeChar ? activeChar.name : state.currentUser.name)} ${text}` : text;
+    const previewText = rpMode === 'action' ? `🎬 ${(activeChar ? activeChar.name : state.currentUser.name)} ${text}`
+        : rpMode === 'thought' ? `💭 ${(activeChar ? activeChar.name : state.currentUser.name)} думает: «${text}»`
+        : text;
 
     push(ref(state.db, 'chats/' + state.currentChatId + '/messages'), payload).then(() => {
         update(ref(state.db, 'chats/' + state.currentChatId), { 
@@ -808,6 +826,33 @@ document.getElementById('close-chat-btn').onclick = function() {
     state.currentChatId = null; 
     tg.BackButton.hide(); 
     renderChatsList();
+};
+
+document.getElementById('chat-leave-group-btn').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || chat.type !== 'group') return;
+    const isCreator = chat.adminId === state.currentUser.id;
+    const isSubchat = !!chat.parentChatId;
+    const msg = isCreator
+        ? 'Вы создатель этого чата. Если вы выйдете, чат останется без ГМ, но не удалится. Всё равно выйти?'
+        : (isSubchat ? 'Выйти из этого доп. чата?' : 'Выйти из этого чата? Вернуться можно будет только по новому приглашению или через раздел «Сообщество», если чат открытый.');
+    tg.showConfirm(msg, (ok) => {
+        if (!ok) return;
+        const chatId = chat.id;
+        update(ref(state.db, 'chats/' + chatId), {
+            ['participants/' + state.currentUser.id]: null,
+            ['participantNames/' + state.currentUser.id]: null,
+            ['mutedUsers/' + state.currentUser.id]: null
+        }).then(() => {
+            clearTypingStatus();
+            document.getElementById('chat-overlay').classList.remove('active');
+            state.activeOverlay = null;
+            state.currentChatId = null;
+            tg.BackButton.hide();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            renderChatsList();
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    });
 };
 
 // НОВЫЙ ЧАТ/ГРУППА
@@ -1227,11 +1272,16 @@ document.getElementById('btn-chat-rp-status-change').onclick = function() {
 
 document.getElementById('btn-toggle-action-mode').onclick = function() {
     if (!state.currentChatId) return;
-    state.actionModeByChat[state.currentChatId] = !state.actionModeByChat[state.currentChatId];
+    const cur = state.actionModeByChat[state.currentChatId];
+    const next = cur === 'action' ? 'thought' : (cur === 'thought' ? false : 'action');
+    state.actionModeByChat[state.currentChatId] = next;
     const chat = state.chatsData.find(c => c.id === state.currentChatId);
     updateChatRpStatusBar(chat);
     const input = document.getElementById('chat-message-input');
-    input.placeholder = state.actionModeByChat[state.currentChatId] ? 'Опишите действие персонажа...' : 'Сообщение...';
+    const btn = document.getElementById('btn-toggle-action-mode');
+    if (next === 'action') { input.placeholder = 'Опишите действие персонажа...'; btn.textContent = '🎬'; }
+    else if (next === 'thought') { input.placeholder = 'Что думает персонаж...'; btn.textContent = '💭'; }
+    else { input.placeholder = 'Сообщение...'; btn.textContent = '🎬'; }
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 };
 
@@ -1577,14 +1627,31 @@ function wikiIconFor(name) {
     return WIKI_CAT_ICONS[Math.abs(hash) % WIKI_CAT_ICONS.length];
 }
 
+// Разрешаем "корневой" чат вики: у доп. чатов (parentChatId) нет собственной вики —
+// они всегда используют общую вики главного группового чата, чтобы не плодить
+// отдельные пустые "Дропы" на каждый доп. чат.
+export function getWikiRootChat(chat) {
+    let current = chat;
+    let guard = 0;
+    while (current && current.parentChatId && guard < 10) {
+        const parent = state.chatsData.find(c => c.id === current.parentChatId);
+        if (!parent) break;
+        current = parent;
+        guard++;
+    }
+    return current;
+}
+
 document.getElementById('chat-wiki-btn').onclick = function() {
     openGroupWiki();
 };
 
 export function openGroupWiki() {
-    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    const openedFrom = state.chatsData.find(c => c.id === state.currentChatId);
+    const chat = getWikiRootChat(openedFrom);
     if (!chat || chat.type !== 'group') return;
     state.wikiChatId = chat.id;
+    state.wikiReturnChatId = state.currentChatId; // куда вернуться при закрытии — сам доп. чат, а не корневой
     document.getElementById('chat-overlay').classList.remove('active');
     document.getElementById('group-wiki-overlay').classList.add('active');
     state.activeOverlay = 'groupwiki';
@@ -1601,17 +1668,19 @@ export function openGroupWiki() {
 
 function updateWikiBtnBadge(chat) {
     const btn = document.getElementById('chat-wiki-btn');
-    if (!btn || !chat) return;
-    const lastRead = state.wikiLastRead[chat.id] || 0;
-    const posts = chat.wiki && chat.wiki.posts ? Object.values(chat.wiki.posts) : [];
+    const rootChat = getWikiRootChat(chat);
+    if (!btn || !rootChat) return;
+    const lastRead = state.wikiLastRead[rootChat.id] || 0;
+    const posts = rootChat.wiki && rootChat.wiki.posts ? Object.values(rootChat.wiki.posts) : [];
     const hasNew = posts.some(p => (p.createdAt || 0) > lastRead);
     btn.classList.toggle('has-new-dot', hasNew);
 }
 
 document.getElementById('close-group-wiki-btn').onclick = function() {
     document.getElementById('group-wiki-overlay').classList.remove('active');
-    const chatId = state.wikiChatId;
+    const chatId = state.wikiReturnChatId || state.wikiChatId;
     state.wikiChatId = null;
+    state.wikiReturnChatId = null;
     if (chatId) openChat(chatId);
 };
 
@@ -1625,16 +1694,22 @@ export function renderGroupWiki() {
     const owner = isWikiModerator(chat);
     document.getElementById('wiki-add-category-row').classList.toggle('hidden', !owner);
 
-    const hero = document.getElementById('wiki-hero');
+    const banner = document.getElementById('wiki-hero-banner');
     const accent = (chat.wiki && chat.wiki.accentColor) || '';
-    hero.style.background = accent ? `linear-gradient(135deg, ${accent}, ${accent}cc)` : '';
+    banner.style.background = accent ? `linear-gradient(135deg, ${accent}, ${accent}cc)` : '';
     if (chat.wiki && chat.wiki.bannerUrl) {
-        hero.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.35)), url('${chat.wiki.bannerUrl}')`;
-        hero.style.backgroundSize = 'cover';
-        hero.style.backgroundPosition = 'center';
+        banner.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.35)), url('${chat.wiki.bannerUrl}')`;
+        banner.style.backgroundSize = 'cover';
+        banner.style.backgroundPosition = 'center';
     } else {
-        hero.style.backgroundImage = '';
+        banner.style.backgroundImage = '';
     }
+
+    const avatarEl = document.getElementById('wiki-hero-avatar');
+    avatarEl.innerHTML = chat.avatar
+        ? `<img src="${chat.avatar}" onerror="this.parentElement.innerHTML='📦'">`
+        : '📦';
+    document.getElementById('wiki-hero-title-text').textContent = chat.name || 'Дроп этого чата';
 
     renderWikiSubchats(chat);
 
@@ -1642,6 +1717,10 @@ export function renderGroupWiki() {
         ? Object.entries(chat.wiki.categories).map(([id, v]) => ({ id, ...v }))
             .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (a.createdAt || 0) - (b.createdAt || 0))
         : [];
+
+    const allPostsCount = chat.wiki && chat.wiki.posts ? Object.keys(chat.wiki.posts).length : 0;
+    document.getElementById('wiki-hero-stats').textContent =
+        `${categories.length} категор${categories.length === 1 ? 'ия' : categories.length >= 2 && categories.length <= 4 ? 'ии' : 'ий'} · ${allPostsCount} пост${allPostsCount === 1 ? '' : allPostsCount >= 2 && allPostsCount <= 4 ? 'а' : 'ов'}`;
 
     if (!categories.length) {
         list.className = '';
@@ -1723,6 +1802,7 @@ function renderWikiSubchats(chat) {
     rail.innerHTML = subChats.map(sc => `
         <div class="community-rail-card" data-subchat-id="${sc.id}">
             ${groupCoverHtml(sc.name, sc.avatar, 'community-rail-cover', 'community-rail-cover-fallback')}
+            ${owner ? `<button class="community-rail-del" data-del-subchat="${sc.id}" title="Удалить доп. чат">🗑</button>` : ''}
             <div class="community-rail-info">
                 <div class="community-rail-name">${escapeHtml(sc.name || '')}</div>
                 <div class="community-rail-count">👥 ${Object.keys(sc.participants || {}).length}</div>
@@ -1730,6 +1810,28 @@ function renderWikiSubchats(chat) {
         </div>`).join('');
     rail.querySelectorAll('[data-subchat-id]').forEach(el => {
         el.onclick = () => openSubChat(el.getAttribute('data-subchat-id'));
+    });
+    rail.querySelectorAll('[data-del-subchat]').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            deleteSubChat(chat.id, btn.getAttribute('data-del-subchat'));
+        };
+    });
+}
+
+function deleteSubChat(rootChatId, subChatId) {
+    const sub = state.chatsData.find(c => c.id === subChatId);
+    const name = (sub && sub.name) || 'этот доп. чат';
+    tg.showConfirm(`Удалить «${name}»? Вся история сообщений в нём будет потеряна безвозвратно.`, (ok) => {
+        if (!ok) return;
+        remove(ref(state.db, 'chats/' + subChatId)).then(() => {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            const rootChat = state.chatsData.find(c => c.id === rootChatId);
+            if (rootChat) renderWikiSubchats(rootChat);
+            if (state.currentChatId === subChatId) {
+                document.getElementById('close-chat-btn').click();
+            }
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
     });
 }
 
@@ -2016,6 +2118,19 @@ export function renderWikiPost() {
 
     document.getElementById('wiki-post-title').textContent = post.title || '(без названия)';
     document.getElementById('wiki-post-body-title').textContent = post.title || '(без названия)';
+
+    // Строка автора поста, в стиле Amino: аватар + имя + дата публикации
+    const authorRowEl = document.getElementById('wiki-post-author-row');
+    if (authorRowEl) {
+        const authorInfo = state.usersData.find(u => u.id === post.authorId);
+        const authorName = (authorInfo && authorInfo.name) || (chat.participantNames && chat.participantNames[post.authorId]) || 'Участник';
+        authorRowEl.innerHTML = `
+            ${avatarHtml(authorName, authorInfo ? authorInfo.avatar : null, 'avatar-sm')}
+            <div>
+                <div class="wpar-name">${escapeHtml(authorName)}</div>
+                <div class="wpar-date">${formatDate(post.createdAt)}</div>
+            </div>`;
+    }
     
     // Поддержка Markdown в теле поста дропа/вики
     const wikiTextEl = document.getElementById('wiki-post-text');
@@ -2141,9 +2256,11 @@ document.getElementById('wiki-image-viewer-img').onclick = function() {
 
 export function openWikiPostEditor(postId) {
     const chat = state.chatsData.find(c => c.id === state.wikiChatId);
-    if (!chat || !isWikiModerator(chat) || !state.wikiCategoryId) return;
-    state.wikiEditingPostId = postId;
+    if (!chat || !state.wikiCategoryId) return;
     const post = postId ? (chat.wiki && chat.wiki.posts || {})[postId] : null;
+    if (postId && !canManagePost(chat, post)) return;
+    if (!postId && !canPostToWall(chat)) return;
+    state.wikiEditingPostId = postId;
 
     document.getElementById('wiki-post-editor-title').textContent = postId ? '✏️ Редактировать пост' : '✨ Новый пост';
     document.getElementById('wiki-editor-post-title').value = post ? (post.title || '') : '';
@@ -2215,7 +2332,9 @@ document.getElementById('wiki-editor-image-file').addEventListener('change', asy
 
 document.getElementById('btn-save-wiki-post').onclick = function() {
     const chat = state.chatsData.find(c => c.id === state.wikiChatId);
-    if (!chat || !isWikiModerator(chat) || !state.wikiCategoryId) return;
+    if (!chat || !state.wikiCategoryId) return;
+    const existingPost = state.wikiEditingPostId ? (chat.wiki && chat.wiki.posts || {})[state.wikiEditingPostId] : null;
+    if (state.wikiEditingPostId ? !canManagePost(chat, existingPost) : !canPostToWall(chat)) return;
 
     const title = document.getElementById('wiki-editor-post-title').value.trim();
     if (!title) return tg.showAlert('Введите заголовок поста');

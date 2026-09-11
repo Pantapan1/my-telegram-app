@@ -1,7 +1,7 @@
 import { ref, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { EMOJIS } from './constants.js';
-import { attachmentHtml, avatarHtml, colorFor, confettiBurst, escapeHtml, formatCountdown, formatDate, friendlyDbError, getImagesFromContainer, initialOf, nickColorStyle, playSound, populateImagesContainer, setupAttachmentPicker, shopBadgeHtml, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, confettiBurst, escapeHtml, formatCountdown, formatDate, friendlyDbError, getImagesFromContainer, initialOf, nickColorStyle, playSound, populateImagesContainer, postBackgroundStyle, renderMarkdown, setupAttachmentPicker, shopBadgeHtml, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -281,7 +281,7 @@ export function myReactionOptions() {
                     </div>` : '<div style="color:var(--text-secondary);font-size:13px;font-weight:600;margin-bottom:8px;">📰 Новость от редакции</div>';
                 
                 return `
-                <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" data-post-id="${post.id}">
+                <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms;${postBackgroundStyle(post)}" data-post-id="${post.id}">
                     ${post.pinned ? `<div style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#ed8f03;background:#fff4e0;padding:3px 9px;border-radius:10px;margin-bottom:8px;">📌 Закреплено</div>` : ''}
                     ${authorRow}
                     ${coverImage ? `<img src="${coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(post.title || '')}">${initialOf(post.title)}</div>`}
@@ -329,8 +329,32 @@ export function myReactionOptions() {
             document.getElementById('compose-title').value = '';
             document.getElementById('compose-images-container').innerHTML = '';
             document.getElementById('compose-text').value = '';
+            document.getElementById('compose-bg-image').value = '';
+            setComposeBgChip('');
             document.getElementById('btn-submit-compose').textContent = 'Опубликовать';
         }
+
+        function wireComposeBgPicker() {
+            const container = document.getElementById('compose-bg-picker');
+            if (!container) return;
+            container.querySelectorAll('.chip').forEach(chip => {
+                chip.onclick = () => {
+                    container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                };
+            });
+        }
+        function setComposeBgChip(value) {
+            const container = document.getElementById('compose-bg-picker');
+            if (!container) return;
+            container.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', (c.getAttribute('data-bg') || '') === (value || '')));
+        }
+        function getComposeBgChip() {
+            const container = document.getElementById('compose-bg-picker');
+            const active = container && container.querySelector('.chip.active');
+            return active ? (active.getAttribute('data-bg') || '') : '';
+        }
+        wireComposeBgPicker();
 
 
         
@@ -361,6 +385,8 @@ export function myReactionOptions() {
             populateImagesContainer('compose-images-container', imagesArr);
             
             document.getElementById('compose-text').value = post.text || '';
+            document.getElementById('compose-bg-image').value = post.backgroundImage || '';
+            setComposeBgChip(post.backgroundImage ? '' : (post.background || ''));
             document.getElementById('btn-submit-compose').textContent = 'Сохранить изменения';
             document.getElementById('post-overlay').classList.remove('active');
             document.getElementById('compose-overlay').classList.add('active');
@@ -376,6 +402,8 @@ export function myReactionOptions() {
             const title = document.getElementById('compose-title').value.trim();
             const text = document.getElementById('compose-text').value.trim();
             const imagesArr = getImagesFromContainer('compose-images-container');
+            const backgroundImage = document.getElementById('compose-bg-image').value.trim();
+            const background = getComposeBgChip();
             
             if (!title || !text) return tg.showAlert('Заполните заголовок и текст');
             if (!state.db) return tg.showAlert('Firebase не подключен');
@@ -384,7 +412,9 @@ export function myReactionOptions() {
                 update(ref(state.db, 'posts/' + state.editingUserPostId), { 
                     title: title, 
                     images: imagesArr, 
-                    text: text 
+                    text: text,
+                    background: backgroundImage ? null : (background || null),
+                    backgroundImage: backgroundImage || null
                 }).then(() => { 
                     document.getElementById('close-compose-btn').click(); 
                     tg.showPopup({ title: 'Сохранено', message: 'Пост обновлён', buttons: [{ type: 'ok' }] }); 
@@ -395,6 +425,8 @@ export function myReactionOptions() {
                     title: title, 
                     images: imagesArr, 
                     text: text, 
+                    background: backgroundImage ? null : (background || null),
+                    backgroundImage: backgroundImage || null,
                     createdAt: Date.now(),
                     authorId: state.currentUser.id, 
                     authorName: state.currentUser.name, 
@@ -458,7 +490,9 @@ export function myReactionOptions() {
             const imagesArr = post.images || (post.image ? [post.image] : []);
             const imagesHtml = imagesArr.map(url => `<img src="${url}" style="width:100%; border-radius:16px; margin-bottom:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.05);" onerror="this.style.display='none'">`).join('');
 
-            document.getElementById('post-overlay-content').innerHTML = `
+            const contentEl = document.getElementById('post-overlay-content');
+            contentEl.style.cssText = postBackgroundStyle(post) + 'border-radius:16px;padding:' + (postBackgroundStyle(post) ? '14px;' : '0;');
+            contentEl.innerHTML = `
                 ${authorBlock} 
                 ${imagesHtml}
                 <div class="md-body" style="font-size:15px;line-height:1.6;color:var(--text-primary);">${renderMarkdown(post.text)}</div>

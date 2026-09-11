@@ -25,6 +25,24 @@ export function colorFor(str) {
 
 
 
+        // === Фон поста (заливка/градиент/изображение) ===
+        // post.background хранит либо "color:#hex", либо "gradient:linear-gradient(...)".
+        // post.backgroundImage хранит отдельно URL фоновой картинки (приоритетнее заливки/градиента).
+        export function postBackgroundStyle(post) {
+            if (!post) return '';
+            if (post.backgroundImage) {
+                return `background-image:linear-gradient(rgba(255,255,255,0.75),rgba(255,255,255,0.75)),url('${post.backgroundImage}');background-size:cover;background-position:center;`;
+            }
+            if (post.background) {
+                const [kind, value] = String(post.background).split(/:(.+)/).filter(Boolean);
+                if (kind === 'color' && value) return `background:${value};`;
+                if (kind === 'gradient' && value) return `background:${value};`;
+            }
+            return '';
+        }
+
+
+
         // ============================================================
         // === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (Markdown-lite) ===
         // ============================================================
@@ -653,6 +671,7 @@ export function colorFor(str) {
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-wallpaper-file', 'edit-group-wallpaper', 'edit-group-wallpaper-upload-btn', 'banners');
+        setupImageUpload('compose-bg-image-file', 'compose-bg-image', 'compose-bg-image-upload-btn', 'banners');
         setupImageUpload('subchat-avatar-file', 'subchat-avatar', 'subchat-avatar-upload-btn', 'avatars');
         setupImageUpload('wiki-settings-banner-file', 'wiki-settings-banner', 'wiki-settings-banner-upload-btn', 'banners');
         setupImageUpload('character-avatar-file', 'character-avatar', 'character-avatar-upload-btn', 'avatars');
@@ -1003,20 +1022,36 @@ export function colorFor(str) {
             btn.classList.remove('hidden');
 
             if (Notification.permission === 'denied') {
-                btn.textContent = '🔕 Уведомления заблокированы в браузере';
+                setProfileMenuItemLabel(btn, '🔕', 'Заблокированы');
                 return;
             }
             if (Notification.permission === 'default') {
-                btn.textContent = '🔔 Включить уведомления';
+                setProfileMenuItemLabel(btn, '🔔', 'Включить увед.');
                 return;
             }
             const enabled = localStorage.getItem('sr_notifications_enabled') !== '0';
-            btn.textContent = enabled ? '🔔 Уведомления: вкл' : '🔕 Уведомления: выкл';
+            setProfileMenuItemLabel(btn, enabled ? '🔔' : '🔕', enabled ? 'Увед.: вкл' : 'Увед.: выкл');
         }
 
         export function renderSoundToggle() {
             const btn = document.getElementById('btn-toggle-sound');
-            btn.textContent = soundAllowed() ? '🔊 Звук: вкл' : '🔇 Звук: выкл';
+            const on = soundAllowed();
+            setProfileMenuItemLabel(btn, on ? '🔊' : '🔇', on ? 'Звук: вкл' : 'Звук: выкл');
+        }
+
+        // Пункты компактного грид-меню профиля состоят из <span class="pmi-icon"> и <span class="pmi-label">;
+        // эта функция обновляет их вместо textContent, чтобы не сломать вёрстку тайла.
+        function setProfileMenuItemLabel(btn, icon, label) {
+            if (!btn) return;
+            let iconEl = btn.querySelector('.pmi-icon');
+            let labelEl = btn.querySelector('.pmi-label');
+            if (!iconEl || !labelEl) {
+                btn.innerHTML = '<span class="pmi-icon"></span><span class="pmi-label"></span>';
+                iconEl = btn.querySelector('.pmi-icon');
+                labelEl = btn.querySelector('.pmi-label');
+            }
+            iconEl.textContent = icon;
+            labelEl.textContent = label;
         }
 
 

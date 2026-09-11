@@ -812,6 +812,24 @@
         .profile-name-row h2 { font-size: 20px; font-weight: 800; margin-bottom: 2px; color:var(--text-primary); }
         .profile-bio { font-size: 13.5px; color:var(--text-secondary); margin-bottom: 8px; min-height: 4px; line-height: 1.5; text-align: center; max-width: 320px; margin-left: auto; margin-right: auto; white-space: pre-wrap; word-break: break-word; }
 
+        /* Компактное сеточное меню профиля вместо длинного списка кнопок на всю ширину */
+        .profile-menu-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
+        }
+        .profile-menu-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            padding: 12px 4px; border-radius: 16px; border: 1px solid var(--border-soft);
+            background: var(--surface); cursor: pointer; transition: transform .15s ease, background .15s ease;
+            color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .profile-menu-item:active { transform: scale(0.94); background: var(--input-bg); }
+        .profile-menu-item .pmi-icon { font-size: 20px; line-height: 1; }
+        .profile-menu-item .pmi-label {
+            font-size: 11px; font-weight: 700; line-height: 1.2; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+        }
+        .profile-menu-item.hidden { display: none; }
+
         .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 16px 12px; }
         .stats-num { font-size: 24px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .stats-label { font-size: 12px; font-weight: 600; color:var(--text-secondary); margin-top: 4px; }
@@ -858,6 +876,8 @@
         .msg-row-action { justify-content: center; margin: 4px 0; }
         .msg-action-line { max-width: 90%; text-align: center; font-style: italic; font-size: 13px; line-height: 1.4; color: #6b21a8; background: rgba(155,89,255,0.12); border-radius: 12px; padding: 6px 12px; }
         .msg-action-line .msg-reply-quote { text-align: left; font-style: normal; }
+        .msg-thought-line { max-width: 90%; text-align: center; font-style: italic; font-size: 13px; line-height: 1.4; color: #1a5f8a; background: rgba(52,152,219,0.12); border-radius: 12px; padding: 6px 12px; }
+        .msg-thought-line .msg-reply-quote { text-align: left; font-style: normal; }
         .sticker-toggle.active { background: #ff9f0a; color: #fff; }
         .msg-row { display: flex; margin-bottom: 6px; align-items: flex-end; font-size: 15px; line-height: 1.35; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
@@ -1660,23 +1680,43 @@
 #chat-actions-toggle.active { background: var(--input-bg); }
 
 /* ============================================================
-   ВИКИ ГРУППЫ ("ДРОП")
+   ВИКИ ГРУППЫ ("ДРОП") — оформление в стиле Amino
    ============================================================ */
 .wiki-hero {
-    padding: 18px 20px 22px; margin: -26px -22px 22px;
+    position: relative; margin: -26px -22px 40px; padding-bottom: 6px;
+}
+.wiki-hero-banner {
+    height: 118px; border-radius: 0 0 28px 28px;
     background: linear-gradient(135deg, #6b21a8 0%, #9333ea 45%, #ed8f03 100%);
-    color: #fff; position: relative; overflow: hidden;
+    position: relative; overflow: hidden;
 }
-.wiki-hero::before {
+.wiki-hero-banner::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.25), transparent 60%);
+    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.28), transparent 60%);
 }
-.wiki-hero-emoji { font-size: 34px; line-height: 1; margin-bottom: 6px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); }
-.wiki-hero-title { font-size: 19px; font-weight: 800; letter-spacing: -0.2px; position: relative; z-index: 1; }
-.wiki-hero-sub { font-size: 12.5px; opacity: 0.85; margin-top: 3px; font-weight: 600; position: relative; z-index: 1; }
+.wiki-hero-avatar {
+    width: 72px; height: 72px; border-radius: 50%; position: absolute; left: 50%; top: 84px;
+    transform: translateX(-50%); border: 4px solid var(--surface, #fff); background: var(--surface, #fff);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;
+    font-size: 30px; overflow: hidden; color: #fff;
+}
+.wiki-hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.wiki-hero-title {
+    text-align: center; margin-top: 46px; font-size: 17px; font-weight: 800;
+    color: var(--text-primary); letter-spacing: -0.2px;
+}
+.wiki-hero-stats { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-weight: 600; }
+
+.wiki-section-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+.wiki-section-head:first-of-type { margin-top: 4px; }
+.wiki-mini-add-btn {
+    width: 30px; height: 30px; border-radius: 10px; border: none; background: linear-gradient(135deg,#ed8f03,#ff9f0a);
+    color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(237,143,3,0.3);
+}
+.wiki-mini-add-btn:active { transform: scale(0.9); }
 
 .wiki-add-row {
-    display: flex; gap: 8px; margin-bottom: 20px; background: var(--surface);
+    display: flex; gap: 8px; margin-bottom: 16px; background: var(--surface);
     border: 1px solid var(--border-soft); border-radius: 16px; padding: 6px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.05);
 }
@@ -1693,20 +1733,23 @@
 }
 .wiki-add-row button:active { transform: scale(0.9); }
 
-.wiki-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wiki-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6px; }
 .wiki-cat-card {
-    position: relative; border-radius: 20px; padding: 16px 14px; min-height: 118px;
+    position: relative; border-radius: 22px; padding: 16px 14px; min-height: 128px;
     display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
-    color: #fff; overflow: hidden; box-shadow: 0 8px 20px -6px rgba(0,0,0,0.25);
+    color: #fff; overflow: hidden; box-shadow: 0 10px 22px -8px rgba(0,0,0,0.35);
     transition: transform .18s ease, box-shadow .18s ease;
 }
 .wiki-cat-card:active { transform: scale(0.96); }
 .wiki-cat-card::after {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.28), transparent 55%);
+    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%), radial-gradient(circle at 100% 0%, rgba(255,255,255,0.28), transparent 55%);
     pointer-events: none;
 }
-.wiki-cat-card .wcc-icon { font-size: 26px; position: absolute; top: 12px; left: 14px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
+.wiki-cat-card .wcc-icon {
+    font-size: 20px; position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 12px;
+    background: rgba(255,255,255,0.22); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+}
 .wiki-cat-card .wcc-del {
     position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 9px;
     border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 13px; cursor: pointer;
@@ -1715,7 +1758,7 @@
 .wiki-cat-card .wcc-del:active { transform: scale(0.9); }
 .wiki-cat-card .wcc-name {
     font-size: 15px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
 .wiki-cat-card .wcc-count {
     font-size: 11px; font-weight: 700; opacity: 0.9; margin-top: 3px; position: relative; z-index: 1;
@@ -1727,27 +1770,31 @@
 .wiki-empty .we-emoji { font-size: 44px; margin-bottom: 10px; opacity: 0.8; }
 .wiki-empty .we-text { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
 
-.wiki-post-list { display: flex; flex-direction: column; gap: 10px; }
+/* Список постов вики — карточки-«журналы», как записи вики в Amino */
+.wiki-post-list { display: flex; flex-direction: column; gap: 14px; }
 .wiki-post-card {
-    display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 18px;
-    background: var(--surface); border: 1px solid var(--border-soft); cursor: pointer;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.04); transition: transform .15s ease, box-shadow .15s ease;
+    position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; height: 168px;
+    display: flex; align-items: flex-end; box-shadow: 0 8px 18px -8px rgba(0,0,0,0.3);
+    transition: transform .15s ease, box-shadow .15s ease; background: var(--input-bg);
 }
 .wiki-post-card:active { transform: scale(0.98); }
 .wiki-post-cover {
-    width: 58px; height: 58px; border-radius: 14px; object-fit: cover; flex-shrink: 0;
-    background: var(--input-bg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
 }
 .wiki-post-cover-fallback {
-    width: 58px; height: 58px; border-radius: 14px; flex-shrink: 0; display: flex;
-    align-items: center; justify-content: center; font-size: 22px; color: #fff;
+    position: absolute; inset: 0; width: 100%; height: 100%; display: flex;
+    align-items: center; justify-content: center; font-size: 40px; color: rgba(255,255,255,0.85);
 }
-.wiki-post-info { flex: 1; min-width: 0; }
-.wiki-post-title { font-size: 14.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wiki-post-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; font-weight: 600; }
+.wiki-post-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.72) 100%);
+}
+.wiki-post-info { position: relative; z-index: 1; padding: 14px; width: 100%; }
+.wiki-post-title { font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.4); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wiki-post-meta { font-size: 11.5px; color: rgba(255,255,255,0.85); margin-top: 4px; font-weight: 700; }
 .wiki-post-del {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #ffcdd2;
-    background: #ffebee; color: #c62828; font-size: 13px; cursor: pointer;
+    position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border-radius: 10px;
+    border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; cursor: pointer; backdrop-filter: blur(4px);
 }
 .wiki-post-del:active { transform: scale(0.9); }
 
@@ -1768,8 +1815,11 @@
     width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all .2s ease;
 }
 .wiki-post-gallery-dots span.active { background: #fff; width: 16px; border-radius: 4px; }
-.wiki-post-body-title { font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; letter-spacing: -0.3px; }
-.wiki-post-body-text { font-size: 15px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+.wiki-post-body-title { font-size: 21px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.25; }
+.wiki-post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.wiki-post-author-row .wpar-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.wiki-post-author-row .wpar-date { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }
+.wiki-post-body-text { font-size: 15px; line-height: 1.7; color: var(--text-primary); font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
 
 /* Полноэкранный просмотр картинки поста */
 .wiki-viewer-hint { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 600; }
@@ -1819,11 +1869,16 @@
 .community-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px; scroll-snap-type: x proximity; }
 .community-rail::-webkit-scrollbar { display: none; }
 .community-rail-card {
-    flex: 0 0 auto; width: 132px; border-radius: 18px; overflow: hidden; cursor: pointer;
+    flex: 0 0 auto; width: 132px; border-radius: 18px; overflow: hidden; cursor: pointer; position: relative;
     background: var(--surface); border: 1px solid var(--border-soft); scroll-snap-align: start;
     box-shadow: 0 3px 10px rgba(0,0,0,0.05); transition: transform .15s ease;
 }
 .community-rail-card:active { transform: scale(0.96); }
+.community-rail-del {
+    position: absolute; top: 6px; right: 6px; z-index: 2; width: 26px; height: 26px; border-radius: 9px;
+    border: none; background: rgba(0,0,0,0.45); color: #fff; font-size: 12px; cursor: pointer; backdrop-filter: blur(4px);
+}
+.community-rail-del:active { transform: scale(0.9); }
 .community-rail-cover { width: 100%; height: 84px; object-fit: cover; background: var(--input-bg); display: block; }
 .community-rail-cover-fallback { width: 100%; height: 84px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; }
 .community-rail-info { padding: 8px 9px; }
@@ -1867,12 +1922,6 @@
 /* ============================================================
    ВИКИ — доп. чаты, настройки (баннер/цвет/модераторы), лайки, закреп
    ============================================================ */
-.wiki-section-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 10px; }
-.wiki-mini-add-btn {
-    width: 30px; height: 30px; border-radius: 10px; border: none; background: var(--input-bg);
-    color: var(--text-primary); font-size: 17px; font-weight: 800; cursor: pointer;
-}
-.wiki-mini-add-btn:active { transform: scale(0.9); }
 #wiki-subchats-section { margin-bottom: 6px; }
 #wiki-subchats-rail:empty { display: none; }
 #wiki-subchats-rail:empty + #wiki-add-category-row { margin-top: 0; }

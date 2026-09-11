@@ -226,15 +226,17 @@
             <div class="profile-bio" id="profile-display-bio"></div>
             <div id="profile-decorations-row" style="display:flex;gap:6px;margin-bottom:10px;justify-content:center;"></div>
 
-            <button class="btn btn-secondary" id="btn-edit-profile">✏️ Редактировать профиль</button>
-            <button class="btn btn-secondary hidden" id="btn-toggle-notifications">🔔 Уведомления: ...</button>
-            <button class="btn btn-secondary" id="btn-toggle-sound">🔊 Звук: вкл</button>
-            <button class="btn btn-secondary" id="btn-open-shop">🛍 Магазин</button>
-            <button class="btn btn-secondary" id="btn-open-events" onclick="openEventsCalendar()">📅 Календарь событий</button>
-            <button class="btn btn-secondary" id="btn-open-decks" onclick="openCardGameMenu()">🃏 Карточная игра</button>
-            <button class="btn btn-secondary" id="btn-open-novels">📖 Новеллы</button>
-            <button class="btn btn-secondary" id="btn-open-publisher-app">📝 Подать заявку на публикацию</button>
-            <button class="btn btn-secondary hidden" id="btn-open-book-editor">📚 Редактор моих книг</button>
+            <div class="profile-menu-grid">
+                <button class="profile-menu-item" id="btn-edit-profile"><span class="pmi-icon">✏️</span><span class="pmi-label">Редактировать</span></button>
+                <button class="profile-menu-item hidden" id="btn-toggle-notifications"><span class="pmi-icon">🔔</span><span class="pmi-label">Уведомления</span></button>
+                <button class="profile-menu-item" id="btn-toggle-sound"><span class="pmi-icon">🔊</span><span class="pmi-label">Звук: вкл</span></button>
+                <button class="profile-menu-item" id="btn-open-shop"><span class="pmi-icon">🛍</span><span class="pmi-label">Магазин</span></button>
+                <button class="profile-menu-item" id="btn-open-events" onclick="openEventsCalendar()"><span class="pmi-icon">📅</span><span class="pmi-label">Календарь</span></button>
+                <button class="profile-menu-item" id="btn-open-decks" onclick="openCardGameMenu()"><span class="pmi-icon">🃏</span><span class="pmi-label">Карты</span></button>
+                <button class="profile-menu-item" id="btn-open-novels"><span class="pmi-icon">📖</span><span class="pmi-label">Новеллы</span></button>
+                <button class="profile-menu-item" id="btn-open-publisher-app"><span class="pmi-icon">📝</span><span class="pmi-label">Публикация</span></button>
+                <button class="profile-menu-item hidden" id="btn-open-book-editor"><span class="pmi-icon">📚</span><span class="pmi-label">Мои книги</span></button>
+            </div>
             <div id="profile-edit-panel" class="hidden">
                 <div class="divider"></div>
                 <input type="text" id="profile-name-input" class="input" placeholder="Отображаемое имя">
@@ -1090,6 +1092,23 @@
             <button class="btn btn-secondary" id="btn-compose-add-image" style="margin-bottom:10px; padding: 10px; border-radius:14px;">+ Добавить картинку</button>
             
             <textarea id="compose-text" class="input" placeholder="Текст вашей статьи..." style="min-height:160px;"></textarea>
+
+            <h4 style="margin: 10px 0; color:var(--text-primary); font-size: 15px;">Фон поста:</h4>
+            <div class="chip-row" id="compose-bg-picker">
+                <div class="chip active" data-bg="">Без фона</div>
+                <div class="chip" data-bg="color:#fff4e0">🟠 Персик</div>
+                <div class="chip" data-bg="color:#e3f2fd">🔵 Небо</div>
+                <div class="chip" data-bg="color:#e8f5e9">🟢 Мята</div>
+                <div class="chip" data-bg="gradient:linear-gradient(135deg,#ffb75e,#ed8f03)">🌇 Закат</div>
+                <div class="chip" data-bg="gradient:linear-gradient(135deg,#667eea,#764ba2)">🌌 Ночь</div>
+                <div class="chip" data-bg="gradient:linear-gradient(135deg,#f093fb,#f5576c)">🌸 Закат-2</div>
+            </div>
+            <div class="image-field-row">
+                <input type="text" id="compose-bg-image" class="input" placeholder="Или ссылка на фоновое изображение (URL)">
+                <label class="upload-btn" for="compose-bg-image-file" id="compose-bg-image-upload-btn">📁</label>
+                <input type="file" id="compose-bg-image-file" accept="image/*" class="hidden">
+            </div>
+
             <button class="btn" id="btn-submit-compose">Опубликовать</button>
         </div>
     </div>
@@ -1251,6 +1270,7 @@
                     <button class="chat-actions-menu-item hidden" id="chat-economy-btn"><span class="cam-icon">💰</span><span class="cam-label">Экономика и инвентарь</span></button>
                     <button class="chat-actions-menu-item hidden" id="chat-wiki-btn"><span class="cam-icon">📦</span><span class="cam-label">Дроп · вики чата</span></button>
                     <button class="chat-actions-menu-item hidden" id="chat-edit-group-btn"><span class="cam-icon">⚙️</span><span class="cam-label">Настройки группы</span></button>
+                    <button class="chat-actions-menu-item hidden" id="chat-leave-group-btn" style="color:#e74c3c;"><span class="cam-icon">🚪</span><span class="cam-label">Покинуть чат</span></button>
                 </div>
             </div>
         </div>
@@ -1364,19 +1384,23 @@
         </div>
         <div class="reader-content" style="white-space:normal;">
             <div class="wiki-hero" id="wiki-hero">
-                <div class="wiki-hero-emoji">📦</div>
-                <div class="wiki-hero-title">Дроп этого чата</div>
-                <div class="wiki-hero-sub">Мини-вики: категории, арты и посты от создателя чата</div>
+                <div class="wiki-hero-banner" id="wiki-hero-banner"></div>
+                <div class="wiki-hero-avatar" id="wiki-hero-avatar">📦</div>
+                <div class="wiki-hero-title" id="wiki-hero-title-text">Дроп этого чата</div>
+                <div class="wiki-hero-stats" id="wiki-hero-stats">0 категорий · 0 постов</div>
             </div>
 
             <div id="wiki-subchats-section">
                 <div class="wiki-section-head">
-                    <h3 class="community-section-title" style="margin:0;">💬 Доп. чаты</h3>
+                    <h3 class="community-section-title" style="margin:0;">💬 Чат-румы</h3>
                     <button class="wiki-mini-add-btn hidden" id="btn-add-subchat" title="Создать доп. чат">+</button>
                 </div>
                 <div id="wiki-subchats-rail" class="community-rail"></div>
             </div>
 
+            <div class="wiki-section-head">
+                <h3 class="community-section-title" style="margin:0;">🗂 Категории вики</h3>
+            </div>
             <div id="wiki-add-category-row" class="wiki-add-row hidden">
                 <input type="text" id="wiki-category-name" placeholder="Название новой категории">
                 <button id="btn-add-wiki-category">+</button>
@@ -1465,6 +1489,7 @@
                 <div id="wiki-post-gallery-dots" class="wiki-post-gallery-dots"></div>
             </div>
             <div class="wiki-post-body-title" id="wiki-post-body-title"></div>
+            <div class="wiki-post-author-row" id="wiki-post-author-row"></div>
 
             <button class="wiki-like-btn" id="btn-wiki-like-post">
                 <span id="wiki-like-icon">🤍</span> <span id="wiki-like-count">0</span>
