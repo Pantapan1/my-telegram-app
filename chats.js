@@ -1378,7 +1378,7 @@ document.getElementById('btn-save-character').onclick = function() {
         }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
     } else {
         payload.ownerId = state.currentUser.id;
-        payload.createdAt = Date.now();
+        payload.createdAt = Date.now() ;
         push(ref(state.db, basePath), payload).then(() => {
             document.getElementById('close-character-edit-btn').click();
         }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
@@ -1509,12 +1509,12 @@ function useInventoryItem(chat, character, itemId) {
             text: actionText,
             messageStyle: 'action',
             asCharacterId: character.id,
-            createdAt: Date.now()
+            createdAt: Date.now() 
         };
         push(ref(state.db, 'chats/' + chat.id + '/messages'), payload).then(() => {
             update(ref(state.db, 'chats/' + chat.id), {
                 lastMessage: `🎬 ${character.name} ${actionText}`,
-                lastMessageAt: Date.now()
+                lastMessageAt: Date.now() 
             });
         });
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -1533,7 +1533,7 @@ document.getElementById('btn-add-inventory-item').onclick = function() {
     const usable = document.getElementById('inv-item-usable').checked;
 
     push(ref(state.db, 'chats/' + chat.id + '/characters/' + state.rpPanelCharacterId + '/inventory'), {
-        name, qty, note, usable, createdAt: Date.now()
+        name, qty, note, usable, createdAt: Date.now() 
     }).then(() => {
         document.getElementById('inv-item-name').value = '';
         document.getElementById('inv-item-qty').value = '1';
@@ -1592,7 +1592,7 @@ export function openGroupWiki() {
     document.getElementById('wiki-category-name').value = '';
     document.getElementById('btn-wiki-settings').classList.toggle('hidden', !isWikiModerator(chat));
 
-    state.wikiLastRead[chat.id] = Date.now();
+    state.wikiLastRead[chat.id] = Date.now() ;
     saveLocal('sr_wiki_last_read', state.wikiLastRead);
     updateWikiBtnBadge(chat);
 
@@ -1702,7 +1702,7 @@ document.getElementById('btn-add-wiki-category').onclick = function() {
     const input = document.getElementById('wiki-category-name');
     const name = input.value.trim();
     if (!name) return tg.showAlert('Введите название категории');
-    push(ref(state.db, 'chats/' + chat.id + '/wiki/categories'), { name, createdAt: Date.now() })
+    push(ref(state.db, 'chats/' + chat.id + '/wiki/categories'), { name, createdAt: Date.now()  })
         .then(() => {
             input.value = '';
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -1771,7 +1771,7 @@ document.getElementById('btn-submit-subchat').onclick = function() {
     Object.keys(chat.participants || {}).forEach(uid => { participants[uid] = true; });
     participants[state.currentUser.id] = true;
 
-    const newId = 'group_' + Date.now();
+    const newId = 'group_' + Date.now() ;
     set(ref(state.db, 'chats/' + newId), {
         type: 'group',
         name: name,
@@ -1780,9 +1780,9 @@ document.getElementById('btn-submit-subchat').onclick = function() {
         adminId: state.currentUser.id,
         parentChatId: chat.id,
         participants: participants,
-        createdAt: Date.now(),
+        createdAt: Date.now() ,
         lastMessage: 'Чат создан',
-        lastMessageAt: Date.now()
+        lastMessageAt: Date.now() 
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         document.getElementById('close-subchat-create-btn').click();
@@ -2016,7 +2016,13 @@ export function renderWikiPost() {
 
     document.getElementById('wiki-post-title').textContent = post.title || '(без названия)';
     document.getElementById('wiki-post-body-title').textContent = post.title || '(без названия)';
-    document.getElementById('wiki-post-text').textContent = post.text || '';
+    
+    // Поддержка Markdown в теле поста дропа/вики
+    const wikiTextEl = document.getElementById('wiki-post-text');
+    if (wikiTextEl) {
+        wikiTextEl.innerHTML = renderMarkdown(post.text || '');
+        wikiTextEl.classList.add('md-body');
+    }
 
     document.getElementById('btn-wiki-pin-post').classList.toggle('active', !!post.pinned);
     document.getElementById('btn-wiki-pin-post').style.background = post.pinned ? '#ff9f0a' : '';
@@ -2094,7 +2100,7 @@ document.getElementById('btn-send-wiki-comment').onclick = function() {
         author: state.currentUser.name,
         userId: state.currentUser.id,
         text: text,
-        createdAt: Date.now()
+        createdAt: Date.now() 
     }).then(() => {
         input.value = '';
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -2219,7 +2225,7 @@ document.getElementById('btn-save-wiki-post').onclick = function() {
 
     const savePromise = state.wikiEditingPostId
         ? update(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + state.wikiEditingPostId), payload)
-        : push(ref(state.db, 'chats/' + chat.id + '/wiki/posts'), { ...payload, createdAt: Date.now() });
+        : push(ref(state.db, 'chats/' + chat.id + '/wiki/posts'), { ...payload, createdAt: Date.now()  });
 
     savePromise.then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -2249,7 +2255,7 @@ export function getInventoryCount(chat, uid, itemId) {
 }
 
 function slugifyEconomyId(name) {
-    return String(name || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9а-яё_]/gi, '') || ('id' + Date.now());
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9а-яё_]/gi, '') || ('id' + Date.now() );
 }
 function findCurrencyByNameOrId(chat, key) {
     const k = String(key || '').toLowerCase();
@@ -2276,9 +2282,9 @@ function postEconomySystemMessage(chatId, text) {
         senderName: 'Система',
         text,
         isSystem: true,
-        createdAt: Date.now()
+        createdAt: Date.now() 
     });
-    update(ref(state.db, 'chats/' + chatId), { lastMessage: text, lastMessageAt: Date.now() });
+    update(ref(state.db, 'chats/' + chatId), { lastMessage: text, lastMessageAt: Date.now()  });
 }
 
 export function tryHandleEconomyCommand(chat, rawText) {
