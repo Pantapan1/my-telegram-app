@@ -461,7 +461,7 @@ export function myReactionOptions() {
             document.getElementById('post-overlay-content').innerHTML = `
                 ${authorBlock} 
                 ${imagesHtml}
-                <div style="font-size:15px;line-height:1.6;color:var(--text-primary);white-space:pre-wrap;">${escapeHtml(post.text)}</div>
+                <div class="md-body" style="font-size:15px;line-height:1.6;color:var(--text-primary);">${renderMarkdown(post.text)}</div>
                 <div class="card-meta" style="margin-top: 12px;">${formatDate(post.createdAt)}</div>
                 
                 ${isOwner ? `
@@ -484,7 +484,7 @@ export function myReactionOptions() {
                                 <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;${nickColorStyle(c.userId)}">${escapeHtml(c.author)}${verifiedBadge(c.userId)}${shopBadgeHtml(c.userId)}${passVipBadge(c.userId)}</span>
                                 <span class="comment-meta">${formatDate(c.createdAt)}</span>
                             </div>
-                            ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : (c.attachment ? attachmentHtml(c.attachment) : `<div class="comment-text">${escapeHtml(c.text)}</div>`)}
+                            ${c.sticker ? `<img src="${c.sticker}" class="comment-sticker">` : (c.attachment ? attachmentHtml(c.attachment) : `<div class="comment-text md-body">${renderMarkdown(c.text)}</div>`)}
                             ${(c.userId === state.currentUser.id || state.isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                         </div>
                     `).join('') : '<div style="color:var(--text-secondary);font-size:13px;">Пока нет комментариев. Будьте первым!</div>'}

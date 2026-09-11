@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToImgbb, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToImgbb, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -66,6 +66,29 @@ export function otherParticipant(chat) {
 
         export function isRoleplayGroup(chat) {
             return !!(chat && chat.type === 'group' && chat.groupMode === 'roleplay');
+        }
+
+        // Открытое сообщество: любой вступивший участник может опубликовать пост на стене
+        // (без премодерации). ГМ и назначенные модераторы могут писать всегда.
+        export function canPostToWall(chat) {
+            if (!chat) return false;
+            if (isWikiModerator(chat)) return true;
+            const openPosting = !!(chat.wiki && chat.wiki.openPosting);
+            const joined = !!(chat.participants && chat.participants[state.currentUser.id]);
+            return openPosting && joined;
+        }
+
+        // Модерация: ГМ/модераторы могут управлять (редактировать/удалять) любой пост,
+        // автор поста — только своим собственным.
+        export function canManagePost(chat, post) {
+            if (!chat || !post) return false;
+            if (isWikiModerator(chat)) return true;
+            return post.authorId === state.currentUser.id;
+        }
+        export function canManageComment(chat, comment) {
+            if (!chat || !comment) return false;
+            if (isWikiModerator(chat)) return true;
+            return comment.userId === state.currentUser.id;
         }
 
         export function charactersOf(chat) {
@@ -314,12 +337,12 @@ export function otherParticipant(chat) {
 
         export function renderChatOverlay(chat) {
             const me = state.usersData.find(u => u.id === state.currentUser.id);
-            const chatBg = me && me.equipped && me.equipped.passChatBg;
+            const chatBg = (me && me.equipped && me.equipped.passChatBg) || chat.wallpaper;
             const chatBodyEl = document.getElementById('chat-body');
             if (chatBodyEl) {
                 if (chatBg) {
-                    // !important здесь специально: обои — платная награда пасса, они должны
-                    // быть видны при любом оформлении сайта (Terraria, Roblox и т.д.),
+                    // !important здесь специально: обои (личная награда пасса ИЛИ фон, заданный ГМ
+                    // группы) должны быть видны при любом оформлении сайта (Terraria, Roblox и т.д.),
                     // даже если у темы есть свой фон для #chat-body.
                     chatBodyEl.style.setProperty('background-image', `url('${chatBg}')`, 'important');
                     chatBodyEl.style.setProperty('background-size', 'cover', 'important');
@@ -331,13 +354,20 @@ export function otherParticipant(chat) {
                 }
             }
 
+            const iAmModerator = isWikiModerator(chat); // ГМ или назначенный модератор
+            const isReadonlyChannel = chat.type === 'group' && chat.channelMode === 'readonly';
+            const canWriteHere = !isReadonlyChannel || iAmModerator;
+            document.getElementById('chat-input-row').classList.toggle('hidden', !canWriteHere);
+            document.getElementById('chat-readonly-bar').classList.toggle('hidden', !(isReadonlyChannel && !iAmModerator));
+
             if (chat.type === 'group') {
                 document.getElementById('chat-partner-name').textContent = chat.name;
                 document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
-                document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '');
+                document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '') + (isReadonlyChannel ? ' · 📢 только чтение' : '');
                 document.getElementById('chat-actions-wrap').classList.remove('hidden');
                 document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== state.currentUser.id);
                 document.getElementById('chat-rp-btn').classList.toggle('hidden', !isRoleplayGroup(chat));
+                document.getElementById('chat-economy-btn').classList.toggle('hidden', !iAmModerator);
                 document.getElementById('chat-wiki-btn').classList.remove('hidden');
                 updateWikiBtnBadge(chat);
             } else {
@@ -350,6 +380,7 @@ export function otherParticipant(chat) {
                 document.getElementById('chat-actions-toggle').classList.remove('active');
                 document.getElementById('chat-edit-group-btn').classList.add('hidden');
                 document.getElementById('chat-rp-btn').classList.add('hidden');
+                document.getElementById('chat-economy-btn').classList.add('hidden');
                 document.getElementById('chat-wiki-btn').classList.add('hidden');
             }
             updateChatRpStatusBar(chat);
@@ -381,6 +412,11 @@ export function otherParticipant(chat) {
                 const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const isMine = m.senderId === state.currentUser.id;
                 const canModify = isMine || state.isAdmin;
+
+                if (m.isSystem) {
+                    return `<div class="msg-system-row">⚙️ ${escapeHtml(m.text)}</div>`;
+                }
+
                 const charOverride = m.asCharacterId && chat.characters && chat.characters[m.asCharacterId];
                 const displayName = charOverride ? charOverride.name : m.senderName;
                 const senderInfo = state.usersData.find(u => u.id === m.senderId);
@@ -446,7 +482,7 @@ export function otherParticipant(chat) {
                             ${senderName}
                             ${replyPreview}
                             ${attachmentHtml(m.attachment)}
-                            ${m.text ? escapeHtml(m.text) : ''}
+                            ${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}
                             <span class="msg-time">${timeStr}${editedMark}</span>
                         </div>
                     </div>`;
@@ -458,7 +494,7 @@ export function otherParticipant(chat) {
                     <div class="msg-bubble">
                         ${senderName}
                         ${replyPreview}
-                        ${escapeHtml(m.text)}
+                        <div class="md-body">${renderMarkdown(m.text)}</div>
                         <span class="msg-time">${timeStr}${editedMark}</span>
                     </div>
                 </div>`;
@@ -657,6 +693,24 @@ export function otherParticipant(chat) {
             const text = input.value.trim();
             if (!text || !state.currentChatId || !state.db) return;
 
+            const chat = state.chatsData.find(c => c.id === state.currentChatId);
+
+            if (chat && chat.type === 'group') {
+                const iAmModerator = isWikiModerator(chat);
+                if (chat.channelMode === 'readonly' && !iAmModerator) {
+                    return tg.showAlert('В этом канале писать могут только ГМ и модераторы');
+                }
+                if (chat.mutedUsers && chat.mutedUsers[state.currentUser.id]) {
+                    return tg.showAlert('Вы в муте в этом чате и не можете отправлять сообщения');
+                }
+                // ГМ-команды экономики (/give, /take, /item, /use, /balance) — не отправляются как обычный текст
+                if (tryHandleEconomyCommand(chat, text)) {
+                    input.value = '';
+                    autoResizeChatInput();
+                    return;
+                }
+            }
+
             if (state.editingMessageId) {
                 update(ref(state.db, 'chats/' + state.currentChatId + '/messages/' + state.editingMessageId), { text, edited: true }).then(() => {
                     input.value = '';
@@ -667,7 +721,6 @@ export function otherParticipant(chat) {
                 return;
             }
             
-            const chat = state.chatsData.find(c => c.id === state.currentChatId);
             const activeChar = chat ? getActiveCharacter(chat) : null;
             const isActionMode = !!state.actionModeByChat[state.currentChatId];
 
@@ -865,6 +918,31 @@ export function otherParticipant(chat) {
         wireVisibilityChipPicker('group-visibility-picker');
         wireVisibilityChipPicker('edit-group-visibility-picker');
 
+        // === Обобщённый chip-пикер по произвольному data-атрибуту (режим канала, режим стены и т.д.) ===
+        function wireGenericChipPicker(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.querySelectorAll('.chip').forEach(chip => {
+                chip.onclick = () => {
+                    container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                };
+            });
+        }
+        function setGenericChipPicker(containerId, attr, value) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.getAttribute(attr) === value));
+        }
+        function getGenericChipPicker(containerId, attr, fallback) {
+            const container = document.getElementById(containerId);
+            const active = container && container.querySelector('.chip.active');
+            return active ? active.getAttribute(attr) : fallback;
+        }
+        wireGenericChipPicker('group-channel-mode-picker');
+        wireGenericChipPicker('edit-group-channel-mode-picker');
+        wireGenericChipPicker('edit-group-wall-mode-picker');
+
         document.getElementById('btn-open-create-group').onclick = function() {
             document.getElementById('new-chat-overlay').classList.remove('active');
             document.getElementById('create-group-overlay').classList.add('active');
@@ -957,13 +1035,17 @@ export function otherParticipant(chat) {
             }
             
             const participants = { [state.currentUser.id]: true };
+            const participantNames = { [state.currentUser.id]: state.currentUser.name };
             document.querySelectorAll('.group-user-cb:checked').forEach(cb => {
                 participants[cb.value] = true;
+                const u = state.usersData.find(x => x.id === cb.value);
+                if (u) participantNames[cb.value] = u.name;
             });
             
             const chatId = 'group_' + Date.now();
             const groupMode = getTypeChipPicker('group-type-picker');
             const isPublic = getVisibilityChipPicker('group-visibility-picker') === 'public';
+            const channelMode = getGenericChipPicker('group-channel-mode-picker', 'data-channelmode', 'normal');
             set(ref(state.db, 'chats/' + chatId), {
                 type: 'group', 
                 name: name, 
@@ -971,10 +1053,12 @@ export function otherParticipant(chat) {
                 avatar: document.getElementById('group-avatar').value.trim(),
                 adminId: state.currentUser.id, 
                 participants: participants, 
+                participantNames: participantNames,
                 createdAt: Date.now(), 
                 lastMessage: 'Группа создана', 
                 lastMessageAt: Date.now(),
                 isPublic: isPublic,
+                channelMode: channelMode,
                 ...(groupMode === 'roleplay' ? { groupMode: 'roleplay' } : {})
             }).then(() => { 
                 document.getElementById('close-create-group-btn').click(); 
@@ -990,8 +1074,11 @@ export function otherParticipant(chat) {
             document.getElementById('edit-group-name').value = chat.name || '';
             document.getElementById('edit-group-desc').value = chat.desc || '';
             document.getElementById('edit-group-avatar').value = chat.avatar || '';
+            document.getElementById('edit-group-wallpaper').value = chat.wallpaper || '';
             setTypeChipPicker('edit-group-type-picker', chat.groupMode === 'roleplay' ? 'roleplay' : 'normal');
             setVisibilityChipPicker('edit-group-visibility-picker', chat.isPublic ? 'public' : 'private');
+            setGenericChipPicker('edit-group-channel-mode-picker', 'data-channelmode', chat.channelMode === 'readonly' ? 'readonly' : 'normal');
+            setGenericChipPicker('edit-group-wall-mode-picker', 'data-wallmode', (chat.wiki && chat.wiki.openPosting) ? 'open' : 'moderated');
             
             document.getElementById('chat-overlay').classList.remove('active');
             document.getElementById('edit-group-overlay').classList.add('active');
@@ -1009,12 +1096,17 @@ export function otherParticipant(chat) {
             
             const groupMode = getTypeChipPicker('edit-group-type-picker');
             const isPublic = getVisibilityChipPicker('edit-group-visibility-picker') === 'public';
+            const channelMode = getGenericChipPicker('edit-group-channel-mode-picker', 'data-channelmode', 'normal');
+            const wallMode = getGenericChipPicker('edit-group-wall-mode-picker', 'data-wallmode', 'moderated');
             update(ref(state.db, 'chats/' + state.currentChatId), { 
                 name: name, 
                 desc: document.getElementById('edit-group-desc').value.trim(), 
                 avatar: document.getElementById('edit-group-avatar').value.trim(),
+                wallpaper: document.getElementById('edit-group-wallpaper').value.trim() || null,
                 groupMode: groupMode === 'roleplay' ? 'roleplay' : null,
-                isPublic: isPublic
+                isPublic: isPublic,
+                channelMode: channelMode,
+                ['wiki/openPosting']: wallMode === 'open'
             }).then(() => {
                 document.getElementById('close-edit-group-btn').click();
             }).catch(err => tg.showAlert('Ошибка сохранения: ' + friendlyDbError(err)));
@@ -1800,11 +1892,13 @@ export function otherParticipant(chat) {
                 modList.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;padding:8px;">В группе больше никого нет — назначать некого.</div>`;
             } else {
                 modList.innerHTML = participantIds.map(uid => {
-                    const nm = (chat.participantNames && chat.participantNames[uid]) || 'Участник';
+                    const userRec = state.usersData.find(u => u.id === uid);
+                    const nm = (userRec && userRec.name) || (chat.participantNames && chat.participantNames[uid]) || 'Участник';
                     const checked = !!moderators[uid];
                     return `
                     <label class="wiki-mod-item">
                         <input type="checkbox" data-mod-uid="${uid}" ${checked ? 'checked' : ''}>
+                        ${avatarHtml(nm, userRec ? userRec.avatar : null, 'avatar-sm')}
                         <span class="wiki-mod-name">${escapeHtml(nm)}</span>
                     </label>`;
                 }).join('');
@@ -1860,7 +1954,7 @@ export function otherParticipant(chat) {
             state.wikiCategoryId = categoryId;
             const cat = (chat.wiki && chat.wiki.categories || {})[categoryId];
             document.getElementById('wiki-category-title').textContent = (cat ? wikiIconFor(cat.name) + ' ' + cat.name : 'Категория');
-            document.getElementById('btn-wiki-add-post').classList.toggle('hidden', !isWikiModerator(chat));
+            document.getElementById('btn-wiki-add-post').classList.toggle('hidden', !canPostToWall(chat));
             document.getElementById('group-wiki-overlay').classList.remove('active');
             document.getElementById('wiki-category-overlay').classList.add('active');
             state.activeOverlay = 'wikicategory';
@@ -1885,7 +1979,7 @@ export function otherParticipant(chat) {
             if (!list) return;
             if (!chat) { list.innerHTML = ''; return; }
 
-            const owner = isWikiModerator(chat);
+            const owner = isWikiModerator(chat); // пин доступен только модерации
             const posts = chat.wiki && chat.wiki.posts
                 ? Object.entries(chat.wiki.posts).map(([id, v]) => ({ id, ...v })).filter(p => p.categoryId === state.wikiCategoryId)
                     .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.createdAt || 0) - (a.createdAt || 0))
@@ -1894,7 +1988,7 @@ export function otherParticipant(chat) {
             if (!posts.length) {
                 list.innerHTML = `<div class="wiki-empty">
                     <div class="we-emoji">📝</div>
-                    <div class="we-text">${owner ? 'Постов пока нет —<br>добавьте первый кнопкой «+ Пост»' : 'В этой категории пока пусто'}</div>
+                    <div class="we-text">${canPostToWall(chat) ? 'Постов пока нет —<br>добавьте первый кнопкой «+ Пост»' : 'В этой категории пока пусто'}</div>
                 </div>`;
             } else {
                 list.innerHTML = posts.map(p => {
@@ -1909,7 +2003,7 @@ export function otherParticipant(chat) {
                             <div class="wiki-post-title">${p.pinned ? '<span class="wiki-pin-badge">📌</span>' : ''}${escapeHtml(p.title || '(без названия)')}</div>
                             <div class="wiki-post-meta">${p.images && p.images.length ? '🖼 ' + p.images.length + ' · ' : ''}${likeCount ? '❤️ ' + likeCount : (p.images && p.images.length ? '' : 'только текст')}</div>
                         </div>
-                        ${owner ? `<button class="wiki-post-del" data-del-post="${p.id}" title="Удалить">🗑</button>` : ''}
+                        ${canManagePost(chat, p) ? `<button class="wiki-post-del" data-del-post="${p.id}" title="Удалить">🗑</button>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -1942,9 +2036,11 @@ export function otherParticipant(chat) {
             document.getElementById('wiki-post-overlay').classList.add('active');
             state.activeOverlay = 'wikipost';
             const owner = isWikiModerator(chat);
+            const post = (chat.wiki && chat.wiki.posts || {})[postId];
+            const canManage = canManagePost(chat, post);
             document.getElementById('btn-wiki-pin-post').classList.toggle('hidden', !owner);
-            document.getElementById('btn-wiki-edit-post').classList.toggle('hidden', !owner);
-            document.getElementById('btn-wiki-delete-post').classList.toggle('hidden', !owner);
+            document.getElementById('btn-wiki-edit-post').classList.toggle('hidden', !canManage);
+            document.getElementById('btn-wiki-delete-post').classList.toggle('hidden', !canManage);
             renderWikiPost();
         }
 
@@ -1980,7 +2076,9 @@ export function otherParticipant(chat) {
 
         document.getElementById('btn-wiki-delete-post').onclick = function() {
             const chat = state.chatsData.find(c => c.id === state.wikiChatId);
-            if (!chat || !isWikiModerator(chat) || !state.wikiPostId) return;
+            if (!chat || !state.wikiPostId) return;
+            const post = (chat.wiki && chat.wiki.posts || {})[state.wikiPostId];
+            if (!canManagePost(chat, post)) return;
             tg.showConfirm('Удалить этот пост?', (ok) => {
                 if (!ok) return;
                 remove(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + state.wikiPostId)).then(() => {
@@ -2055,7 +2153,7 @@ export function otherParticipant(chat) {
                         <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;${nickColorStyle(c.userId)}">${escapeHtml(c.author || 'Читатель')}${verifiedBadge(c.userId)}${shopBadgeHtml(c.userId)}${passVipBadge(c.userId)}</span>
                         <span class="comment-meta">${formatDate(c.createdAt)}</span>
                     </div>
-                    <div class="comment-text">${escapeHtml(c.text || '')}</div>
+                    <div class="comment-text md-body">${renderMarkdown(c.text || '')}</div>
                     ${(c.userId === state.currentUser.id || owner) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
                 </div>
             `).join('') : '<div style="color:var(--text-secondary);font-size:13px;">Пока нет комментариев. Будьте первым!</div>';
@@ -2212,3 +2310,328 @@ export function otherParticipant(chat) {
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
+
+        // ============================================================
+        // === ЭКОНОМИКА ГМ: переменные (валюты), инвентарь, команды ===
+        // ============================================================
+        // Модель данных в chats/{id}/economy:
+        //   currencies: { <id>: { name, icon } }         — кастомные переменные (золото, мана, HP...)
+        //   items:      { <id>: { name, icon, desc } }   — предметы, которые можно выдавать/использовать
+        //   balances:   { <uid>: { <currencyId>: number } }
+        //   inventory:  { <uid>: { <itemId>: number } }
+        //
+        // Команды в чате (доступны только ГМ/модераторам, кроме /use и /balance):
+        //   /give @игрок валюта количество
+        //   /take @игрок валюта количество
+        //   /item give @игрок предмет [количество]
+        //   /item take @игрок предмет [количество]
+        //   /use предмет            — игрок использует свой предмет
+        //   /balance                — показать свой баланс и инвентарь
+
+        export function economyCurrencies(chat) {
+            return chat && chat.economy && chat.economy.currencies
+                ? Object.entries(chat.economy.currencies).map(([id, v]) => ({ id, ...v }))
+                : [];
+        }
+        export function economyItems(chat) {
+            return chat && chat.economy && chat.economy.items
+                ? Object.entries(chat.economy.items).map(([id, v]) => ({ id, ...v }))
+                : [];
+        }
+        export function getBalance(chat, uid, currencyId) {
+            return (chat && chat.economy && chat.economy.balances && chat.economy.balances[uid] && chat.economy.balances[uid][currencyId]) || 0;
+        }
+        export function getInventoryCount(chat, uid, itemId) {
+            return (chat && chat.economy && chat.economy.inventory && chat.economy.inventory[uid] && chat.economy.inventory[uid][itemId]) || 0;
+        }
+
+        function slugifyEconomyId(name) {
+            return String(name || '').trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9а-яё_]/gi, '') || ('id' + Date.now());
+        }
+        function findCurrencyByNameOrId(chat, key) {
+            const k = String(key || '').toLowerCase();
+            return economyCurrencies(chat).find(c => c.id.toLowerCase() === k || (c.name || '').toLowerCase() === k);
+        }
+        function findItemByNameOrId(chat, key) {
+            const k = String(key || '').toLowerCase();
+            return economyItems(chat).find(i => i.id.toLowerCase() === k || (i.name || '').toLowerCase() === k);
+        }
+        function resolveMentionedUser(chat, mention) {
+            if (!mention) return null;
+            const clean = mention.replace(/^@/, '').toLowerCase();
+            const ids = Object.keys(chat.participants || {});
+            for (const uid of ids) {
+                const u = state.usersData.find(x => x.id === uid);
+                const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || '';
+                if (nm.toLowerCase() === clean) return { id: uid, name: nm };
+            }
+            return null;
+        }
+        function postEconomySystemMessage(chatId, text) {
+            push(ref(state.db, 'chats/' + chatId + '/messages'), {
+                senderId: 'system',
+                senderName: 'Система',
+                text,
+                isSystem: true,
+                createdAt: Date.now()
+            });
+            update(ref(state.db, 'chats/' + chatId), { lastMessage: text, lastMessageAt: Date.now() });
+        }
+
+        // Возвращает true, если строка была распознана и обработана как ГМ-команда
+        // (тогда обычным текстовым сообщением её отправлять уже не нужно).
+        export function tryHandleEconomyCommand(chat, rawText) {
+            const text = rawText.trim();
+            if (!text.startsWith('/')) return false;
+
+            const parts = text.split(/\s+/);
+            const cmd = parts[0].toLowerCase();
+            const isMod = isWikiModerator(chat);
+
+            if (cmd === '/give' || cmd === '/take') {
+                if (!isMod) { tg.showAlert('Только ГМ и модераторы могут начислять/списывать переменные'); return true; }
+                const [, mention, currencyKey, amountStr] = parts;
+                if (!mention || !currencyKey || !amountStr) { tg.showAlert('Формат: /give @игрок переменная количество'); return true; }
+                const target = resolveMentionedUser(chat, mention);
+                const currency = findCurrencyByNameOrId(chat, currencyKey);
+                const amount = parseInt(amountStr, 10);
+                if (!target) { tg.showAlert('Игрок с таким именем не найден в этом чате'); return true; }
+                if (!currency) { tg.showAlert('Такой переменной нет. Создайте её в панели «Экономика и инвентарь».'); return true; }
+                if (isNaN(amount) || amount <= 0) { tg.showAlert('Количество должно быть положительным числом'); return true; }
+
+                const current = getBalance(chat, target.id, currency.id);
+                const delta = cmd === '/give' ? amount : -amount;
+                const next = Math.max(0, current + delta);
+                update(ref(state.db, `chats/${chat.id}/economy/balances/${target.id}`), { [currency.id]: next }).then(() => {
+                    postEconomySystemMessage(chat.id, `${cmd === '/give' ? '➕' : '➖'} ${currency.icon || ''} ${target.name}: ${cmd === '/give' ? '+' : '-'}${amount} ${currency.name} (баланс: ${next})`);
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                return true;
+            }
+
+            if (cmd === '/item') {
+                if (!isMod) { tg.showAlert('Только ГМ и модераторы могут выдавать предметы'); return true; }
+                const sub = (parts[1] || '').toLowerCase();
+                if (sub !== 'give' && sub !== 'take') { tg.showAlert('Формат: /item give @игрок предмет [количество]'); return true; }
+                const mention = parts[2];
+                const itemKey = parts[3];
+                const amount = parseInt(parts[4], 10) || 1;
+                const target = resolveMentionedUser(chat, mention);
+                const item = findItemByNameOrId(chat, itemKey || '');
+                if (!target) { tg.showAlert('Игрок с таким именем не найден в этом чате'); return true; }
+                if (!item) { tg.showAlert('Такого предмета нет. Создайте его в панели «Экономика и инвентарь».'); return true; }
+
+                const current = getInventoryCount(chat, target.id, item.id);
+                const next = Math.max(0, current + (sub === 'give' ? amount : -amount));
+                update(ref(state.db, `chats/${chat.id}/economy/inventory/${target.id}`), { [item.id]: next }).then(() => {
+                    postEconomySystemMessage(chat.id, `${sub === 'give' ? '🎁' : '🗑'} ${item.icon || '📦'} ${target.name}: ${sub === 'give' ? '+' : '-'}${amount} «${item.name}» (в инвентаре: ${next})`);
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                return true;
+            }
+
+            if (cmd === '/use') {
+                const itemKey = parts.slice(1).join(' ');
+                const item = findItemByNameOrId(chat, itemKey);
+                if (!item) { tg.showAlert('Формат: /use название_предмета'); return true; }
+                const current = getInventoryCount(chat, state.currentUser.id, item.id);
+                if (current <= 0) { tg.showAlert('У вас нет этого предмета в инвентаре'); return true; }
+                update(ref(state.db, `chats/${chat.id}/economy/inventory/${state.currentUser.id}`), { [item.id]: current - 1 }).then(() => {
+                    postEconomySystemMessage(chat.id, `✨ ${state.currentUser.name} использует «${item.name}» ${item.icon || ''}${item.desc ? ' — ' + item.desc : ''}`);
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                return true;
+            }
+
+            if (cmd === '/balance' || cmd === '/inv' || cmd === '/inventory') {
+                const currencies = economyCurrencies(chat);
+                const items = economyItems(chat).filter(i => getInventoryCount(chat, state.currentUser.id, i.id) > 0);
+                const balLine = currencies.length
+                    ? currencies.map(c => `${c.icon || ''} ${c.name}: ${getBalance(chat, state.currentUser.id, c.id)}`).join('\n')
+                    : 'В этом чате пока нет переменных';
+                const invLine = items.length
+                    ? items.map(i => `${i.icon || '📦'} ${i.name} ×${getInventoryCount(chat, state.currentUser.id, i.id)}`).join('\n')
+                    : 'Инвентарь пуст';
+                tg.showAlert(`💰 Баланс:\n${balLine}\n\n🎒 Инвентарь:\n${invLine}`);
+                return true;
+            }
+
+            return false; // неизвестная команда — отправляем как обычное сообщение
+        }
+
+        // === Панель ГМ «Экономика и инвентарь» ===
+
+        document.getElementById('chat-economy-btn').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.currentChatId);
+            if (!chat || !isWikiModerator(chat)) return;
+            state.economyChatId = chat.id;
+            renderEconomyPanel();
+            document.getElementById('chat-overlay').classList.remove('active');
+            document.getElementById('economy-panel-overlay').classList.add('active');
+            state.activeOverlay = 'economypanel';
+        };
+        document.getElementById('close-economy-panel-btn').onclick = function() {
+            document.getElementById('economy-panel-overlay').classList.remove('active');
+            document.getElementById('chat-overlay').classList.add('active');
+            state.activeOverlay = 'chat';
+        };
+
+        export function renderEconomyPanel() {
+            const chat = state.chatsData.find(c => c.id === state.economyChatId);
+            if (!chat) return;
+            const currencies = economyCurrencies(chat);
+            const items = economyItems(chat);
+            const participantIds = Object.keys(chat.participants || {});
+
+            const currenciesEl = document.getElementById('economy-currencies-list');
+            currenciesEl.innerHTML = currencies.length ? currencies.map(c => `
+                <div class="admin-item" style="align-items:center;">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${c.icon || '🪙'} ${escapeHtml(c.name)}</div>
+                        <div class="admin-item-sub">ID: ${escapeHtml(c.id)}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn danger" title="Удалить переменную" data-remove-currency="${c.id}">🗑</button>
+                    </div>
+                </div>`).join('') : '<div style="color:var(--text-secondary);font-size:13px;">Переменных пока нет — добавьте, например, «Золото» или «Мана».</div>';
+
+            const itemsEl = document.getElementById('economy-items-list');
+            itemsEl.innerHTML = items.length ? items.map(i => `
+                <div class="admin-item" style="align-items:center;">
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${i.icon || '📦'} ${escapeHtml(i.name)}</div>
+                        <div class="admin-item-sub">${escapeHtml(i.desc || '')}</div>
+                    </div>
+                    <div class="admin-item-actions">
+                        <button class="icon-btn danger" title="Удалить предмет" data-remove-item="${i.id}">🗑</button>
+                    </div>
+                </div>`).join('') : '<div style="color:var(--text-secondary);font-size:13px;">Предметов пока нет — добавьте, например, «Зелье лечения».</div>';
+
+            const playersEl = document.getElementById('economy-players-list');
+            playersEl.innerHTML = participantIds.map(uid => {
+                const u = state.usersData.find(x => x.id === uid);
+                const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || 'Участник';
+                const isMuted = !!(chat.mutedUsers && chat.mutedUsers[uid]);
+                const isMe = uid === state.currentUser.id;
+                const balancesStr = currencies.map(c => `${c.icon || ''} ${getBalance(chat, uid, c.id)}`).join('  ') || '—';
+                const invStr = items.map(i => `${i.icon || '📦'}×${getInventoryCount(chat, uid, i.id)}`).filter((s, idx) => getInventoryCount(chat, uid, items[idx].id) > 0).join('  ') || '—';
+                return `
+                <div class="admin-item" style="align-items:center;flex-wrap:wrap;">
+                    ${avatarHtml(nm, u ? u.avatar : null, 'avatar-sm')}
+                    <div class="admin-item-info">
+                        <div class="admin-item-title">${escapeHtml(nm)}${isMuted ? ' <span style="color:#e74c3c;font-size:11px;font-weight:700;">МУТ</span>' : ''}</div>
+                        <div class="admin-item-sub">💰 ${balancesStr} · 🎒 ${invStr}</div>
+                    </div>
+                    <div class="admin-item-actions" style="flex-wrap:wrap;">
+                        ${currencies.length ? `<button class="icon-btn" title="Начислить/списать переменную" data-adjust-currency="${uid}">🪙</button>` : ''}
+                        ${items.length ? `<button class="icon-btn" title="Выдать/забрать предмет" data-adjust-item="${uid}">🎁</button>` : ''}
+                        ${!isMe ? `<button class="icon-btn ${isMuted ? '' : 'danger'}" title="${isMuted ? 'Снять мут' : 'Замьютить'}" data-toggle-mute="${uid}">${isMuted ? '🔊' : '🔇'}</button>` : ''}
+                        ${!isMe ? `<button class="icon-btn danger" title="Исключить из чата" data-kick-user="${uid}">🚪</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+            playersEl.querySelectorAll('[data-adjust-currency]').forEach(btn => {
+                btn.onclick = () => economyAdjustCurrencyPrompt(chat, btn.getAttribute('data-adjust-currency'));
+            });
+            playersEl.querySelectorAll('[data-adjust-item]').forEach(btn => {
+                btn.onclick = () => economyAdjustItemPrompt(chat, btn.getAttribute('data-adjust-item'));
+            });
+            playersEl.querySelectorAll('[data-toggle-mute]').forEach(btn => {
+                btn.onclick = () => economyToggleMute(chat, btn.getAttribute('data-toggle-mute'));
+            });
+            playersEl.querySelectorAll('[data-kick-user]').forEach(btn => {
+                btn.onclick = () => economyKickUser(chat, btn.getAttribute('data-kick-user'));
+            });
+            currenciesEl.querySelectorAll('[data-remove-currency]').forEach(btn => {
+                btn.onclick = () => {
+                    remove(ref(state.db, `chats/${chat.id}/economy/currencies/${btn.getAttribute('data-remove-currency')}`)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                };
+            });
+            itemsEl.querySelectorAll('[data-remove-item]').forEach(btn => {
+                btn.onclick = () => {
+                    remove(ref(state.db, `chats/${chat.id}/economy/items/${btn.getAttribute('data-remove-item')}`)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+                };
+            });
+        }
+
+        document.getElementById('btn-economy-add-currency').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.economyChatId);
+            if (!chat) return;
+            const name = prompt('Название переменной (например, «Золото», «Мана», «Здоровье»):');
+            if (!name || !name.trim()) return;
+            const icon = prompt('Иконка-эмодзи (необязательно, например 🪙):', '🪙') || '';
+            const id = slugifyEconomyId(name);
+            update(ref(state.db, `chats/${chat.id}/economy/currencies/${id}`), { name: name.trim(), icon: icon.trim() })
+                .then(renderEconomyPanel)
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        document.getElementById('btn-economy-add-item').onclick = function() {
+            const chat = state.chatsData.find(c => c.id === state.economyChatId);
+            if (!chat) return;
+            const name = prompt('Название предмета (например, «Зелье лечения»):');
+            if (!name || !name.trim()) return;
+            const icon = prompt('Иконка-эмодзи (необязательно, например 🧪):', '🧪') || '';
+            const desc = prompt('Описание/эффект предмета (необязательно):', '') || '';
+            const id = slugifyEconomyId(name);
+            update(ref(state.db, `chats/${chat.id}/economy/items/${id}`), { name: name.trim(), icon: icon.trim(), desc: desc.trim() })
+                .then(renderEconomyPanel)
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        function economyAdjustCurrencyPrompt(chat, uid) {
+            const currencies = economyCurrencies(chat);
+            const u = state.usersData.find(x => x.id === uid);
+            const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || 'Участник';
+            const list = currencies.map((c, i) => `${i + 1}. ${c.icon || ''} ${c.name}`).join('\n');
+            const choice = prompt(`Какую переменную изменить у «${nm}»?\n${list}\n\nВведите номер:`);
+            const idx = parseInt(choice, 10) - 1;
+            const currency = currencies[idx];
+            if (!currency) return;
+            const current = getBalance(chat, uid, currency.id);
+            const raw = prompt(`Новый баланс «${currency.name}» для «${nm}» (сейчас ${current}):`, current);
+            if (raw === null) return;
+            const next = Math.max(0, parseInt(raw, 10) || 0);
+            update(ref(state.db, `chats/${chat.id}/economy/balances/${uid}`), { [currency.id]: next })
+                .then(() => {
+                    postEconomySystemMessage(chat.id, `🪙 ${currency.icon || ''} ${nm}: баланс «${currency.name}» изменён на ${next}`);
+                    renderEconomyPanel();
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        }
+
+        function economyAdjustItemPrompt(chat, uid) {
+            const items = economyItems(chat);
+            const u = state.usersData.find(x => x.id === uid);
+            const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || 'Участник';
+            const list = items.map((it, i) => `${i + 1}. ${it.icon || '📦'} ${it.name}`).join('\n');
+            const choice = prompt(`Какой предмет изменить у «${nm}»?\n${list}\n\nВведите номер:`);
+            const idx = parseInt(choice, 10) - 1;
+            const item = items[idx];
+            if (!item) return;
+            const current = getInventoryCount(chat, uid, item.id);
+            const raw = prompt(`Новое количество «${item.name}» у «${nm}» (сейчас ${current}):`, current);
+            if (raw === null) return;
+            const next = Math.max(0, parseInt(raw, 10) || 0);
+            update(ref(state.db, `chats/${chat.id}/economy/inventory/${uid}`), { [item.id]: next })
+                .then(() => {
+                    postEconomySystemMessage(chat.id, `🎁 ${item.icon || ''} ${nm}: количество «${item.name}» изменено на ${next}`);
+                    renderEconomyPanel();
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        }
+
+        function economyToggleMute(chat, uid) {
+            const next = !(chat.mutedUsers && chat.mutedUsers[uid]);
+            update(ref(state.db, `chats/${chat.id}/mutedUsers`), { [uid]: next ? true : null })
+                .then(renderEconomyPanel)
+                .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        }
+
+        function economyKickUser(chat, uid) {
+            const u = state.usersData.find(x => x.id === uid);
+            const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || 'участника';
+            tg.showConfirm(`Исключить «${nm}» из чата?`, (ok) => {
+                if (!ok) return;
+                update(ref(state.db, `chats/${chat.id}`), {
+                    [`participants/${uid}`]: null,
+                    [`mutedUsers/${uid}`]: null
+                }).then(renderEconomyPanel).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
+        }

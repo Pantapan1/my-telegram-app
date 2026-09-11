@@ -770,7 +770,7 @@
         .comment-item { padding: 12px 14px; background: #ffffff; border-radius: 18px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
         .comment-author { font-weight: 700; font-size: 14px; color:var(--text-primary); }
         .comment-meta { font-size: 11px; color:var(--text-secondary); margin-left: 8px; font-weight: 500; }
-        .comment-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; margin-top: 4px; }
+        .comment-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
         .comment-delete { color: #e74c3c; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 6px; font-weight: 600; padding: 0; }
         .comment-sticker { max-width: 100px; height: auto; border-radius: 10px; object-fit: contain; margin-top: 6px; display: block; }
         .attachment-img { max-width: 220px; width: 100%; height: auto; border-radius: 12px; margin-top: 6px; display: block; }
@@ -810,7 +810,7 @@
         .profile-avatar-fallback { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #f4f7f6; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .profile-name-row { text-align: center; }
         .profile-name-row h2 { font-size: 20px; font-weight: 800; margin-bottom: 2px; color:var(--text-primary); }
-        .profile-bio { font-size: 13.5px; color:var(--text-secondary); margin-bottom: 8px; min-height: 4px; line-height: 1.5; text-align: center; max-width: 320px; margin-left: auto; margin-right: auto; }
+        .profile-bio { font-size: 13.5px; color:var(--text-secondary); margin-bottom: 8px; min-height: 4px; line-height: 1.5; text-align: center; max-width: 320px; margin-left: auto; margin-right: auto; white-space: pre-wrap; word-break: break-word; }
 
         .stats-grid { display: flex; justify-content: space-around; text-align: center; padding: 16px 12px; }
         .stats-num { font-size: 24px; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -865,9 +865,11 @@
         /* ИСПРАВЛЕННЫЕ КОМПАКТНЫЕ ПУЗЫРИ СООБЩЕНИЙ */
         .msg-bubble { 
             max-width: 75%; width: fit-content; height: fit-content; padding: 8px 12px; border-radius: 18px; 
-            font-size: 15px; line-height: 1.35; position: relative; white-space: normal;
+            font-size: 15px; line-height: 1.35; position: relative; white-space: pre-wrap;
             word-wrap: break-word; word-break: break-word; box-shadow: 0 4px 14px rgba(0,0,0,0.05); text-align: left;
         }
+        .msg-bubble p { margin: 0 0 6px 0; }
+        .msg-bubble p:last-of-type { margin-bottom: 0; }
         .msg-row:not(.mine) .msg-bubble { 
             background: #ffffff; color:#2c3e50; 
             border-bottom-left-radius: 6px; 
@@ -1900,3 +1902,44 @@
 .wiki-cat-card .wcc-pin:active { transform: scale(0.9); }
 .wiki-cat-card .wcc-pin.active { background: #ff9f0a; }
 .wiki-pin-badge { display: inline-block; font-size: 10px; margin-right: 4px; }
+
+/* ============================================================ */
+/* === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (.md-body) ====== */
+/* ============================================================ */
+/* Обёртка .md-body применяется везде, где текст пропущен через  */
+/* renderMarkdown(): посты, комментарии, чаты, описания.         */
+.md-body { white-space: pre-wrap; word-break: break-word; }
+.md-body p { margin: 0 0 8px 0; }
+.md-body p:last-child { margin-bottom: 0; }
+.md-body h1, .md-body h2, .md-body h3 { margin: 10px 0 6px 0; line-height: 1.25; font-weight: 800; }
+.md-body h1 { font-size: 1.5em; }
+.md-body h2 { font-size: 1.3em; }
+.md-body h3 { font-size: 1.12em; }
+.md-body hr { border: none; border-top: 1px solid var(--border-soft, rgba(0,0,0,0.12)); margin: 10px 0; }
+.md-body ul { margin: 4px 0 8px 0; padding-left: 22px; }
+.md-body li { margin-bottom: 2px; }
+.md-body blockquote {
+    margin: 6px 0; padding: 6px 12px; border-left: 3px solid rgba(0,0,0,0.2);
+    background: rgba(0,0,0,0.04); border-radius: 4px; font-style: italic; opacity: 0.92;
+}
+.md-body code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 4px; font-size: 0.9em;
+}
+.md-body pre {
+    background: rgba(0,0,0,0.08); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0;
+}
+.md-body pre code { background: none; padding: 0; }
+.md-body a { color: #ed8f03; text-decoration: underline; word-break: break-all; }
+.md-body del { opacity: 0.65; }
+.md-spoiler {
+    background: rgba(0,0,0,0.65); color: transparent; border-radius: 4px; padding: 0 2px; cursor: pointer;
+    transition: color .15s ease, background .15s ease; user-select: none;
+}
+.md-spoiler.revealed { background: rgba(0,0,0,0.06); color: inherit; cursor: text; user-select: text; }
+.msg-row.mine .md-spoiler:not(.revealed) { background: rgba(255,255,255,0.55); }
+
+.msg-system-row {
+    text-align: center; font-size: 12px; color: var(--text-secondary, #7a7a7a);
+    background: rgba(0,0,0,0.05); border-radius: 10px; padding: 6px 12px; margin: 6px auto; max-width: 90%; width: fit-content;
+}

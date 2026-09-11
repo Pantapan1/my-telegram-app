@@ -25,6 +25,191 @@ export function colorFor(str) {
 
 
 
+        // ============================================================
+        // === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (Markdown-lite) ===
+        // ============================================================
+        // Единая функция форматирования для постов, комментариев, чатов,
+        // описаний профилей и групп. Всегда сначала экранирует ввод (защита
+        // от XSS), затем применяет разметку, затем расставляет переносы строк.
+        //
+        // Поддерживаемый синтаксис:
+        //   **жирный**        -> <strong>
+        //   *курсив* / _курсив_ -> <em>
+        //   ***жирный курсив*** -> <strong><em>
+        //   ~~зачёркнутый~~   -> <del>
+        //   __подчёркнутый__ / ++подчёркнутый++ -> <u>
+        //   ||спойлер||       -> <span class="md-spoiler">
+        //   `код`             -> <code>
+        //   ```блок кода```   -> <pre><code>
+        //   > цитата          -> <blockquote>
+        //   [текст](url)      -> <a href="url" target="_blank" rel="noopener">
+        //   # / ## / ###      -> <h1> / <h2> / <h3>
+        //   ---  (своя строка) -> <hr>
+        //   * пункт / - пункт  -> <ul><li>
+        //
+        // Использование: renderMarkdown(rawUserText)
+
+        // Разрешаем только http(s) и относительные ссылки в [текст](url), чтобы
+        // исключить javascript: и другие опасные схемы после экранирования.
+        function sanitizeMdUrl(url) {
+            const u = String(url || '').trim();
+            if (/^(https?:)?\/\//i.test(u) || /^#/.test(u) || /^mailto:/i.test(u)) return u;
+            return '#';
+        }
+
+        // Инлайновая разметка внутри одной строки (жирный/курсив/код/ссылки и т.д.)
+        // Работает уже на экранированном тексте (< и > заменены на сущности),
+        // поэтому регулярки безопасны и не могут "открыть" новый тег из ввода.
+        function applyInlineMarkdown(line) {
+            // Блоки-заглушки для кода, чтобы внутри них не применялась остальная разметка
+            const codeStash = [];
+            line = line.replace(/`([^`\n]+)`/g, (m, code) => {
+                codeStash.push(`<code>${code}</code>`);
+                return `\u0000CODE${codeStash.length - 1}\u0000`;
+            });
+
+            // Спойлер ||текст||
+            line = line.replace(/\|\|([\s\S]+?)\|\|/g, '<span class="md-spoiler" onclick="this.classList.add(\'revealed\')">$1</span>');
+
+            // Жирный курсив ***текст***
+            line = line.replace(/\*\*\*([^\*]+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+            // Жирный **текст**
+            line = line.replace(/\*\*([^\*]+?)\*\*/g, '<strong>$1</strong>');
+
+            // Подчёркнутый __текст__ или ++текст++
+            line = line.replace(/__([^_]+?)__/g, '<u>$1</u>');
+            line = line.replace(/\+\+([^\+]+?)\+\+/g, '<u>$1</u>');
+
+            // Зачёркнутый ~~текст~~
+            line = line.replace(/~~([^~]+?)~~/g, '<del>$1</del>');
+
+            // Курсив *текст* или _текст_ (после жирного/подчёркнутого, чтобы не конфликтовать)
+            line = line.replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+            line = line.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, '$1<em>$2</em>');
+
+            // Ссылки [текст](url)
+            line = line.replace(/\[([^\]]+?)\]\(([^)\s]+?)\)/g, (m, text, url) => {
+                const safeUrl = sanitizeMdUrl(url);
+                return `<a href="${safeUrl}" target="_blank" rel="noopener">${text}</a>`;
+            });
+
+            // Возвращаем инлайн-код на место
+            line = line.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => codeStash[Number(i)]);
+
+            return line;
+        }
+
+        export function renderMarkdown(rawText) {
+            if (!rawText) return '';
+
+            // 1) Экранирование — обязательно до любых регулярок разметки
+            let text = escapeHtml(String(rawText));
+
+            // Нормализуем переносы строк
+            text = text.replace(/\r\n/g, '\n');
+
+            // 2) Блоки кода ```код``` — выделяем и прячем от построчной обработки
+            const blockStash = [];
+            text = text.replace(/```([\s\S]*?)```/g, (m, code) => {
+                blockStash.push(`<pre><code>${code.replace(/^\n/, '')}</code></pre>`);
+                return `\u0000BLOCK${blockStash.length - 1}\u0000`;
+            });
+
+            const lines = text.split('\n');
+            const htmlParts = [];
+            let listBuffer = [];
+            let quoteBuffer = [];
+            let paraBuffer = [];
+
+            function flushList() {
+                if (listBuffer.length) {
+                    htmlParts.push('<ul>' + listBuffer.map(li => `<li>${applyInlineMarkdown(li)}</li>`).join('') + '</ul>');
+                    listBuffer = [];
+                }
+            }
+            function flushQuote() {
+                if (quoteBuffer.length) {
+                    htmlParts.push('<blockquote>' + quoteBuffer.map(applyInlineMarkdown).join('<br>') + '</blockquote>');
+                    quoteBuffer = [];
+                }
+            }
+            function flushPara() {
+                if (paraBuffer.length) {
+                    htmlParts.push('<p>' + paraBuffer.map(applyInlineMarkdown).join('<br>') + '</p>');
+                    paraBuffer = [];
+                }
+            }
+            function flushAll() { flushList(); flushQuote(); flushPara(); }
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+
+                // Плейсхолдер блока кода — выводим как есть, отдельным блоком
+                const blockMatch = trimmed.match(/^\u0000BLOCK(\d+)\u0000$/);
+                if (blockMatch) {
+                    flushAll();
+                    htmlParts.push(blockStash[Number(blockMatch[1])]);
+                    return;
+                }
+
+                // Пустая строка — разделитель параграфов
+                if (trimmed === '') {
+                    flushAll();
+                    return;
+                }
+
+                // Разделительная черта ---
+                if (/^-{3,}$/.test(trimmed)) {
+                    flushAll();
+                    htmlParts.push('<hr>');
+                    return;
+                }
+
+                // Заголовки H1-H3
+                const headingMatch = trimmed.match(/^(#{1,3})\s+(.*)$/);
+                if (headingMatch) {
+                    flushAll();
+                    const level = headingMatch[1].length;
+                    htmlParts.push(`<h${level}>${applyInlineMarkdown(headingMatch[2])}</h${level}>`);
+                    return;
+                }
+
+                // Цитата
+                if (/^&gt;\s?/.test(trimmed)) {
+                    flushList(); flushPara();
+                    quoteBuffer.push(trimmed.replace(/^&gt;\s?/, ''));
+                    return;
+                }
+
+                // Маркированный список
+                const listMatch = trimmed.match(/^[\*\-]\s+(.*)$/);
+                if (listMatch) {
+                    flushQuote(); flushPara();
+                    listBuffer.push(listMatch[1]);
+                    return;
+                }
+
+                // Обычная строка текста
+                flushList(); flushQuote();
+                paraBuffer.push(line);
+            });
+
+            flushAll();
+
+            return htmlParts.join('');
+        }
+
+        // Простая версия для мест, где не нужны блочные элементы (заголовки/списки/цитаты),
+        // а нужно только выделение текста + переносы строк (например, однострочные превью).
+        export function renderMarkdownInline(rawText) {
+            if (!rawText) return '';
+            const text = escapeHtml(String(rawText)).replace(/\r\n/g, '\n');
+            return text.split('\n').map(applyInlineMarkdown).join('<br>');
+        }
+
+
+
         // Значок-галочка рядом с именем одобренных издателей
 
 
@@ -467,6 +652,7 @@ export function colorFor(str) {
         setupImageUpload('frame-file-legendary', 'frame-image-legendary', 'frame-upload-btn-legendary', 'card-frames');
         setupImageUpload('group-avatar-file', 'group-avatar', 'group-avatar-upload-btn', 'avatars');
         setupImageUpload('edit-group-avatar-file', 'edit-group-avatar', 'edit-group-avatar-upload-btn', 'avatars');
+        setupImageUpload('edit-group-wallpaper-file', 'edit-group-wallpaper', 'edit-group-wallpaper-upload-btn', 'banners');
         setupImageUpload('subchat-avatar-file', 'subchat-avatar', 'subchat-avatar-upload-btn', 'avatars');
         setupImageUpload('wiki-settings-banner-file', 'wiki-settings-banner', 'wiki-settings-banner-upload-btn', 'banners');
         setupImageUpload('character-avatar-file', 'character-avatar', 'character-avatar-upload-btn', 'avatars');
