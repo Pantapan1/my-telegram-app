@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Reader App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <!-- ВРЕМЕННАЯ КОНСОЛЬ ОТЛАДКИ: открывается только по ссылке с ?debug=1 в конце,
          обычных пользователей не затрагивает. Показывает точный файл и строку ошибки
          прямо на экране телефона — тапни на плавающую кнопку внизу справа. -->
@@ -1274,9 +1273,6 @@
                 </div>
             </div>
         </div>
-        <div class="ad-banner-top" id="chat-ad-banner">
-            <adsgram-task data-block-id="task-39987" data-debug="false" data-debug-console="false" class="task"></adsgram-task>
-        </div>
         <div class="pinned-quote-bar hidden" id="chat-pinned-bar">
             <span class="text" id="chat-pinned-text"></span>
             <button id="btn-unpin-quote">✕</button>
@@ -1735,11 +1731,6 @@
         </div>
     </div>
 
-    <!-- === РЕКЛАМНЫЙ БАННЕР ADSGRAM (низ экрана, все страницы) === -->
-    <div class="ad-banner-bottom" id="global-ad-banner">
-        <adsgram-task data-block-id="task-39987" data-debug="false" data-debug-console="false" class="task"></adsgram-task>
-    </div>
-
     <!-- ДИАЛОГИ СЮЖЕТНОГО РЕЖИМА (визуальная новелла), поверх всего интерфейса, включая бой -->
     <div id="story-dialogue-overlay" class="story-dialogue-overlay">
         <button class="story-dlg-skip" onclick="skipStoryDialogue(event)">Пропустить ✕</button>
@@ -1771,28 +1762,6 @@
             <span>Профиль</span>
         </button>
     </nav>
-
-    <!-- ПОЗИЦИОНИРОВАНИЕ РЕКЛАМНОГО БАННЕРА НАД НИЖНЕЙ НАВИГАЦИЕЙ -->
-    <script>
-        (function () {
-            function layoutAdBanner() {
-                var nav = document.querySelector('.bottom-nav');
-                var banner = document.getElementById('global-ad-banner');
-                if (!nav || !banner) return;
-                var navHeight = nav.offsetHeight || 70;
-                banner.style.bottom = navHeight + 'px';
-                var bannerHeight = banner.offsetHeight || 0;
-                document.body.style.paddingBottom = (navHeight + bannerHeight + 16) + 'px';
-            }
-            window.addEventListener('load', layoutAdBanner);
-            window.addEventListener('resize', layoutAdBanner);
-            document.addEventListener('DOMContentLoaded', layoutAdBanner);
-            // adsgram может подгрузить баннер асинхронно — пересчитываем через паузу
-            setTimeout(layoutAdBanner, 500);
-            setTimeout(layoutAdBanner, 1500);
-            setTimeout(layoutAdBanner, 3000);
-        })();
-    </script>
 
     <!-- FIREBASE + ЛОГИКА (разбито на модули: state, constants, utils, pass, feed, books, profile, chats, admin, core) -->
     <script type="module" src="core.js"></script>

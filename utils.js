@@ -18,8 +18,10 @@ export function cardFrameStyle(rarity) {
 // чтобы стили физически не могли "убежать" за пределы оверлеев вики. Это не полноценный
 // CSS-парсер (в сложных крайних случаях с фигурными скобками внутри строк возможны огрехи),
 // но для реального пользовательского оформления темы этого достаточно и безопасно.
-export function sanitizeAndScopeWikiCss(rawCss) {
-    const SCOPE = '.wiki-theme';
+// Только очистка от опасных конструкций, БЕЗ скоупинга. Скоуп зависит от того, для какой
+// конкретно вики применяется CSS (см. scopeWikiCss/sanitizeAndScopeWikiCss ниже), поэтому
+// в хранимых данных держим именно чистый, но ещё не привязанный к конкретной вики CSS.
+export function sanitizeWikiCss(rawCss) {
     const MAX_LEN = 20000;
     let css = String(rawCss || '').slice(0, MAX_LEN);
 
@@ -36,6 +38,17 @@ export function sanitizeAndScopeWikiCss(rawCss) {
         if (/^https:\/\//i.test(trimmed) || /^data:image\//i.test(trimmed)) return `url(${q}${trimmed}${q})`;
         return 'url()';
     });
+
+    return css;
+}
+
+// Скоупит уже очищенный CSS под конкретный селектор. По умолчанию — под общий '.wiki-theme'
+// (старое поведение), но обычно сюда передают селектор, привязанный к id конкретной вики
+// (см. sanitizeAndScopeWikiCss), чтобы стили одной группы не "утекали" в вики других групп —
+// элементы с классом .wiki-theme переиспользуются под любую вики, поэтому без привязки к id
+// стиль, применённый в одном сообществе, накладывался бы на любую другую открытую вики.
+export function scopeWikiCss(css, scopeSelector) {
+    const SCOPE = scopeSelector || '.wiki-theme';
 
     // Скоупинг: обходим верхнеуровневые блоки, у @media/@supports рекурсивно скоупим содержимое,
     // у @keyframes/@font-face/@page — не трогаем селекторы внутри (0%, from, to и т.п.).
@@ -78,6 +91,17 @@ export function sanitizeAndScopeWikiCss(rawCss) {
     } catch (e) {
         return ''; // что-то пошло не так при парсинге — лучше без темы, чем сломанный/опасный CSS
     }
+}
+
+// Удобная обёртка "очистить + заскоупить за один вызов". wikiChatId, если передан,
+// привязывает стиль к конкретной вики через data-wiki-root — так стиль одной группы
+// не наложится на вики другой группы, даже если оба используют один и тот же
+// переиспользуемый набор DOM-оверлеев с классом .wiki-theme.
+export function sanitizeAndScopeWikiCss(rawCss, wikiChatId) {
+    const clean = sanitizeWikiCss(rawCss);
+    const safeId = wikiChatId ? String(wikiChatId).replace(/[^a-zA-Z0-9_-]/g, '') : '';
+    const scope = safeId ? `.wiki-theme[data-wiki-root="${safeId}"]` : '.wiki-theme';
+    return scopeWikiCss(clean, scope);
 }
 
 export function colorFor(str) {

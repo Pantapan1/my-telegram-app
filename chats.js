@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, sanitizeAndScopeWikiCss, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, sanitizeAndScopeWikiCss, sanitizeWikiCss, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -1653,6 +1653,15 @@ function wikiIconFor(name) {
 const WIKI_WIDGET_LIMITS = { maxCount: 10, maxHtml: 20000, maxCss: 20000, maxJs: 20000 };
 
 function applyWikiCustomCss(chat) {
+    const chatId = chat && chat.id;
+    // Элементы с классом .wiki-theme переиспользуются под ЛЮБУЮ вики — помечаем их id
+    // текущей вики каждый раз перед применением стиля, чтобы CSS ниже гарантированно лёг
+    // только на оверлеи именно этой группы, а не "утёк" в чужую вики через общий класс.
+    document.querySelectorAll('.wiki-theme').forEach(el => {
+        if (chatId) el.setAttribute('data-wiki-root', chatId);
+        else el.removeAttribute('data-wiki-root');
+    });
+
     const raw = (chat && chat.wiki && chat.wiki.customCss) || '';
     let styleEl = document.getElementById('wiki-custom-style');
     if (!styleEl) {
@@ -1660,7 +1669,7 @@ function applyWikiCustomCss(chat) {
         styleEl.id = 'wiki-custom-style';
         document.head.appendChild(styleEl);
     }
-    styleEl.textContent = raw ? sanitizeAndScopeWikiCss(raw) : '';
+    styleEl.textContent = raw ? sanitizeAndScopeWikiCss(raw, chatId) : '';
 }
 
 function buildWikiWidgetSrcdoc(html, css, js) {
@@ -2299,9 +2308,12 @@ document.getElementById('btn-save-wiki-settings').onclick = function() {
         announcement: document.getElementById('wiki-settings-announcement').value.trim() || null,
         accentColor: accentColor,
         moderators: moderators,
-        // Храним уже очищенный/заскоуленный CSS — если правила санитайзера когда-то ужесточатся,
-        // старые сохранённые темы всё равно проходят через него ещё раз при каждом применении (applyWikiCustomCss).
-        customCss: rawCss ? sanitizeAndScopeWikiCss(rawCss).slice(0, 20000) : null
+        // Храним очищенный, но НЕ заскоупленный CSS: скоуп привязан к id конкретной вики
+        // и вычисляется на лету в applyWikiCustomCss — так стиль этой группы не наложится
+        // на вики других групп. Санитайзер всё равно прогоняется ещё раз при каждом
+        // применении (applyWikiCustomCss), так что ужесточение правил задним числом сработает
+        // и для уже сохранённых тем.
+        customCss: rawCss ? sanitizeWikiCss(rawCss).slice(0, 20000) : null
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         document.getElementById('close-wiki-settings-btn').click();
