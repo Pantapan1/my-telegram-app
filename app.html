@@ -19,7 +19,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* ============================================================
@@ -1376,7 +1376,7 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ ("ДРОП"): СПИСОК КАТЕГОРИЙ -->
-    <div id="group-wiki-overlay" class="reader-overlay">
+    <div id="group-wiki-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-group-wiki-btn">← Назад</button>
             <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="group-wiki-title">📦 Дроп</div></div>
@@ -1388,6 +1388,7 @@
                 <div class="wiki-hero-avatar" id="wiki-hero-avatar">📦</div>
                 <div class="wiki-hero-title" id="wiki-hero-title-text">Дроп этого чата</div>
                 <div class="wiki-hero-stats" id="wiki-hero-stats">0 категорий · 0 постов</div>
+                <div id="wiki-hero-announcement" class="wiki-hero-announcement hidden"></div>
             </div>
 
             <div id="wiki-subchats-section">
@@ -1396,6 +1397,15 @@
                     <button class="wiki-mini-add-btn hidden" id="btn-add-subchat" title="Создать доп. чат">+</button>
                 </div>
                 <div id="wiki-subchats-rail" class="community-rail"></div>
+            </div>
+
+            <div id="wiki-playlist-section">
+                <div class="wiki-section-head">
+                    <h3 class="community-section-title" style="margin:0;">🎵 Плейлист чата</h3>
+                    <button class="wiki-mini-add-btn hidden" id="btn-add-playlist-track" title="Добавить трек">+</button>
+                </div>
+                <div id="wiki-playlist-list"></div>
+                <input type="file" id="wiki-playlist-file-input" accept="audio/*" class="hidden">
             </div>
 
             <div class="wiki-section-head">
@@ -1410,12 +1420,16 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ: НАСТРОЙКИ (баннер, цвет, модераторы) — только для модераторов вики -->
-    <div id="wiki-settings-overlay" class="reader-overlay">
+    <div id="wiki-settings-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-settings-btn">← Назад</button>
             <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;">Настройки вики</div></div>
         </div>
         <div class="reader-content" style="white-space:normal;">
+            <h4 style="margin: 4px 0 10px; color:var(--text-primary); font-size: 15px;">📌 Закреплённое объявление</h4>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Покажется прямо в шапке вики, поверх баннера — для важных новостей, событий, правил кампании.</div>
+            <textarea id="wiki-settings-announcement" class="input" placeholder="Например: Сбор партии в субботу в 20:00 мск!" style="min-height:70px;margin-bottom:14px;"></textarea>
+
             <h4 style="margin: 4px 0 10px; color:var(--text-primary); font-size: 15px;">Баннер вики</h4>
             <div class="image-field-row">
                 <input type="text" id="wiki-settings-banner" class="input" placeholder="Ссылка на баннер (URL)">
@@ -1445,7 +1459,7 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ: СОЗДАНИЕ ДОП. ЧАТА -->
-    <div id="subchat-create-overlay" class="reader-overlay">
+    <div id="subchat-create-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-subchat-create-btn">← Назад</button>
             <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;">Новый доп. чат</div></div>
@@ -1463,7 +1477,7 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ: ПОСТЫ ВНУТРИ КАТЕГОРИИ -->
-    <div id="wiki-category-overlay" class="reader-overlay">
+    <div id="wiki-category-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-category-btn">← Назад</button>
             <div style="flex:1;min-width:0;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="wiki-category-title">Категория</div></div>
@@ -1475,7 +1489,7 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ: ПРОСМОТР ПОСТА -->
-    <div id="wiki-post-overlay" class="reader-overlay">
+    <div id="wiki-post-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-post-btn">← Назад</button>
             <div style="flex:1;min-width:0;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="wiki-post-title">Пост</div></div>
@@ -1511,7 +1525,7 @@
     </div>
 
     <!-- ВИКИ ГРУППЫ: РЕДАКТОР ПОСТА (только создатель чата) -->
-    <div id="wiki-post-editor-overlay" class="reader-overlay">
+    <div id="wiki-post-editor-overlay" class="reader-overlay wiki-theme">
         <div class="reader-header">
             <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-post-editor-btn">← Назад</button>
             <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="wiki-post-editor-title">Новый пост</div></div>

@@ -158,6 +158,24 @@
     .reader-log-title { color: #ffb75e; font-weight: 800; font-size: 14px; margin-bottom: 10px; }
     .reader-log-line { color: #fff; font-size: 13px; margin-bottom: 10px; line-height: 1.4; }
     .reader-log-line .rl-speaker { color: #ffb75e; font-weight: 700; margin-bottom: 2px; }
+
+    /* ===================== ЭКРАН ЗАГРУЗКИ СЦЕНЫ (пока не подгрузятся все спрайты/фоны) ===================== */
+    .reader-loading {
+        position: absolute; inset: 0; z-index: 60; background: #0c0c14;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px;
+    }
+    .reader-loading-close {
+        position: absolute; top: 14px; right: 14px;
+    }
+    .reader-loading-spinner {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 3px solid rgba(255,183,94,.18); border-top-color: #ffb75e;
+        animation: readerLoadingSpin .8s linear infinite;
+    }
+    @keyframes readerLoadingSpin { to { transform: rotate(360deg); } }
+    .reader-loading-text { color: rgba(255,255,255,.75); font-size: 13px; font-weight: 600; text-align: center; }
+    .reader-loading-bar { width: 180px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+    .reader-loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#ffb75e,#ed8f03); transition: width .2s ease; border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -213,6 +231,12 @@
             <button class="btn-restart" onclick="restartCurrentNovel()">Читать сначала</button>
             <button class="btn-back-list" onclick="closeReader()">К списку</button>
         </div>
+    </div>
+    <div class="reader-loading" id="reader-loading" style="display:none;">
+        <button class="reader-close reader-loading-close" onclick="closeReader()">✕</button>
+        <div class="reader-loading-spinner"></div>
+        <div class="reader-loading-text" id="reader-loading-text">Загрузка сцены…</div>
+        <div class="reader-loading-bar"><div class="reader-loading-fill" id="reader-loading-fill"></div></div>
     </div>
 </div>
 
@@ -464,12 +488,80 @@
         }
     }
 
+    // ===================== ПРЕДЗАГРУЗКА СПРАЙТОВ/ФОНОВ ПЕРЕД ЧТЕНИЕМ =====================
+    // Собираем все картинки, которые встречаются в новелле (фоны сцен, спрайты персонажей,
+    // спрайты состава сцены и точечные подмены на конкретных репликах) — чтобы не было
+    // ситуации, когда текст уже пошёл, а спрайт ещё не догрузился и "выскакивает" с задержкой.
+    function collectNovelImageUrls(novel) {
+        const urls = new Set();
+        const addStage = (stage) => (stage || []).forEach(s => { if (s && s.sprite) urls.add(s.sprite); });
+        const nodes = (novel && novel.nodes) || {};
+        Object.values(nodes).forEach(node => {
+            if (node.background) urls.add(node.background);
+            addStage(node.stage);
+            (node.lines || []).forEach(line => {
+                if (line.sprite) urls.add(line.sprite);
+                addStage(line.stage);
+            });
+        });
+        Object.values((novel && novel.characters) || {}).forEach(c => { if (c && c.sprite) urls.add(c.sprite); });
+        return Array.from(urls).filter(Boolean);
+    }
+
+    function setReaderLoadingProgress(done, total) {
+        const fill = document.getElementById('reader-loading-fill');
+        const text = document.getElementById('reader-loading-text');
+        const pct = total ? Math.round((done / total) * 100) : 100;
+        if (fill) fill.style.width = pct + '%';
+        if (text) text.textContent = total > 1 ? `Загрузка сцены… ${done}/${total}` : 'Загрузка сцены…';
+    }
+
+    function showReaderLoading() {
+        setReaderLoadingProgress(0, 0);
+        document.getElementById('reader-loading').style.display = 'flex';
+    }
+
+    function hideReaderLoading() {
+        document.getElementById('reader-loading').style.display = 'none';
+    }
+
+    // Грузим картинки параллельно; битая ссылка или зависшая загрузка не блокируют навсегда —
+    // после таймаута читаем дальше, просто с этим одним спрайтом молча идём в кэш/placeholder.
+    function preloadImages(urls, onProgress) {
+        const total = urls.length;
+        if (!total) { if (onProgress) onProgress(0, 0); return Promise.resolve(); }
+        let done = 0;
+        if (onProgress) onProgress(0, total);
+        return Promise.all(urls.map(url => new Promise(resolve => {
+            const img = new Image();
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                done++;
+                if (onProgress) onProgress(done, total);
+                resolve();
+            };
+            img.onload = finish;
+            img.onerror = finish;
+            img.src = url;
+            setTimeout(finish, 12000); // страховка: не даём зависшей загрузке держать читателя вечно
+        })));
+    }
+
     function openReader(novelId, nodeId) {
         currentNovel = novelsData.find(n => n.id === novelId);
         if (!currentNovel) return;
         document.getElementById('reader').classList.add('active');
         document.getElementById('reader-ending').style.display = 'none';
-        loadNovelPlugins(currentNovel).finally(() => loadNode(nodeId || currentNovel.startNodeId));
+        showReaderLoading();
+        Promise.all([
+            loadNovelPlugins(currentNovel),
+            preloadImages(collectNovelImageUrls(currentNovel), setReaderLoadingProgress)
+        ]).finally(() => {
+            hideReaderLoading();
+            loadNode(nodeId || currentNovel.startNodeId);
+        });
     }
 
     // Прямая ссылка из редактора на конкретную сцену для проверки — не трогает прогресс/монеты игрока
@@ -481,7 +573,14 @@
             currentNovel = { id: params.get('novelId'), ...data, nodes: data.nodes || {} };
             document.getElementById('reader').classList.add('active');
             document.getElementById('reader-ending').style.display = 'none';
-            loadNovelPlugins(currentNovel).finally(() => loadNode(params.get('nodeId') || currentNovel.startNodeId));
+            showReaderLoading();
+            Promise.all([
+                loadNovelPlugins(currentNovel),
+                preloadImages(collectNovelImageUrls(currentNovel), setReaderLoadingProgress)
+            ]).finally(() => {
+                hideReaderLoading();
+                loadNode(params.get('nodeId') || currentNovel.startNodeId);
+            });
         }, { onlyOnce: true });
     }
 
