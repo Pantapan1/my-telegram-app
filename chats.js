@@ -729,6 +729,8 @@ export function sendChatMessage() {
         text, 
         createdAt: Date.now() 
     };
+    const mentions = chat ? extractMentions(chat, text) : [];
+    if (mentions.length) payload.mentions = mentions;
     if (activeChar) payload.asCharacterId = activeChar.id;
     if (rpMode === 'action' || rpMode === 'thought') payload.messageStyle = rpMode;
     if (state.replyingTo) payload.replyTo = { id: state.replyingTo.id, author: state.replyingTo.author, text: state.replyingTo.text };
@@ -2736,6 +2738,97 @@ function findItemByNameOrId(chat, key) {
     const k = String(key || '').toLowerCase();
     return economyItems(chat).find(i => i.id.toLowerCase() === k || (i.name || '').toLowerCase() === k);
 }
+function chatParticipantsList(chat) {
+    const ids = Object.keys((chat && chat.participants) || {});
+    return ids.map((uid) => {
+        const u = state.usersData.find((x) => x.id === uid);
+        const nm = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || '';
+        return { id: uid, name: nm };
+    }).filter((p) => p.name);
+}
+
+// Находит всех участников чата, упомянутых в тексте через @Имя, и возвращает их uid.
+// Используется, чтобы сервер (index.js) мог прислать им отдельный пуш "вас упомянули".
+function extractMentions(chat, text) {
+    if (!chat || !text) return [];
+    const found = new Set();
+    for (const p of chatParticipantsList(chat)) {
+        if (p.id === state.currentUser.id) continue;
+        const escaped = p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp('@' + escaped + '(?![\\wа-яёА-ЯЁ])', 'iu');
+        if (re.test(text)) found.add(p.id);
+    }
+    return Array.from(found);
+}
+
+let mentionDropdownEl = null;
+let mentionTokenStart = -1;
+
+function closeMentionDropdown() {
+    if (mentionDropdownEl) { mentionDropdownEl.remove(); mentionDropdownEl = null; }
+    mentionTokenStart = -1;
+}
+
+function showMentionDropdown(input, chat, query, tokenStart) {
+    closeMentionDropdown();
+    const matches = chatParticipantsList(chat)
+        .filter((p) => p.id !== state.currentUser.id && p.name.toLowerCase().startsWith(query.toLowerCase()))
+        .slice(0, 6);
+    if (!matches.length) return;
+
+    mentionTokenStart = tokenStart;
+    mentionDropdownEl = document.createElement('div');
+    mentionDropdownEl.className = 'mention-dropdown';
+    mentionDropdownEl.style.cssText = 'position:absolute; left:0; right:0; bottom:100%; margin-bottom:6px; background:var(--surface,#1c1c1e); border:1px solid var(--border-soft,rgba(255,255,255,0.12)); border-radius:12px; overflow:hidden; z-index:60; max-height:180px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.35);';
+
+    matches.forEach((p) => {
+        const item = document.createElement('div');
+        item.textContent = '@' + p.name;
+        item.style.cssText = 'padding:9px 14px; cursor:pointer; font-size:14px; color:var(--text-primary,#fff);';
+        item.onmouseenter = () => { item.style.background = 'rgba(107,33,168,0.18)'; };
+        item.onmouseleave = () => { item.style.background = ''; };
+        // mousedown, а не click — чтобы сработать раньше, чем textarea потеряет фокус
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            const val = input.value;
+            const before = val.slice(0, mentionTokenStart);
+            const after = val.slice(input.selectionStart);
+            const inserted = '@' + p.name + ' ';
+            input.value = before + inserted + after;
+            const caret = (before + inserted).length;
+            closeMentionDropdown();
+            input.focus();
+            input.setSelectionRange(caret, caret);
+            autoResizeChatInput();
+        };
+        mentionDropdownEl.appendChild(item);
+    });
+
+    const wrap = input.closest('.chat-input-row') || input.parentElement;
+    if (wrap && getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    (wrap || input.parentElement).appendChild(mentionDropdownEl);
+}
+
+function handleMentionTyping() {
+    const input = document.getElementById('chat-message-input');
+    const chat = state.chatsData.find((c) => c.id === state.currentChatId);
+    if (!chat || chat.type !== 'group') { closeMentionDropdown(); return; }
+    const caret = input.selectionStart;
+    const textBeforeCaret = input.value.slice(0, caret);
+    const match = textBeforeCaret.match(/(?:^|\s)@([^\s@]*)$/);
+    if (!match) { closeMentionDropdown(); return; }
+    const tokenStart = caret - match[1].length - 1;
+    showMentionDropdown(input, chat, match[1], tokenStart);
+}
+
+(() => {
+    const el = document.getElementById('chat-message-input');
+    if (!el) return;
+    el.addEventListener('input', handleMentionTyping);
+    el.addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') handleMentionTyping(); });
+    el.addEventListener('blur', () => setTimeout(closeMentionDropdown, 150));
+})();
+
 function resolveMentionedUser(chat, mention) {
     if (!mention) return null;
     const clean = mention.replace(/^@/, '').toLowerCase();
