@@ -1391,6 +1391,8 @@
                 <div id="wiki-hero-announcement" class="wiki-hero-announcement hidden"></div>
             </div>
 
+            <div id="wiki-home-widgets" class="wiki-home-widgets hidden"></div>
+
             <div id="wiki-subchats-section">
                 <div class="wiki-section-head">
                     <h3 class="community-section-title" style="margin:0;">💬 Чат-румы</h3>
@@ -1454,6 +1456,15 @@
             <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Модераторы могут добавлять и удалять категории, посты, закреплять их, менять оформление и создавать доп. чаты — наравне с вами.</div>
             <div id="wiki-moderators-list" style="max-height: 220px; overflow-y:auto; border:1px solid var(--border-soft); border-radius:16px; padding:8px; margin-bottom:14px; background:var(--surface);"></div>
 
+            <h4 style="margin: 14px 0 10px; color:var(--text-primary); font-size: 15px;">🎨 Свой CSS вики</h4>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Применится у всех участников группы. Стили автоматически ограничены только вики (никак не влияют на остальное приложение), а опасные конструкции (@import, url() на посторонние адреса и т.п.) вырезаются автоматически.</div>
+            <textarea id="wiki-settings-css" class="input" placeholder=".wiki-hero-title { color: #ff6ec7; }" style="min-height:110px;margin-bottom:14px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+            <h4 style="margin: 14px 0 10px; color:var(--text-primary); font-size: 15px;">🧩 Виджеты вики</h4>
+            <div style="font-size:12px;color:var(--text-secondary);margin:-4px 0 10px;">Свои мини-приложения на HTML/CSS/JS — на главной странице вики или внутри постов. Выполняются в изолированной песочнице без доступа к данным приложения и без сети.</div>
+            <div id="wiki-widgets-settings-list" style="margin-bottom:10px;"></div>
+            <button class="btn btn-secondary" id="btn-add-wiki-widget" style="margin-bottom:14px;">+ Добавить виджет</button>
+
             <button class="btn" id="btn-save-wiki-settings">Сохранить</button>
         </div>
     </div>
@@ -1511,6 +1522,8 @@
 
             <div class="wiki-post-body-text" id="wiki-post-text"></div>
 
+            <div id="wiki-post-widget-wrap" class="hidden"></div>
+
             <div class="comments-block">
                 <div class="comments-title" id="wiki-comments-title">Комментарии (0)</div>
                 <div id="wiki-post-comments-list"></div>
@@ -1540,7 +1553,47 @@
             </div>
             <input type="file" id="wiki-editor-image-file" accept="image/*" multiple class="hidden">
             <textarea id="wiki-editor-post-text" class="input" placeholder="Текст поста" style="min-height:140px;"></textarea>
+            <div class="wiki-editor-widget-row hidden">
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">Виджет в посте</label>
+                <select id="wiki-editor-post-widget" class="input" style="margin-bottom:14px;"></select>
+            </div>
             <button class="btn" id="btn-save-wiki-post">Сохранить пост</button>
+        </div>
+    </div>
+
+    <!-- ВИКИ ГРУППЫ: РЕДАКТОР ВИДЖЕТА (HTML/CSS/JS в песочнице, только модераторы вики) -->
+    <div id="wiki-widget-editor-overlay" class="reader-overlay wiki-theme">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 16px;margin:0; border-radius:12px;" id="close-wiki-widget-editor-btn">← Назад</button>
+            <div style="flex:1;"><div style="font-weight:800; color:var(--text-primary); font-size:16px;" id="wiki-widget-editor-title">Новый виджет</div></div>
+            <button class="btn btn-secondary hidden" id="btn-delete-wiki-widget" style="width:auto; margin:0 0 0 6px; padding:8px 10px; border-radius:12px;" title="Удалить">🗑</button>
+        </div>
+        <div class="reader-content" style="white-space:normal;">
+            <input type="text" id="wiki-widget-name" class="input" placeholder="Название виджета">
+
+            <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">Где показывать</label>
+            <select id="wiki-widget-placement" class="input" style="margin-bottom:14px;">
+                <option value="home">🏠 На главной странице вики</option>
+                <option value="post">📄 Внутри поста (можно выбрать при создании поста)</option>
+            </select>
+
+            <div style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;">Виджет выполняется в изолированной песочнице: без доступа к данным приложения, без localStorage/cookie, без сети (только загрузка картинок по https). Ошибка в JS не сломает остальную вики.</div>
+
+            <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">HTML</label>
+            <textarea id="wiki-widget-html" class="input" placeholder="<div class=&quot;my-widget&quot;>Привет!</div>" style="min-height:90px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+            <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">CSS</label>
+            <textarea id="wiki-widget-css" class="input" placeholder=".my-widget { color: #ff6ec7; }" style="min-height:90px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+            <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">JS</label>
+            <textarea id="wiki-widget-js" class="input" placeholder="document.querySelector('.my-widget').onclick = () => alert('hi');" style="min-height:90px;margin-bottom:14px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+            <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">👁 Предпросмотр</label>
+            <div style="border:1px solid var(--border-soft);border-radius:16px;overflow:hidden;margin-bottom:16px;background:var(--surface);">
+                <iframe id="wiki-widget-preview-frame" sandbox="allow-scripts" referrerpolicy="no-referrer" loading="lazy" style="width:100%;border:0;display:block;min-height:120px;"></iframe>
+            </div>
+
+            <button class="btn" id="btn-save-wiki-widget">Сохранить виджет</button>
         </div>
     </div>
 

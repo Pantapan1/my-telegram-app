@@ -127,6 +127,7 @@ export const state = {
   wikiEditingPostId: null,       // id поста, который редактируется в редакторе (null = создание нового)
   wikiEditorImages: [],          // массив URL картинок в редакторе поста (черновик перед сохранением)
   wikiImageViewer: { images: [], index: 0 }, // полноэкранный просмотр картинки поста
+  wikiEditingWidgetId: null,     // id виджета вики, который редактируется (null = создание нового)
   communityTab: 'mine', // 'mine' | 'discover' — подвкладка экрана "Сообщество" (бывшие "Чаты")
   previewGroupId: null, // id группы, чьё превью сейчас открыто (до вступления)
 };

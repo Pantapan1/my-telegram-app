@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, sanitizeAndScopeWikiCss, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -345,6 +345,13 @@ export function openChat(chatId) {
 window.openChat = openChat;
 
 export function renderChatOverlay(chat) {
+    // Доп.чат вики ("чат-рум") — своя тема/CSS ГМа вики применяется и здесь, а не только
+    // в самих оверлеях вики. У обычных чатов и у главного группового чата тема не трогается.
+    const wikiRoot = chat.parentChatId ? getWikiRootChat(chat) : null;
+    const isWikiSubchat = !!(wikiRoot && wikiRoot.wiki);
+    document.getElementById('chat-overlay').classList.toggle('wiki-theme', isWikiSubchat);
+    if (isWikiSubchat) applyWikiCustomCss(wikiRoot);
+
     const me = state.usersData.find(u => u.id === state.currentUser.id);
     const chatBg = (me && me.equipped && me.equipped.passChatBg) || chat.wallpaper;
     const chatBodyEl = document.getElementById('chat-body');
@@ -1632,6 +1639,213 @@ function wikiIconFor(name) {
     return WIKI_CAT_ICONS[Math.abs(hash) % WIKI_CAT_ICONS.length];
 }
 
+// ============================================================
+// === ВИКИ: СВОЙ CSS ГМА + ПЕСОЧНИЦА ДЛЯ ВИДЖЕТОВ ===
+// ГМ может писать свой CSS для вики (применяется санитайзером/скоупером из utils.js —
+// см. sanitizeAndScopeWikiCss) и добавлять свои виджеты (HTML+CSS+JS), которые выполняются
+// у ВСЕХ участников группы. Виджет — не доверенный код, поэтому он живёт в изолированном
+// <iframe sandbox="allow-scripts"> БЕЗ allow-same-origin: у него уникальное opaque-происхождение,
+// нет доступа к куки/localStorage приложения, нет сети (connect-src 'none' в CSP), нет доступа
+// к остальному DOM/JS приложения и к Firebase-сессии. Внутри — можно рисовать что угодно,
+// анимировать, считать, использовать canvas/таймеры — просто без пути наружу.
+const WIKI_WIDGET_LIMITS = { maxCount: 10, maxHtml: 20000, maxCss: 20000, maxJs: 20000 };
+
+function applyWikiCustomCss(chat) {
+    const raw = (chat && chat.wiki && chat.wiki.customCss) || '';
+    let styleEl = document.getElementById('wiki-custom-style');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'wiki-custom-style';
+        document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = raw ? sanitizeAndScopeWikiCss(raw) : '';
+}
+
+function buildWikiWidgetSrcdoc(html, css, js) {
+    // Внутренний скрипт репорта высоты — это НАШ код, не код ГМа; код ГМа исполняется отдельным
+    // блоком в try/catch, чтобы ошибка в нём не ломала автоподгонку размера рамки.
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: https:; media-src data: https:; font-src data: https:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none';">
+<style>*{box-sizing:border-box;}html,body{margin:0;padding:0;background:transparent;color:#f2ecff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;overflow:hidden;}
+${css || ''}
+</style></head><body>
+${html || ''}
+<script>
+(function(){
+  function reportSize(){ try { parent.postMessage({ type:'sr-wiki-widget-resize', height: document.documentElement.scrollHeight }, '*'); } catch(e){} }
+  try { new ResizeObserver(reportSize).observe(document.documentElement); } catch(e){}
+  window.addEventListener('load', reportSize);
+  setTimeout(reportSize, 60);
+  setTimeout(reportSize, 400);
+  try {
+    ${js || ''}
+  } catch(e) { console.error('Ошибка виджета вики:', e); }
+  reportSize();
+})();
+</script>
+</body></html>`;
+}
+
+// Слушатель один на всё приложение — подгоняет высоту рамки под контент конкретного виджета,
+// сверяя event.source с contentWindow (так сообщение от одного виджета не попадёт в другой).
+window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (!data || data.type !== 'sr-wiki-widget-resize' || typeof data.height !== 'number') return;
+    document.querySelectorAll('iframe.wiki-widget-frame').forEach(frame => {
+        if (frame.contentWindow === event.source) {
+            frame.style.height = Math.min(Math.max(Math.round(data.height), 40), 900) + 'px';
+        }
+    });
+});
+
+function renderWikiWidgetFrame(widget) {
+    const wrap = document.createElement('div');
+    wrap.className = 'wiki-widget-card';
+    const iframe = document.createElement('iframe');
+    iframe.className = 'wiki-widget-frame';
+    iframe.setAttribute('sandbox', 'allow-scripts');
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.style.cssText = 'width:100%;border:0;display:block;height:50px;';
+    iframe.srcdoc = buildWikiWidgetSrcdoc(widget.html, widget.css, widget.js);
+    wrap.appendChild(iframe);
+    return wrap;
+}
+
+function renderWikiHomeWidgets(chat) {
+    const container = document.getElementById('wiki-home-widgets');
+    if (!container) return;
+    const widgets = Object.entries((chat.wiki && chat.wiki.widgets) || {})
+        .map(([id, w]) => ({ id, ...w }))
+        .filter(w => w.placement !== 'post');
+    container.innerHTML = '';
+    container.classList.toggle('hidden', !widgets.length);
+    widgets.forEach(w => container.appendChild(renderWikiWidgetFrame(w)));
+}
+
+function renderWikiPostWidget(chat, post) {
+    const wrap = document.getElementById('wiki-post-widget-wrap');
+    if (!wrap) return;
+    const widgets = (chat.wiki && chat.wiki.widgets) || {};
+    const w = post.widgetId && widgets[post.widgetId] && widgets[post.widgetId].placement === 'post'
+        ? { id: post.widgetId, ...widgets[post.widgetId] } : null;
+    wrap.innerHTML = '';
+    wrap.classList.toggle('hidden', !w);
+    if (w) wrap.appendChild(renderWikiWidgetFrame(w));
+}
+
+function renderWikiWidgetsSettingsList(chat) {
+    const listEl = document.getElementById('wiki-widgets-settings-list');
+    if (!listEl) return;
+    const widgets = Object.entries((chat.wiki && chat.wiki.widgets) || {}).map(([id, w]) => ({ id, ...w }));
+    if (!widgets.length) {
+        listEl.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;padding:8px;">Виджетов пока нет.</div>`;
+        return;
+    }
+    listEl.innerHTML = widgets.map(w => `
+        <div class="wiki-widget-row">
+            <div class="wwr-info">
+                <div class="wwr-title">${escapeHtml(w.title || 'Без названия')}</div>
+                <div class="wwr-place">${w.placement === 'post' ? '📄 внутри постов' : '🏠 на главной вики'}</div>
+            </div>
+            <button class="btn-secondary" data-edit-widget="${w.id}" style="width:auto;padding:6px 12px;border-radius:10px;margin:0;" title="Редактировать">✏️</button>
+        </div>`).join('');
+    listEl.querySelectorAll('[data-edit-widget]').forEach(btn => {
+        btn.onclick = () => openWikiWidgetEditor(btn.getAttribute('data-edit-widget'));
+    });
+}
+
+let wikiWidgetPreviewTimer = null;
+function scheduleWikiWidgetPreview() {
+    clearTimeout(wikiWidgetPreviewTimer);
+    wikiWidgetPreviewTimer = setTimeout(() => {
+        const frame = document.getElementById('wiki-widget-preview-frame');
+        if (!frame) return;
+        frame.srcdoc = buildWikiWidgetSrcdoc(
+            document.getElementById('wiki-widget-html').value,
+            document.getElementById('wiki-widget-css').value,
+            document.getElementById('wiki-widget-js').value
+        );
+    }, 400);
+}
+['wiki-widget-html', 'wiki-widget-css', 'wiki-widget-js'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', scheduleWikiWidgetPreview);
+});
+
+function openWikiWidgetEditor(widgetId) {
+    const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+    if (!chat || !isWikiModerator(chat)) return;
+    const widget = widgetId ? ((chat.wiki && chat.wiki.widgets) || {})[widgetId] : null;
+    state.wikiEditingWidgetId = widgetId || null;
+
+    document.getElementById('wiki-widget-editor-title').textContent = widgetId ? '✏️ Виджет вики' : '✨ Новый виджет';
+    document.getElementById('wiki-widget-name').value = widget ? (widget.title || '') : '';
+    document.getElementById('wiki-widget-placement').value = widget ? (widget.placement || 'home') : 'home';
+    document.getElementById('wiki-widget-html').value = widget ? (widget.html || '') : '';
+    document.getElementById('wiki-widget-css').value = widget ? (widget.css || '') : '';
+    document.getElementById('wiki-widget-js').value = widget ? (widget.js || '') : '';
+    document.getElementById('btn-delete-wiki-widget').classList.toggle('hidden', !widgetId);
+    scheduleWikiWidgetPreview();
+
+    document.getElementById('wiki-settings-overlay').classList.remove('active');
+    document.getElementById('wiki-widget-editor-overlay').classList.add('active');
+    state.activeOverlay = 'wikiwidgeteditor';
+}
+
+document.getElementById('close-wiki-widget-editor-btn').onclick = function() {
+    document.getElementById('wiki-widget-editor-overlay').classList.remove('active');
+    document.getElementById('wiki-settings-overlay').classList.add('active');
+    state.activeOverlay = 'wikisettings';
+    const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+    if (chat) renderWikiWidgetsSettingsList(chat);
+};
+
+document.getElementById('btn-add-wiki-widget').onclick = function() {
+    openWikiWidgetEditor(null);
+};
+
+document.getElementById('btn-save-wiki-widget').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+    if (!chat || !isWikiModerator(chat)) return;
+
+    const title = document.getElementById('wiki-widget-name').value.trim();
+    if (!title) return tg.showAlert('Введите название виджета');
+    const placement = document.getElementById('wiki-widget-placement').value === 'post' ? 'post' : 'home';
+    const html = document.getElementById('wiki-widget-html').value;
+    const css = document.getElementById('wiki-widget-css').value;
+    const js = document.getElementById('wiki-widget-js').value;
+
+    if (html.length > WIKI_WIDGET_LIMITS.maxHtml || css.length > WIKI_WIDGET_LIMITS.maxCss || js.length > WIKI_WIDGET_LIMITS.maxJs) {
+        return tg.showAlert('Слишком длинный код виджета — сократите HTML/CSS/JS.');
+    }
+    const existingWidgets = (chat.wiki && chat.wiki.widgets) || {};
+    if (!state.wikiEditingWidgetId && Object.keys(existingWidgets).length >= WIKI_WIDGET_LIMITS.maxCount) {
+        return tg.showAlert(`Максимум ${WIKI_WIDGET_LIMITS.maxCount} виджетов на одну вики.`);
+    }
+
+    const payload = { title, placement, html, css, js };
+    const savePromise = state.wikiEditingWidgetId
+        ? update(ref(state.db, 'chats/' + chat.id + '/wiki/widgets/' + state.wikiEditingWidgetId), payload)
+        : push(ref(state.db, 'chats/' + chat.id + '/wiki/widgets'), { ...payload, createdAt: Date.now() });
+
+    savePromise.then(() => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        document.getElementById('close-wiki-widget-editor-btn').click();
+    }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+document.getElementById('btn-delete-wiki-widget').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.wikiChatId);
+    if (!chat || !state.wikiEditingWidgetId || !isWikiModerator(chat)) return;
+    tg.showConfirm('Удалить этот виджет?', (ok) => {
+        if (!ok) return;
+        remove(ref(state.db, 'chats/' + chat.id + '/wiki/widgets/' + state.wikiEditingWidgetId)).then(() => {
+            document.getElementById('close-wiki-widget-editor-btn').click();
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    });
+};
+
 // Разрешаем "корневой" чат вики: у доп. чатов (parentChatId) нет собственной вики —
 // они всегда используют общую вики главного группового чата, чтобы не плодить
 // отдельные пустые "Дропы" на каждый доп. чат.
@@ -1706,6 +1920,9 @@ export function renderGroupWiki() {
     const list = document.getElementById('group-wiki-categories-list');
     if (!list) return;
     if (!chat) { list.innerHTML = ''; return; }
+
+    applyWikiCustomCss(chat);
+    renderWikiHomeWidgets(chat);
 
     const owner = isWikiModerator(chat);
     document.getElementById('wiki-add-category-row').classList.toggle('hidden', !owner);
@@ -2015,6 +2232,8 @@ function openWikiSettings() {
 
     document.getElementById('wiki-settings-banner').value = (chat.wiki && chat.wiki.bannerUrl) || '';
     document.getElementById('wiki-settings-announcement').value = (chat.wiki && chat.wiki.announcement) || '';
+    document.getElementById('wiki-settings-css').value = (chat.wiki && chat.wiki.customCss) || '';
+    renderWikiWidgetsSettingsList(chat);
     const accent = (chat.wiki && chat.wiki.accentColor) || '';
     document.querySelectorAll('#wiki-accent-picker .wiki-accent-chip').forEach(chip => {
         chip.classList.toggle('active', chip.getAttribute('data-accent') === accent);
@@ -2071,11 +2290,16 @@ document.getElementById('btn-save-wiki-settings').onclick = function() {
         if (cb.checked) moderators[cb.getAttribute('data-mod-uid')] = true;
     });
 
+    const rawCss = document.getElementById('wiki-settings-css').value;
+
     update(ref(state.db, 'chats/' + chat.id + '/wiki'), {
         bannerUrl: bannerUrl,
         announcement: document.getElementById('wiki-settings-announcement').value.trim() || null,
         accentColor: accentColor,
-        moderators: moderators
+        moderators: moderators,
+        // Храним уже очищенный/заскоуленный CSS — если правила санитайзера когда-то ужесточатся,
+        // старые сохранённые темы всё равно проходят через него ещё раз при каждом применении (applyWikiCustomCss).
+        customCss: rawCss ? sanitizeAndScopeWikiCss(rawCss).slice(0, 20000) : null
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         document.getElementById('close-wiki-settings-btn').click();
@@ -2288,6 +2512,7 @@ export function renderWikiPost() {
         };
     }
 
+    renderWikiPostWidget(chat, post);
     renderWikiComments(chat, post);
 }
 
@@ -2382,6 +2607,17 @@ export function openWikiPostEditor(postId) {
     state.wikiEditorImages = post && post.images ? post.images.slice() : [];
     renderWikiEditorImages();
 
+    const widgetSelect = document.getElementById('wiki-editor-post-widget');
+    if (widgetSelect) {
+        const postWidgets = Object.entries((chat.wiki && chat.wiki.widgets) || {})
+            .map(([id, w]) => ({ id, ...w }))
+            .filter(w => w.placement === 'post');
+        widgetSelect.innerHTML = '<option value="">Без виджета</option>' +
+            postWidgets.map(w => `<option value="${w.id}">${escapeHtml(w.title || 'Без названия')}</option>`).join('');
+        widgetSelect.value = (post && post.widgetId && postWidgets.some(w => w.id === post.widgetId)) ? post.widgetId : '';
+        widgetSelect.closest('.wiki-editor-widget-row')?.classList.toggle('hidden', !postWidgets.length);
+    }
+
     document.getElementById('wiki-post-overlay').classList.remove('active');
     document.getElementById('wiki-category-overlay').classList.remove('active');
     document.getElementById('wiki-post-editor-overlay').classList.add('active');
@@ -2454,7 +2690,9 @@ document.getElementById('btn-save-wiki-post').onclick = function() {
     if (!title) return tg.showAlert('Введите заголовок поста');
     const text = document.getElementById('wiki-editor-post-text').value.trim();
     const images = state.wikiEditorImages.slice();
-    const payload = { categoryId: state.wikiCategoryId, title, text, images, authorId: state.currentUser.id };
+    const widgetSelectEl = document.getElementById('wiki-editor-post-widget');
+    const widgetId = widgetSelectEl && widgetSelectEl.value ? widgetSelectEl.value : null;
+    const payload = { categoryId: state.wikiCategoryId, title, text, images, widgetId, authorId: state.currentUser.id };
 
     const savePromise = state.wikiEditingPostId
         ? update(ref(state.db, 'chats/' + chat.id + '/wiki/posts/' + state.wikiEditingPostId), payload)

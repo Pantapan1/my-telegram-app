@@ -9,6 +9,77 @@ export function cardFrameStyle(rarity) {
     return `border-image: url('${url}') 30 stretch; border-width: 6px; border-style: solid;`;
 }
 
+// ============================================================
+// Санитайзер + скоупер пользовательского CSS для темы вики (ГМ пишет свой CSS,
+// он применяется у ВСЕХ участников группы — поэтому нельзя пускать его как есть).
+// Что вырезаем: @import (подгрузка чужих таблиц стилей), expression()/javascript: (старые
+// XSS-вектора), и любой url() кроме https:// и data:image/ (никаких file:/javascript: схем).
+// Что делаем с оставшимся: каждый top-level селектор жёстко скоупим под .wiki-theme,
+// чтобы стили физически не могли "убежать" за пределы оверлеев вики. Это не полноценный
+// CSS-парсер (в сложных крайних случаях с фигурными скобками внутри строк возможны огрехи),
+// но для реального пользовательского оформления темы этого достаточно и безопасно.
+export function sanitizeAndScopeWikiCss(rawCss) {
+    const SCOPE = '.wiki-theme';
+    const MAX_LEN = 20000;
+    let css = String(rawCss || '').slice(0, MAX_LEN);
+
+    // убираем комментарии заранее, чтобы не мешали дальнейшим regex-проверкам
+    css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    // никаких @import — это способ подгрузить постороннюю таблицу стилей (и следить за читателем)
+    css = css.replace(/@import[^;]*;?/gi, '');
+    // старый IE-вектор исполнения кода через CSS
+    css = css.replace(/expression\s*\([^)]*\)/gi, '');
+    css = css.replace(/javascript\s*:/gi, '');
+    // url(...) — оставляем только https:// и data:image/*, всё остальное (file:, javascript:, относительные пути на внутренние ресурсы) вырезаем
+    css = css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi, (m, q, url) => {
+        const trimmed = url.trim();
+        if (/^https:\/\//i.test(trimmed) || /^data:image\//i.test(trimmed)) return `url(${q}${trimmed}${q})`;
+        return 'url()';
+    });
+
+    // Скоупинг: обходим верхнеуровневые блоки, у @media/@supports рекурсивно скоупим содержимое,
+    // у @keyframes/@font-face/@page — не трогаем селекторы внутри (0%, from, to и т.п.).
+    function scopeBlocks(input) {
+        let out = '';
+        let i = 0;
+        while (i < input.length) {
+            const braceIdx = input.indexOf('{', i);
+            if (braceIdx === -1) { break; }
+            let head = input.slice(i, braceIdx).trim();
+            // находим соответствующую закрывающую скобку с учётом вложенности
+            let depth = 1, j = braceIdx + 1;
+            while (j < input.length && depth > 0) {
+                if (input[j] === '{') depth++;
+                else if (input[j] === '}') depth--;
+                j++;
+            }
+            const body = input.slice(braceIdx + 1, j - 1);
+
+            if (/^@(keyframes|-webkit-keyframes|font-face|page)\b/i.test(head)) {
+                out += head + '{' + body + '}';
+            } else if (/^@(media|supports)\b/i.test(head)) {
+                out += head + '{' + scopeBlocks(body) + '}';
+            } else if (head) {
+                const scoped = head.split(',').map(sel => {
+                    sel = sel.trim();
+                    if (!sel) return '';
+                    if (sel.startsWith(SCOPE)) return sel;
+                    return SCOPE + ' ' + sel;
+                }).filter(Boolean).join(', ');
+                out += scoped + '{' + body + '}';
+            }
+            i = j;
+        }
+        return out;
+    }
+
+    try {
+        return scopeBlocks(css);
+    } catch (e) {
+        return ''; // что-то пошло не так при парсинге — лучше без темы, чем сломанный/опасный CSS
+    }
+}
+
 export function colorFor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
