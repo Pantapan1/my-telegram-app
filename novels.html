@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Новеллы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+    }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .back-link {
+        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0; cursor: pointer; border: none; font-size: 18px;
+    }
+    h1 { font-size: 20px; margin: 0; flex: 1; }
+    .coins-badge {
+        background: linear-gradient(135deg, #ffb75e, #ed8f03); color: #fff; font-weight: 800; padding: 8px 14px;
+        border-radius: 14px; font-size: 14px; box-shadow: 0 4px 12px rgba(237,143,3,0.3); flex-shrink: 0;
+    }
+    .novel-card {
+        display: flex; gap: 12px; background: #fff; border-radius: 18px; padding: 12px; margin-bottom: 12px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05); cursor: pointer;
+    }
+    .novel-cover {
+        width: 72px; height: 96px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background: linear-gradient(135deg,#6a1fb8,#2a1052);
+        display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; font-weight: 800;
+    }
+    .novel-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .novel-title { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+    .novel-desc { font-size: 12px; color: #7f8c8d; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .novel-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .novel-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; }
+    .badge-locked { background: #fdecea; color: #e74c3c; }
+    .badge-unlocked { background: #eafaf1; color: #27ae60; }
+    .badge-endings { background: #f4f1fe; color: #8a2fc9; }
+    .empty-state { text-align: center; color: #95a5a6; padding: 40px 0; font-size: 14px; }
+
+    /* ===================== ЧИТАЛКА ===================== */
+    #reader {
+        display: none; position: fixed; inset: 0; background: #000; z-index: 100; overflow: hidden;
+    }
+    #reader.active { display: block; }
+    .reader-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity .25s ease; }
+    .reader-sprite {
+        position: absolute; bottom: 0; height: 78%; max-width: 70%; object-fit: contain; transition: all .25s ease; filter: brightness(.7);
+    }
+    .reader-sprite.speaking { filter: brightness(1); }
+    .reader-sprite.pos-left { left: 2%; }
+    .reader-sprite.pos-center { left: 50%; transform: translateX(-50%); }
+    .reader-sprite.pos-right { right: 2%; }
+    .reader-topbar { position: absolute; top: 0; left: 0; right: 0; padding: 14px; display: flex; justify-content: space-between; z-index: 5; gap: 8px; }
+    .reader-plugin-btn {
+        border: none; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 700;
+        background: rgba(255,255,255,.15); color: #fff; backdrop-filter: blur(6px); cursor: pointer; z-index: 6;
+    }
+    .reader-close {
+        width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; border: none;
+        font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .reader-skip-hint { color: rgba(255,255,255,.6); font-size: 11px; align-self: center; }
+    .reader-dialogue-box {
+        position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+        background: linear-gradient(0deg, rgba(0,0,0,.92) 30%, rgba(0,0,0,.75) 70%, rgba(0,0,0,0));
+        z-index: 4; cursor: pointer;
+    }
+    .reader-speaker { color: #ffb75e; font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+    .reader-text { color: #fff; font-size: 15px; line-height: 1.5; min-height: 44px; }
+    .reader-advance-hint { color: rgba(255,255,255,.45); font-size: 11px; margin-top: 8px; text-align: right; }
+    .reader-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .reader-choice-btn {
+        background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 12px 14px;
+        border-radius: 12px; font-size: 14px; text-align: left; cursor: pointer;
+    }
+    .reader-choice-btn:active { background: rgba(255,183,94,.3); }
+    .reader-ending-screen {
+        position: absolute; inset: 0; background: rgba(0,0,0,.88); z-index: 10; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 24px; text-align: center; color: #fff;
+    }
+    .reader-ending-title { font-size: 22px; font-weight: 800; color: #ffb75e; margin-bottom: 8px; }
+    .reader-ending-name { font-size: 16px; opacity: .9; margin-bottom: 16px; }
+    .reader-ending-reward { font-size: 14px; background: rgba(255,255,255,.1); padding: 10px 18px; border-radius: 12px; margin-bottom: 20px; }
+    .reader-ending-actions { display: flex; gap: 10px; }
+    .reader-ending-actions button {
+        padding: 12px 20px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; font-size: 13px;
+    }
+    .btn-restart { background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; }
+    .btn-back-list { background: rgba(255,255,255,.15); color: #fff; }
+    .no-session { text-align: center; padding: 60px 20px; color: #95a5a6; }
+    .unlock-modal-overlay {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 20px;
+    }
+    .unlock-modal-overlay.active { display: flex; }
+    .unlock-modal { background: #fff; border-radius: 18px; padding: 22px; max-width: 320px; text-align: center; }
+    .unlock-modal h3 { margin: 0 0 8px; font-size: 17px; }
+    .unlock-modal p { color: #7f8c8d; font-size: 13px; margin-bottom: 18px; }
+    .unlock-modal .btn-row { display: flex; gap: 8px; }
+    .unlock-modal button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
+
+    /* ===================== АНИМАЦИИ ПОЯВЛЕНИЯ СПРАЙТА ===================== */
+    @keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fxSlideLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxSlideRight { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fxShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+    @keyframes fxBounce { 0% { transform: translateY(-24px); opacity: 0; } 60% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(0); } }
+    @keyframes fxPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .reader-sprite.fx-fade { animation: fxFadeIn .4s ease both; }
+    .reader-sprite.fx-slide.pos-left { animation: fxSlideLeft .35s ease both; }
+    .reader-sprite.fx-slide.pos-right { animation: fxSlideRight .35s ease both; }
+    .reader-sprite.fx-slide.pos-center { animation: fxFadeIn .35s ease both; }
+    .reader-sprite.fx-shake { animation: fxShake .4s ease; }
+    .reader-sprite.fx-bounce { animation: fxBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .reader-sprite.fx-pulse { animation: fxPulse .5s ease; }
+
+    /* ===================== ФИЛЬТРЫ И ПЕРЕХОДЫ ФОНА ===================== */
+    .reader-bg.bgf-dark { filter: brightness(.5); }
+    .reader-bg.bgf-warm { filter: sepia(.5) saturate(1.4) brightness(1.05); }
+    .reader-bg.bgf-cold { filter: saturate(1.2) hue-rotate(160deg) brightness(.9); }
+    .reader-bg.bgf-gray { filter: grayscale(1) contrast(1.1); }
+    .reader-bg.bgf-blur { filter: blur(3px) brightness(.85); }
+    .reader-bg.bgf-red { filter: saturate(1.6) hue-rotate(-30deg) brightness(.85) contrast(1.15); }
+    @keyframes bgtFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes bgtShake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-6px,3px); } 40% { transform: translate(6px,-3px); } 60% { transform: translate(-4px,2px); } 80% { transform: translate(4px,-2px); } }
+    .bg-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 3; pointer-events: none; animation: bgtFlash .35s ease; }
+    #reader.bgt-shake { animation: bgtShake .4s ease; }
+
+    /* ===================== VFX: разовые эффекты и погода ===================== */
+    .vfx-flash-overlay { position: absolute; inset: 0; background: #fff; z-index: 40; pointer-events: none; animation: bgtFlash ease forwards; }
+    @keyframes vfxFade { 0% { opacity: 0; } 45%, 55% { opacity: 1; } 100% { opacity: 0; } }
+    .vfx-fade-overlay { position: absolute; inset: 0; z-index: 40; pointer-events: none; animation: vfxFade ease forwards; }
+    .vfx-fade-overlay.blackout { background: #000; }
+    .vfx-fade-overlay.whiteout { background: #fff; }
+    #reader.vfx-shake { animation: bgtShake .4s ease; }
+    @keyframes vfxBurstRise {
+        0% { transform: translateY(0) scale(.6); opacity: 0; }
+        15% { opacity: 1; }
+        100% { transform: translateY(-160px) scale(1.1); opacity: 0; }
+    }
+    .vfx-burst-item { position: absolute; z-index: 40; pointer-events: none; font-size: 22px; animation: vfxBurstRise ease forwards; }
+
+    #reader-weather { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+    @keyframes weatherFall { 0% { transform: translateY(-10%); } 100% { transform: translateY(110vh); } }
+    .weather-drop { position: absolute; top: -5%; animation: weatherFall linear infinite; }
+    .weather-drop.rain { width: 2px; height: 22px; background: rgba(180,210,255,.55); }
+    .weather-drop.snow { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.85); }
+    .weather-drop.petals { font-size: 16px; }
+
+    .reader-log-overlay {
+        position: absolute; inset: 0; background: rgba(0,0,0,.75); z-index: 15; display: flex; align-items: flex-end;
+    }
+    .reader-log-box {
+        background: #14141f; width: 100%; max-height: 70%; border-radius: 18px 18px 0 0; padding: 16px; overflow-y: auto;
+    }
+    .reader-log-title { color: #ffb75e; font-weight: 800; font-size: 14px; margin-bottom: 10px; }
+    .reader-log-line { color: #fff; font-size: 13px; margin-bottom: 10px; line-height: 1.4; }
+    .reader-log-line .rl-speaker { color: #ffb75e; font-weight: 700; margin-bottom: 2px; }
+
+    /* ===================== ЭКРАН ЗАГРУЗКИ СЦЕНЫ (пока не подгрузятся все спрайты/фоны) ===================== */
+    .reader-loading {
+        position: absolute; inset: 0; z-index: 60; background: #0c0c14;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px;
+    }
+    .reader-loading-close {
+        position: absolute; top: 14px; right: 14px;
+    }
+    .reader-loading-spinner {
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 3px solid rgba(255,183,94,.18); border-top-color: #ffb75e;
+        animation: readerLoadingSpin .8s linear infinite;
+    }
+    @keyframes readerLoadingSpin { to { transform: rotate(360deg); } }
+    .reader-loading-text { color: rgba(255,255,255,.75); font-size: 13px; font-weight: 600; text-align: center; }
+    .reader-loading-bar { width: 180px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+    .reader-loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#ffb75e,#ed8f03); transition: width .2s ease; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="list-view">
+    <div class="topbar">
+        <button class="back-link" onclick="history.back()">←</button>
+        <h1>📖 Новеллы</h1>
+        <div class="coins-badge" id="coins-badge">🪙 0</div>
+    </div>
+    <div id="novels-list"></div>
+</div>
+
+<div id="no-session" class="no-session" style="display:none;">Не удалось определить пользователя. Открой эту страницу через приложение.</div>
+
+<div class="unlock-modal-overlay" id="unlock-modal-overlay">
+    <div class="unlock-modal">
+        <h3 id="unlock-modal-title">Открыть новеллу?</h3>
+        <p id="unlock-modal-text"></p>
+        <div class="btn-row">
+            <button class="btn-back-list" onclick="closeUnlockModal()">Отмена</button>
+            <button class="btn-restart" id="btn-confirm-unlock">Открыть</button>
+        </div>
+    </div>
+</div>
+
+<div id="reader">
+    <div class="reader-bg" id="reader-bg"></div>
+    <div id="reader-weather"></div>
+    <img class="reader-sprite" id="reader-sprite" style="display:none;">
+    <div class="reader-topbar">
+        <button class="reader-close" onclick="closeReader()">✕</button>
+        <div class="reader-skip-hint">Тапни, чтобы продолжить</div>
+        <button class="reader-close" onclick="event.stopPropagation(); toggleReaderLog()">📜</button>
+    </div>
+    <div class="reader-log-overlay" id="reader-log-overlay" style="display:none;" onclick="event.stopPropagation(); toggleReaderLog()">
+        <div class="reader-log-box" onclick="event.stopPropagation()">
+            <div class="reader-log-title">История реплик</div>
+            <div id="reader-log-content"></div>
+        </div>
+    </div>
+    <div class="reader-dialogue-box" id="reader-box" onclick="advanceReader()">
+        <div class="reader-speaker" id="reader-speaker"></div>
+        <div class="reader-text" id="reader-text"></div>
+        <div class="reader-advance-hint" id="reader-hint">▶</div>
+        <div class="reader-choices" id="reader-choices" style="display:none;"></div>
+    </div>
+    <div class="reader-ending-screen" id="reader-ending" style="display:none;">
+        <div class="reader-ending-title">🏁 Конец</div>
+        <div class="reader-ending-name" id="ending-name"></div>
+        <div class="reader-ending-reward" id="ending-reward" style="display:none;"></div>
+        <div class="reader-ending-actions">
+            <button class="btn-restart" onclick="restartCurrentNovel()">Читать сначала</button>
+            <button class="btn-back-list" onclick="closeReader()">К списку</button>
+        </div>
+    </div>
+    <div class="reader-loading" id="reader-loading" style="display:none;">
+        <button class="reader-close reader-loading-close" onclick="closeReader()">✕</button>
+        <div class="reader-loading-spinner"></div>
+        <div class="reader-loading-text" id="reader-loading-text">Загрузка сцены…</div>
+        <div class="reader-loading-bar"><div class="reader-loading-fill" id="reader-loading-fill"></div></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, increment, set, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+        authDomain: "book-2b50d.firebaseapp.com",
+        databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+        projectId: "book-2b50d",
+        messagingSenderId: "461145405797",
+        appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const tg = window.Telegram.WebApp;
+    try { tg.expand(); tg.ready(); } catch (e) {}
+
+    const params = new URLSearchParams(window.location.search);
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+
+    let myId = null, myName = null;
+    if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
+    else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
+    else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+    function colorFor(str) {
+        let hash = 0;
+        for (let i = 0; i < (str || '').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        return `hsl(${hash % 360}, 60%, 55%)`;
+    }
+    function initialOf(str) { return (str || '?').trim().charAt(0).toUpperCase() || '?'; }
+
+    if (!myId) {
+        document.getElementById('no-session').style.display = 'block';
+        document.getElementById('list-view').style.display = 'none';
+    } else {
+        init();
+    }
+
+    let novelsData = [];
+    let myCoins = 0;
+    let myProgress = {}; // { [novelId]: { unlocked, currentNodeId, completedEndings } }
+    let pendingUnlockId = null;
+
+    function init() {
+        onValue(ref(db, 'novels'), (snap) => {
+            const data = snap.val() || {};
+            novelsData = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+            renderList();
+        });
+        onValue(ref(db, 'users/' + myId + '/coins'), (snap) => {
+            myCoins = snap.val() || 0;
+            document.getElementById('coins-badge').textContent = `🪙 ${myCoins}`;
+        });
+        onValue(ref(db, 'users/' + myId + '/novelProgress'), (snap) => {
+            myProgress = snap.val() || {};
+            renderList();
+        });
+    }
+
+    function renderList() {
+        const list = document.getElementById('novels-list');
+        if (!novelsData.length) { list.innerHTML = '<div class="empty-state">Пока нет ни одной новеллы 📖</div>'; return; }
+        list.innerHTML = novelsData.map(n => {
+            const progress = myProgress[n.id] || {};
+            const unlocked = !!progress.unlocked || !n.unlockCost;
+            const endingsCount = Object.keys(progress.completedEndings || {}).length;
+            let lockBadge = `<span class="novel-badge badge-locked">🪙 ${n.unlockCost}</span>`;
+            if (!unlocked && n.unlockRequiresNovelId) {
+                const reqProgress = myProgress[n.unlockRequiresNovelId] || {};
+                const endings = Object.keys(reqProgress.completedEndings || {});
+                const satisfied = n.unlockRequiresEndingKey ? endings.includes(n.unlockRequiresEndingKey) : endings.length > 0;
+                if (!satisfied) lockBadge = `<span class="novel-badge badge-locked">🔒 нужна другая новелла</span>`;
+            }
+            return `
+            <div class="novel-card" onclick="window.__openNovel('${n.id}')">
+                ${n.coverImage ? `<img class="novel-cover" src="${n.coverImage}">` : `<div class="novel-cover" style="background:${colorFor(n.title)}">${initialOf(n.title)}</div>`}
+                <div class="novel-info">
+                    <div class="novel-title">${escapeHtml(n.title || 'Без названия')}</div>
+                    <div class="novel-desc">${escapeHtml(n.description || '')}</div>
+                    <div class="novel-meta">
+                        ${unlocked ? '<span class="novel-badge badge-unlocked">Открыто</span>' : lockBadge}
+                        ${endingsCount ? `<span class="novel-badge badge-endings">🏁 ${endingsCount} конц.</span>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    window.__openNovel = function (novelId) {
+        const novel = novelsData.find(n => n.id === novelId);
+        if (!novel) return;
+        const progress = myProgress[novelId] || {};
+        const unlocked = !!progress.unlocked || !novel.unlockCost;
+        if (!unlocked) {
+            if (novel.unlockRequiresNovelId) {
+                const reqProgress = myProgress[novel.unlockRequiresNovelId] || {};
+                const endings = Object.keys(reqProgress.completedEndings || {});
+                const satisfied = novel.unlockRequiresEndingKey ? endings.includes(novel.unlockRequiresEndingKey) : endings.length > 0;
+                if (!satisfied) {
+                    const reqNovel = novelsData.find(n => n.id === novel.unlockRequiresNovelId);
+                    tg.showAlert && tg.showAlert(`Сначала нужно пройти новеллу «${reqNovel ? reqNovel.title : '?'}»`);
+                    return;
+                }
+            }
+            pendingUnlockId = novelId;
+            document.getElementById('unlock-modal-title').textContent = novel.title || 'Новелла';
+            document.getElementById('unlock-modal-text').textContent = `Открыть за 🪙 ${novel.unlockCost}? У тебя ${myCoins} монет.`;
+            document.getElementById('btn-confirm-unlock').disabled = myCoins < novel.unlockCost;
+            document.getElementById('btn-confirm-unlock').textContent = myCoins < novel.unlockCost ? 'Недостаточно монет' : 'Открыть';
+            document.getElementById('unlock-modal-overlay').classList.add('active');
+            return;
+        }
+        openReader(novelId, progress.currentNodeId || novel.startNodeId);
+    };
+
+    window.closeUnlockModal = function () {
+        document.getElementById('unlock-modal-overlay').classList.remove('active');
+        pendingUnlockId = null;
+    };
+
+    document.getElementById('btn-confirm-unlock').onclick = function () {
+        if (!pendingUnlockId) return;
+        const novel = novelsData.find(n => n.id === pendingUnlockId);
+        if (!novel || myCoins < novel.unlockCost) return;
+        update(ref(db), {
+            ['users/' + myId + '/coins']: increment(-novel.unlockCost),
+            ['users/' + myId + '/novelProgress/' + pendingUnlockId + '/unlocked']: true,
+        }).then(() => {
+            const openId = pendingUnlockId;
+            closeUnlockModal();
+            openReader(openId, novel.startNodeId);
+        }).catch(() => tg.showAlert && tg.showAlert('Ошибка открытия новеллы'));
+    };
+
+    // ===================== ЧТЕНИЕ =====================
+    let currentNovel = null;
+    let currentNode = null;
+    let lineIndex = 0;
+    let isAdminPreview = params.get('adminPreview') === '1';
+
+    // ======================================================================
+    // ПЛАГИНЫ — полный доступ к DOM читалки, без песочницы (доверенный контент,
+    // грузится только из твоей собственной базы plugins/*)
+    // ======================================================================
+    const pluginRegistry = {};      // keyword -> { oneShot(args,api), mount(args,api)->cleanupFn }
+    const pluginEventBus = { nodeLoad: [], lineRender: [], beforeAdvance: [], choiceShown: [] };
+    let activeWidgetCleanups = [];  // функции очистки виджетов текущей сцены
+    let pluginsLoadedForNovel = null;
+
+    function fireEvent(name, payload) {
+        let blocked = false;
+        (pluginEventBus[name] || []).forEach(cb => {
+            try { if (cb(payload) === false) blocked = true; } catch (err) { console.error('[plugin] обработчик ' + name + ' упал:', err); }
+        });
+        return !blocked;
+    }
+
+    function teardownWidgets() {
+        activeWidgetCleanups.forEach(fn => { try { fn(); } catch (err) { console.error('[plugin] ошибка очистки виджета:', err); } });
+        activeWidgetCleanups = [];
+    }
+
+    function mountWidgets(widgets) {
+        widgets.forEach(w => {
+            const handler = pluginRegistry[w.keyword];
+            if (!handler || !handler.mount) return;
+            try {
+                const cleanup = handler.mount(w.args || {}, pluginApi);
+                if (typeof cleanup === 'function') activeWidgetCleanups.push(cleanup);
+            } catch (err) { console.error('[plugin] widget "' + w.keyword + '" упал при монтировании:', err); }
+        });
+    }
+
+    function firePluginOneShot(plugin) {
+        const handler = pluginRegistry[plugin.keyword];
+        if (!handler || !handler.oneShot) return;
+        try { handler.oneShot(plugin.args || {}, pluginApi); }
+        catch (err) { console.error('[plugin] plugin "' + plugin.keyword + '" упал:', err); }
+    }
+
+    // API, который получает каждый плагин — прямой доступ к DOM читалки и управлению чтением.
+    // Осознанно без песочницы: плагины грузятся только из своей базы, доверенный контент.
+    const pluginApi = {
+        dom: {
+            get reader() { return document.getElementById('reader'); },
+            get dialogueBox() { return document.getElementById('reader-box'); },
+            get speakerEl() { return document.getElementById('reader-speaker'); },
+            get textEl() { return document.getElementById('reader-text'); },
+            get choicesBox() { return document.getElementById('reader-choices'); },
+            get hintEl() { return document.getElementById('reader-hint'); },
+            get topbar() { return document.querySelector('.reader-topbar'); },
+            get bgEl() { return document.getElementById('reader-bg'); },
+        },
+        // Быстрое добавление кнопки в шапку читалки (или в любой контейнер по выбору)
+        addButton(opts) {
+            const btn = document.createElement('button');
+            btn.textContent = (opts && opts.label) || 'Кнопка';
+            btn.className = 'reader-plugin-btn' + ((opts && opts.className) ? ' ' + opts.className : '');
+            if (opts && opts.style) Object.assign(btn.style, opts.style);
+            btn.onclick = (e) => { e.stopPropagation(); if (opts && opts.onClick) opts.onClick(e); };
+            const parent = (opts && opts.parent) || this.dom.topbar;
+            if (parent) parent.appendChild(btn);
+            return btn;
+        },
+        getVar(name) { return varValue(name, myVars()); },
+        setVar(name, value) { applyEffects([{ op: 'set', name, value }]); },
+        addVar(name, delta) { applyEffects([{ op: 'add', name, value: delta }]); },
+        getVars() { return { ...myVars() }; },
+        getCurrentNode() { return currentNode; },
+        getCurrentNovel() { return currentNovel; },
+        getCurrentLine() { return currentNode ? (currentNode.lines || [])[lineIndex] : null; },
+        triggerVfx(nameOrObj) { triggerVfx(typeof nameOrObj === 'string' ? { name: nameOrObj } : nameOrObj); },
+        setWeather(kind) { setWeather(kind || ''); },
+        advance() { window.advanceReader(); },
+        jumpTo(nodeId) { loadNode(nodeId); },
+        pickChoice(index) { window.__pickChoice(index); },
+        // event: 'nodeLoad' | 'lineRender' | 'beforeAdvance' | 'choiceShown'
+        // вернуть false из обработчика beforeAdvance — заблокировать обычное продвижение по тексту (например, пока не закрыт мини-квиз)
+        on(event, cb) { if (pluginEventBus[event]) pluginEventBus[event].push(cb); },
+        // Регистрирует новый ключ для repy-конструкций `plugin keyword ...` (разово, привязан к реплике)
+        // и `widget keyword ...` (живёт всю сцену, mount должен вернуть функцию очистки)
+        registerStatement(keyword, handlers) { pluginRegistry[keyword] = handlers || {}; },
+    };
+
+    // Плагины хранятся как исходный JS-модуль (export default function install(api){...}) в plugins/{id}/code
+    async function loadNovelPlugins(novel) {
+        const ids = novel.plugins || [];
+        const key = novel.id + ':' + ids.join(',');
+        if (pluginsLoadedForNovel === key) return; // уже загружены для этой новеллы в этой сессии вкладки
+        pluginsLoadedForNovel = key;
+        for (const id of ids) {
+            try {
+                const snap = await get(ref(db, 'plugins/' + id));
+                const p = snap.val();
+                if (!p || !p.code) continue;
+                const blob = new Blob([p.code], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                const mod = await import(url);
+                URL.revokeObjectURL(url);
+                if (typeof mod.default === 'function') mod.default(pluginApi);
+            } catch (err) { console.error('[plugin] не удалось загрузить "' + id + '":', err); }
+        }
+    }
+
+    // ===================== ПРЕДЗАГРУЗКА СПРАЙТОВ/ФОНОВ ПЕРЕД ЧТЕНИЕМ =====================
+    // Собираем все картинки, которые встречаются в новелле (фоны сцен, спрайты персонажей,
+    // спрайты состава сцены и точечные подмены на конкретных репликах) — чтобы не было
+    // ситуации, когда текст уже пошёл, а спрайт ещё не догрузился и "выскакивает" с задержкой.
+    function collectNovelImageUrls(novel) {
+        const urls = new Set();
+        const addStage = (stage) => (stage || []).forEach(s => { if (s && s.sprite) urls.add(s.sprite); });
+        const nodes = (novel && novel.nodes) || {};
+        Object.values(nodes).forEach(node => {
+            if (node.background) urls.add(node.background);
+            addStage(node.stage);
+            (node.lines || []).forEach(line => {
+                if (line.sprite) urls.add(line.sprite);
+                addStage(line.stage);
+            });
+        });
+        Object.values((novel && novel.characters) || {}).forEach(c => { if (c && c.sprite) urls.add(c.sprite); });
+        return Array.from(urls).filter(Boolean);
+    }
+
+    function setReaderLoadingProgress(done, total) {
+        const fill = document.getElementById('reader-loading-fill');
+        const text = document.getElementById('reader-loading-text');
+        const pct = total ? Math.round((done / total) * 100) : 100;
+        if (fill) fill.style.width = pct + '%';
+        if (text) text.textContent = total > 1 ? `Загрузка сцены… ${done}/${total}` : 'Загрузка сцены…';
+    }
+
+    function showReaderLoading() {
+        setReaderLoadingProgress(0, 0);
+        document.getElementById('reader-loading').style.display = 'flex';
+    }
+
+    function hideReaderLoading() {
+        document.getElementById('reader-loading').style.display = 'none';
+    }
+
+    // Грузим картинки параллельно; битая ссылка или зависшая загрузка не блокируют навсегда —
+    // после таймаута читаем дальше, просто с этим одним спрайтом молча идём в кэш/placeholder.
+    function preloadImages(urls, onProgress) {
+        const total = urls.length;
+        if (!total) { if (onProgress) onProgress(0, 0); return Promise.resolve(); }
+        let done = 0;
+        if (onProgress) onProgress(0, total);
+        return Promise.all(urls.map(url => new Promise(resolve => {
+            const img = new Image();
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                done++;
+                if (onProgress) onProgress(done, total);
+                resolve();
+            };
+            img.onload = finish;
+            img.onerror = finish;
+            img.src = url;
+            setTimeout(finish, 12000); // страховка: не даём зависшей загрузке держать читателя вечно
+        })));
+    }
+
+    function openReader(novelId, nodeId) {
+        currentNovel = novelsData.find(n => n.id === novelId);
+        if (!currentNovel) return;
+        document.getElementById('reader').classList.add('active');
+        document.getElementById('reader-ending').style.display = 'none';
+        showReaderLoading();
+        Promise.all([
+            loadNovelPlugins(currentNovel),
+            preloadImages(collectNovelImageUrls(currentNovel), setReaderLoadingProgress)
+        ]).finally(() => {
+            hideReaderLoading();
+            loadNode(nodeId || currentNovel.startNodeId);
+        });
+    }
+
+    // Прямая ссылка из редактора на конкретную сцену для проверки — не трогает прогресс/монеты игрока
+    if (isAdminPreview && params.get('novelId')) {
+        document.getElementById('list-view').style.display = 'none';
+        onValue(ref(db, 'novels/' + params.get('novelId')), (snap) => {
+            const data = snap.val();
+            if (!data) return;
+            currentNovel = { id: params.get('novelId'), ...data, nodes: data.nodes || {} };
+            document.getElementById('reader').classList.add('active');
+            document.getElementById('reader-ending').style.display = 'none';
+            showReaderLoading();
+            Promise.all([
+                loadNovelPlugins(currentNovel),
+                preloadImages(collectNovelImageUrls(currentNovel), setReaderLoadingProgress)
+            ]).finally(() => {
+                hideReaderLoading();
+                loadNode(params.get('nodeId') || currentNovel.startNodeId);
+            });
+        }, { onlyOnce: true });
+    }
+
+    window.closeReader = function () {
+        document.getElementById('reader').classList.remove('active');
+        teardownWidgets();
+        currentNovel = null; currentNode = null;
+        if (isAdminPreview) window.close();
+    };
+
+    window.restartCurrentNovel = function () {
+        if (!currentNovel) return;
+        document.getElementById('reader-ending').style.display = 'none';
+        loadNode(currentNovel.startNodeId);
+    };
+
+    const musicPlayer = document.getElementById('reader-music') || (() => {
+        const a = document.createElement('audio');
+        a.id = 'reader-music'; a.loop = true; document.body.appendChild(a); return a;
+    })();
+
+    // ===================== ПЕРЕМЕННЫЕ (var/set/add/sub, условия if/elif/else) =====================
+    let previewVars = {}; // для админ-предпросмотра — не пишем в БД, храним только в памяти вкладки
+
+    function myVars() {
+        if (isAdminPreview) return previewVars;
+        return ((myProgress[currentNovel.id] || {}).vars) || {};
+    }
+
+    function varValue(name, vars) {
+        if (Object.prototype.hasOwnProperty.call(vars, name)) return vars[name];
+        const def = (currentNovel.variables || {})[name];
+        return def !== undefined ? def : undefined;
+    }
+
+    function evalCond(cond, vars) {
+        if (!cond) return true;
+        const val = varValue(cond.name, vars);
+        switch (cond.op) {
+            case 'truthy': return !!val;
+            case 'falsy': return !val;
+            case '==': return val == cond.value;
+            case '!=': return val != cond.value;
+            case '>': return Number(val) > Number(cond.value);
+            case '>=': return Number(val) >= Number(cond.value);
+            case '<': return Number(val) < Number(cond.value);
+            case '<=': return Number(val) <= Number(cond.value);
+            default: return true;
+        }
+    }
+
+    // Применяет set/add/sub — либо к памяти предпросмотра, либо к прогрессу читателя (локально + в БД)
+    function applyEffects(effects) {
+        if (!effects || !effects.length) return;
+        if (isAdminPreview) {
+            effects.forEach(eff => {
+                let newVal;
+                if (eff.op === 'set') newVal = eff.value;
+                else { const cur = Number(varValue(eff.name, previewVars)) || 0; newVal = eff.op === 'add' ? cur + Number(eff.value) : cur - Number(eff.value); }
+                previewVars[eff.name] = newVal;
+            });
+            return;
+        }
+        if (!myId) return;
+        myProgress[currentNovel.id] = myProgress[currentNovel.id] || {};
+        myProgress[currentNovel.id].vars = myProgress[currentNovel.id].vars || {};
+        const vars = myProgress[currentNovel.id].vars;
+        const updates = {};
+        effects.forEach(eff => {
+            let newVal;
+            if (eff.op === 'set') newVal = eff.value;
+            else { const cur = Number(varValue(eff.name, vars)) || 0; newVal = eff.op === 'add' ? cur + Number(eff.value) : cur - Number(eff.value); }
+            vars[eff.name] = newVal;
+            updates['users/' + myId + '/novelProgress/' + currentNovel.id + '/vars/' + eff.name] = newVal;
+        });
+        update(ref(db), updates).catch(() => {});
+    }
+
+    // Из всех строк сцены оставляет только те, что относятся к «выигравшей» ветке каждого if/elif/else
+    function filterConditionalLines(lines, groups, vars) {
+        if (!groups || !groups.length) return lines;
+        const active = {};
+        groups.forEach(g => {
+            let chosen = -1;
+            for (let i = 0; i < g.branches.length; i++) {
+                if (evalCond(g.branches[i].cond, vars)) { chosen = i; break; }
+            }
+            active[g.id] = chosen;
+        });
+        return lines.filter(l => !l.condGroup || l.condBranch === active[l.condGroup]);
+    }
+
+    // ===================== ПОГОДА (держится всю сцену) И VFX (разово на реплике) =====================
+    let currentWeather = '';
+    function setWeather(kind) {
+        if (kind === currentWeather) return;
+        currentWeather = kind;
+        const box = document.getElementById('reader-weather');
+        box.innerHTML = '';
+        if (!kind) return;
+        const count = kind === 'snow' ? 26 : kind === 'petals' ? 18 : 40;
+        for (let i = 0; i < count; i++) {
+            const d = document.createElement('div');
+            d.className = 'weather-drop ' + kind;
+            d.style.left = Math.random() * 100 + '%';
+            const dur = kind === 'rain' ? (0.6 + Math.random() * 0.4) : (4 + Math.random() * 4);
+            d.style.animationDuration = dur + 's';
+            d.style.animationDelay = (-Math.random() * dur) + 's';
+            if (kind === 'petals') d.textContent = '🌸';
+            box.appendChild(d);
+        }
+    }
+
+    function triggerVfx(vfx) {
+        if (!vfx || !vfx.name) return;
+        const readerEl = document.getElementById('reader');
+        const dur = vfx.duration || (vfx.name === 'blackout' || vfx.name === 'whiteout' ? 900 : vfx.name === 'flash' ? 400 : 500);
+        if (vfx.name === 'flash') {
+            const el = document.createElement('div');
+            el.className = 'vfx-flash-overlay';
+            el.style.animationDuration = dur + 'ms';
+            if (vfx.color) el.style.background = vfx.color;
+            readerEl.appendChild(el);
+            setTimeout(() => el.remove(), dur);
+        } else if (vfx.name === 'blackout' || vfx.name === 'whiteout') {
+            const el = document.createElement('div');
+            el.className = 'vfx-fade-overlay ' + vfx.name;
+            el.style.animationDuration = dur + 'ms';
+            if (vfx.color) el.style.background = vfx.color;
+            readerEl.appendChild(el);
+            setTimeout(() => el.remove(), dur);
+        } else if (vfx.name === 'shake') {
+            readerEl.classList.remove('vfx-shake'); void readerEl.offsetWidth; readerEl.classList.add('vfx-shake');
+            setTimeout(() => readerEl.classList.remove('vfx-shake'), dur);
+        } else if (vfx.name === 'hearts' || vfx.name === 'sparkle') {
+            const emoji = vfx.name === 'hearts' ? '💗' : '✨';
+            const n = 10;
+            for (let i = 0; i < n; i++) {
+                const s = document.createElement('div');
+                s.className = 'vfx-burst-item';
+                s.textContent = emoji;
+                s.style.left = (30 + Math.random() * 40) + '%';
+                s.style.top = (40 + Math.random() * 30) + '%';
+                s.style.animationDuration = (dur || 700) + 'ms';
+                s.style.animationDelay = (Math.random() * 150) + 'ms';
+                if (vfx.color) s.style.color = vfx.color;
+                readerEl.appendChild(s);
+                setTimeout(() => s.remove(), (dur || 700) + 200);
+            }
+        }
+    }
+
+    function loadNode(nodeId) {
+        const nodes = currentNovel.nodes || {};
+        const node = nodes[nodeId];
+        if (!node) { closeReader(); return; }
+        teardownWidgets();
+        currentNode = { ...node, id: nodeId };
+        applyEffects(node.effects);
+        currentNode.lines = filterConditionalLines(node.lines || [], node.conditionGroups || [], myVars());
+        lineIndex = 0;
+        sceneLog = [];
+        const bgEl = document.getElementById('reader-bg');
+        // Плавный кроссфейд: гасим текущий фон, подменяем картинку, снова показываем
+        bgEl.style.opacity = '0';
+        setTimeout(() => {
+            bgEl.style.background = node.background ? '' : '#1a1a2e';
+            if (node.background) bgEl.style.backgroundImage = `url('${node.background}')`;
+            bgEl.className = 'reader-bg' + (node.bgFilter ? ' bgf-' + node.bgFilter : '');
+            bgEl.style.opacity = '1';
+        }, 220);
+        if (node.bgTransition === 'flash') {
+            const flash = document.createElement('div');
+            flash.className = 'bg-flash-overlay';
+            document.getElementById('reader').appendChild(flash);
+            setTimeout(() => flash.remove(), 400);
+        } else if (node.bgTransition === 'shake') {
+            const readerEl = document.getElementById('reader');
+            readerEl.classList.remove('bgt-shake'); void readerEl.offsetWidth; readerEl.classList.add('bgt-shake');
+        }
+        document.getElementById('reader-choices').style.display = 'none';
+        if (node.music && musicPlayer.src !== node.music) { musicPlayer.src = node.music; musicPlayer.play().catch(() => {}); }
+        else if (!node.music) { musicPlayer.pause(); musicPlayer.src = ''; }
+        setWeather(node.weather || '');
+        // Сохраняем прогресс — при повторном открытии новеллы читатель попадёт на эту сцену (кроме предпросмотра админа)
+        if (myId && !isAdminPreview) update(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id), { currentNodeId: nodeId, unlocked: true }).catch(() => {});
+        mountWidgets(node.widgets || []);
+        fireEvent('nodeLoad', { node: currentNode });
+        renderLine();
+    }
+
+    let sfxPlayer = null;
+    let typewriterTimer = null;
+    let isTyping = false;
+    let sceneLog = []; // журнал реплик текущей сцены — для кнопки "история"
+
+    function substitutePlaceholders(text) {
+        return (text || '').replace(/\{playerName\}/g, myName || 'Читатель');
+    }
+
+    function typeText(el, fullText, speedMs, onDone) {
+        clearInterval(typewriterTimer);
+        if (!speedMs) { el.textContent = fullText; isTyping = false; if (onDone) onDone(); return; }
+        el.textContent = '';
+        isTyping = true;
+        let i = 0;
+        typewriterTimer = setInterval(() => {
+            i++;
+            el.textContent = fullText.slice(0, i);
+            if (i >= fullText.length) {
+                clearInterval(typewriterTimer);
+                isTyping = false;
+                if (onDone) onDone();
+            }
+        }, speedMs);
+    }
+
+    function renderLine() {
+        const lines = currentNode.lines || [];
+        const line = lines[lineIndex];
+        const sprite = document.getElementById('reader-sprite');
+        if (!line) { finishNode(); return; }
+        const speakerEl = document.getElementById('reader-speaker');
+        const textEl = document.getElementById('reader-text');
+        const fullText = substitutePlaceholders(line.text);
+        const lineKey = currentNode.id + ':' + lineIndex;
+        const alreadyRead = !isAdminPreview && myId && !!((myProgress[currentNovel.id] || {}).readLines || {})[lineKey];
+        const speedMs = alreadyRead ? 0 : (currentNovel.textSpeed || 0);
+        if (line.vfx) triggerVfx(line.vfx);
+        if (line.plugin) firePluginOneShot(line.plugin);
+        fireEvent('lineRender', { line, index: lineIndex });
+        typeText(textEl, fullText, speedMs, () => {
+            document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
+        });
+        document.getElementById('reader-hint').textContent = speedMs ? '' : ((lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓'));
+        if (!alreadyRead && myId && !isAdminPreview) {
+            set(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id + '/readLines/' + lineKey), true).catch(() => {});
+            myProgress[currentNovel.id] = myProgress[currentNovel.id] || {};
+            myProgress[currentNovel.id].readLines = myProgress[currentNovel.id].readLines || {};
+            myProgress[currentNovel.id].readLines[lineKey] = true;
+        }
+
+        sceneLog.push({ speaker: line.speakerKey ? decodeURIComponent(line.speakerKey) : (line.speaker || ''), text: fullText });
+
+        if (line.sfx) {
+            if (!sfxPlayer) sfxPlayer = new Audio();
+            sfxPlayer.src = line.sfx;
+            sfxPlayer.play().catch(() => {});
+        }
+
+        // Убираем спрайты сборной сцены с прошлой реплики
+        document.querySelectorAll('.reader-sprite.stage-sprite').forEach(el => el.remove());
+
+        const chars = (currentNovel.characters) || {};
+        const stage = line.stage || currentNode.stage || [];
+        const fx = line.spriteEffect ? ' ' + line.spriteEffect : '';
+
+        // Состав сцены рисуем всегда (даже когда говорит рассказчик или гость без show) — не участвующие в реплике просто притухают
+        stage.filter(s => s.key).forEach(s => {
+            const preset = chars[s.key] || {};
+            const spriteUrl = s.sprite || preset.sprite;
+            if (!spriteUrl) return;
+            const img = document.createElement('img');
+            const speaking = !!(line.speakerKey && s.key === line.speakerKey);
+            img.className = 'reader-sprite stage-sprite' + (speaking ? ' speaking' + fx : '');
+            img.src = spriteUrl;
+            applySpritePlacement(img, s.position, s.scale);
+            document.getElementById('reader').insertBefore(img, document.querySelector('.reader-topbar'));
+        });
+
+        if (line.speakerKey) {
+            sprite.style.display = 'none';
+            const activePreset = chars[line.speakerKey] || {};
+            speakerEl.textContent = decodeURIComponent(line.speakerKey);
+            speakerEl.style.color = activePreset.color || '#ffb75e';
+        } else {
+            speakerEl.textContent = line.speaker || '';
+            speakerEl.style.color = line.speakerColor || '#ffb75e';
+            if (line.sprite) {
+                sprite.src = line.sprite;
+                sprite.style.display = 'block';
+                sprite.className = 'reader-sprite speaking' + fx;
+                applySpritePlacement(sprite, line.spritePosition, line.spriteScale);
+            } else {
+                sprite.style.display = 'none';
+            }
+        }
+    }
+
+    // position: 'left'|'center'|'right' или "x,y" в процентах (x — по горизонтали от центра, y — отступ от низа экрана)
+    function applySpritePlacement(el, position, scale) {
+        let x = 50, y = 0;
+        if (position === 'left') x = 15;
+        else if (position === 'right') x = 85;
+        else if (position && position.indexOf(',') !== -1) {
+            const parts = position.split(',');
+            const px = parseFloat(parts[0]), py = parseFloat(parts[1]);
+            if (!isNaN(px)) x = px;
+            if (!isNaN(py)) y = py;
+        }
+        const s = (scale && scale > 0) ? scale : 1;
+        el.style.left = x + '%';
+        el.style.bottom = y + '%';
+        el.style.transform = `translateX(-50%) scale(${s})`;
+    }
+
+    function hasMoreAfterLines() {
+        return !!(currentNode.choices && currentNode.choices.length) || !currentNode.isEnding;
+    }
+
+    window.toggleReaderLog = function () {
+        const overlay = document.getElementById('reader-log-overlay');
+        const opening = overlay.style.display === 'none';
+        if (opening) {
+            document.getElementById('reader-log-content').innerHTML = sceneLog.length
+                ? sceneLog.map(l => `<div class="reader-log-line">${l.speaker ? `<div class="rl-speaker">${escapeHtml(l.speaker)}</div>` : ''}${escapeHtml(l.text)}</div>`).join('')
+                : '<div style="color:rgba(255,255,255,.5);font-size:12px;">Пока пусто</div>';
+        }
+        overlay.style.display = opening ? 'flex' : 'none';
+    };
+
+    window.advanceReader = function () {
+        if (!currentNode) return;
+        if (fireEvent('beforeAdvance', {}) === false) return; // плагин может перехватить и заблокировать обычное продвижение
+        if (isTyping) {
+            // Тап во время печати — сразу дописываем текущую реплику целиком, не переходя дальше
+            clearInterval(typewriterTimer);
+            isTyping = false;
+            const lines = currentNode.lines || [];
+            const line = lines[lineIndex];
+            if (line) {
+                document.getElementById('reader-text').textContent = substitutePlaceholders(line.text);
+                document.getElementById('reader-hint').textContent = (lineIndex < lines.length - 1) ? '▶' : (hasMoreAfterLines() ? '▶' : '✓');
+            }
+            return;
+        }
+        const lines = currentNode.lines || [];
+        if (lineIndex < lines.length - 1) { lineIndex++; renderLine(); return; }
+        finishNode();
+    };
+
+    function finishNode() {
+        if (currentNode.isEnding) { showEnding(); return; }
+        if (currentNode.choices && currentNode.choices.length) { showChoices(); return; }
+        if (currentNode.nextNodeId) { loadNode(currentNode.nextNodeId); return; }
+        // Ни выбора, ни продолжения, ни концовки не задано — считаем сцену тупиковой концовкой без названия
+        showEnding();
+    }
+
+    function choiceCondOf(c) {
+        // requireCond — новый общий формат (сравнения); requireFlag — старый формат (просто булево имя), поддержан для совместимости
+        if (c.requireCond) return c.requireCond;
+        if (c.requireFlag) return { name: c.requireFlag, op: 'truthy' };
+        return null;
+    }
+    function choiceEffectsOf(c) {
+        if (c.effects && c.effects.length) return c.effects;
+        if (c.setFlag) return [{ op: 'set', name: c.setFlag, value: true }];
+        return [];
+    }
+
+    function showChoices() {
+        const vars = myVars();
+        const visibleChoices = (currentNode.choices || []).filter(c => evalCond(choiceCondOf(c), vars));
+        const box = document.getElementById('reader-choices');
+        box.style.display = 'flex';
+        if (!visibleChoices.length) {
+            // Все варианты скрыты условиями — не должно случаться при аккуратной настройке новеллы, но подстрахуемся
+            box.innerHTML = '<div style="color:rgba(255,255,255,.5);font-size:12px;">Нет доступных вариантов</div>';
+            return;
+        }
+        box.innerHTML = visibleChoices.map((c) => {
+            const realIndex = (currentNode.choices || []).indexOf(c);
+            return `<button class="reader-choice-btn" onclick="event.stopPropagation(); window.__pickChoice(${realIndex})">${escapeHtml(c.text || '...')}</button>`;
+        }).join('');
+        fireEvent('choiceShown', { choices: visibleChoices });
+    }
+
+    window.__pickChoice = function (i) {
+        const choice = (currentNode.choices || [])[i];
+        if (!choice || !choice.nextNodeId) return;
+        applyEffects(choiceEffectsOf(choice));
+        if (!isAdminPreview) {
+            update(ref(db), { ['novelStats/' + currentNovel.id + '/choices/' + currentNode.id + '/' + i]: increment(1) }).catch(() => {});
+        }
+        loadNode(choice.nextNodeId);
+    };
+
+    function showEnding() {
+        const endingKey = currentNode.id;
+        if (isAdminPreview) {
+            document.getElementById('reader-ending').style.display = 'flex';
+            document.getElementById('ending-name').textContent = (currentNode.endingName || 'Новелла завершена') + ' (предпросмотр, награда не выдаётся)';
+            document.getElementById('ending-reward').style.display = 'none';
+            return;
+        }
+        const already = !!((myProgress[currentNovel.id] || {}).completedEndings || {})[endingKey];
+        document.getElementById('reader-ending').style.display = 'flex';
+        document.getElementById('ending-name').textContent = currentNode.endingName || 'Новелла завершена';
+        const rewardEl = document.getElementById('ending-reward');
+        if (already) {
+            rewardEl.style.display = 'none';
+        } else {
+            update(ref(db), { ['novelStats/' + currentNovel.id + '/endings/' + endingKey]: increment(1) }).catch(() => {});
+            const parts = [];
+            if (currentNode.endingRewardCoins) parts.push(`🪙 ${currentNode.endingRewardCoins}`);
+            if (currentNode.endingRewardCardId && currentNode.endingRewardCardCount) parts.push(`🃏 ×${currentNode.endingRewardCardCount}`);
+            if (parts.length) {
+                rewardEl.style.display = 'block';
+                rewardEl.textContent = 'Награда за новую концовку: ' + parts.join(' · ');
+                const updates = { ['users/' + myId + '/novelProgress/' + currentNovel.id + '/completedEndings/' + endingKey]: true };
+                if (currentNode.endingRewardCoins) updates['users/' + myId + '/coins'] = increment(currentNode.endingRewardCoins);
+                if (currentNode.endingRewardCardId && currentNode.endingRewardCardCount) {
+                    updates['users/' + myId + '/cardCollection/' + currentNode.endingRewardCardId] = increment(currentNode.endingRewardCardCount);
+                }
+                update(ref(db), updates).catch(() => {});
+            } else {
+                rewardEl.style.display = 'none';
+                set(ref(db, 'users/' + myId + '/novelProgress/' + currentNovel.id + '/completedEndings/' + endingKey), true).catch(() => {});
+            }
+        }
+    }
+</script>
+</body>
+</html>

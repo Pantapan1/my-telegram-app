@@ -76,6 +76,8 @@ exports.notifyNewPost = onValueCreated(
 );
 
 // === Новое сообщение в чате/группе — уведомляем всех участников, кроме отправителя ===
+// Если в сообщении есть упоминания (message.mentions — массив uid), упомянутые
+// получают отдельный текст-«пинг» вместо обычного уведомления о сообщении.
 exports.notifyNewMessage = onValueCreated(
   { ref: "/chats/{chatId}/messages/{messageId}", secrets: [BOT_TOKEN] },
   async (event) => {
@@ -89,13 +91,46 @@ exports.notifyNewMessage = onValueCreated(
 
     const token = BOT_TOKEN.value();
     const users = await getNotifiableUsers();
+    const mentionedIds = new Set(Array.isArray(message.mentions) ? message.mentions : []);
+    const chatName = chat.name ? `«${chat.name}»` : "чате";
 
     const recipientIds = Object.keys(chat.participants).filter((uid) => uid !== message.senderId);
     const jobs = recipientIds
       .filter((uid) => users[uid])
       .map((uid) => {
         const preview = message.sticker ? "🖼 стикер" : truncate(message.text, 200);
-        return sendTelegram(token, users[uid].telegramId, `💬 ${message.senderName || "Сообщение"}: ${preview}`);
+        const text = mentionedIds.has(uid)
+          ? `🔔 ${message.senderName || "Кто-то"} упомянул(а) вас в ${chatName}: ${preview}`
+          : `💬 ${message.senderName || "Сообщение"}: ${preview}`;
+        return sendTelegram(token, users[uid].telegramId, text);
+      });
+
+    await Promise.all(jobs);
+  }
+);
+
+// === Новый пост в вики чата/группы (раздел "Дроп") — уведомляем участников, кроме автора ===
+exports.notifyNewWikiPost = onValueCreated(
+  { ref: "/chats/{chatId}/wiki/posts/{postId}", secrets: [BOT_TOKEN] },
+  async (event) => {
+    const post = event.data.val();
+    if (!post) return;
+
+    const chatId = event.params.chatId;
+    const chatSnap = await db.ref(`chats/${chatId}`).get();
+    const chat = chatSnap.val();
+    if (!chat || !chat.participants) return;
+
+    const token = BOT_TOKEN.value();
+    const users = await getNotifiableUsers();
+    const chatName = chat.name ? `«${chat.name}»` : "группы";
+
+    const recipientIds = Object.keys(chat.participants).filter((uid) => uid !== post.authorId);
+    const jobs = recipientIds
+      .filter((uid) => users[uid])
+      .map((uid) => {
+        const preview = truncate(post.title || post.text, 200);
+        return sendTelegram(token, users[uid].telegramId, `📦 Новый пост в вики ${chatName}\n${preview}`);
       });
 
     await Promise.all(jobs);

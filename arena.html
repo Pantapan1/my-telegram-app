@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Арена</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    html, body {
+        width: 100%; height: 100%; overflow: hidden; background: #0d0f14;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        touch-action: none; overscroll-behavior: none;
+    }
+    #game-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: #1b2b1e; }
+
+    /* ===== HUD ===== */
+    #hud-top {
+        position: fixed; top: 0; left: 0; right: 0; padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+        display: flex; align-items: center; justify-content: space-between; z-index: 10;
+        background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0));
+        pointer-events: none;
+    }
+    #hud-back {
+        width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.2);
+        color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; pointer-events: auto;
+    }
+    #hud-kills { color: #fff; font-weight: 800; font-size: 14px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+    #hud-wave { color: #ffd76a; font-weight: 800; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+
+    #hud-hpbar-wrap {
+        position: fixed; top: max(52px, calc(env(safe-area-inset-top) + 52px)); left: 14px; right: 14px; z-index: 10;
+        pointer-events: none;
+    }
+    #hud-hpbar-outer { height: 14px; border-radius: 8px; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25); overflow: hidden; }
+    #hud-hpbar-inner { height: 100%; width: 100%; background: linear-gradient(90deg, #ff5f5f, #ff8a3d); transition: width .15s ease; }
+    #hud-hp-text { text-align: center; font-size: 10px; color: #fff; font-weight: 700; margin-top: 2px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+
+    /* ===== Джойстики ===== */
+    .joy-zone { position: fixed; bottom: 0; width: 45%; height: 45%; z-index: 15; }
+    #joy-move-zone { left: 0; }
+    #joy-fire-zone { right: 0; }
+    .joy-base {
+        position: absolute; width: 96px; height: 96px; border-radius: 50%;
+        background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.25);
+        display: none; align-items: center; justify-content: center;
+    }
+    .joy-stick {
+        width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.5);
+        border: 2px solid rgba(255,255,255,.7);
+    }
+    #joy-fire-zone .joy-base { border-color: rgba(255,90,90,.5); background: rgba(255,90,90,.1); }
+    #joy-fire-zone .joy-stick { background: rgba(255,110,110,.65); border-color: rgba(255,140,140,.8); }
+
+    /* ===== Экраны результата ===== */
+    .arena-overlay-screen {
+        position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center;
+        background: rgba(5,8,12,.82); flex-direction: column; gap: 14px; text-align: center; padding: 24px;
+    }
+    .arena-overlay-screen.active { display: flex; }
+    .arena-result-title { font-size: 26px; font-weight: 900; color: #fff; }
+    .arena-result-sub { font-size: 14px; color: rgba(255,255,255,.7); font-weight: 600; }
+    .arena-btn {
+        margin-top: 8px; padding: 13px 32px; border-radius: 14px; border: none; font-size: 15px; font-weight: 800;
+        background: linear-gradient(135deg, #ffb238, #ed8f03); color: #2a1900; box-shadow: 0 4px 14px rgba(237,143,3,.4);
+    }
+    .arena-btn.secondary { background: rgba(255,255,255,.12); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,.25); }
+
+    #arena-loading {
+        position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+        background: #0d0f14; color: #fff; font-weight: 700; font-size: 14px; flex-direction: column; gap: 10px;
+    }
+    #arena-no-session {
+        position: fixed; inset: 0; z-index: 61; display: none; align-items: center; justify-content: center;
+        background: #0d0f14; color: rgba(255,255,255,.7); font-size: 14px; text-align: center; padding: 30px;
+    }
+
+    /* ===== Кнопка способности ===== */
+    #ability-btn {
+        position: fixed; bottom: 26%; left: 50%; transform: translateX(-50%); z-index: 16;
+        width: 66px; height: 66px; border-radius: 50%; background: rgba(120,60,220,.35);
+        border: 2px solid rgba(190,140,255,.7); display: none; align-items: center; justify-content: center;
+        font-size: 26px; color: #fff; overflow: hidden;
+    }
+    #ability-btn.ready { background: rgba(150,80,255,.55); box-shadow: 0 0 16px rgba(150,80,255,.6); }
+    #ability-cd-overlay {
+        position: absolute; inset: 0; background: rgba(0,0,0,.6);
+        transform: scaleY(0); transform-origin: top; pointer-events: none;
+    }
+    #ability-cd-text { position: absolute; font-size: 15px; font-weight: 800; color: #fff; z-index: 2; }
+
+    /* ===== Гир-кнопка админки ===== */
+    #admin-gear-btn {
+        position: fixed; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 45;
+        width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.15);
+        color: rgba(255,255,255,.55); font-size: 14px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== Экран выбора персонажа ===== */
+    #hero-select-screen {
+        position: fixed; inset: 0; z-index: 40; display: none; flex-direction: column;
+        background: linear-gradient(180deg, #171a24, #0d0f14); padding: max(20px, env(safe-area-inset-top)) 16px 20px;
+    }
+    #hero-select-screen.active { display: flex; }
+    .hs-title { color: #fff; font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+    .hs-sub { color: rgba(255,255,255,.5); font-size: 12px; margin-bottom: 16px; }
+    #hero-select-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .hero-card {
+        display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px;
+        background: rgba(255,255,255,.05); border: 2px solid transparent;
+    }
+    .hero-card.selected { border-color: #a970ff; background: rgba(169,112,255,.14); }
+    .hero-card-avatar {
+        width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; background-size: cover; background-position: center;
+        display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 18px;
+        border: 2px solid rgba(255,255,255,.2);
+    }
+    .hero-card-info { flex: 1; min-width: 0; }
+    .hero-card-name { color: #fff; font-weight: 800; font-size: 14px; }
+    .hero-card-stats { color: rgba(255,255,255,.55); font-size: 11px; margin-top: 2px; }
+    .hero-card-ability { color: #c9a4ff; font-size: 11px; font-weight: 700; margin-top: 2px; }
+    #hero-select-play-btn {
+        margin-top: 14px; padding: 15px; border-radius: 14px; border: none; font-size: 15px; font-weight: 900;
+        background: linear-gradient(135deg, #ffb238, #ed8f03); color: #2a1900;
+    }
+    #hero-select-play-btn:disabled { opacity: .4; }
+
+    /* ===== Админ-панель ===== */
+    #admin-panel-overlay {
+        position: fixed; inset: 0; z-index: 70; display: none; flex-direction: column;
+        background: #12141c; padding: max(16px, env(safe-area-inset-top)) 16px 20px;
+    }
+    #admin-panel-overlay.active { display: flex; }
+    .ap-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .ap-title { color: #fff; font-size: 18px; font-weight: 900; }
+    .ap-close-btn { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; border: none; font-size: 16px; }
+    #admin-panel-body { flex: 1; overflow-y: auto; }
+    .ap-input-label { color: rgba(255,255,255,.6); font-size: 12px; font-weight: 700; margin: 10px 0 4px; display: block; }
+    .ap-input {
+        width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15);
+        background: rgba(255,255,255,.06); color: #fff; font-size: 14px;
+    }
+    .ap-input::placeholder { color: rgba(255,255,255,.3); }
+    .ap-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ap-btn {
+        margin-top: 14px; padding: 13px; border-radius: 12px; border: none; font-size: 14px; font-weight: 800;
+        background: linear-gradient(135deg, #ffb238, #ed8f03); color: #2a1900; width: 100%;
+    }
+    .ap-btn.secondary { background: rgba(255,255,255,.1); color: #fff; }
+    .ap-hero-item {
+        display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px;
+        background: rgba(255,255,255,.05); margin-bottom: 8px;
+    }
+    .ap-hero-item-info { flex: 1; min-width: 0; color: #fff; }
+    .ap-hero-item-name { font-weight: 800; font-size: 13px; }
+    .ap-hero-item-sub { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+    .ap-icon-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,.12); color: #fff; font-size: 13px; }
+    .ap-icon-btn.danger { background: rgba(255,80,80,.25); }
+</style>
+</head>
+<body>
+
+<div id="arena-loading">⚔️ Загрузка арены...</div>
+<div id="arena-no-session">Сессия не найдена.<br>Открой это приложение через основной экран.</div>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="hud-top">
+    <div id="hud-back" onclick="window.arenaExit()">←</div>
+    <div id="hud-wave">Волна 1</div>
+    <div id="hud-kills">💀 0</div>
+</div>
+<div id="hud-hpbar-wrap">
+    <div id="hud-hpbar-outer"><div id="hud-hpbar-inner"></div></div>
+    <div id="hud-hp-text">100 / 100</div>
+</div>
+
+<div class="joy-zone" id="joy-move-zone"><div class="joy-base" id="joy-move-base"><div class="joy-stick" id="joy-move-stick"></div></div></div>
+<div class="joy-zone" id="joy-fire-zone"><div class="joy-base" id="joy-fire-base"><div class="joy-stick" id="joy-fire-stick"></div></div></div>
+<button id="ability-btn">✨<div id="ability-cd-overlay"></div><div id="ability-cd-text"></div></button>
+<div id="admin-gear-btn" onclick="window.arenaOpenAdmin()">⚙️</div>
+
+<div id="hero-select-screen">
+    <div class="hs-title">🎮 Выбери героя</div>
+    <div class="hs-sub">Каждый герой обладает уникальной способностью</div>
+    <div id="hero-select-list"></div>
+    <button id="hero-select-play-btn" disabled onclick="window.arenaStartWithHero()">В бой!</button>
+</div>
+
+<div id="admin-panel-overlay">
+    <div class="ap-header">
+        <div class="ap-title">⚙️ Админка Арены</div>
+        <button class="ap-close-btn" onclick="window.arenaCloseAdmin()">✕</button>
+    </div>
+    <div id="admin-panel-body"></div>
+</div>
+
+<div class="arena-overlay-screen" id="arena-victory-screen">
+    <div style="font-size:52px;">🏆</div>
+    <div class="arena-result-title">Победа!</div>
+    <div class="arena-result-sub" id="arena-victory-stats"></div>
+    <button class="arena-btn" onclick="window.arenaRestart()">Играть снова</button>
+    <button class="arena-btn secondary" onclick="window.arenaExit()">Выйти</button>
+</div>
+
+<div class="arena-overlay-screen" id="arena-defeat-screen">
+    <div style="font-size:52px;">💀</div>
+    <div class="arena-result-title">Поражение</div>
+    <div class="arena-result-sub" id="arena-defeat-stats"></div>
+    <button class="arena-btn" onclick="window.arenaRestart()">Попробовать снова</button>
+    <button class="arena-btn secondary" onclick="window.arenaExit()">Выйти</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getDatabase, ref, get, update, increment, onValue, set, push, remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
+    authDomain: "book-2b50d.firebaseapp.com",
+    databaseURL: "https://book-2b50d-default-rtdb.firebaseio.com",
+    projectId: "book-2b50d",
+    messagingSenderId: "461145405797",
+    appId: "1:461145405797:web:ca65bb4b7f457d6b25098c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===================== СЕССИЯ (тот же принцип, что и в остальных подстраницах) =====================
+const params = new URLSearchParams(window.location.search);
+let myId = params.get('uid');
+let myName = params.get('name');
+if (!myId && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    myId = String(tg.initDataUnsafe.user.id);
+    myName = [tg.initDataUnsafe.user.first_name, tg.initDataUnsafe.user.last_name].filter(Boolean).join(' ');
+}
+if (!myId) {
+    try {
+        const stored = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
+        if (stored) { myId = stored.id; myName = stored.name; }
+    } catch (e) {}
+}
+
+function goBackToApp() {
+    const q = `?uid=${encodeURIComponent(myId || '')}&name=${encodeURIComponent(myName || '')}`;
+    const dir = window.location.pathname.replace(/[^/]*$/, '').replace(/\/{2,}/g, '/');
+    window.location.href = window.location.origin + dir + 'app.html' + q;
+}
+window.arenaExit = function () { goBackToApp(); };
+
+// ===================== ГЕРОИ (данные из админки + герой по умолчанию) =====================
+const DEFAULT_HERO = {
+    id: 'default', name: 'Новобранец', color: '#3fa9f5', textureUrl: '',
+    maxHp: 100, speed: 260, bulletDamage: 12, fireCooldown: 0.22, bulletSpeed: 620, radius: 22,
+    abilityType: 'dash', abilityCooldown: 4, abilityParam1: 180, abilityParam2: 0,
+};
+const ABILITY_LABELS = { none: 'Нет способности', dash: 'Рывок', shield: 'Щит (неуязвимость)', heal: 'Лечение', speedboost: 'Ускорение', blast: 'Взрыв по area' };
+const ABILITY_PARAM_LABELS = {
+    none: [null, null],
+    dash: ['Дистанция рывка (px)', null],
+    shield: ['Длительность щита (сек)', null],
+    heal: ['Восстанавливаемое HP', null],
+    speedboost: ['Длительность ускорения (сек)', 'Множитель скорости (напр. 1.6)'],
+    blast: ['Радиус взрыва (px)', 'Урон взрыва'],
+};
+
+function escapeHtmlArena(str) {
+    return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+let heroesData = [DEFAULT_HERO];
+let currentHero = null;
+let selectedHeroForStart = null;
+let resetGameRef = null;
+let arenaEngineStarted = false;
+let arenaPaused = false; // пока открыта админ-панель, игровой цикл не обновляется
+
+function renderHeroSelectList() {
+    const el = document.getElementById('hero-select-list');
+    if (!el) return;
+    el.innerHTML = heroesData.map(h => `
+        <div class="hero-card ${selectedHeroForStart && selectedHeroForStart.id === h.id ? 'selected' : ''}" onclick="window.arenaPickHero('${h.id}')">
+            <div class="hero-card-avatar" style="${h.textureUrl ? `background-image:url('${h.textureUrl}');` : `background:${h.color || '#3fa9f5'};`}">${h.textureUrl ? '' : escapeHtmlArena((h.name || '?').charAt(0).toUpperCase())}</div>
+            <div class="hero-card-info">
+                <div class="hero-card-name">${escapeHtmlArena(h.name || 'Герой')}</div>
+                <div class="hero-card-stats">❤️ ${h.maxHp || 100} · 🏃 ${h.speed || 260} · ⚔️ ${h.bulletDamage || 12}</div>
+                ${h.abilityType && h.abilityType !== 'none' ? `<div class="hero-card-ability">✨ ${ABILITY_LABELS[h.abilityType] || h.abilityType}</div>` : ''}
+            </div>
+        </div>`).join('');
+}
+window.arenaPickHero = function (id) {
+    selectedHeroForStart = heroesData.find(h => h.id === id) || null;
+    renderHeroSelectList();
+    document.getElementById('hero-select-play-btn').disabled = !selectedHeroForStart;
+};
+window.arenaStartWithHero = function () {
+    if (!selectedHeroForStart) return;
+    currentHero = selectedHeroForStart;
+    document.getElementById('hero-select-screen').classList.remove('active');
+    if (!arenaEngineStarted) {
+        arenaEngineStarted = true;
+        initArena();
+    }
+    if (resetGameRef) resetGameRef();
+};
+
+// ===================== АДМИН-ПАНЕЛЬ АРЕНЫ =====================
+window.arenaOpenAdmin = function () {
+    const pwd = prompt('Пароль администратора:');
+    if (pwd === null) return;
+    if (pwd !== 'admin123') { alert('Неверный пароль'); return; }
+    document.getElementById('admin-panel-overlay').classList.add('active');
+    arenaPaused = true;
+    renderAdminHeroList();
+};
+window.arenaCloseAdmin = function () {
+    document.getElementById('admin-panel-overlay').classList.remove('active');
+    arenaPaused = false;
+};
+
+function renderAdminHeroList() {
+    const el = document.getElementById('admin-panel-body');
+    if (!el) return;
+    const realHeroes = heroesData.filter(h => h.id !== 'default');
+    el.innerHTML = `
+        <button class="ap-btn" onclick="window.arenaShowHeroForm(null)">+ Новый герой</button>
+        ${realHeroes.length ? realHeroes.map(h => `
+        <div class="ap-hero-item">
+            <div class="hero-card-avatar" style="width:40px;height:40px;font-size:14px;${h.textureUrl ? `background-image:url('${h.textureUrl}');background-size:cover;` : `background:${h.color || '#3fa9f5'};`}">${h.textureUrl ? '' : escapeHtmlArena((h.name || '?').charAt(0).toUpperCase())}</div>
+            <div class="ap-hero-item-info">
+                <div class="ap-hero-item-name">${escapeHtmlArena(h.name || 'Герой')}</div>
+                <div class="ap-hero-item-sub">❤️${h.maxHp || 100} 🏃${h.speed || 260} ⚔️${h.bulletDamage || 12} · ✨ ${ABILITY_LABELS[h.abilityType || 'none']}</div>
+            </div>
+            <button class="ap-icon-btn" onclick="window.arenaShowHeroForm('${h.id}')">✏️</button>
+            <button class="ap-icon-btn danger" onclick="window.arenaDeleteHero('${h.id}')">🗑</button>
+        </div>`).join('') : '<div style="color:rgba(255,255,255,.4);font-size:13px;padding:20px 0;text-align:center;">Пока нет ни одного своего героя — игроки видят только тестового «Новобранца».</div>'}
+    `;
+}
+window.arenaShowHeroList = function () { renderAdminHeroList(); };
+
+function adminHeroFormHtml(hero) {
+    const h = hero || {};
+    return `
+        <label class="ap-input-label">Имя героя</label>
+        <input class="ap-input" id="ap-h-name" value="${h.name ? escapeHtmlArena(h.name) : ''}" placeholder="Например: Разведчик">
+        <label class="ap-input-label">Цвет (если нет текстуры)</label>
+        <input class="ap-input" id="ap-h-color" type="color" value="${h.color || '#3fa9f5'}">
+        <label class="ap-input-label">Текстура — ссылка на картинку (необязательно)</label>
+        <input class="ap-input" id="ap-h-texture" value="${h.textureUrl || ''}" placeholder="https://...">
+        <label class="ap-input-label">Порядок в списке</label>
+        <input class="ap-input" id="ap-h-order" type="number" value="${h.order ?? 0}">
+        <div class="ap-row2">
+            <div><label class="ap-input-label">Здоровье</label><input class="ap-input" id="ap-h-hp" type="number" value="${h.maxHp || 100}"></div>
+            <div><label class="ap-input-label">Скорость</label><input class="ap-input" id="ap-h-speed" type="number" value="${h.speed || 260}"></div>
+        </div>
+        <div class="ap-row2">
+            <div><label class="ap-input-label">Урон выстрела</label><input class="ap-input" id="ap-h-dmg" type="number" value="${h.bulletDamage || 12}"></div>
+            <div><label class="ap-input-label">Задержка стрельбы, сек</label><input class="ap-input" id="ap-h-firecd" type="number" step="0.01" value="${h.fireCooldown || 0.22}"></div>
+        </div>
+        <div class="ap-row2">
+            <div><label class="ap-input-label">Скорость пули</label><input class="ap-input" id="ap-h-bulletspeed" type="number" value="${h.bulletSpeed || 620}"></div>
+            <div><label class="ap-input-label">Радиус героя</label><input class="ap-input" id="ap-h-radius" type="number" value="${h.radius || 22}"></div>
+        </div>
+        <label class="ap-input-label">Уникальная способность</label>
+        <select class="ap-input" id="ap-h-ability" onchange="window.arenaAbilityTypeChanged()">
+            ${Object.keys(ABILITY_LABELS).map(k => `<option value="${k}" ${(h.abilityType || 'none') === k ? 'selected' : ''}>${ABILITY_LABELS[k]}</option>`).join('')}
+        </select>
+        <label class="ap-input-label">Кулдаун способности, сек</label>
+        <input class="ap-input" id="ap-h-abilitycd" type="number" value="${h.abilityCooldown || 5}">
+        <label class="ap-input-label" id="ap-h-param1-label">Параметр 1</label>
+        <input class="ap-input" id="ap-h-param1" type="number" step="0.1" value="${h.abilityParam1 ?? 0}">
+        <label class="ap-input-label" id="ap-h-param2-label">Параметр 2</label>
+        <input class="ap-input" id="ap-h-param2" type="number" step="0.1" value="${h.abilityParam2 ?? 0}">
+        <button class="ap-btn" onclick="window.arenaSaveHero('${hero ? hero.id : ''}')">${hero ? 'Сохранить изменения' : 'Создать героя'}</button>
+        <button class="ap-btn secondary" onclick="window.arenaShowHeroList()">← К списку героев</button>
+    `;
+}
+window.arenaShowHeroForm = function (id) {
+    const hero = id ? heroesData.find(h => h.id === id) : null;
+    document.getElementById('admin-panel-body').innerHTML = adminHeroFormHtml(hero);
+    window.arenaAbilityTypeChanged();
+};
+window.arenaAbilityTypeChanged = function () {
+    const type = document.getElementById('ap-h-ability').value;
+    const labels = ABILITY_PARAM_LABELS[type] || [null, null];
+    const l1 = document.getElementById('ap-h-param1-label'), l2 = document.getElementById('ap-h-param2-label');
+    const i1 = document.getElementById('ap-h-param1'), i2 = document.getElementById('ap-h-param2');
+    if (labels[0]) { l1.textContent = labels[0]; l1.style.display = ''; i1.style.display = ''; } else { l1.style.display = 'none'; i1.style.display = 'none'; }
+    if (labels[1]) { l2.textContent = labels[1]; l2.style.display = ''; i2.style.display = ''; } else { l2.style.display = 'none'; i2.style.display = 'none'; }
+};
+window.arenaSaveHero = function (id) {
+    const data = {
+        name: document.getElementById('ap-h-name').value.trim() || 'Герой',
+        color: document.getElementById('ap-h-color').value || '#3fa9f5',
+        textureUrl: document.getElementById('ap-h-texture').value.trim(),
+        order: parseInt(document.getElementById('ap-h-order').value, 10) || 0,
+        maxHp: parseFloat(document.getElementById('ap-h-hp').value) || 100,
+        speed: parseFloat(document.getElementById('ap-h-speed').value) || 260,
+        bulletDamage: parseFloat(document.getElementById('ap-h-dmg').value) || 12,
+        fireCooldown: parseFloat(document.getElementById('ap-h-firecd').value) || 0.22,
+        bulletSpeed: parseFloat(document.getElementById('ap-h-bulletspeed').value) || 620,
+        radius: parseFloat(document.getElementById('ap-h-radius').value) || 22,
+        abilityType: document.getElementById('ap-h-ability').value,
+        abilityCooldown: parseFloat(document.getElementById('ap-h-abilitycd').value) || 5,
+        abilityParam1: parseFloat(document.getElementById('ap-h-param1').value) || 0,
+        abilityParam2: parseFloat(document.getElementById('ap-h-param2').value) || 0,
+    };
+    if (!data.name) return alert('Укажи имя героя');
+    const p = id ? update(ref(db, 'arenaHeroes/' + id), data) : push(ref(db, 'arenaHeroes'), data);
+    p.then(() => window.arenaShowHeroList()).catch(err => alert('Ошибка: ' + err.message));
+};
+window.arenaDeleteHero = function (id) {
+    if (!confirm('Удалить этого героя?')) return;
+    remove(ref(db, 'arenaHeroes/' + id)).then(() => window.arenaShowHeroList()).catch(err => alert('Ошибка: ' + err.message));
+};
+
+onValue(ref(db, 'arenaHeroes'), (snap) => {
+    const data = snap.val();
+    const fromDb = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+    heroesData = fromDb.length ? fromDb : [DEFAULT_HERO];
+    renderHeroSelectList();
+    if (document.getElementById('admin-panel-overlay').classList.contains('active') && document.getElementById('admin-panel-body').querySelector('.ap-hero-item, [style*="Пока нет"]')) {
+        renderAdminHeroList();
+    }
+});
+
+if (!myId) {
+    document.getElementById('arena-loading').style.display = 'none';
+    document.getElementById('arena-no-session').style.display = 'flex';
+} else {
+    document.getElementById('arena-loading').style.display = 'none';
+    document.getElementById('hero-select-screen').classList.add('active');
+    renderHeroSelectList();
+}
+
+// ===================== ИГРОВОЙ ДВИЖОК =====================
+function initArena() {
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+    function resize() {
+        W = window.innerWidth; H = window.innerHeight;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ---- Мир и карта ----
+    const WORLD_W = 1700, WORLD_H = 1700;
+    const WALLS = [
+        { x: 0, y: 0, w: WORLD_W, h: 24 },
+        { x: 0, y: WORLD_H - 24, w: WORLD_W, h: 24 },
+        { x: 0, y: 0, w: 24, h: WORLD_H },
+        { x: WORLD_W - 24, y: 0, w: 24, h: WORLD_H },
+        { x: 380, y: 380, w: 160, h: 160 },
+        { x: WORLD_W - 540, y: 380, w: 160, h: 160 },
+        { x: 380, y: WORLD_H - 540, w: 160, h: 160 },
+        { x: WORLD_W - 540, y: WORLD_H - 540, w: 160, h: 160 },
+        { x: WORLD_W / 2 - 90, y: WORLD_H / 2 - 90, w: 180, h: 180 },
+    ];
+
+    function circleRectPush(x, y, r, rect) {
+        const cx = Math.max(rect.x, Math.min(x, rect.x + rect.w));
+        const cy = Math.max(rect.y, Math.min(y, rect.y + rect.h));
+        const dx = x - cx, dy = y - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < r && dist > 0.0001) {
+            const pushDist = (r - dist);
+            return { x: x + (dx / dist) * pushDist, y: y + (dy / dist) * pushDist };
+        }
+        if (dist <= 0.0001) return { x: x + r, y: y }; // редкий край: центр внутри стены
+        return null;
+    }
+
+    function resolveWalls(x, y, r) {
+        for (const w of WALLS) {
+            const res = circleRectPush(x, y, r, w);
+            if (res) { x = res.x; y = res.y; }
+        }
+        return { x, y };
+    }
+
+    function segmentHitsWall(x1, y1, x2, y2) {
+        // грубая, но достаточная проверка: сэмплируем отрезок и проверяем точки внутри стен
+        const steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 18);
+        for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const px = x1 + (x2 - x1) * t, py = y1 + (y2 - y1) * t;
+            for (const w of WALLS) {
+                if (px >= w.x && px <= w.x + w.w && py >= w.y && py <= w.y + w.h) return true;
+            }
+        }
+        return false;
+    }
+
+    // ---- Сущности ----
+    // Статы игрока теперь берутся из currentHero (выбран на экране героев или создан в админке),
+    // а не захардкожены — так админка может влиять на баланс.
+    const BOT_RADIUS = 20, BOT_SPEED = 165, BOT_MAX_HP = 60;
+    const PROJ_SPEED = 620, PROJ_RADIUS = 6, PROJ_BOT_DMG = 8;
+
+    let player, bots, projectiles, particles, kills, wave, gameOver, elapsed, gameActive = false;
+
+    function spawnBot(atX, atY) {
+        return {
+            x: atX, y: atY, hp: BOT_MAX_HP, maxHp: BOT_MAX_HP, r: BOT_RADIUS,
+            fireCd: Math.random() * 1.2, alive: true, hitFlash: 0,
+        };
+    }
+
+    function resetGame() {
+        const hero = currentHero || DEFAULT_HERO;
+        player = {
+            x: WORLD_W / 2, y: WORLD_H / 2 + 300, hp: hero.maxHp || 100, maxHp: hero.maxHp || 100,
+            r: hero.radius || 22, hitFlash: 0, fireTimer: 0, aimX: 1, aimY: 0,
+            abilityCd: 0, shield: 0, invuln: 0, speedBoost: 0, speedBoostMult: 1,
+        };
+        bots = [];
+        projectiles = [];
+        particles = [];
+        kills = 0;
+        wave = 1;
+        gameOver = false;
+        gameActive = true;
+        elapsed = 0;
+        spawnWave();
+        updateHud();
+        updateAbilityUI();
+        document.getElementById('arena-victory-screen').classList.remove('active');
+        document.getElementById('arena-defeat-screen').classList.remove('active');
+    }
+
+    function spawnWave() {
+        const count = Math.min(2 + wave, 6);
+        const corners = [
+            { x: 140, y: 140 }, { x: WORLD_W - 140, y: 140 },
+            { x: 140, y: WORLD_H - 140 }, { x: WORLD_W - 140, y: WORLD_H - 140 },
+            { x: WORLD_W / 2, y: 140 }, { x: WORLD_W / 2, y: WORLD_H - 140 },
+        ];
+        for (let i = 0; i < count; i++) {
+            const c = corners[i % corners.length];
+            bots.push(spawnBot(c.x + (Math.random() * 60 - 30), c.y + (Math.random() * 60 - 30)));
+        }
+        document.getElementById('hud-wave').textContent = 'Волна ' + wave;
+    }
+
+    function updateHud() {
+        const pct = Math.max(0, player.hp / player.maxHp * 100);
+        document.getElementById('hud-hpbar-inner').style.width = pct + '%';
+        document.getElementById('hud-hp-text').textContent = Math.max(0, Math.ceil(player.hp)) + ' / ' + player.maxHp;
+        document.getElementById('hud-kills').textContent = '💀 ' + kills;
+    }
+
+    // ---- Уникальная способность героя ----
+    function useAbility() {
+        const hero = currentHero || DEFAULT_HERO;
+        if (!hero.abilityType || hero.abilityType === 'none') return;
+        if (!player || gameOver || !gameActive) return;
+        if ((player.abilityCd || 0) > 0.05) return; // ещё не восстановилась
+
+        const t = hero.abilityType;
+        const p1 = hero.abilityParam1 || 0;
+        const p2 = hero.abilityParam2 || 0;
+
+        if (t === 'dash') {
+            let dirX = player.aimX, dirY = player.aimY;
+            if (!dirX && !dirY) { dirX = 1; dirY = 0; }
+            const len = Math.hypot(dirX, dirY) || 1;
+            const nx = player.x + (dirX / len) * (p1 || 180);
+            const ny = player.y + (dirY / len) * (p1 || 180);
+            const res = resolveWalls(nx, ny, player.r);
+            player.x = res.x; player.y = res.y;
+            player.invuln = 0.25;
+            for (let i = 0; i < 8; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                particles.push({ x: player.x, y: player.y, vx: Math.cos(ang) * 90, vy: Math.sin(ang) * 90, life: 0.3, color: '#8ecdff' });
+            }
+        } else if (t === 'shield') {
+            player.shield = p1 || 2;
+        } else if (t === 'heal') {
+            player.hp = Math.min(player.maxHp, player.hp + (p1 || 20));
+        } else if (t === 'speedboost') {
+            player.speedBoost = p1 || 3;
+            player.speedBoostMult = p2 || 1.6;
+        } else if (t === 'blast') {
+            const radius = p1 || 150, dmg = p2 || 20;
+            for (const b of bots) {
+                if (!b.alive) continue;
+                if (Math.hypot(b.x - player.x, b.y - player.y) <= radius) {
+                    b.hp -= dmg; b.hitFlash = 0.15;
+                    spawnHitParticles(b.x, b.y, '#ff9f4a');
+                    if (b.hp <= 0) { b.alive = false; kills++; }
+                }
+            }
+            for (let i = 0; i < 14; i++) {
+                const ang = (i / 14) * Math.PI * 2;
+                particles.push({ x: player.x + Math.cos(ang) * radius, y: player.y + Math.sin(ang) * radius, vx: 0, vy: 0, life: 0.25, color: '#ff9f4a' });
+            }
+        }
+
+        player.abilityCd = hero.abilityCooldown || 5;
+        updateAbilityUI();
+    }
+
+    function updateAbilityUI() {
+        const hero = currentHero || DEFAULT_HERO;
+        const btn = document.getElementById('ability-btn');
+        if (!hero.abilityType || hero.abilityType === 'none') {
+            btn.style.display = 'none';
+            return;
+        }
+        btn.style.display = 'flex';
+        const cd = hero.abilityCooldown || 5;
+        const remaining = Math.max(0, (player && player.abilityCd) || 0);
+        const overlay = document.getElementById('ability-cd-overlay');
+        const text = document.getElementById('ability-cd-text');
+        if (remaining > 0.05) {
+            btn.classList.remove('ready');
+            overlay.style.transformOrigin = 'top';
+            overlay.style.transform = `scaleY(${Math.min(1, remaining / cd)})`;
+            text.textContent = remaining.toFixed(1);
+        } else {
+            btn.classList.add('ready');
+            overlay.style.transform = 'scaleY(0)';
+            text.textContent = '';
+        }
+    }
+
+    document.getElementById('ability-btn').addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        useAbility();
+    });
+
+    // ---- Джойстики (управление касанием) ----
+    function makeJoystick(zoneId, baseId, stickId) {
+        const zone = document.getElementById(zoneId);
+        const base = document.getElementById(baseId);
+        const stick = document.getElementById(stickId);
+        const state = { active: false, dx: 0, dy: 0, mag: 0, pointerId: null };
+        const MAX_R = 40;
+
+        function place(clientX, clientY) {
+            const rect = zone.getBoundingClientRect();
+            base.style.left = (clientX - rect.left - 48) + 'px';
+            base.style.top = (clientY - rect.top - 48) + 'px';
+            base.style.display = 'flex';
+        }
+        function move(clientX, clientY) {
+            const baseRect = base.getBoundingClientRect();
+            const cx = baseRect.left + baseRect.width / 2;
+            const cy = baseRect.top + baseRect.height / 2;
+            let dx = clientX - cx, dy = clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            const clamped = Math.min(dist, MAX_R);
+            const angle = Math.atan2(dy, dx);
+            const sx = Math.cos(angle) * clamped, sy = Math.sin(angle) * clamped;
+            stick.style.transform = `translate(${sx}px, ${sy}px)`;
+            state.dx = dist > 0.001 ? dx / dist : 0;
+            state.dy = dist > 0.001 ? dy / dist : 0;
+            state.mag = clamped / MAX_R;
+        }
+        function end() {
+            state.active = false; state.mag = 0; state.pointerId = null;
+            base.style.display = 'none';
+            stick.style.transform = 'translate(0,0)';
+        }
+
+        zone.addEventListener('pointerdown', (e) => {
+            if (state.active) return;
+            state.active = true; state.pointerId = e.pointerId;
+            place(e.clientX, e.clientY);
+            move(e.clientX, e.clientY);
+            zone.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        });
+        zone.addEventListener('pointermove', (e) => {
+            if (!state.active || e.pointerId !== state.pointerId) return;
+            move(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+            zone.addEventListener(evt, (e) => {
+                if (e.pointerId !== state.pointerId) return;
+                end();
+            });
+        });
+        return state;
+    }
+
+    const moveJoy = makeJoystick('joy-move-zone', 'joy-move-base', 'joy-move-stick');
+    const fireJoy = makeJoystick('joy-fire-zone', 'joy-fire-base', 'joy-fire-stick');
+
+    // ---- Стрельба ----
+    function shoot(fromX, fromY, dirX, dirY, owner) {
+        const len = Math.hypot(dirX, dirY) || 1;
+        projectiles.push({
+            x: fromX, y: fromY, vx: (dirX / len) * PROJ_SPEED, vy: (dirY / len) * PROJ_SPEED,
+            owner, life: 1.1, r: PROJ_RADIUS,
+        });
+    }
+
+    function spawnHitParticles(x, y, color) {
+        for (let i = 0; i < 6; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            particles.push({ x, y, vx: Math.cos(ang) * 140, vy: Math.sin(ang) * 140, life: 0.35, color });
+        }
+    }
+
+    // ---- Игровой цикл ----
+    let lastTs = 0;
+    function loop(ts) {
+        if (!lastTs) lastTs = ts;
+        let dt = (ts - lastTs) / 1000;
+        lastTs = ts;
+        dt = Math.min(dt, 0.05); // защита от скачков при сворачивании вкладки
+
+        if (gameActive && !gameOver && !arenaPaused) {
+            updateGame(dt);
+        }
+        if (gameActive) {
+            render();
+        } else {
+            ctx.fillStyle = '#0d0f14';
+            ctx.fillRect(0, 0, W, H);
+        }
+        requestAnimationFrame(loop);
+    }
+
+    function updateGame(dt) {
+        const hero = currentHero || DEFAULT_HERO;
+        elapsed += dt;
+
+        // Игрок: движение (с учётом временного ускорения от способности, если активно)
+        const moveSpeed = (hero.speed || 260) * (player.speedBoost > 0 ? (player.speedBoostMult || 1.6) : 1);
+        if (moveJoy.mag > 0.05) {
+            player.x += moveJoy.dx * moveJoy.mag * moveSpeed * dt;
+            player.y += moveJoy.dy * moveJoy.mag * moveSpeed * dt;
+        }
+        const pRes = resolveWalls(player.x, player.y, player.r);
+        player.x = pRes.x; player.y = pRes.y;
+        player.x = Math.max(player.r + 24, Math.min(WORLD_W - player.r - 24, player.x));
+        player.y = Math.max(player.r + 24, Math.min(WORLD_H - player.r - 24, player.y));
+
+        // Игрок: прицел и стрельба
+        if (fireJoy.mag > 0.15) {
+            player.aimX = fireJoy.dx; player.aimY = fireJoy.dy;
+            player.fireTimer -= dt;
+            if (player.fireTimer <= 0) {
+                shoot(player.x, player.y, player.aimX, player.aimY, 'player');
+                player.fireTimer = hero.fireCooldown || 0.22;
+            }
+        }
+
+        // Способность: таймеры кулдауна и активных эффектов (щит/ускорение/неуязвимость от рывка)
+        if (player.abilityCd > 0) player.abilityCd -= dt;
+        if (player.shield > 0) player.shield -= dt;
+        if (player.invuln > 0) player.invuln -= dt;
+        if (player.speedBoost > 0) player.speedBoost -= dt;
+        if (player.hitFlash > 0) player.hitFlash -= dt;
+
+        // Боты: ИИ
+        for (const b of bots) {
+            if (!b.alive) continue;
+            const dx = player.x - b.x, dy = player.y - b.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const dirX = dx / dist, dirY = dy / dist;
+
+            if (dist > 260) {
+                b.x += dirX * BOT_SPEED * dt;
+                b.y += dirY * BOT_SPEED * dt;
+            } else if (dist < 160) {
+                b.x -= dirX * BOT_SPEED * 0.7 * dt;
+                b.y -= dirY * BOT_SPEED * 0.7 * dt;
+            } else {
+                // на комфортной дистанции — лёгкое кружение
+                b.x += -dirY * BOT_SPEED * 0.4 * dt;
+                b.y += dirX * BOT_SPEED * 0.4 * dt;
+            }
+            const bRes = resolveWalls(b.x, b.y, b.r);
+            b.x = bRes.x; b.y = bRes.y;
+            b.x = Math.max(b.r + 24, Math.min(WORLD_W - b.r - 24, b.x));
+            b.y = Math.max(b.r + 24, Math.min(WORLD_H - b.r - 24, b.y));
+
+            b.fireCd -= dt;
+            if (b.fireCd <= 0 && dist < 520 && !segmentHitsWall(b.x, b.y, player.x, player.y)) {
+                shoot(b.x, b.y, dirX, dirY, 'bot');
+                b.fireCd = 1.35 + Math.random() * 0.6;
+            }
+            if (b.hitFlash > 0) b.hitFlash -= dt;
+        }
+
+        // Снаряды
+        for (const p of projectiles) {
+            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        }
+        projectiles = projectiles.filter(p => {
+            if (p.life <= 0) return false;
+            if (p.x < 24 || p.x > WORLD_W - 24 || p.y < 24 || p.y > WORLD_H - 24) return false;
+            for (const w of WALLS) {
+                if (p.x >= w.x && p.x <= w.x + w.w && p.y >= w.y && p.y <= w.y + w.h) return false;
+            }
+            if (p.owner === 'player') {
+                for (const b of bots) {
+                    if (!b.alive) continue;
+                    if (Math.hypot(p.x - b.x, p.y - b.y) < b.r + p.r) {
+                        b.hp -= (hero.bulletDamage || 12); b.hitFlash = 0.15;
+                        spawnHitParticles(p.x, p.y, '#ffd76a');
+                        if (b.hp <= 0) { b.alive = false; kills++; }
+                        return false;
+                    }
+                }
+            } else {
+                if (Math.hypot(p.x - player.x, p.y - player.y) < player.r + p.r) {
+                    spawnHitParticles(p.x, p.y, '#ff6b6b');
+                    // Щит или неуязвимость от рывка (способность) — снаряд поглощается без урона
+                    if (player.shield <= 0 && player.invuln <= 0) {
+                        player.hp -= PROJ_BOT_DMG; player.hitFlash = 0.15;
+                    }
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        // Частицы
+        for (const pt of particles) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; }
+        particles = particles.filter(pt => pt.life > 0);
+
+        bots = bots.filter(b => b.alive);
+
+        updateHud();
+        updateAbilityUI();
+
+        if (player.hp <= 0 && !gameOver) {
+            gameOver = true;
+            document.getElementById('arena-defeat-stats').textContent = `Волна ${wave} · Убито ботов: ${kills}`;
+            document.getElementById('arena-defeat-screen').classList.add('active');
+            recordArenaResult(false);
+        } else if (bots.length === 0 && !gameOver) {
+            if (wave >= 3) {
+                gameOver = true;
+                document.getElementById('arena-victory-stats').textContent = `Волн пройдено: ${wave} · Убито ботов: ${kills}`;
+                document.getElementById('arena-victory-screen').classList.add('active');
+                recordArenaResult(true);
+            } else {
+                wave++;
+                spawnWave();
+            }
+        }
+    }
+
+    // ---- Отрисовка (камера следует за игроком) ----
+    function render() {
+        ctx.fillStyle = '#1b2b1e';
+        ctx.fillRect(0, 0, W, H);
+
+        const camX = Math.max(W / 2, Math.min(WORLD_W - W / 2, player.x));
+        const camY = Math.max(H / 2, Math.min(WORLD_H - H / 2, player.y));
+        ctx.save();
+        ctx.translate(W / 2 - camX, H / 2 - camY);
+
+        // Пол (лёгкая сетка для ощущения масштаба)
+        ctx.strokeStyle = 'rgba(255,255,255,.05)';
+        ctx.lineWidth = 1;
+        const gridStep = 100;
+        for (let x = 0; x <= WORLD_W; x += gridStep) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke();
+        }
+        for (let y = 0; y <= WORLD_H; y += gridStep) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke();
+        }
+
+        // Стены
+        ctx.fillStyle = '#3a3226';
+        for (const w of WALLS) ctx.fillRect(w.x, w.y, w.w, w.h);
+
+        // Частицы
+        for (const pt of particles) {
+            ctx.globalAlpha = Math.max(0, pt.life / 0.35);
+            ctx.fillStyle = pt.color;
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Боты
+        for (const b of bots) {
+            drawEntity(b.x, b.y, b.r, b.hitFlash > 0 ? '#ffffff' : '#e2483d', b.hp, b.maxHp);
+        }
+
+        // Игрок
+        {
+            const hero = currentHero || DEFAULT_HERO;
+            const flashed = player.hitFlash > 0;
+            drawHeroEntity(player.x, player.y, player.r, hero, flashed);
+            if (player.shield > 0) {
+                ctx.strokeStyle = 'rgba(90,180,255,.9)'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(player.x, player.y, player.r + 7, 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+        // указатель прицела
+        if (fireJoy.mag > 0.1) {
+            const ax = player.x + player.aimX * (player.r + 22);
+            const ay = player.y + player.aimY * (player.r + 22);
+            ctx.strokeStyle = 'rgba(255,120,120,.85)';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(ax, ay); ctx.stroke();
+        }
+
+        // Снаряды
+        for (const p of projectiles) {
+            ctx.fillStyle = p.owner === 'player' ? '#ffe27a' : '#ff6b6b';
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function drawEntity(x, y, r, color, hp, maxHp) {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 3; ctx.stroke();
+        if (hp !== null) {
+            const barW = r * 2.1;
+            ctx.fillStyle = 'rgba(0,0,0,.5)';
+            ctx.fillRect(x - barW / 2, y - r - 14, barW, 6);
+            ctx.fillStyle = '#ff5f5f';
+            ctx.fillRect(x - barW / 2, y - r - 14, barW * Math.max(0, hp / maxHp), 6);
+        }
+    }
+
+    // Отрисовка персонажа с учётом текстуры героя (картинка, настраиваемая в админке).
+    // Пока картинка не загрузилась (или её нет) — рисуем цветной круг как раньше.
+    const textureImgCache = {};
+    function getTextureImg(url) {
+        if (!textureImgCache[url]) {
+            const img = new Image();
+            img.src = url;
+            textureImgCache[url] = img;
+        }
+        return textureImgCache[url];
+    }
+    function drawHeroEntity(x, y, r, hero, flashed) {
+        const color = flashed ? '#ffffff' : (hero.color || '#3fa9f5');
+        if (hero.textureUrl) {
+            const img = getTextureImg(hero.textureUrl);
+            if (img.complete && img.naturalWidth) {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+                ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+                if (flashed) { ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(x - r, y - r, r * 2, r * 2); }
+                ctx.restore();
+                ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+                return;
+            }
+        }
+        drawEntity(x, y, r, color, null, null);
+    }
+
+    // ---- Награда за игру: небольшой бонус монет, атомарно и без риска дублирования ----
+    function recordArenaResult(won) {
+        if (!myId) return;
+        const amount = won ? (10 + wave * 5) : Math.min(kills * 2, 20);
+        if (amount <= 0) return;
+        update(ref(db, 'users/' + myId), { coins: increment(amount) }).catch(() => {});
+    }
+
+    window.arenaRestart = function () { resetGame(); };
+
+    resetGameRef = resetGame;
+    requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
