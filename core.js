@@ -243,25 +243,25 @@ function hideAppSplash() {
     setTimeout(() => splash.remove(), 500);
 }
 
+// Стандартный маскот "по умолчанию" — показывается на экране загрузки, пока в
+// settings/mascotUrl ничего не задано (или после нажатия "Сбросить на стандартный").
+const DEFAULT_MASCOT_URL = 'https://rolorry.wordpress.com/wp-content/uploads/2026/09/1789319463147.png';
+
 function applyMascotUrl(url) {
     state.mascotUrl = url || null;
     const img = document.getElementById('app-splash-mascot');
     const fallback = document.getElementById('app-splash-mascot-fallback');
     if (img && fallback) {
-        if (url) {
-            img.src = url;
-            img.classList.remove('hidden');
-            fallback.classList.add('hidden');
-        } else {
-            img.classList.add('hidden');
-            fallback.classList.remove('hidden');
-        }
+        img.src = url || DEFAULT_MASCOT_URL;
+        img.classList.remove('hidden');
+        fallback.classList.add('hidden');
     }
     const preview = document.getElementById('admin-mascot-preview');
     const emptyHint = document.getElementById('admin-mascot-empty-hint');
     if (preview && emptyHint) {
-        if (url) { preview.src = url; preview.style.display = ''; emptyHint.style.display = 'none'; }
-        else { preview.style.display = 'none'; emptyHint.style.display = ''; }
+        preview.src = url || DEFAULT_MASCOT_URL;
+        preview.style.display = '';
+        emptyHint.style.display = 'none';
     }
 }
 
