@@ -582,6 +582,14 @@ export function colorFor(str) {
         export function compressImage(file, maxDim = 1600, quality = 0.82) {
             return new Promise((resolve) => {
                 try {
+                    // PNG/WebP/GIF могут содержать прозрачность — если её пережать в JPEG,
+                    // альфа-канал потеряется и прозрачный фон станет сплошной заливкой.
+                    // Поэтому для таких форматов сохраняем результат тоже в PNG (без потерь,
+                    // quality на PNG не влияет), а в JPEG конвертируем только исходные JPEG/прочие.
+                    const hasAlphaFormat = /^image\/(png|webp|gif)$/i.test(file.type);
+                    const outMime = hasAlphaFormat ? 'image/png' : 'image/jpeg';
+                    const outExt = hasAlphaFormat ? '.png' : '.jpg';
+
                     const img = new Image();
                     const objectUrl = URL.createObjectURL(file);
                     img.onload = () => {
@@ -600,9 +608,9 @@ export function colorFor(str) {
                         ctx.drawImage(img, 0, 0, w, h);
                         canvas.toBlob((blob) => {
                             if (!blob) { resolve(file); return; }
-                            const compressed = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' });
+                            const compressed = new File([blob], file.name.replace(/\.\w+$/, outExt), { type: outMime });
                             resolve(compressed.size < file.size ? compressed : file);
-                        }, 'image/jpeg', quality);
+                        }, outMime, quality);
                     };
                     img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
                     img.src = objectUrl;
