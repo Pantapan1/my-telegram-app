@@ -984,6 +984,26 @@ export function colorFor(str) {
         }
 
         export function showNotification(title, body, tag) {
+            // Внутри собранного APK — свой путь: без тарифа Blaze серверные push (FCM) слать некому,
+            // поэтому используем @capacitor/local-notifications — приложение само кидает системное
+            // уведомление в шторку Android, пока оно живо в памяти (даже свёрнутое). Работает
+            // независимо от sr_notifications_enabled/браузерного Notification API, которые тут не
+            // применимы — единственная проверка: не дублировать, если вкладка и так открыта и видна.
+            const cap = window.Capacitor;
+            const LocalNotifications = cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.LocalNotifications;
+            if (LocalNotifications) {
+                if (document.visibilityState === 'visible' && document.hasFocus()) return;
+                LocalNotifications.schedule({
+                    notifications: [{
+                        title,
+                        body,
+                        id: Math.floor(Math.random() * 2147483647),
+                        schedule: { at: new Date(Date.now() + 100) }
+                    }]
+                }).catch((e) => console.error('LocalNotifications schedule error:', e));
+                return;
+            }
+
             if (!notificationsAllowed()) return;
             // Не шлём, если вкладка и так открыта и активна — человек и так всё видит
             if (document.visibilityState === 'visible' && document.hasFocus()) return;
