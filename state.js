@@ -45,6 +45,9 @@ export const state = {
   streakStore: _loadUserLocal('sr_streak', '{"count":0,"lastDate":null}'),
   lastSeenPostsCount: parseInt(localStorage.getItem('sr_last_seen_posts_count__u' + _localUid) || '0', 10),
   readerFontSize: parseInt(localStorage.getItem('sr_fontsize') || '18', 10),
+  // Ручной выбор языка перевода (кнопка "🌐 Перевести" в чате): 'ru' | 'en' | 'ko' | null.
+  // null — автоопределение по языку Telegram/браузера (нужно для тех, кто заходит не через Telegram).
+  translateLang: _loadUserLocal('sr_translate_lang', 'null'),
   chatLastRead: _loadUserLocal('sr_chat_last_read', '{}'),
   wikiLastRead: _loadUserLocal('sr_wiki_last_read', '{}'),
   currentPostId: null,

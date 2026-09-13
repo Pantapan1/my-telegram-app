@@ -1268,6 +1268,16 @@ export function colorFor(str) {
             setProfileMenuItemLabel(btn, on ? '🔊' : '🔇', on ? 'Звук: вкл' : 'Звук: выкл');
         }
 
+        // Ручной выбор языка перевода — нужен тем, кто заходит не через Telegram (там неоткуда
+        // автоматически узнать язык интерфейса пользователя, в отличие от Telegram.language_code).
+        const TRANSLATE_LANG_CYCLE = [null, 'ru', 'en', 'ko'];
+        const TRANSLATE_LANG_LABELS = { null: 'Авто', ru: 'Русский', en: 'English', ko: '한국어' };
+
+        export function renderTranslateLangToggle() {
+            const btn = document.getElementById('btn-toggle-translate-lang');
+            setProfileMenuItemLabel(btn, '🌐', 'Перевод: ' + TRANSLATE_LANG_LABELS[state.translateLang]);
+        }
+
         // Пункты компактного грид-меню профиля состоят из <span class="pmi-icon"> и <span class="pmi-label">;
         // эта функция обновляет их вместо textContent, чтобы не сломать вёрстку тайла.
         function setProfileMenuItemLabel(btn, icon, label) {
@@ -1291,6 +1301,15 @@ export function colorFor(str) {
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             renderSoundToggle();
             if (!enabled) playSound('coin'); // короткий тестовый звук, чтобы сразу услышать эффект от включения
+        };
+
+        document.getElementById('btn-toggle-translate-lang').onclick = function() {
+            const idx = TRANSLATE_LANG_CYCLE.indexOf(state.translateLang);
+            const next = TRANSLATE_LANG_CYCLE[(idx + 1) % TRANSLATE_LANG_CYCLE.length];
+            state.translateLang = next;
+            saveLocal('sr_translate_lang', next);
+            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            renderTranslateLangToggle();
         };
 
         document.getElementById('btn-toggle-notifications').onclick = function() {

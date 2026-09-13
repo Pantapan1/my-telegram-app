@@ -777,9 +777,10 @@ function copyMessageText(text) {
 // Ключ Google Translate хранится только на сервере — сюда попадает только уже готовый перевод.
 const TRANSLATE_FN_URL = 'https://europe-west1-book-2b50d.cloudfunctions.net/translateText';
 
-// Язык, на который переводим — берём из Telegram (у пользователя он уже настроен в самом Telegram),
-// а если недоступно — язык браузера. 'ru'/'en'/'uk' и т.д. — двухбуквенный код ISO 639-1.
+// Язык, на который переводим. Приоритет: ручной выбор в профиле (для тех, кто зашёл не через
+// Telegram — там неоткуда иначе узнать язык) → язык Telegram → язык браузера.
 function myInterfaceLang() {
+    if (state.translateLang) return state.translateLang;
     const raw = (state.tgUser && state.tgUser.language_code) || navigator.language || 'ru';
     return raw.slice(0, 2).toLowerCase();
 }
@@ -816,16 +817,30 @@ async function toggleMessageTranslation(chatId, m) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chatId, messageId: m.id, text: m.text, target: lang })
         });
+        if (!res.ok) {
+            // Разные коды — разные причины: не молчим об этом текстом "проверьте связь",
+            // а сразу говорим, что чинить (это не про интернет пользователя).
+            let serverMsg = '';
+            try { serverMsg = (await res.json()).error || ''; } catch (e) {}
+            if (res.status === 404) textEl.textContent = 'Функция перевода не задеплоена (404)';
+            else if (res.status === 500 || res.status === 502) textEl.textContent = 'Сервер перевода: ' + (serverMsg || 'ошибка ключа API или самого Google Translate');
+            else textEl.textContent = 'Ошибка сервера перевода (' + res.status + ')';
+            console.error('translateText вернул ошибку:', res.status, serverMsg);
+            return;
+        }
         const data = await res.json();
         if (data && data.translated) {
             textEl.textContent = data.translated;
             m.translations = m.translations || {};
             m.translations[lang] = data.translated;
         } else {
-            textEl.textContent = 'Не удалось перевести';
+            textEl.textContent = 'Пустой ответ от сервера перевода';
         }
     } catch (e) {
-        textEl.textContent = 'Не удалось перевести — проверьте связь';
+        // Сюда попадаем при реальном сбое сети/CORS — но чаще всего это как раз означает,
+        // что функция ещё не задеплоена (fetch на несуществующий домен тоже падает сюда).
+        textEl.textContent = 'Не удалось связаться с сервером перевода';
+        console.error('Ошибка запроса к translateText:', e);
     }
 }
 

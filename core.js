@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebas
 import { getDatabase, ref, onValue, push, update, remove, set, get, child, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { sessionStartTime, notifiedIds } from './constants.js';
-import { applyTerrariaFeatures, applyTheme, friendlyDbError, hashPassword, playSound, renderAmbientParticles, renderNotificationsToggle, renderSoundToggle, saveLocal, showNotification, truncateText } from './utils.js';
+import { applyTerrariaFeatures, applyTheme, friendlyDbError, hashPassword, playSound, renderAmbientParticles, renderNotificationsToggle, renderSoundToggle, renderTranslateLangToggle, saveLocal, showNotification, truncateText } from './utils.js';
 import { currentSeasonId, ensurePassSeason, renderPassButton, renderPassPetWidget } from './pass.js';
 import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBossCard, renderBossParticipantsList, renderEventMultiplierBanner, renderFeed, renderPostOverlay, updateBannerCountdowns } from './feed.js';
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
@@ -618,6 +618,7 @@ export function startFirebaseListeners() {
         renderOwnProfileHeader();
         renderNotificationsToggle();
         renderSoundToggle();
+        renderTranslateLangToggle();
         checkDailyCoinReward();
         ensurePassSeason();
         renderPassButton();
