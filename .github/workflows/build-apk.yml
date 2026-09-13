@@ -40,8 +40,14 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          npx cap init "BOKSER" "com.rlteam.bokser" --web-dir www
+          # Имя пакета bokser.rlteam.com строго совпадает с google-services.json
+          npx cap init "BOKSER" "bokser.rlteam.com" --web-dir www
           npx cap add android
+
+          # Копируем google-services.json внутрь Android-модуля
+          if [ -f "google-services.json" ]; then
+            cp google-services.json android/app/google-services.json
+          fi
 
           if [ -f "icon.png" ]; then
             npm install @capacitor/assets
