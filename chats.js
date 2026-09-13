@@ -546,6 +546,21 @@ const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => 
 
     if (canAppendOnly) {
         const newMsg = messages[messages.length - 1];
+
+        // Firebase иногда зовёт onValue дважды на одну и ту же запись — сперва с локальным
+        // оптимистичным значением, затем повторно при подтверждении с сервера (значение то же,
+        // но это новый вызов renderChatOverlay). Раньше в таком случае "дорисовка одного нового
+        // сообщения" срабатывала оба раза и в ленте на секунду-другую (пока чат не переоткроют,
+        // что вызывает полную перерисовку из chat.messages — единственного источника правды без
+        // дублей) появлялась одна и та же реплика дважды. Поэтому перед дорисовкой проверяем,
+        // нет ли уже узла с таким id — если есть, просто обновляем состояние и выходим.
+        if (listEl.querySelector(`[data-msg-id="${CSS.escape(String(newMsg.id))}"]`)) {
+            markChatRead(chat);
+            state.renderedChatState = { chatId: chat.id, signature, msgSigParts, charsLen };
+            if (wasNearBottom) body.scrollTop = body.scrollHeight;
+            return;
+        }
+
         const emptyHint = listEl.querySelector('.chat-empty-hint');
         if (emptyHint) emptyHint.remove();
         const temp = document.createElement('div');

@@ -1207,6 +1207,18 @@ export function colorFor(str) {
 
         export function renderNotificationsToggle() {
             const btn = document.getElementById('btn-toggle-notifications');
+
+            // Внутри собранного APK работает нативный push (Capacitor), а не браузерный Notification API —
+            // у него другой, асинхронный способ узнать текущее разрешение, поэтому статус кэшируем локально
+            // (обновляется в initNativePush() при старте и в обработчике клика ниже).
+            const nativePush = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+            if (nativePush) {
+                btn.classList.remove('hidden');
+                const enabled = localStorage.getItem('sr_native_push_enabled') === '1';
+                setProfileMenuItemLabel(btn, enabled ? '🔔' : '🔕', enabled ? 'Увед.: вкл' : 'Включить увед.');
+                return;
+            }
+
             if (!('Notification' in window)) { btn.classList.add('hidden'); return; } // не поддерживается этим браузером/WebView
             btn.classList.remove('hidden');
 
@@ -1254,6 +1266,31 @@ export function colorFor(str) {
         };
 
         document.getElementById('btn-toggle-notifications').onclick = function() {
+            const nativePush = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+            if (nativePush) {
+                nativePush.checkPermissions().then((res) => {
+                    if (res.receive === 'granted') {
+                        nativePush.register();
+                        localStorage.setItem('sr_native_push_enabled', '1');
+                        renderNotificationsToggle();
+                        tg.showAlert('Уведомления уже включены');
+                        return;
+                    }
+                    if (res.receive === 'denied') {
+                        tg.showAlert('Уведомления заблокированы в системных настройках Android для этого приложения. Включи их вручную: Настройки → Приложения → это приложение → Уведомления.');
+                        return;
+                    }
+                    nativePush.requestPermissions().then((res2) => {
+                        const granted = res2.receive === 'granted';
+                        if (granted) nativePush.register();
+                        localStorage.setItem('sr_native_push_enabled', granted ? '1' : '0');
+                        renderNotificationsToggle();
+                        tg.showAlert(granted ? 'Уведомления включены!' : 'Разрешение на уведомления отклонено');
+                    });
+                }).catch(() => tg.showAlert('Не удалось проверить разрешение на уведомления'));
+                return;
+            }
+
             if (!('Notification' in window)) return;
 
             if (Notification.permission === 'denied') {
