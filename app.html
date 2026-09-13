@@ -65,6 +65,18 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ЗАГРУЗКИ — виден поверх всего, пока не пришли первые данные с сервера.
+         Картинка маскота задаётся в админке (вкладка "Оформление"), размер подгоняется CSS
+         автоматически (object-fit: contain), какого бы разрешения ни был загруженный файл. -->
+    <div id="app-splash">
+        <div class="app-splash-mascot-wrap">
+            <div id="app-splash-mascot-fallback" class="app-splash-mascot-fallback">🐾</div>
+            <img id="app-splash-mascot" src="" alt="" class="hidden">
+        </div>
+        <div class="app-splash-spinner"></div>
+        <div class="app-splash-text">Загрузка…</div>
+    </div>
+
     <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
     <div id="terraria-daynight-overlay"></div>
     <div id="terraria-daynight-stars"></div>
@@ -428,6 +440,19 @@
 
                     <div class="divider"></div>
 
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">🐾 Маскот экрана загрузки</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Картинка, которая крутится на экране загрузки, пока приложение подтягивает данные. Размер картинки любой — впишется автоматически.</p>
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                        <img id="admin-mascot-preview" src="" alt="" style="width:64px; height:64px; object-fit:contain; border-radius:12px; background:rgba(0,0,0,0.04); display:none;">
+                        <span id="admin-mascot-empty-hint" style="font-size:12px;color:var(--text-secondary);">Пока не загружен — используется значок по умолчанию</span>
+                    </div>
+                    <input type="file" id="admin-mascot-file" accept="image/*" class="hidden">
+                    <button class="btn btn-secondary" id="btn-upload-mascot">📁 Загрузить картинку</button>
+                    <button class="btn" id="btn-remove-mascot" style="background:var(--danger,#e05252);">Сбросить на стандартный</button>
+                    <div id="admin-mascot-progress" style="font-size:12px;color:var(--text-secondary);margin-top:6px;"></div>
+
+                    <div class="divider"></div>
+
                     <h3 style="margin-bottom:4px; color:var(--text-primary);">📺 Мини-плеер YouTube</h3>
                     <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Видео, которое откроется по кнопке «Отдохнуть» в профиле игрока.</p>
                     <input type="text" id="yt-video-id" class="input" placeholder="Ссылка на видео или ID (напр. dQw4w9WgXcQ)">
@@ -437,6 +462,7 @@
 
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">🔊 Звуки</h3>
                     <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Вставь ссылку на mp3 или загрузи файл через 📁</p>
+
 
                     <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Новое сообщение / комментарий</label>
                     <div class="image-field-row">

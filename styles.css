@@ -947,6 +947,38 @@
         }
         @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
+        /* ============================================================
+           ЭКРАН ЗАГРУЗКИ (маскот крутится, пока не пришли первые данные)
+           ============================================================ */
+        #app-splash {
+            position: fixed; inset: 0; z-index: 30000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%);
+            transition: opacity 0.4s ease;
+        }
+        #app-splash.app-splash-hidden { opacity: 0; pointer-events: none; }
+        .app-splash-mascot-wrap {
+            width: 140px; height: 140px; display: flex; align-items: center; justify-content: center;
+            animation: app-splash-bounce 1.6s ease-in-out infinite;
+        }
+        .app-splash-mascot-wrap img,
+        .app-splash-mascot-fallback {
+            max-width: 100%; max-height: 100%; width: auto; height: auto;
+            object-fit: contain; /* любые пропорции и разрешение картинки из админки впишутся без искажений */
+        }
+        .app-splash-mascot-fallback { font-size: 96px; line-height: 1; }
+        @keyframes app-splash-bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-14px) scale(1.04); }
+        }
+        .app-splash-spinner {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 4px solid rgba(0,0,0,0.08); border-top-color: var(--accent, #6a3de8);
+            animation: app-splash-spin 0.8s linear infinite;
+        }
+        @keyframes app-splash-spin { to { transform: rotate(360deg); } }
+        .app-splash-text { font-size: 14px; font-weight: 700; color: var(--text-secondary, #666); letter-spacing: 0.3px; }
+
         .hidden { display: none !important; }
         .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 20px 0; }
         

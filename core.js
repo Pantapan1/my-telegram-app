@@ -55,6 +55,18 @@ function initNativePush() {
     if (!state.currentUser || !state.db) return;
     const cap = window.Capacitor;
     if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+
+    const LocalNotifications = cap.Plugins && cap.Plugins.LocalNotifications;
+    if (LocalNotifications) {
+        // Тот же системный разрешение на уведомления (Android 13+), которым пользуется и
+        // PushNotifications ниже — запрашиваем и тут на случай, если FCM-плагина в сборке нет
+        // (см. capacitor-setup.md: без тарифа Blaze серверные push недоступны, работают только
+        // локальные — showNotification() в utils.js использует именно этот плагин).
+        LocalNotifications.checkPermissions().then((res) => {
+            if (res.display !== 'granted') LocalNotifications.requestPermissions().catch(() => {});
+        }).catch(() => {});
+    }
+
     const PushNotifications = cap.Plugins && cap.Plugins.PushNotifications;
     if (!PushNotifications) return;
 
@@ -216,13 +228,55 @@ export function ensureUserProfile() {
     update(ref(state.db, 'users/' + state.currentUser.id), payload).catch(() => {});
 }
 
+// === ЭКРАН ЗАГРУЗКИ (маскот) ===
+// Прячется один раз, при первом успешном (или провалившемся по таймауту) получении ленты —
+// см. feedWatchdog/onValue('posts') в startFirebaseListeners(). Дальше приложение уже не трогает
+// этот элемент, кроме applyMascotUrl() ниже, которая просто обновляет картинку "на будущее"
+// (если экран загрузки ещё виден в момент прихода settings/mascotUrl).
+let _splashHidden = false;
+function hideAppSplash() {
+    if (_splashHidden) return;
+    _splashHidden = true;
+    const splash = document.getElementById('app-splash');
+    if (!splash) return;
+    splash.classList.add('app-splash-hidden');
+    setTimeout(() => splash.remove(), 500);
+}
+
+function applyMascotUrl(url) {
+    state.mascotUrl = url || null;
+    const img = document.getElementById('app-splash-mascot');
+    const fallback = document.getElementById('app-splash-mascot-fallback');
+    if (img && fallback) {
+        if (url) {
+            img.src = url;
+            img.classList.remove('hidden');
+            fallback.classList.add('hidden');
+        } else {
+            img.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }
+    }
+    const preview = document.getElementById('admin-mascot-preview');
+    const emptyHint = document.getElementById('admin-mascot-empty-hint');
+    if (preview && emptyHint) {
+        if (url) { preview.src = url; preview.style.display = ''; emptyHint.style.display = 'none'; }
+        else { preview.style.display = 'none'; emptyHint.style.display = ''; }
+    }
+}
+
 export function startFirebaseListeners() {
     setInterval(ensureUserProfile, 60000);
+
+    onValue(ref(state.db, 'settings/mascotUrl'), (snapshot) => {
+        applyMascotUrl(snapshot.val() || null);
+    });
 
     let feedLoaded = false;
     const feedWatchdog = setTimeout(() => {
         if (feedLoaded) return;
         feedLoaded = true;
+        hideAppSplash(); // не держим маскота вечно, даже если что-то пошло не так — дальше сработает свой экран ошибки
         const container = document.getElementById('feed-container');
         if (container) {
             container.innerHTML = '<div class="empty-state"><span class="icon">📡</span><div class="title">Не удалось загрузить данные</div><div class="sub">Проверьте интернет-соединение или VPN</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
@@ -233,6 +287,7 @@ export function startFirebaseListeners() {
         if (!feedLoaded) {
             feedLoaded = true;
             clearTimeout(feedWatchdog);
+            hideAppSplash();
         }
         const data = snapshot.val();
         state.postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
@@ -275,6 +330,7 @@ export function startFirebaseListeners() {
         if (!feedLoaded) {
             feedLoaded = true;
             clearTimeout(feedWatchdog);
+            hideAppSplash();
         }
         console.error('Firebase (posts) ошибка:', error);
         const container = document.getElementById('feed-container');

@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, escapeHtml, extractYoutubeId, formatDate, friendlyDbError, getImagesFromContainer, initialOf, populateImagesContainer, toLocalInputValue } from './utils.js';
+import { colorFor, compressImage, escapeHtml, extractYoutubeId, formatDate, friendlyDbError, getImagesFromContainer, initialOf, populateImagesContainer, toLocalInputValue, uploadToImgbb } from './utils.js';
 import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
@@ -338,6 +338,32 @@ window.switchAdminTab = function(tab) {
             set(ref(state.db, 'settings/theme'), theme).then(() => {
                 tg.showPopup({ title: 'Готово', message: 'Тема применена для всех', buttons: [{ type: 'ok' }] });
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        document.getElementById('btn-upload-mascot').onclick = function() {
+            document.getElementById('admin-mascot-file').click();
+        };
+
+        document.getElementById('admin-mascot-file').onchange = async function(e) {
+            const file = e.target.files && e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            const progressEl = document.getElementById('admin-mascot-progress');
+            try {
+                progressEl.textContent = 'Сжимаю картинку…';
+                const compressed = await compressImage(file, 512, 0.85); // маскот маленький на экране — большое разрешение не нужно
+                const url = await uploadToImgbb(compressed, (pct) => { progressEl.textContent = `Загрузка… ${pct}%`; });
+                await set(ref(state.db, 'settings/mascotUrl'), url);
+                progressEl.textContent = 'Готово!';
+                setTimeout(() => { progressEl.textContent = ''; }, 2000);
+            } catch (err) {
+                progressEl.textContent = '';
+                tg.showAlert('Не удалось загрузить: ' + (err && err.message ? err.message : err));
+            }
+        };
+
+        document.getElementById('btn-remove-mascot').onclick = function() {
+            set(ref(state.db, 'settings/mascotUrl'), null).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
         };
 
         document.getElementById('btn-save-sounds').onclick = function() {

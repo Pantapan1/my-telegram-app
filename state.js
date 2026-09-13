@@ -17,6 +17,7 @@ export const state = {
   currentUser: null,
   tgUser: _tgUser,
   authUser: _authUser,
+  mascotUrl: null, // картинка маскота для экрана загрузки, задаётся в админке (settings/mascotUrl)
   badgeColor: '#1da1f2',  // цвет по умолчанию для тех, у кого нет своего
   seasonPassData: null,  // { name, endsAt, premiumPrice, levels:{n:{...}}, weeklyQuests:{id:{...}} }
   myPassState: null,  // локальная копия users/{uid}/pass
