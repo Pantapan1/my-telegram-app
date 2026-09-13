@@ -845,8 +845,8 @@
         .msg-row { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
         .msg-bubble, .msg-sticker-wrap { transition: transform .2s ease; will-change: transform; }
         .msg-sticker {
-            max-width: 160px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
-            box-shadow: none; display: block;
+            max-width: 168px; height: auto; border-radius: 12px; object-fit: contain; background: transparent;
+            box-shadow: none; display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.12));
         }
         .msg-row:not(.mine) .msg-sticker-wrap { padding-left: 0; align-items: flex-start; }
         .msg-row.mine .msg-sticker-wrap { padding-right: 0; align-items: flex-end; }
@@ -896,6 +896,24 @@
         
         .sticker-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 4px; transition: transform 0.2s;}
         .sticker-toggle:active { transform: scale(0.9); }
+
+        /* Панель стикеров: паки подписаны и разложены по своим горизонтально-скроллящимся рядам,
+           сверху всегда идут личные стикеры пользователя с плиткой "+" для загрузки своих. */
+        .sticker-picker { padding: 10px 14px 6px; max-height: 260px; overflow-y: auto; }
+        .sticker-pack-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .sticker-pack-group:last-child { margin-bottom: 2px; }
+        .sticker-pack-label { font-size: 11px; font-weight: 800; color: var(--text-secondary); padding-left: 2px; text-transform: uppercase; letter-spacing: .3px; }
+        .sticker-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; -webkit-overflow-scrolling: touch; }
+        .sticker-row::-webkit-scrollbar { height: 4px; }
+        .sticker-item { width: 56px; height: 56px; object-fit: contain; background: var(--input-bg); border-radius: 14px; padding: 6px; cursor: pointer; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.04); transition: transform .15s ease, box-shadow .15s ease; }
+        .sticker-item:active { transform: scale(0.88); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .sticker-item-wrap { position: relative; flex-shrink: 0; }
+        .sticker-item-wrap .sticker-item { display: block; }
+        .sticker-remove-btn { position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; border: none; background: #e74c3c; color: #fff; font-size: 10px; line-height: 18px; text-align: center; padding: 0; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .sticker-add-tile { width: 56px; height: 56px; border-radius: 14px; border: 2px dashed rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; transition: transform .15s ease, border-color .15s ease; }
+        .sticker-add-tile:active { transform: scale(0.9); }
+        .sticker-add-tile.uploading { border-style: solid; border-color: #ff9f0a; font-size: 12px; color: var(--text-primary); }
+        .sticker-sound-tile { border: none; background: var(--input-bg); font-size: 22px; }
 
         .empty-state { text-align: center; padding: 40px 20px; color:var(--text-secondary); }
         .empty-state .icon { font-size: 48px; margin-bottom: 12px; display: block; animation: float 3s ease-in-out infinite; }

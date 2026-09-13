@@ -33,6 +33,7 @@ export const state = {
   chatsData: [],
   stickersData: [],
   stickerPacksData: [],
+  myStickersData: [],
   bossData: null,
   bossParticipantsData: {},
   youtubeVideoId: null,

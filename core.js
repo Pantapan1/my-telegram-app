@@ -465,6 +465,13 @@ export function startFirebaseListeners() {
             if (booksSection && booksSection.classList.contains('active')) renderBooks();
         });
 
+        // Личные стикеры пользователя — загруженные им самим, видны только ему в панели стикеров.
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/customStickers'), (snapshot) => {
+            const data = snapshot.val();
+            state.myStickersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderStickerPicker();
+        });
+
         onValue(ref(state.db, 'users/' + state.currentUser.id + '/bookmarks'), (snapshot) => {
             state.bookmarkedBooks = Object.keys(snapshot.val() || {});
             saveLocal('sr_bookmarks', state.bookmarkedBooks);

@@ -490,7 +490,7 @@ function buildMessageRowHtml(m, chat) {
     if (isAction) {
         const replyPreviewA = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
         return `
-        <div class="msg-row msg-row-action">
+        <div class="msg-row msg-row-action" data-msg-id="${escapeHtml(m.id)}">
             <div class="msg-action-line">
                 ${replyPreviewA}
                 <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
@@ -502,7 +502,7 @@ function buildMessageRowHtml(m, chat) {
     if (isThought) {
         const replyPreviewT = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
         return `
-        <div class="msg-row msg-row-action">
+        <div class="msg-row msg-row-action" data-msg-id="${escapeHtml(m.id)}">
             <div class="msg-thought-line">
                 ${replyPreviewT}
                 <span>💭 <b>${escapeHtml(displayName)}</b> думает: «${escapeHtml(m.text)}»<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
@@ -526,7 +526,7 @@ function buildMessageRowHtml(m, chat) {
             if (b) b.onclick = () => { try { new Audio(m.soundSticker).play().catch(() => {}); } catch (e) {} };
         }, 0);
         return `
-        <div class="msg-row ${isMine ? 'mine' : ''}">
+        <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
             <div class="msg-sticker-wrap">
                 ${senderName}
@@ -539,7 +539,7 @@ function buildMessageRowHtml(m, chat) {
 
     if (m.sticker) {
         return `
-        <div class="msg-row ${isMine ? 'mine' : ''}">
+        <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
             <div class="msg-sticker-wrap">
                 ${senderName}
@@ -555,7 +555,7 @@ function buildMessageRowHtml(m, chat) {
         const sizeClass = 'chat-widget-size-' + (CHAT_WIDGET_SIZES[m.chatWidget.size] ? m.chatWidget.size : 'medium');
         setTimeout(() => mountChatWidgetFrame(frameHostId, m.chatWidget), 0);
         return `
-        <div class="msg-row ${isMine ? 'mine' : ''}">
+        <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
             <div class="chat-widget-wrap ${sizeClass}">
                 ${senderName}
@@ -569,14 +569,14 @@ function buildMessageRowHtml(m, chat) {
     // Баблы сообщений собраны слитно без переносов строк \n, чтобы pre-wrap не создавал паразитных отступов
     if (m.attachment) {
         return `
-        <div class="msg-row ${isMine ? 'mine' : ''}">
+        <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
             <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}</span></div>
         </div>`;
     }
 
     return `
-    <div class="msg-row ${isMine ? 'mine' : ''}">
+    <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
         ${avatarBlock}
         <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}</span></div>
     </div>`;
@@ -679,14 +679,19 @@ export function openMessageContextMenu(chat, m, canModify) {
 }
 
 export function attachMessageGestures(containerEl, messages, chat, myId, adminFlag) {
+    // Сопоставляем строки с сообщениями по id (data-msg-id), а не по порядковому индексу:
+    // некоторые сообщения (системные, isSystem) вообще не рендерятся как .msg-row, из-за чего
+    // при сопоставлении по индексу все строки после такого сообщения "съезжали" и свайп/долгое
+    // нажатие вешали ответ на другое, более раннее сообщение.
+    const messagesById = new Map(messages.map(m => [String(m.id), m]));
     const rows = containerEl.querySelectorAll('.msg-row');
-    rows.forEach((row, i) => {
+    rows.forEach((row) => {
         // Защита от повторного навешивания: если этот же DOM-узел уже был обработан раньше
         // (например, containerEl — вся лента, а часть строк в ней не менялась), не вешаем
         // второй набор pointerdown/up/move обработчиков поверх старого.
         if (row.dataset.gestureBound) return;
         row.dataset.gestureBound = '1';
-        const m = messages[i];
+        const m = messagesById.get(row.getAttribute('data-msg-id'));
         if (!m) return;
         const isMine = m.senderId === myId;
         const canModify = isMine || adminFlag;
@@ -1329,58 +1334,112 @@ document.getElementById('btn-toggle-stickers').onclick = function() {
 
 export function renderStickerPicker() {
     const pickers = [
-        { el: document.getElementById('chat-sticker-picker'), action: 'sendSticker' }, 
-        { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker' }
+        { el: document.getElementById('chat-sticker-picker'), action: 'sendSticker', uploadId: 'chat-my-sticker-file' },
+        { el: document.getElementById('comment-sticker-picker'), action: 'sendCommentSticker', uploadId: 'comment-my-sticker-file' }
     ];
-    
+
     let allPacks = [...state.stickerPacksData];
-    
+
     if (state.stickersData.length > 0) {
-        allPacks.push({ 
-            id: 'legacy', 
-            name: 'Остальные', 
-            stickers: state.stickersData.reduce((acc, s) => ({...acc, [s.id]: s}), {}) 
+        allPacks.push({
+            id: 'legacy',
+            name: 'Остальные',
+            stickers: state.stickersData.reduce((acc, s) => ({...acc, [s.id]: s}), {})
         });
     }
 
+    const myStickers = state.myStickersData || [];
+
     pickers.forEach(picker => {
         if (!picker.el) return;
-        
-        if (!allPacks.length) { 
-            picker.el.innerHTML = '<div style="font-size:12px; color:var(--text-secondary);">Нет стикеров</div>'; 
-            return; 
-        }
-        
-        let html = '';
+        picker.el.classList.add('sticker-picker');
+
+        // "Мои стикеры" — личные, загруженные самим пользователем, всегда первой группой,
+        // с плиткой "+" для загрузки нового прямо из чата (без похода в админку).
+        let html = `
+            <div class="sticker-pack-group">
+                <span class="sticker-pack-label">📸 Мои стикеры</span>
+                <div class="sticker-row">
+                    ${myStickers.map(s => `
+                        <div class="sticker-item-wrap">
+                            <img src="${s.url}" class="sticker-item" onclick="${picker.action}('${s.url}')">
+                            <button type="button" class="sticker-remove-btn" onclick="event.stopPropagation(); removeMySticker('${s.id}')" title="Удалить стикер">✕</button>
+                        </div>
+                    `).join('')}
+                    <label class="sticker-add-tile" for="${picker.uploadId}" id="${picker.uploadId}-label">＋</label>
+                    <input type="file" id="${picker.uploadId}" accept="image/*" class="hidden">
+                </div>
+            </div>`;
+
         allPacks.forEach(pack => {
             if (!pack.stickers) return;
             html += `
-                <div style="display:flex; flex-direction:column; gap:4px; margin-right:12px; flex-shrink:0;">
-                    <span style="font-size:10px; font-weight:700; color:var(--text-secondary); padding-left:4px; text-transform:uppercase;">${escapeHtml(pack.name)}</span>
-                    <div style="display:flex; gap:6px;">
+                <div class="sticker-pack-group">
+                    <span class="sticker-pack-label">${escapeHtml(pack.name)}</span>
+                    <div class="sticker-row">
                         ${Object.values(pack.stickers).map(s => `
-                            <img src="${s.url}" onclick="${picker.action}('${s.url}')" style="width:50px;height:50px;object-fit:contain;background:var(--input-bg);border-radius:10px;padding:4px;cursor:pointer;">
+                            <img src="${s.url}" class="sticker-item" onclick="${picker.action}('${s.url}')">
                         `).join('')}
                     </div>
                 </div>`;
         });
-        picker.el.innerHTML = html;
 
         if (picker.action === 'sendSticker') {
             const me = state.usersData.find(u => u.id === state.currentUser.id);
             const sounds = (me && me.pass && me.pass.unlocked && me.pass.unlocked.sounds) ? Object.values(me.pass.unlocked.sounds) : [];
             if (sounds.length) {
-                picker.el.innerHTML += `
-                    <div style="display:flex; flex-direction:column; gap:4px; margin-right:12px; flex-shrink:0;">
-                        <span style="font-size:10px; font-weight:700; color:var(--text-secondary); padding-left:4px; text-transform:uppercase;">🎫 Пасс</span>
-                        <div style="display:flex; gap:6px;">
-                            ${sounds.map(url => `<button onclick="sendSoundSticker('${url}')" style="width:50px;height:50px;border:none;border-radius:10px;background:var(--input-bg);font-size:22px;cursor:pointer;">🔊</button>`).join('')}
+                html += `
+                    <div class="sticker-pack-group">
+                        <span class="sticker-pack-label">🎫 Пасс</span>
+                        <div class="sticker-row">
+                            ${sounds.map(url => `<button type="button" onclick="sendSoundSticker('${url}')" class="sticker-item sticker-sound-tile">🔊</button>`).join('')}
                         </div>
                     </div>`;
             }
         }
+
+        picker.el.innerHTML = html;
+
+        const fileInput = document.getElementById(picker.uploadId);
+        if (fileInput) setupMyStickerUpload(fileInput, picker.uploadId + '-label');
     });
 }
+
+// Загрузка личного стикера пользователя прямо из панели стикеров в чате: сжимаем на устройстве,
+// грузим на ImgBB (тот же пайплайн, что и вложения) и сохраняем ссылку в его собственном профиле —
+// стикер сразу появляется у него в "Моих стикерах" и виден только ему.
+function setupMyStickerUpload(fileInput, labelId) {
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { tg.showAlert('Выберите файл изображения'); fileInput.value = ''; return; }
+
+        const label = document.getElementById(labelId);
+        if (label) { label.classList.add('uploading'); label.textContent = '⏳'; }
+
+        try {
+            const compressed = await compressImage(file);
+            const url = await uploadToImgbb(compressed, (pct) => {
+                if (label) label.textContent = pct < 100 ? pct + '%' : '⏳';
+            });
+            await push(ref(state.db, 'users/' + state.currentUser.id + '/customStickers'), { url, createdAt: Date.now() });
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            // Дальше state.myStickersData обновится через onValue и renderStickerPicker() перерисует
+            // панель заново — плитку "+" отдельно восстанавливать не нужно.
+        } catch (err) {
+            tg.showAlert(friendlyUploadError(err));
+            if (label) { label.classList.remove('uploading'); label.textContent = '＋'; }
+        } finally {
+            fileInput.value = '';
+        }
+    });
+}
+
+window.removeMySticker = function(id) {
+    if (!state.currentUser) return;
+    remove(ref(state.db, 'users/' + state.currentUser.id + '/customStickers/' + id))
+        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
 
 window.sendSoundSticker = function(url) {
     if (!state.currentChatId || !state.db) return;
