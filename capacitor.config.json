@@ -1,10 +1,9 @@
 {
-  "appId": "com.example.myapp",
-  "appName": "My App",
+  "appId": "bokser.rlteam.com",
+  "appName": "BOKSER",
   "webDir": "www",
   "server": {
-    "url": "https://ЗАМЕНИТЕ-НА-ВАШ-ХОСТИНГ.web.app",
-    "androidScheme": "https",
+    "url": "https://pantapan1.github.io/my-telegram-app/app.html",
     "cleartext": false
   },
   "android": {
