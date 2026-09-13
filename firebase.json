@@ -10,5 +10,17 @@
         "firebase-debug.*.log"
       ]
     }
-  ]
+  ],
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "capacitor.config.json",
+      "functions/**",
+      "android/**",
+      "node_modules/**",
+      "**/.*"
+    ],
+    "rewrites": []
+  }
 }

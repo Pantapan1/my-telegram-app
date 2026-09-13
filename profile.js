@@ -1,6 +1,6 @@
-import { ref, push, update, remove, runTransaction, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, push, update, remove, runTransaction, increment, get, child, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, initialOf, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
+import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, hashPassword, initialOf, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge, renderPassButton } from './pass.js';
 import { currentMultiplier, populateBossAdminForm, renderBossParticipantsList } from './feed.js';
 import { startChatWith } from './chats.js';
@@ -167,6 +167,10 @@ export function checkDailyCoinReward() {
 
             document.getElementById('btn-open-book-editor').classList.toggle('hidden', !(me && me.isPublisher));
 
+            document.getElementById('profile-login-status').textContent = (me && me.authLogin)
+                ? `Текущий логин: ${me.authLogin} — можно менять пароль или логин ниже.`
+                : 'Логин не задан — вход возможен только через Telegram.';
+
             // Рамка аватара и декор из магазина
             const frameImg = document.getElementById('profile-frame-img');
             const frameItem = me && me.equipped && me.equipped.frame ? state.shopItemsData.find(i => i.id === me.equipped.frame) : null;
@@ -184,6 +188,8 @@ export function checkDailyCoinReward() {
             document.getElementById('profile-bio-input').value = bio; 
             document.getElementById('profile-avatar-input').value = avatar; 
             document.getElementById('profile-banner-input').value = banner;
+            document.getElementById('profile-login-username').value = (me && me.authLogin) || '';
+            document.getElementById('profile-login-password').value = '';
         }
 
 
@@ -225,6 +231,50 @@ export function checkDailyCoinReward() {
                 document.getElementById('profile-edit-panel').classList.add('hidden'); 
                 tg.showPopup({ title: 'Сохранено', message: 'Профиль обновлён', buttons: [{ type: 'ok' }] }); 
             }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        };
+
+        // Привязка логина/пароля к УЖЕ существующему аккаунту (например, вошедшему через Telegram),
+        // чтобы в него можно было войти и вне Telegram — например, в приложении, собранном из этого
+        // же сайта в APK. Использует ту же таблицу auth_users/{login}, что и стартовый экран
+        // регистрации в core.js, но id указывает на текущий аккаунт, а не на новый.
+        document.getElementById('btn-set-login-password').onclick = async function() {
+            if (!state.db) return tg.showAlert('Firebase не подключен');
+
+            const rawUn = document.getElementById('profile-login-username').value.trim();
+            const pw = document.getElementById('profile-login-password').value;
+            if (!rawUn || !pw) return tg.showAlert('Введите логин и пароль');
+            if (pw.length < 4) return tg.showAlert('Пароль должен быть не короче 4 символов');
+
+            const safeUn = rawUn.replace(/[^a-zA-Z0-9_]/g, '');
+            if (!safeUn) return tg.showAlert('Используйте только английские буквы, цифры и "_" для логина');
+
+            const btn = document.getElementById('btn-set-login-password');
+            btn.disabled = true;
+            try {
+                const snapshot = await get(child(ref(state.db), `auth_users/${safeUn}`));
+                if (snapshot.exists() && snapshot.val().id !== state.currentUser.id) {
+                    tg.showAlert('Этот логин уже занят другим аккаунтом. Выберите другой.');
+                    return;
+                }
+
+                const hashed = await hashPassword(pw);
+                const me = state.usersData.find(u => u.id === state.currentUser.id);
+                const oldLogin = me && me.authLogin;
+
+                await set(ref(state.db, `auth_users/${safeUn}`), { password: hashed, id: state.currentUser.id });
+                // Если логин сменился — убираем старую запись, чтобы не плодить неиспользуемые входы
+                if (oldLogin && oldLogin !== safeUn) {
+                    remove(ref(state.db, `auth_users/${oldLogin}`)).catch(() => {});
+                }
+                await update(ref(state.db, 'users/' + state.currentUser.id), { authLogin: safeUn });
+
+                document.getElementById('profile-login-password').value = '';
+                tg.showPopup({ title: 'Сохранено', message: `Теперь можно входить как «${safeUn}» вне Telegram.`, buttons: [{ type: 'ok' }] });
+            } catch (err) {
+                tg.showAlert('Ошибка: ' + friendlyDbError(err));
+            } finally {
+                btn.disabled = false;
+            }
         };
 
         // === Задания (квесты события) ===

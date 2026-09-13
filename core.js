@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebas
 import { getDatabase, ref, onValue, push, update, remove, set, get, child, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { sessionStartTime, notifiedIds } from './constants.js';
-import { applyTerrariaFeatures, applyTheme, friendlyDbError, playSound, renderAmbientParticles, renderNotificationsToggle, renderSoundToggle, saveLocal, showNotification, truncateText } from './utils.js';
+import { applyTerrariaFeatures, applyTheme, friendlyDbError, hashPassword, playSound, renderAmbientParticles, renderNotificationsToggle, renderSoundToggle, saveLocal, showNotification, truncateText } from './utils.js';
 import { currentSeasonId, ensurePassSeason, renderPassButton, renderPassPetWidget } from './pass.js';
 import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBossCard, renderBossParticipantsList, renderEventMultiplierBanner, renderFeed, renderPostOverlay, updateBannerCountdowns } from './feed.js';
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
@@ -42,6 +42,38 @@ export function initApp() {
     if (authOverlay) authOverlay.style.display = 'none';
     startFirebaseListeners();
     if (state.db) ensureUserProfile();
+    initNativePush();
+}
+
+// === НАТИВНЫЕ PUSH-УВЕДОМЛЕНИЯ (для сборки в APK через Capacitor) ===
+// Работает ТОЛЬКО когда сайт запущен внутри нативной Capacitor-оболочки (см. capacitor-setup.md) —
+// то есть в собранном APK, а не в Telegram Mini App и не в обычном браузере. Там, где плагина нет,
+// функция ничего не делает — это безопасно вызывать всегда, при каждом запуске.
+// Токен устройства сохраняется в users/{id}/fcmTokens/{token} — Cloud Functions (functions/index.js)
+// используют его, чтобы прислать пуш через Firebase Cloud Messaging, даже если приложение закрыто.
+function initNativePush() {
+    if (!state.currentUser || !state.db) return;
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+    const PushNotifications = cap.Plugins && cap.Plugins.PushNotifications;
+    if (!PushNotifications) return;
+
+    const saveToken = (token) => {
+        if (!token) return;
+        update(ref(state.db, `users/${state.currentUser.id}/fcmTokens`), { [token]: true }).catch(() => {});
+    };
+
+    PushNotifications.addListener('registration', (result) => saveToken(result && result.value));
+    PushNotifications.addListener('registrationError', (err) => console.error('Push registration error:', err));
+
+    PushNotifications.checkPermissions().then((res) => {
+        if (res.receive === 'granted') return PushNotifications.register();
+        if (res.receive !== 'denied') {
+            PushNotifications.requestPermissions().then((res2) => {
+                if (res2.receive === 'granted') PushNotifications.register();
+            });
+        }
+    }).catch((err) => console.error('Push permissions error:', err));
 }
 
 if (state.tgUser) {
@@ -60,7 +92,7 @@ if (state.tgUser) {
 
 const regAuthBtn = document.getElementById('btn-register-auth');
 if (regAuthBtn) {
-    regAuthBtn.onclick = function() {
+    regAuthBtn.onclick = async function() {
         if (!state.db) return alert('База данных недоступна');
         const un = document.getElementById('auth-username').value.trim();
         const pw = document.getElementById('auth-password').value.trim();
@@ -69,12 +101,13 @@ if (regAuthBtn) {
         const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
         if (!safeUn) return alert('Используйте только английские буквы и цифры для ника');
         
-        get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
+        get(child(ref(state.db), `auth_users/${safeUn}`)).then(async (snapshot) => {
             if (snapshot.exists()) {
                  alert('Никнейм уже занят!');
             } else {
                  const newId = 'usr_' + Date.now();
-                 set(ref(state.db, `auth_users/${safeUn}`), { password: pw, id: newId }).then(() => {
+                 const hashed = await hashPassword(pw);
+                 set(ref(state.db, `auth_users/${safeUn}`), { password: hashed, id: newId }).then(() => {
                      localStorage.setItem('sr_auth_user', JSON.stringify({id: newId, name: un}));
                      location.reload();
                  }).catch(e => alert(friendlyDbError(e)));
@@ -85,15 +118,23 @@ if (regAuthBtn) {
 
 const loginAuthBtn = document.getElementById('btn-login-auth');
 if (loginAuthBtn) {
-    loginAuthBtn.onclick = function() {
+    loginAuthBtn.onclick = async function() {
         if (!state.db) return alert('База данных недоступна');
         const un = document.getElementById('auth-username').value.trim();
         const pw = document.getElementById('auth-password').value.trim();
         if (!un || !pw) return alert('Введите никнейм и пароль');
         
         const safeUn = un.replace(/[^a-zA-Z0-9_]/g, '');
+        const hashed = await hashPassword(pw);
         get(child(ref(state.db), `auth_users/${safeUn}`)).then((snapshot) => {
-            if (snapshot.exists() && snapshot.val().password === pw) {
+            if (!snapshot.exists()) return alert('Неверный никнейм или пароль');
+            const stored = snapshot.val().password;
+            // Поддерживаем и старые записи, где пароль ещё хранился открытым текстом (до перехода
+            // на хэширование) — при успешном входе по старому паролю сразу подменяем его на хэш.
+            const isHashMatch = stored === hashed;
+            const isLegacyMatch = !isHashMatch && stored === pw;
+            if (isHashMatch || isLegacyMatch) {
+                 if (isLegacyMatch) set(ref(state.db, `auth_users/${safeUn}/password`), hashed).catch(() => {});
                  localStorage.setItem('sr_auth_user', JSON.stringify({id: snapshot.val().id, name: un}));
                  location.reload();
             } else {

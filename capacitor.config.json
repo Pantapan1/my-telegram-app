@@ -1,0 +1,13 @@
+{
+  "appId": "com.example.myapp",
+  "appName": "My App",
+  "webDir": "www",
+  "server": {
+    "url": "https://ЗАМЕНИТЕ-НА-ВАШ-ХОСТИНГ.web.app",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
