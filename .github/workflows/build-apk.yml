@@ -38,7 +38,7 @@ jobs:
           fi
 
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/push-notifications
 
           # Имя пакета bokser.rlteam.com строго совпадает с google-services.json
           npx cap init "BOKSER" "bokser.rlteam.com" --web-dir www
