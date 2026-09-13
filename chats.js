@@ -698,14 +698,14 @@ function buildMessageRowHtml(m, chat) {
         return `
         <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
-            <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
+            <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>${translationBlockHtml(m)}` : ''}<span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
         </div>`;
     }
 
     return `
     <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
         ${avatarBlock}
-        <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
+        <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div>${translationBlockHtml(m)}<span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
     </div>`;
 }
 
@@ -773,6 +773,62 @@ function copyMessageText(text) {
     }
 }
 
+// URL Cloud Function из index.js (регион europe-west1 задан там же через setGlobalOptions).
+// Ключ Google Translate хранится только на сервере — сюда попадает только уже готовый перевод.
+const TRANSLATE_FN_URL = 'https://europe-west1-book-2b50d.cloudfunctions.net/translateText';
+
+// Язык, на который переводим — берём из Telegram (у пользователя он уже настроен в самом Telegram),
+// а если недоступно — язык браузера. 'ru'/'en'/'uk' и т.д. — двухбуквенный код ISO 639-1.
+function myInterfaceLang() {
+    const raw = (state.tgUser && state.tgUser.language_code) || navigator.language || 'ru';
+    return raw.slice(0, 2).toLowerCase();
+}
+
+function translationBlockHtml(m) {
+    const lang = myInterfaceLang();
+    const cached = m.translations && m.translations[lang];
+    return `<div class="msg-translation${cached ? '' : ' hidden'}" id="tr_${escapeHtml(m.id)}"><span class="msg-translation-ico">🌐</span><span class="msg-translation-text">${cached ? escapeHtml(cached) : ''}</span></div>`;
+}
+
+async function toggleMessageTranslation(chatId, m) {
+    const el = document.getElementById('tr_' + m.id);
+    if (!el) return;
+    const textEl = el.querySelector('.msg-translation-text');
+    const lang = myInterfaceLang();
+
+    // Уже открыт — просто прячем, текст остаётся в памяти на случай повторного показа
+    if (!el.classList.contains('hidden')) {
+        el.classList.add('hidden');
+        return;
+    }
+    // Уже переводили раньше (этим или другим читателем — прилетело с сервера в самом сообщении)
+    if (m.translations && m.translations[lang]) {
+        textEl.textContent = m.translations[lang];
+        el.classList.remove('hidden');
+        return;
+    }
+
+    textEl.textContent = 'Переводим…';
+    el.classList.remove('hidden');
+    try {
+        const res = await fetch(TRANSLATE_FN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, messageId: m.id, text: m.text, target: lang })
+        });
+        const data = await res.json();
+        if (data && data.translated) {
+            textEl.textContent = data.translated;
+            m.translations = m.translations || {};
+            m.translations[lang] = data.translated;
+        } else {
+            textEl.textContent = 'Не удалось перевести';
+        }
+    } catch (e) {
+        textEl.textContent = 'Не удалось перевести — проверьте связь';
+    }
+}
+
 export function openMessageContextMenu(chat, m, canModify) {
     closeMessageContextMenu();
     const isTextMsg = !m.sticker && !m.attachment && !m.soundSticker && !m.chatWidget;
@@ -781,6 +837,7 @@ export function openMessageContextMenu(chat, m, canModify) {
     const items = [];
     items.push({ ico: '↩️', label: 'Ответить', action: () => startReply(m.id, m.senderName, replyText) });
     if (isTextMsg) items.push({ ico: '📋', label: 'Копировать', action: () => copyMessageText(m.text) });
+    if (isTextMsg) items.push({ ico: '🌐', label: 'Перевести', action: () => toggleMessageTranslation(chat.id, m) });
     if (isTextMsg) items.push({ ico: '📌', label: 'Закрепить как цитату', action: () => pinQuote(chat.id, m.text, m.senderName) });
     if (isTextMsg && canModify) items.push({ ico: '✏️', label: 'Редактировать', action: () => startEditMessage(m.id, m.text) });
     if (m.sticker) items.push({ ico: '➕', label: 'Добавить стикер себе', action: () => addStickerToMyPack(m.sticker) });

@@ -363,6 +363,15 @@
         }
         .card-meta { font-size: 12px; color:var(--text-secondary); margin-top: 8px; }
 
+        /* --- перевод сообщения в чате (кнопка "🌐 Перевести") --- */
+        .msg-translation {
+            display: flex; align-items: flex-start; gap: 6px;
+            margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-soft);
+            font-size: 13px; font-style: italic; color: var(--text-secondary); line-height: 1.4;
+        }
+        .msg-translation.hidden { display: none; }
+        .msg-translation-ico { flex-shrink: 0; }
+
         .badge {
             display: inline-block;
             padding: 4px 10px; border-radius: 16px; font-size: 11px; font-weight: 600;

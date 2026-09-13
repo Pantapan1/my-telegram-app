@@ -8,6 +8,7 @@
  */
 
 const { onValueCreated } = require("firebase-functions/v2/database");
+const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
@@ -16,6 +17,9 @@ admin.initializeApp();
 const db = admin.database();
 
 const BOT_TOKEN = defineSecret("TELEGRAM_BOT_TOKEN");
+// Ключ Google Cloud Translation API. Задаётся так же, как токен бота:
+// firebase functions:secrets:set GOOGLE_TRANSLATE_API_KEY
+const TRANSLATE_KEY = defineSecret("GOOGLE_TRANSLATE_API_KEY");
 
 // Регион можно поменять на ближайший к вашей RTDB (europe-west1, us-central1 и т.д.)
 setGlobalOptions({ region: "europe-west1" });
@@ -156,5 +160,66 @@ exports.notifyNewComment = onValueCreated(
     const token = BOT_TOKEN.value();
     const preview = comment.sticker ? "🖼 стикер" : truncate(comment.text, 200);
     await sendTelegram(token, author.telegramId, `💭 ${comment.author || "Кто-то"} прокомментировал ваш пост: ${preview}`);
+  }
+);
+
+// === Перевод сообщений/постов/глав (кнопка "🌐 Перевести" в приложении) ===
+// Ключ Google Translate живёт только здесь, на сервере, и никогда не попадает в клиентский код.
+// Если пришли chatId+messageId — результат ещё и кэшируется в самой базе, чтобы одно и то же
+// сообщение переводилось платно только один раз, а не при каждом нажатии любым читателем.
+exports.translateText = onRequest(
+  { secrets: [TRANSLATE_KEY], cors: true },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Только POST" });
+      return;
+    }
+
+    const { text, target, chatId, messageId } = req.body || {};
+    if (!text || !target) {
+      res.status(400).json({ error: "Нужны поля text и target" });
+      return;
+    }
+
+    // Для сообщений в чате кэш лежит рядом с самим сообщением — так следующий читатель
+    // с тем же языком получает готовый перевод мгновенно и бесплатно.
+    const cacheRef = (chatId && messageId)
+      ? db.ref(`chats/${chatId}/messages/${messageId}/translations/${target}`)
+      : null;
+
+    if (cacheRef) {
+      const cached = await cacheRef.get();
+      if (cached.exists()) {
+        res.json({ translated: cached.val(), cached: true });
+        return;
+      }
+    }
+
+    try {
+      const apiRes = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${TRANSLATE_KEY.value()}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q: text, target, format: "text" }),
+        }
+      );
+      const data = await apiRes.json();
+      const translated = data && data.data && data.data.translations && data.data.translations[0]
+        ? data.data.translations[0].translatedText
+        : null;
+
+      if (!translated) {
+        console.error("Google Translate вернул неожиданный ответ:", JSON.stringify(data));
+        res.status(502).json({ error: "Сервис перевода сейчас недоступен" });
+        return;
+      }
+
+      if (cacheRef) await cacheRef.set(translated);
+      res.json({ translated, cached: false });
+    } catch (e) {
+      console.error("Ошибка при обращении к Google Translate:", e);
+      res.status(500).json({ error: "Не удалось перевести текст" });
+    }
   }
 );
