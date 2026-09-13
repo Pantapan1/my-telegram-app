@@ -145,48 +145,92 @@ export function renderChatsList() {
         return;
     }
     
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) emptyState.remove();
+
     myChats.sort((a, b) => (b.lastMessageAt || b.createdAt || 0) - (a.lastMessageAt || a.createdAt || 0));
     let anyUnread = false;
-    
-    container.innerHTML = myChats.map((chat, idx) => {
+
+    // ОПТИМИЗАЦИЯ ПРОТИВ "МОРГАНИЯ": раньше весь список карточек чатов пересоздавался через
+    // innerHTML при любом изменении (новое сообщение, галочка прочтения, таймер кинотеатра),
+    // из-за чего все карточки — включая свои аватарки — перевставлялись в DOM и card-anim
+    // анимация появления перезапускалась заново на всех. Теперь существующие карточки
+    // переиспользуются: обновляем в них только текст/время/точку непрочитанного и переставляем
+    // на нужную позицию, а card-anim навешивается только на действительно новые карточки.
+    const existingItems = new Map();
+    container.querySelectorAll('.chat-list-item').forEach(el => {
+        existingItems.set(el.getAttribute('data-chat-id'), el);
+    });
+
+    myChats.forEach((chat) => {
         const lastReadTime = state.chatLastRead[chat.id] || 0;
         const unread = chat.messages ? Object.values(chat.messages).filter(m => m.senderId !== state.currentUser.id && m.createdAt > lastReadTime).length : 0;
         if (unread > 0) anyUnread = true;
-        
-        let avatarHTML, nameStr, moodStr = '';
-        
-        if (chat.type === 'group') {
-            avatarHTML = avatarHtml(chat.name, chat.avatar, 'chat-avatar');
-            nameStr = escapeHtml(chat.name);
-        } else {
-            const other = otherParticipant(chat);
-            avatarHTML = avatarHtml(other.name, other.avatar, 'chat-avatar');
-            nameStr = escapeHtml(other.name);
-            moodStr = other.mood ? `<span class="mood-badge">${other.mood}</span>` : '';
-        }
 
-        return `
-        <div class="chat-list-item card-anim" style="animation-delay:${Math.min(idx, 8) * 30}ms" data-chat-id="${chat.id}">
-            <div class="chat-avatar-wrap">${avatarHTML}${moodStr}</div>
-            <div class="chat-info">
-                <div class="chat-info-top">
-                    <span class="chat-name">${nameStr}</span>
-                    <span class="chat-time">${chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : ''}</span>
+        const timeStr = chat.lastMessageAt ? formatDate(chat.lastMessageAt).split(' в ')[0] : '';
+        const previewStr = escapeHtml(chat.lastMessage || 'Нет сообщений');
+
+        let item = existingItems.get(chat.id);
+
+        if (item) {
+            // Карточка уже есть в DOM — обновляем только изменившиеся поля, без пересоздания
+            // аватарки/разметки и без перезапуска CSS-анимации.
+            const previewEl = item.querySelector('.chat-preview');
+            const timeEl = item.querySelector('.chat-time');
+            let dot = item.querySelector('.chat-unread-dot');
+
+            if (previewEl && previewEl.innerHTML !== previewStr) previewEl.innerHTML = previewStr;
+            if (timeEl && timeEl.textContent !== timeStr) timeEl.textContent = timeStr;
+
+            if (unread > 0 && !dot) {
+                const newDot = document.createElement('div');
+                newDot.className = 'chat-unread-dot';
+                item.appendChild(newDot);
+            } else if (unread === 0 && dot) {
+                dot.remove();
+            }
+
+            existingItems.delete(chat.id);
+            container.appendChild(item); // переносит карточку на правильную позицию по сортировке
+        } else {
+            // Новая карточка — создаётся (и анимируется) только при первом появлении в списке.
+            let avatarHTML, nameStr, moodStr = '';
+
+            if (chat.type === 'group') {
+                avatarHTML = avatarHtml(chat.name, chat.avatar, 'chat-avatar');
+                nameStr = escapeHtml(chat.name);
+            } else {
+                const other = otherParticipant(chat);
+                avatarHTML = avatarHtml(other.name, other.avatar, 'chat-avatar');
+                nameStr = escapeHtml(other.name);
+                moodStr = other.mood ? `<span class="mood-badge">${other.mood}</span>` : '';
+            }
+
+            const div = document.createElement('div');
+            div.className = 'chat-list-item card-anim';
+            div.style.animationDelay = Math.min(existingItems.size, 8) * 30 + 'ms';
+            div.setAttribute('data-chat-id', chat.id);
+            div.innerHTML = `
+                <div class="chat-avatar-wrap">${avatarHTML}${moodStr}</div>
+                <div class="chat-info">
+                    <div class="chat-info-top">
+                        <span class="chat-name">${nameStr}</span>
+                        <span class="chat-time">${timeStr}</span>
+                    </div>
+                    <div class="chat-preview">${previewStr}</div>
                 </div>
-                <div class="chat-preview">${escapeHtml(chat.lastMessage || 'Нет сообщений')}</div>
-            </div>
-            ${unread > 0 ? `<div class="chat-unread-dot"></div>` : ''}
-        </div>`;
-    }).join('');
-    
-    document.querySelectorAll('#chats-container .chat-list-item').forEach(item => {
-        const chatId = item.getAttribute('data-chat-id');
-        const chat = state.chatsData.find(c => c.id === chatId);
-        // Клик по главному чату сообщества открывает его вики-«домашнюю страницу»,
-        // а не сразу переписку. Личные диалоги и доп. чаты (parentChatId) — как раньше, сразу в чат.
-        const goesToWiki = chat && chat.type === 'group' && !chat.parentChatId;
-        item.onclick = () => goesToWiki ? openGroupWiki(chatId) : openChat(chatId);
+                ${unread > 0 ? `<div class="chat-unread-dot"></div>` : ''}
+            `;
+
+            const goesToWiki = chat.type === 'group' && !chat.parentChatId;
+            div.onclick = () => goesToWiki ? openGroupWiki(chat.id) : openChat(chat.id);
+            container.appendChild(div);
+        }
     });
+
+    // Удаляем карточки чатов, которых больше нет в списке
+    existingItems.forEach(el => el.remove());
+
     document.getElementById('chats-nav-badge').classList.toggle('hidden', !anyUnread);
 }
 
@@ -343,6 +387,7 @@ export function openChat(chatId) {
     tg.BackButton.show();
     document.getElementById('chat-sticker-picker').style.display = 'none';
     state.renderedChatState = { chatId: null, signature: null };
+    state.renderedChatPartnerId = null;
     
     const chat = state.chatsData.find(c => c.id === chatId);
     if (chat) renderChatOverlay(chat);
@@ -397,9 +442,19 @@ export function renderChatOverlay(chat) {
     document.getElementById('chat-input-row').classList.toggle('hidden', !canWriteHere);
     document.getElementById('chat-readonly-bar').classList.toggle('hidden', !(isReadonlyChannel && !iAmModerator));
 
+    const partnerId = chat.type === 'group' ? chat.id : otherParticipant(chat).id;
+    if (state.renderedChatPartnerId !== partnerId) {
+        state.renderedChatPartnerId = partnerId;
+        if (chat.type === 'group') {
+            document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
+        } else {
+            const otherForAvatar = otherParticipant(chat);
+            document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(otherForAvatar.name, otherForAvatar.avatar, 'avatar-sm');
+        }
+    }
+
     if (chat.type === 'group') {
         document.getElementById('chat-partner-name').textContent = chat.name;
-        document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(chat.name, chat.avatar, 'avatar-sm');
         document.getElementById('chat-partner-status').textContent = Object.keys(chat.participants || {}).length + ' участников' + (isRoleplayGroup(chat) ? ' · 🎭 ролевая' : '') + (isReadonlyChannel ? ' · 📢 только чтение' : '');
         document.getElementById('chat-actions-wrap').classList.remove('hidden');
         document.getElementById('chat-edit-group-btn').classList.toggle('hidden', chat.adminId !== state.currentUser.id);
@@ -413,7 +468,6 @@ export function renderChatOverlay(chat) {
         document.getElementById('btn-toggle-chat-widget').classList.add('hidden');
         const other = otherParticipant(chat);
         document.getElementById('chat-partner-name').textContent = other.name;
-        document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
         document.getElementById('chat-partner-status').textContent = lastSeenText(other.lastSeen) + (other.mood ? ' · настроение ' + other.mood : '');
         document.getElementById('chat-actions-wrap').classList.add('hidden');
         document.getElementById('chat-actions-menu').classList.remove('open');
@@ -457,6 +511,33 @@ const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => 
     // добавления одного сообщения в хвост списка, не изменилось — просто дорисовываем один новый
     // узел, не трогая уже отрисованные сообщения.
     const prevParts = state.renderedChatState.msgSigParts || [];
+
+    // ОПТИМИЗАЦИЯ ПРОТИВ "МОРГАНИЯ" №2: набор сообщений не поменялся, поменялись только
+    // readReceipts (собеседник открыл чат и прочитал). Раньше это всё равно проваливало
+    // canAppendOnly (длина сообщений та же, не +1) и запускало полный innerHTML. Теперь просто
+    // точечно обновляем галочки/время у своих сообщений, не трогая DOM остальных.
+    const sameMessages = state.renderedChatState.chatId === chat.id
+        && prevParts.length === msgSigParts.length
+        && prevParts.every((p, i) => p === msgSigParts[i]);
+
+    if (sameMessages) {
+        listEl.querySelectorAll('.msg-row.mine').forEach(row => {
+            const id = row.getAttribute('data-msg-id');
+            const m = messages.find(msg => String(msg.id) === id);
+            if (m) {
+                const tickWrap = row.querySelector('.msg-time');
+                if (tickWrap) {
+                    const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    const editedMark = m.edited ? '<span style="opacity:0.6;font-size:10px;"> (изменено)</span>' : '';
+                    tickWrap.innerHTML = `${timeStr}${editedMark}${readTicksHtml(m, chat)}`;
+                }
+            }
+        });
+        state.renderedChatState.signature = signature;
+        markChatRead(chat);
+        return;
+    }
+
     const canAppendOnly = state.renderedChatState.chatId === chat.id
         && state.renderedChatState.charsLen === charsLen
         && messages.length > 0
@@ -1307,11 +1388,55 @@ document.getElementById('chat-edit-group-btn').onclick = function() {
     setVisibilityChipPicker('edit-group-visibility-picker', chat.isPublic ? 'public' : 'private');
     setGenericChipPicker('edit-group-channel-mode-picker', 'data-channelmode', chat.channelMode === 'readonly' ? 'readonly' : 'normal');
     setGenericChipPicker('edit-group-wall-mode-picker', 'data-wallmode', (chat.wiki && chat.wiki.openPosting) ? 'open' : 'moderated');
+    renderTransferAdminList(chat);
     
     document.getElementById('chat-overlay').classList.remove('active');
     document.getElementById('edit-group-overlay').classList.add('active');
     state.activeOverlay = 'editgroup';
 };
+
+// Список участников, которым текущий администратор группы может передать права ГМ.
+// Доступен только внутри модалки настроек группы, которая и так открывается только для adminId.
+function renderTransferAdminList(chat) {
+    const listEl = document.getElementById('transfer-admin-list');
+    if (!listEl) return;
+    const participantIds = Object.keys(chat.participants || {}).filter(uid => uid !== chat.adminId);
+
+    if (!participantIds.length) {
+        listEl.innerHTML = `<div style="color:var(--text-secondary);font-size:13px;padding:8px;">В группе больше никого нет — передавать права некому.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = participantIds.map(uid => {
+        const userRec = state.usersData.find(u => u.id === uid);
+        const nm = (userRec && userRec.name) || (chat.participantNames && chat.participantNames[uid]) || 'Участник';
+        return `
+        <div class="wiki-mod-item">
+            ${avatarHtml(nm, userRec ? userRec.avatar : null, 'avatar-sm')}
+            <span class="wiki-mod-name">${escapeHtml(nm)}</span>
+            <button class="btn btn-secondary btn-transfer-admin" style="width:auto;padding:6px 14px;margin:0;font-size:12px;border-radius:10px;" data-transfer-uid="${uid}" data-transfer-name="${escapeHtml(nm)}">Назначить</button>
+        </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.btn-transfer-admin').forEach(btn => {
+        btn.onclick = () => {
+            const uid = btn.getAttribute('data-transfer-uid');
+            const nm = btn.getAttribute('data-transfer-name') || 'этого участника';
+            const currentChat = state.chatsData.find(c => c.id === chat.id);
+            if (!currentChat || currentChat.adminId !== state.currentUser.id) return;
+
+            tg.showConfirm(`Передать права администратора «${nm}»? Вы станете обычным участником группы, новый администратор получит полный контроль над настройками, модераторами и удалением группы.`, (ok) => {
+                if (!ok) return;
+                update(ref(state.db, 'chats/' + chat.id), { adminId: uid }).then(() => {
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    document.getElementById('edit-group-overlay').classList.remove('active');
+                    tg.showAlert(`Права администратора переданы «${nm}».`);
+                    openChat(chat.id);
+                }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
+        };
+    });
+}
 
 document.getElementById('close-edit-group-btn').onclick = function() {
     document.getElementById('edit-group-overlay').classList.remove('active');
@@ -3577,6 +3702,18 @@ function cinemaWatchersHtml(chat) {
     return html + extra;
 }
 
+// Сигнатура набора "живых" зрителей кинотеатра (без временных меток) — используется, чтобы
+// не перерисовывать ряд аватарок, если фактический состав зрителей не поменялся.
+function cinemaWatchersSignature(chat) {
+    if (!chat.cinemaWatchers) return '';
+    const now = Date.now();
+    return Object.entries(chat.cinemaWatchers)
+        .filter(([, ts]) => (now - ts) < 9000)
+        .map(([uid]) => uid)
+        .sort()
+        .join(',');
+}
+
 // Останавливает и полностью убирает плеер локально (при закрытии/выходе из чата),
 // чтобы видео не продолжало играть в фоне после того как чат закрыт.
 function stopCinemaPlaybackLocally() {
@@ -3588,6 +3725,7 @@ function stopCinemaPlaybackLocally() {
     if (badge) badge.classList.add('hidden');
     state.renderedCinemaState = { chatId: null, signature: null };
     state.lastCinemaSyncedUpdatedAt = null;
+    state.renderedCinemaWatchersSig = null;
 }
 
 export function renderCinemaPanel(chat, force) {
@@ -3611,7 +3749,16 @@ export function renderCinemaPanel(chat, force) {
     document.getElementById('cinema-close-btn').classList.toggle('hidden', !cinemaCanClose(chat));
     const providerNames = { youtube: 'YouTube', rutube: 'Rutube', vk: 'VK Видео', direct: 'Видео' };
     document.getElementById('cinema-panel-title-text').textContent = cinema.title ? cinema.title : ('Кинотеатр · ' + (providerNames[cinema.provider] || ''));
-    document.getElementById('cinema-watchers-row').innerHTML = cinemaWatchersHtml(chat);
+
+    // ПРОТИВ "МОРГАНИЯ": раньше строка зрителей кинотеатра перестраивалась через innerHTML
+    // на каждый тик (каждые 4с, при любом обновлении chat.cinemaWatchers из базы), даже если
+    // состав зрителей фактически не менялся — только их метки времени "жив ли ещё". Теперь
+    // пересобираем разметку только если реально изменился набор показанных зрителей.
+    const watchersSig = cinemaWatchersSignature(chat);
+    if (state.renderedCinemaWatchersSig !== watchersSig) {
+        state.renderedCinemaWatchersSig = watchersSig;
+        document.getElementById('cinema-watchers-row').innerHTML = cinemaWatchersHtml(chat);
+    }
     document.getElementById('cinema-playpause-btn').textContent = cinema.isPlaying ? '⏸' : '▶️';
 
     const signature = cinema.provider + '|' + cinema.videoId;

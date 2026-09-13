@@ -99,6 +99,7 @@ export const state = {
   streakRewardStore: _loadUserLocal('sr_streak_reward', '{}'),
   terrariaDayNightTimer: null,
   renderedChatState: { chatId: null, signature: null, msgSigParts: [], charsLen: 0 },
+  renderedChatPartnerId: null,
   renderedWikiPostState: { postId: null, heavySignature: null, fullSignature: null },
   replyingTo: null,
   editingMessageId: null,
@@ -135,5 +136,6 @@ export const state = {
   // === 🎥 Кинотеатр в чате: совместный просмотр видео ===
   renderedCinemaState: { chatId: null, signature: null }, // чтобы не пересоздавать iframe на каждое обновление
   lastCinemaSyncedUpdatedAt: null,
+  renderedCinemaWatchersSig: null,
   cinemaMinimizedByChat: {}, // { chatId: true } — локально свёрнутая панель плеера (не сохраняется между сессиями)
 };
