@@ -774,7 +774,7 @@ function copyMessageText(text) {
 }
 
 // URL Cloud Function из index.js (регион europe-west1 задан там же через setGlobalOptions).
-// Ключ Google Translate хранится только на сервере — сюда попадает только уже готовый перевод.
+// Перевод делает MyMemory (бесплатно, без ключа) — сюда попадает только уже готовый текст.
 const TRANSLATE_FN_URL = 'https://europe-west1-book-2b50d.cloudfunctions.net/translateText';
 
 // Язык, на который переводим. Приоритет: ручной выбор в профиле (для тех, кто зашёл не через
@@ -823,7 +823,7 @@ async function toggleMessageTranslation(chatId, m) {
             let serverMsg = '';
             try { serverMsg = (await res.json()).error || ''; } catch (e) {}
             if (res.status === 404) textEl.textContent = 'Функция перевода не задеплоена (404)';
-            else if (res.status === 500 || res.status === 502) textEl.textContent = 'Сервер перевода: ' + (serverMsg || 'ошибка ключа API или самого Google Translate');
+            else if (res.status === 500 || res.status === 502) textEl.textContent = 'Сервер перевода: ' + (serverMsg || 'MyMemory сейчас недоступен');
             else textEl.textContent = 'Ошибка сервера перевода (' + res.status + ')';
             console.error('translateText вернул ошибку:', res.status, serverMsg);
             return;
