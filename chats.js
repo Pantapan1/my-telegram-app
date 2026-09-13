@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { attachmentHtml, avatarHtml, colorFor, compressImage, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, sanitizeAndScopeWikiCss, sanitizeWikiCss, saveLocal, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
+import { attachmentHtml, avatarHtml, colorFor, compressImage, detectCinemaSource, escapeHtml, formatDate, friendlyDbError, friendlyUploadError, initialOf, lastSeenText, nickColorStyle, renderMarkdown, renderMarkdownInline, sanitizeAndScopeWikiCss, sanitizeWikiCss, saveLocal, searchRutubeVideos, searchYoutubeVideos, setupAttachmentPicker, shopBadgeHtml, uploadToCloudinary, uploadToImgbb, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge } from './pass.js';
 import { openUserProfile } from './profile.js';
 
@@ -66,6 +66,12 @@ export function isWikiModerator(chat) {
 
 export function isRoleplayGroup(chat) {
     return !!(chat && chat.type === 'group' && chat.groupMode === 'roleplay');
+}
+
+// Виджеты прямо в чате — как и виджеты вики, но привязаны к конкретному сообщению.
+// Отправлять их может только ГМ группы либо администратор приложения.
+export function canSendChatWidget(chat) {
+    return !!(chat && chat.type === 'group' && (isGroupGM(chat) || state.isAdmin));
 }
 
 // Открытое сообщество: любой вступивший участник может опубликовать пост на стене
@@ -384,7 +390,9 @@ export function renderChatOverlay(chat) {
         document.getElementById('chat-economy-btn').classList.toggle('hidden', !iAmModerator);
         document.getElementById('chat-wiki-btn').classList.remove('hidden');
         updateWikiBtnBadge(chat);
+        document.getElementById('btn-toggle-chat-widget').classList.toggle('hidden', !canSendChatWidget(chat));
     } else {
+        document.getElementById('btn-toggle-chat-widget').classList.add('hidden');
         const other = otherParticipant(chat);
         document.getElementById('chat-partner-name').textContent = other.name;
         document.getElementById('chat-partner-avatar-wrap').innerHTML = avatarHtml(other.name, other.avatar, 'avatar-sm');
@@ -407,10 +415,13 @@ export function renderChatOverlay(chat) {
     }
     document.getElementById('chat-quote-watermark').textContent = pinned ? '"' + pinned.text + '"' : '';
     updateTypingIndicator(chat);
+    renderCinemaPanel(chat);
 
     const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
     const listEl = document.getElementById('chat-messages-list');
-    const signature = messages.map(m => m.id + (m.edited ? ':e' : '') + (m.text ? m.text.length : 0) + (m.asCharacterId || '') + (m.messageStyle || '')).join(',') + '|' + (pinned ? pinned.pinnedAt : '') + '|' + JSON.stringify(chat.characters || {}).length;
+    const msgSigParts = messages.map(m => m.id + (m.edited ? ':e' : '') + (m.text ? m.text.length : 0) + (m.asCharacterId || '') + (m.messageStyle || ''));
+    const charsLen = JSON.stringify(chat.characters || {}).length;
+    const signature = msgSigParts.join(',') + '|' + (pinned ? pinned.pinnedAt : '') + '|' + charsLen;
 
     if (state.renderedChatState.chatId === chat.id && state.renderedChatState.signature === signature) {
         state.chatLastRead[chat.id] = Date.now(); 
@@ -421,112 +432,154 @@ export function renderChatOverlay(chat) {
 
     const body = document.getElementById('chat-body');
     const wasNearBottom = state.renderedChatState.chatId !== chat.id || (body.scrollHeight - body.scrollTop - body.clientHeight < 120);
-    
-    listEl.innerHTML = messages.length ? messages.map(m => {
-        const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        const isMine = m.senderId === state.currentUser.id;
 
-        if (m.isSystem) {
-            return `<div class="msg-system-row">⚙️ ${escapeHtml(m.text)}</div>`;
-        }
+    // ОПТИМИЗАЦИЯ ПРОТИВ "МОРГАНИЯ": самый частый случай изменения — просто дописалось одно
+    // новое сообщение в конец (отправили сами или пришло от собеседника). Раньше в этом случае
+    // вся лента (все аватарки, картинки, стикеры, iframe виджетов) пересобиралась через innerHTML
+    // заново — старые узлы уничтожались и создавались с нуля, из-за чего на секунду был виден
+    // "пустой" экран/битые картинки, пока всё перезагружалось. Теперь если ничего, кроме
+    // добавления одного сообщения в хвост списка, не изменилось — просто дорисовываем один новый
+    // узел, не трогая уже отрисованные сообщения.
+    const prevParts = state.renderedChatState.msgSigParts || [];
+    const canAppendOnly = state.renderedChatState.chatId === chat.id
+        && state.renderedChatState.charsLen === charsLen
+        && messages.length > 0
+        && msgSigParts.length === prevParts.length + 1
+        && prevParts.every((p, i) => p === msgSigParts[i]);
 
-        const charOverride = m.asCharacterId && chat.characters && chat.characters[m.asCharacterId];
-        const displayName = charOverride ? charOverride.name : m.senderName;
-        const senderInfo = state.usersData.find(u => u.id === m.senderId);
-        const displayAvatarUrl = charOverride ? charOverride.avatar : (senderInfo ? senderInfo.avatar : null);
-
-        const isAction = m.messageStyle === 'action';
-        if (isAction) {
-            const replyPreviewA = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
-            return `
-            <div class="msg-row msg-row-action">
-                <div class="msg-action-line">
-                    ${replyPreviewA}
-                    <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
-                </div>
-            </div>`;
-        }
-
-        const isThought = m.messageStyle === 'thought';
-        if (isThought) {
-            const replyPreviewT = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
-            return `
-            <div class="msg-row msg-row-action">
-                <div class="msg-thought-line">
-                    ${replyPreviewT}
-                    <span>💭 <b>${escapeHtml(displayName)}</b> думает: «${escapeHtml(m.text)}»<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
-                </div>
-            </div>`;
-        }
-
-        const senderName = (chat.type === 'group' && (!isMine || charOverride))
-            ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; ${isMine ? 'color:rgba(255,255,255,0.92);' : (nickColorStyle(m.senderId) || 'color:#ff9f0a;')} margin-bottom:4px; cursor:pointer;">${escapeHtml(displayName)}${charOverride ? '' : verifiedBadge(m.senderId) + shopBadgeHtml(m.senderId) + passVipBadge(m.senderId)}</div>` 
-            : '';
-
-        const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(charOverride ? displayName : (senderInfo ? senderInfo.name : m.senderName), displayAvatarUrl, 'msg-avatar')}</div>` : '';
-
-        const replyPreview = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
-        const editedMark = m.edited ? '<span style="opacity:0.6;font-size:10px;"> (изменено)</span>' : '';
-        
-        if (m.soundSticker) {
-            const btnId = 'snd_' + m.id;
-            setTimeout(() => {
-                const b = document.getElementById(btnId);
-                if (b) b.onclick = () => { try { new Audio(m.soundSticker).play().catch(() => {}); } catch (e) {} };
-            }, 0);
-            return `
-            <div class="msg-row ${isMine ? 'mine' : ''}">
-                ${avatarBlock}
-                <div class="msg-sticker-wrap">
-                    ${senderName}
-                    ${replyPreview}
-                    <button id="${btnId}" style="border:none;border-radius:16px;padding:14px 20px;font-size:22px;cursor:pointer;background:var(--card-bg);box-shadow:0 2px 8px rgba(0,0,0,0.08);">🔊</button>
-                    <span class="msg-time sticker-time">${timeStr}</span>
-                </div>
-            </div>`;
-        }
-
-        if (m.sticker) {
-            return `
-            <div class="msg-row ${isMine ? 'mine' : ''}">
-                ${avatarBlock}
-                <div class="msg-sticker-wrap">
-                    ${senderName}
-                    ${replyPreview}
-                    <img src="${m.sticker}" class="msg-sticker">
-                    <span class="msg-time sticker-time">${timeStr}</span>
-                </div>
-            </div>`;
-        }
-
-        // Баблы сообщений собраны слитно без переносов строк \n, чтобы pre-wrap не создавал паразитных отступов
-        if (m.attachment) {
-            return `
-            <div class="msg-row ${isMine ? 'mine' : ''}">
-                ${avatarBlock}
-                <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}</span></div>
-            </div>`;
-        }
-        
-        return `
-        <div class="msg-row ${isMine ? 'mine' : ''}">
-            ${avatarBlock}
-            <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}</span></div>
-        </div>`;
-    }).join('') : '<div style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
-
-    attachMessageGestures(listEl, messages, chat, state.currentUser.id, state.isAdmin);
-
-    listEl.querySelectorAll('.msg-sender-name, .msg-avatar-click').forEach(el => {
-        el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
-    });
+    if (canAppendOnly) {
+        const newMsg = messages[messages.length - 1];
+        const emptyHint = listEl.querySelector('.chat-empty-hint');
+        if (emptyHint) emptyHint.remove();
+        const temp = document.createElement('div');
+        temp.innerHTML = buildMessageRowHtml(newMsg, chat);
+        attachMessageGestures(temp, [newMsg], chat, state.currentUser.id, state.isAdmin);
+        while (temp.firstChild) listEl.appendChild(temp.firstChild);
+    } else {
+        listEl.innerHTML = messages.length
+            ? messages.map(m => buildMessageRowHtml(m, chat)).join('')
+            : '<div class="chat-empty-hint" style="color:var(--text-secondary);font-size:13px;text-align:center;margin-top:20px;position:relative;z-index:1;">Начните диалог</div>';
+        attachMessageGestures(listEl, messages, chat, state.currentUser.id, state.isAdmin);
+    }
 
     state.chatLastRead[chat.id] = Date.now(); 
     saveLocal('sr_chat_last_read', state.chatLastRead);
     document.getElementById('chats-nav-badge').classList.add('hidden');
     
-    state.renderedChatState = { chatId: chat.id, signature };
+    state.renderedChatState = { chatId: chat.id, signature, msgSigParts, charsLen };
     if (wasNearBottom) body.scrollTop = body.scrollHeight;
+}
+
+// Строит HTML одного сообщения — вынесено из renderChatOverlay отдельной функцией, чтобы
+// её можно было переиспользовать и при полной перерисовке ленты, и при дорисовке только
+// одного нового сообщения (см. canAppendOnly выше).
+function buildMessageRowHtml(m, chat) {
+    const timeStr = new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const isMine = m.senderId === state.currentUser.id;
+
+    if (m.isSystem) {
+        return `<div class="msg-system-row">⚙️ ${escapeHtml(m.text)}</div>`;
+    }
+
+    const charOverride = m.asCharacterId && chat.characters && chat.characters[m.asCharacterId];
+    const displayName = charOverride ? charOverride.name : m.senderName;
+    const senderInfo = state.usersData.find(u => u.id === m.senderId);
+    const displayAvatarUrl = charOverride ? charOverride.avatar : (senderInfo ? senderInfo.avatar : null);
+
+    const isAction = m.messageStyle === 'action';
+    if (isAction) {
+        const replyPreviewA = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+        return `
+        <div class="msg-row msg-row-action">
+            <div class="msg-action-line">
+                ${replyPreviewA}
+                <span>🎬 <b>${escapeHtml(displayName)}</b> ${escapeHtml(m.text)}<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
+            </div>
+        </div>`;
+    }
+
+    const isThought = m.messageStyle === 'thought';
+    if (isThought) {
+        const replyPreviewT = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+        return `
+        <div class="msg-row msg-row-action">
+            <div class="msg-thought-line">
+                ${replyPreviewT}
+                <span>💭 <b>${escapeHtml(displayName)}</b> думает: «${escapeHtml(m.text)}»<span class="msg-time" style="display:inline;margin-left:6px;">${timeStr}${m.edited ? ' (изменено)' : ''}</span></span>
+            </div>
+        </div>`;
+    }
+
+    const senderName = (chat.type === 'group' && (!isMine || charOverride))
+        ? `<div class="msg-sender-name" data-uid="${m.senderId}" style="font-size:11px; font-weight:700; ${isMine ? 'color:rgba(255,255,255,0.92);' : (nickColorStyle(m.senderId) || 'color:#ff9f0a;')} margin-bottom:4px; cursor:pointer;">${escapeHtml(displayName)}${charOverride ? '' : verifiedBadge(m.senderId) + shopBadgeHtml(m.senderId) + passVipBadge(m.senderId)}</div>` 
+        : '';
+
+    const avatarBlock = !isMine ? `<div class="msg-avatar-click" data-uid="${m.senderId}">${avatarHtml(charOverride ? displayName : (senderInfo ? senderInfo.name : m.senderName), displayAvatarUrl, 'msg-avatar')}</div>` : '';
+
+    const replyPreview = m.replyTo ? `<div class="msg-reply-quote"><b>${escapeHtml(m.replyTo.author)}</b>: ${escapeHtml(m.replyTo.text)}</div>` : '';
+    const editedMark = m.edited ? '<span style="opacity:0.6;font-size:10px;"> (изменено)</span>' : '';
+
+    if (m.soundSticker) {
+        const btnId = 'snd_' + m.id;
+        setTimeout(() => {
+            const b = document.getElementById(btnId);
+            if (b) b.onclick = () => { try { new Audio(m.soundSticker).play().catch(() => {}); } catch (e) {} };
+        }, 0);
+        return `
+        <div class="msg-row ${isMine ? 'mine' : ''}">
+            ${avatarBlock}
+            <div class="msg-sticker-wrap">
+                ${senderName}
+                ${replyPreview}
+                <button id="${btnId}" style="border:none;border-radius:16px;padding:14px 20px;font-size:22px;cursor:pointer;background:var(--card-bg);box-shadow:0 2px 8px rgba(0,0,0,0.08);">🔊</button>
+                <span class="msg-time sticker-time">${timeStr}</span>
+            </div>
+        </div>`;
+    }
+
+    if (m.sticker) {
+        return `
+        <div class="msg-row ${isMine ? 'mine' : ''}">
+            ${avatarBlock}
+            <div class="msg-sticker-wrap">
+                ${senderName}
+                ${replyPreview}
+                <img src="${m.sticker}" class="msg-sticker">
+                <span class="msg-time sticker-time">${timeStr}</span>
+            </div>
+        </div>`;
+    }
+
+    if (m.chatWidget) {
+        const frameHostId = 'cwf_' + m.id;
+        const sizeClass = 'chat-widget-size-' + (CHAT_WIDGET_SIZES[m.chatWidget.size] ? m.chatWidget.size : 'medium');
+        setTimeout(() => mountChatWidgetFrame(frameHostId, m.chatWidget), 0);
+        return `
+        <div class="msg-row ${isMine ? 'mine' : ''}">
+            ${avatarBlock}
+            <div class="chat-widget-wrap ${sizeClass}">
+                ${senderName}
+                ${replyPreview}
+                <div id="${frameHostId}" class="chat-widget-card"></div>
+                <span class="msg-time sticker-time">${timeStr}</span>
+            </div>
+        </div>`;
+    }
+
+    // Баблы сообщений собраны слитно без переносов строк \n, чтобы pre-wrap не создавал паразитных отступов
+    if (m.attachment) {
+        return `
+        <div class="msg-row ${isMine ? 'mine' : ''}">
+            ${avatarBlock}
+            <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}</span></div>
+        </div>`;
+    }
+
+    return `
+    <div class="msg-row ${isMine ? 'mine' : ''}">
+        ${avatarBlock}
+        <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}</span></div>
+    </div>`;
 }
 
 export function pinQuote(chatId, text, author) { 
@@ -549,13 +602,58 @@ export function closeMessageContextMenu() {
     if (el) el.remove();
 }
 
+// Мини-тост для быстрой обратной связи (копирование и т.п.) — не блокирует, в отличие от tg.showAlert.
+export function showMiniToast(text) {
+    const existing = document.querySelector('.mini-copy-toast');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'mini-copy-toast';
+    el.textContent = text;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 200);
+    }, 1400);
+}
+
+function copyMessageText(text) {
+    const done = () => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        showMiniToast('Скопировано');
+    };
+    const fail = () => {
+        // Фолбэк для окружений без Clipboard API (старые WebView)
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            done();
+        } catch (e) {
+            tg.showAlert('Не удалось скопировать текст');
+        }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fail);
+    } else {
+        fail();
+    }
+}
+
 export function openMessageContextMenu(chat, m, canModify) {
     closeMessageContextMenu();
-    const isTextMsg = !m.sticker && !m.attachment && !m.soundSticker;
-    const replyText = m.soundSticker ? '🔊 Звук-стикер' : (m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text));
+    const isTextMsg = !m.sticker && !m.attachment && !m.soundSticker && !m.chatWidget;
+    const replyText = m.chatWidget ? '🧩 Виджет' : (m.soundSticker ? '🔊 Звук-стикер' : (m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text)));
 
     const items = [];
     items.push({ ico: '↩️', label: 'Ответить', action: () => startReply(m.id, m.senderName, replyText) });
+    if (isTextMsg) items.push({ ico: '📋', label: 'Копировать', action: () => copyMessageText(m.text) });
     if (isTextMsg) items.push({ ico: '📌', label: 'Закрепить как цитату', action: () => pinQuote(chat.id, m.text, m.senderName) });
     if (isTextMsg && canModify) items.push({ ico: '✏️', label: 'Редактировать', action: () => startEditMessage(m.id, m.text) });
     if (canModify) items.push({ ico: '🗑', label: 'Удалить', danger: true, action: () => deleteMessageWithConfirm(chat.id, m.id) });
@@ -580,9 +678,14 @@ export function openMessageContextMenu(chat, m, canModify) {
     document.body.appendChild(backdrop);
 }
 
-export function attachMessageGestures(listEl, messages, chat, myId, adminFlag) {
-    const rows = listEl.querySelectorAll('.msg-row');
+export function attachMessageGestures(containerEl, messages, chat, myId, adminFlag) {
+    const rows = containerEl.querySelectorAll('.msg-row');
     rows.forEach((row, i) => {
+        // Защита от повторного навешивания: если этот же DOM-узел уже был обработан раньше
+        // (например, containerEl — вся лента, а часть строк в ней не менялась), не вешаем
+        // второй набор pointerdown/up/move обработчиков поверх старого.
+        if (row.dataset.gestureBound) return;
+        row.dataset.gestureBound = '1';
         const m = messages[i];
         if (!m) return;
         const isMine = m.senderId === myId;
@@ -634,12 +737,16 @@ export function attachMessageGestures(listEl, messages, chat, myId, adminFlag) {
             clearLongPress();
             const wasActive = active;
             active = false;
-            if (wasActive && swiped) startReply(m.id, m.senderName, m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text));
+            if (wasActive && swiped) startReply(m.id, m.senderName, m.chatWidget ? '🧩 Виджет' : (m.sticker ? '🖼 Стикер' : (m.attachment ? '📎 Вложение' : m.text)));
             reset();
         }
         row.addEventListener('pointerup', endHandler);
         row.addEventListener('pointercancel', endHandler);
         row.addEventListener('pointerleave', () => { if (active) endHandler(); });
+    });
+
+    containerEl.querySelectorAll('.msg-sender-name, .msg-avatar-click').forEach(el => {
+        el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
     });
 }
 
@@ -775,6 +882,83 @@ setupAttachmentPicker('chat-attach-file', async (attachment) => {
     document.getElementById('chat-reply-bar').classList.add('hidden');
 });
 
+// === Виджеты прямо в чате: конструктор (только ГМ/админ) ===
+
+let chatWidgetPreviewTimer = null;
+function scheduleChatWidgetPreview() {
+    clearTimeout(chatWidgetPreviewTimer);
+    chatWidgetPreviewTimer = setTimeout(() => {
+        const frame = document.getElementById('chat-widget-preview-frame');
+        if (!frame) return;
+        frame.srcdoc = buildWikiWidgetSrcdoc(
+            document.getElementById('chat-widget-html').value,
+            document.getElementById('chat-widget-css').value,
+            document.getElementById('chat-widget-js').value
+        );
+    }, 400);
+}
+['chat-widget-html', 'chat-widget-css', 'chat-widget-js'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', scheduleChatWidgetPreview);
+});
+
+function openChatWidgetComposer() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!canSendChatWidget(chat)) return tg.showAlert('Отправлять виджеты в этот чат могут только ГМ и администратор');
+    document.getElementById('chat-widget-size').value = 'medium';
+    document.getElementById('chat-widget-html').value = '';
+    document.getElementById('chat-widget-css').value = '';
+    document.getElementById('chat-widget-js').value = '';
+    scheduleChatWidgetPreview();
+    document.getElementById('chat-widget-composer-modal').classList.remove('hidden');
+    document.getElementById('chat-input-tools-menu').classList.remove('open');
+    document.getElementById('chat-input-tools-toggle').classList.remove('active');
+}
+
+function closeChatWidgetComposer() {
+    document.getElementById('chat-widget-composer-modal').classList.add('hidden');
+}
+
+document.getElementById('btn-toggle-chat-widget').onclick = openChatWidgetComposer;
+document.getElementById('btn-cancel-chat-widget').onclick = closeChatWidgetComposer;
+document.getElementById('chat-widget-composer-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'chat-widget-composer-modal') closeChatWidgetComposer();
+});
+
+document.getElementById('btn-send-chat-widget').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !state.db || !canSendChatWidget(chat)) return closeChatWidgetComposer();
+
+    const html = document.getElementById('chat-widget-html').value;
+    const css = document.getElementById('chat-widget-css').value;
+    const js = document.getElementById('chat-widget-js').value;
+    if (!html.trim() && !css.trim() && !js.trim()) return tg.showAlert('Добавьте хотя бы HTML для виджета');
+    if (html.length > CHAT_WIDGET_LIMITS.maxHtml || css.length > CHAT_WIDGET_LIMITS.maxCss || js.length > CHAT_WIDGET_LIMITS.maxJs) {
+        return tg.showAlert('Слишком длинный код виджета — сократите HTML/CSS/JS.');
+    }
+    const sizeEl = document.getElementById('chat-widget-size');
+    const size = CHAT_WIDGET_SIZES[sizeEl.value] ? sizeEl.value : 'medium';
+
+    const payload = {
+        senderId: state.currentUser.id,
+        senderName: state.currentUser.name,
+        text: '',
+        chatWidget: { html, css, js, size },
+        createdAt: Date.now()
+    };
+    if (state.replyingTo) payload.replyTo = { id: state.replyingTo.id, author: state.replyingTo.author, text: state.replyingTo.text };
+
+    push(ref(state.db, 'chats/' + state.currentChatId + '/messages'), payload).then(() => {
+        update(ref(state.db, 'chats/' + state.currentChatId), {
+            lastMessage: '🧩 Виджет',
+            lastMessageAt: Date.now()
+        });
+        state.replyingTo = null;
+        document.getElementById('chat-reply-bar').classList.add('hidden');
+        closeChatWidgetComposer();
+    }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
 document.getElementById('chat-message-input').addEventListener('keydown', (e) => { 
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
@@ -833,6 +1017,8 @@ setInterval(() => {
 
 document.getElementById('close-chat-btn').onclick = function() {
     clearTypingStatus();
+    clearCinemaWatchStatus();
+    stopCinemaPlaybackLocally();
     state.replyingTo = null;
     document.getElementById('chat-reply-bar').classList.add('hidden');
     document.getElementById('chat-overlay').classList.remove('active'); 
@@ -859,6 +1045,8 @@ document.getElementById('chat-leave-group-btn').onclick = function() {
             ['mutedUsers/' + state.currentUser.id]: null
         }).then(() => {
             clearTypingStatus();
+            clearCinemaWatchStatus();
+            stopCinemaPlaybackLocally();
             document.getElementById('chat-overlay').classList.remove('active');
             state.activeOverlay = null;
             state.currentChatId = null;
@@ -1652,6 +1840,11 @@ function wikiIconFor(name) {
 // анимировать, считать, использовать canvas/таймеры — просто без пути наружу.
 const WIKI_WIDGET_LIMITS = { maxCount: 10, maxHtml: 20000, maxCss: 20000, maxJs: 20000 };
 
+// Виджеты-сообщения в чате переиспользуют ту же песочницу (buildWikiWidgetSrcdoc ниже),
+// просто живут не в вики, а прямо в ленте сообщений, и у каждого своё "разрешение" (ширина).
+const CHAT_WIDGET_LIMITS = { maxHtml: 12000, maxCss: 12000, maxJs: 12000 };
+const CHAT_WIDGET_SIZES = { small: true, medium: true, large: true, full: true };
+
 function applyWikiCustomCss(chat) {
     const chatId = chat && chat.id;
     // Элементы с классом .wiki-theme переиспользуются под ЛЮБУЮ вики — помечаем их id
@@ -1702,12 +1895,29 @@ ${html || ''}
 window.addEventListener('message', function(event) {
     const data = event.data;
     if (!data || data.type !== 'sr-wiki-widget-resize' || typeof data.height !== 'number') return;
-    document.querySelectorAll('iframe.wiki-widget-frame').forEach(frame => {
+    document.querySelectorAll('iframe.wiki-widget-frame, iframe.chat-widget-frame').forEach(frame => {
         if (frame.contentWindow === event.source) {
             frame.style.height = Math.min(Math.max(Math.round(data.height), 40), 900) + 'px';
         }
     });
 });
+
+// Монтирует iframe виджета внутрь уже отрисованного сообщения (аналогично звук-стикеру —
+// сначала строка чата вставляется как HTML-строка, а тяжёлый контент/обработчики
+// довешиваются отдельным тиком, чтобы не городить srcdoc с кавычками внутри innerHTML).
+function mountChatWidgetFrame(hostId, widget) {
+    const host = document.getElementById(hostId);
+    if (!host || host.dataset.built) return;
+    host.dataset.built = '1';
+    const iframe = document.createElement('iframe');
+    iframe.className = 'chat-widget-frame';
+    iframe.setAttribute('sandbox', 'allow-scripts');
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.style.cssText = 'width:100%;border:0;display:block;height:50px;';
+    iframe.srcdoc = buildWikiWidgetSrcdoc(widget.html, widget.css, widget.js);
+    host.appendChild(iframe);
+}
 
 function renderWikiWidgetFrame(widget) {
     const wrap = document.createElement('div');
@@ -2468,27 +2678,57 @@ export function renderWikiPost() {
     const post = (chat.wiki && chat.wiki.posts || {})[state.wikiPostId];
     if (!post) { document.getElementById('close-wiki-post-btn').click(); return; }
 
+    // ОПТИМИЗАЦИЯ ПРОТИВ "МОРГАНИЯ": весь чат подписан на один общий узел 'chats' в базе,
+    // поэтому renderWikiPost() раньше вызывался заново при АБСОЛЮТНО любом изменении в любом
+    // чате приложения — например, когда кто-то печатает сообщение в другом чате (индикатор
+    // "печатает..." пишется туда же каждые 1.5 сек). Каждый такой вызов пересобирал галерею
+    // картинок и виджет (iframe) с нуля — картинки на секунду перезагружались, iframe виджета
+    // пересоздавался — вот и было заметное моргание при каждом входе в пост. Теперь считаем
+    // "подпись" поста и комментариев и, если ничего в самом посте не изменилось, тихо выходим,
+    // не трогая уже отрисованный DOM.
+    // Разбито на два уровня подписи: "тяжёлая" часть (галерея картинок + виджет + автор —
+    // содержит <img>/<iframe>, их пересоздание и вызывает моргание) и "лёгкая" часть
+    // (комментарии — просто текст). Комментарий добавили — незачем перезагружать картинки поста.
+    const comments = post.comments ? Object.entries(post.comments).map(([id, c]) => ({ id, ...c })) : [];
+    const commentsSig = comments.map(c => c.id + (c.text ? c.text.length : 0)).sort().join(',');
+    const heavySignature = [
+        post.title || '', (post.text || '').length, (post.images || []).join('|'), !!post.pinned,
+        Object.keys(post.likedBy || {}).sort().join(','), post.widgetId || '', post.authorId || ''
+    ].join('§');
+    const fullSignature = heavySignature + '§' + commentsSig;
+
+    const prevState = state.renderedWikiPostState;
+    if (prevState.postId === state.wikiPostId && prevState.fullSignature === fullSignature) {
+        return; // в посте вообще ничего не изменилось — не трогаем DOM
+    }
+    const heavyChanged = !(prevState.postId === state.wikiPostId && prevState.heavySignature === heavySignature);
+    state.renderedWikiPostState = { postId: state.wikiPostId, heavySignature, fullSignature };
+
     document.getElementById('wiki-post-title').textContent = post.title || '(без названия)';
     document.getElementById('wiki-post-body-title').textContent = post.title || '(без названия)';
 
-    // Строка автора поста, в стиле Amino: аватар + имя + дата публикации
-    const authorRowEl = document.getElementById('wiki-post-author-row');
-    if (authorRowEl) {
-        const authorInfo = state.usersData.find(u => u.id === post.authorId);
-        const authorName = (authorInfo && authorInfo.name) || (chat.participantNames && chat.participantNames[post.authorId]) || 'Участник';
-        authorRowEl.innerHTML = `
-            ${avatarHtml(authorName, authorInfo ? authorInfo.avatar : null, 'avatar-sm')}
-            <div>
-                <div class="wpar-name">${escapeHtml(authorName)}</div>
-                <div class="wpar-date">${formatDate(post.createdAt)}</div>
-            </div>`;
+    if (heavyChanged) {
+        // Строка автора поста, в стиле Amino: аватар + имя + дата публикации
+        const authorRowEl = document.getElementById('wiki-post-author-row');
+        if (authorRowEl) {
+            const authorInfo = state.usersData.find(u => u.id === post.authorId);
+            const authorName = (authorInfo && authorInfo.name) || (chat.participantNames && chat.participantNames[post.authorId]) || 'Участник';
+            authorRowEl.innerHTML = `
+                ${avatarHtml(authorName, authorInfo ? authorInfo.avatar : null, 'avatar-sm')}
+                <div>
+                    <div class="wpar-name">${escapeHtml(authorName)}</div>
+                    <div class="wpar-date">${formatDate(post.createdAt)}</div>
+                </div>`;
+        }
     }
     
     // Поддержка Markdown в теле поста дропа/вики
-    const wikiTextEl = document.getElementById('wiki-post-text');
-    if (wikiTextEl) {
-        wikiTextEl.innerHTML = renderMarkdown(post.text || '');
-        wikiTextEl.classList.add('md-body');
+    if (heavyChanged) {
+        const wikiTextEl = document.getElementById('wiki-post-text');
+        if (wikiTextEl) {
+            wikiTextEl.innerHTML = renderMarkdown(post.text || '');
+            wikiTextEl.classList.add('md-body');
+        }
     }
 
     document.getElementById('btn-wiki-pin-post').classList.toggle('active', !!post.pinned);
@@ -2502,31 +2742,33 @@ export function renderWikiPost() {
     document.getElementById('wiki-like-count').textContent = likeCount;
     document.getElementById('btn-wiki-like-post').classList.toggle('liked', liked);
 
-    const wrap = document.getElementById('wiki-post-gallery-wrap');
-    const gallery = document.getElementById('wiki-post-gallery');
-    const dots = document.getElementById('wiki-post-gallery-dots');
-    const images = post.images || [];
+    if (heavyChanged) {
+        const wrap = document.getElementById('wiki-post-gallery-wrap');
+        const gallery = document.getElementById('wiki-post-gallery');
+        const dots = document.getElementById('wiki-post-gallery-dots');
+        const images = post.images || [];
 
-    if (!images.length) {
-        wrap.classList.add('hidden');
-        gallery.innerHTML = '';
-        dots.innerHTML = '';
-    } else {
-        wrap.classList.remove('hidden');
-        gallery.innerHTML = images.map((url, i) => `<img src="${url}" data-idx="${i}">`).join('');
-        dots.innerHTML = images.length > 1
-            ? images.map((_, i) => `<span class="${i === 0 ? 'active' : ''}"></span>`).join('')
-            : '';
-        gallery.querySelectorAll('img').forEach(img => {
-            img.onclick = () => openWikiImageViewer(images, parseInt(img.getAttribute('data-idx'), 10));
-        });
-        gallery.onscroll = () => {
-            const idx = Math.round(gallery.scrollLeft / gallery.clientWidth);
-            dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('active', i === idx));
-        };
+        if (!images.length) {
+            wrap.classList.add('hidden');
+            gallery.innerHTML = '';
+            dots.innerHTML = '';
+        } else {
+            wrap.classList.remove('hidden');
+            gallery.innerHTML = images.map((url, i) => `<img src="${url}" data-idx="${i}">`).join('');
+            dots.innerHTML = images.length > 1
+                ? images.map((_, i) => `<span class="${i === 0 ? 'active' : ''}"></span>`).join('')
+                : '';
+            gallery.querySelectorAll('img').forEach(img => {
+                img.onclick = () => openWikiImageViewer(images, parseInt(img.getAttribute('data-idx'), 10));
+            });
+            gallery.onscroll = () => {
+                const idx = Math.round(gallery.scrollLeft / gallery.clientWidth);
+                dots.querySelectorAll('span').forEach((d, i) => d.classList.toggle('active', i === idx));
+            };
+        }
+
+        renderWikiPostWidget(chat, post);
     }
-
-    renderWikiPostWidget(chat, post);
     renderWikiComments(chat, post);
 }
 
@@ -3133,3 +3375,348 @@ function economyKickUser(chat, uid) {
         }).then(renderEconomyPanel).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
     });
 }
+
+// ============================================================
+// 🎥 КИНОТЕАТР В ЧАТЕ — совместный просмотр видео (YouTube/Rutube/VK/файл)
+// Состояние хранится в chats/{chatId}/cinema и синхронизируется всем через
+// обычный onValue('chats'), который и так уже вызывает renderChatOverlay().
+// ============================================================
+
+function cinemaCanControl(chat) {
+    // Play/пауза/перемотка доступны любому участнику — это совместный просмотр
+    return !!(chat && chat.participants && chat.participants[state.currentUser.id]);
+}
+
+function cinemaCanClose(chat) {
+    if (!chat || !chat.cinema) return false;
+    if (chat.cinema.startedBy === state.currentUser.id) return true;
+    return isGroupGM(chat) || isWikiModerator(chat);
+}
+
+function postCinemaSystemMessage(chatId, text) {
+    push(ref(state.db, 'chats/' + chatId + '/messages'), {
+        senderId: 'system',
+        senderName: 'Система',
+        text,
+        isSystem: true,
+        createdAt: Date.now()
+    });
+    update(ref(state.db, 'chats/' + chatId), { lastMessage: text, lastMessageAt: Date.now() });
+}
+
+// Оценка текущей позиции воспроизведения с учётом времени, прошедшего с последнего обновления в БД
+function cinemaEstimatePosition(cinema) {
+    if (!cinema) return 0;
+    if (!cinema.isPlaying) return cinema.position || 0;
+    const elapsed = (Date.now() - (cinema.updatedAt || Date.now())) / 1000;
+    return Math.max(0, (cinema.position || 0) + elapsed);
+}
+
+// Отправка команды локальному плееру (play/pause/seek). Для YouTube и Rutube — через postMessage
+// в их встроенный плеер, для прямых видеофайлов — напрямую через <video>. Для VK Видео полноценного
+// API управления нет — там ролик просто показывается всем одновременно, без точной синхронизации.
+function applyCinemaPlaybackCommand(provider, cmd) {
+    const frame = document.querySelector('#cinema-video-wrap iframe');
+    if (frame && frame.contentWindow) {
+        try {
+            if (provider === 'youtube') {
+                if (cmd.type === 'play') frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+                if (cmd.type === 'pause') frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+                if (cmd.type === 'seek') frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [cmd.position, true] }), '*');
+            } else if (provider === 'rutube') {
+                if (cmd.type === 'play') frame.contentWindow.postMessage(JSON.stringify({ type: 'player:play' }), '*');
+                if (cmd.type === 'pause') frame.contentWindow.postMessage(JSON.stringify({ type: 'player:pause' }), '*');
+                if (cmd.type === 'seek') frame.contentWindow.postMessage(JSON.stringify({ type: 'player:setCurrentTime', data: { time: cmd.position } }), '*');
+            }
+        } catch (e) {}
+    }
+    const video = document.querySelector('#cinema-video-wrap video');
+    if (video && provider === 'direct') {
+        if (cmd.type === 'play') video.play().catch(() => {});
+        if (cmd.type === 'pause') video.pause();
+        if (cmd.type === 'seek') video.currentTime = cmd.position;
+    }
+}
+
+function cinemaEmbedHtml(cinema) {
+    const { provider, videoId } = cinema;
+    const origin = encodeURIComponent(location.origin);
+    if (provider === 'youtube') {
+        return `<iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&playsinline=1&rel=0&origin=${origin}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen frameborder="0"></iframe>`;
+    }
+    if (provider === 'rutube') {
+        return `<iframe src="https://rutube.ru/play/embed/${videoId}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen frameborder="0"></iframe>`;
+    }
+    if (provider === 'vk') {
+        const parts = videoId.split('_');
+        return `<iframe src="https://vk.com/video_ext.php?oid=${parts[0]}&id=${parts[1]}&hd=2&autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen frameborder="0"></iframe>`;
+    }
+    if (provider === 'direct') {
+        return `<video src="${videoId}" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
+    }
+    return '';
+}
+
+function cinemaWatchersHtml(chat) {
+    if (!chat.cinemaWatchers) return '';
+    const now = Date.now();
+    const ids = Object.entries(chat.cinemaWatchers).filter(([uid, ts]) => (now - ts) < 9000).map(([uid]) => uid);
+    if (!ids.length) return '';
+    const shown = ids.slice(0, 4);
+    const html = shown.map(uid => {
+        const u = state.usersData.find(x => x.id === uid);
+        const name = (u && u.name) || (chat.participantNames && chat.participantNames[uid]) || '?';
+        return `<div class="cinema-watcher-avatar" title="${escapeHtml(name)}">${avatarHtml(name, u ? u.avatar : null, 'cinema-watcher-img')}</div>`;
+    }).join('');
+    const extra = ids.length > shown.length ? `<div class="cinema-watcher-extra">+${ids.length - shown.length}</div>` : '';
+    return html + extra;
+}
+
+// Останавливает и полностью убирает плеер локально (при закрытии/выходе из чата),
+// чтобы видео не продолжало играть в фоне после того как чат закрыт.
+function stopCinemaPlaybackLocally() {
+    const wrap = document.getElementById('cinema-video-wrap');
+    if (wrap) wrap.innerHTML = '';
+    const panel = document.getElementById('chat-cinema-panel');
+    if (panel) panel.classList.add('hidden');
+    const badge = document.getElementById('cinema-mini-badge');
+    if (badge) badge.classList.add('hidden');
+    state.renderedCinemaState = { chatId: null, signature: null };
+    state.lastCinemaSyncedUpdatedAt = null;
+}
+
+export function renderCinemaPanel(chat, force) {
+    const panel = document.getElementById('chat-cinema-panel');
+    const miniBadge = document.getElementById('cinema-mini-badge');
+    if (!panel || !miniBadge || !chat) return;
+    const cinema = chat.cinema && chat.cinema.active ? chat.cinema : null;
+
+    if (!cinema) {
+        panel.classList.add('hidden');
+        miniBadge.classList.add('hidden');
+        if (state.renderedCinemaState.chatId) stopCinemaPlaybackLocally();
+        return;
+    }
+
+    const minimized = !!state.cinemaMinimizedByChat[chat.id];
+    miniBadge.classList.toggle('hidden', !minimized);
+    panel.classList.toggle('hidden', minimized);
+    if (minimized && !force) return;
+
+    document.getElementById('cinema-close-btn').classList.toggle('hidden', !cinemaCanClose(chat));
+    const providerNames = { youtube: 'YouTube', rutube: 'Rutube', vk: 'VK Видео', direct: 'Видео' };
+    document.getElementById('cinema-panel-title-text').textContent = cinema.title ? cinema.title : ('Кинотеатр · ' + (providerNames[cinema.provider] || ''));
+    document.getElementById('cinema-watchers-row').innerHTML = cinemaWatchersHtml(chat);
+    document.getElementById('cinema-playpause-btn').textContent = cinema.isPlaying ? '⏸' : '▶️';
+
+    const signature = cinema.provider + '|' + cinema.videoId;
+    if (state.renderedCinemaState.chatId !== chat.id || state.renderedCinemaState.signature !== signature) {
+        document.getElementById('cinema-video-wrap').innerHTML = cinemaEmbedHtml(cinema);
+        state.renderedCinemaState = { chatId: chat.id, signature };
+        // Даём плееру время инициализироваться, затем подгоняем позицию/паузу под общее состояние
+        setTimeout(() => {
+            const pos = cinemaEstimatePosition(cinema);
+            applyCinemaPlaybackCommand(cinema.provider, { type: 'seek', position: pos });
+            applyCinemaPlaybackCommand(cinema.provider, { type: cinema.isPlaying ? 'play' : 'pause' });
+        }, 900);
+    } else if (state.lastCinemaSyncedUpdatedAt !== cinema.updatedAt) {
+        applyCinemaPlaybackCommand(cinema.provider, { type: cinema.isPlaying ? 'play' : 'pause' });
+    }
+    state.lastCinemaSyncedUpdatedAt = cinema.updatedAt;
+}
+
+document.getElementById('btn-toggle-cinema').onclick = function(e) {
+    e.stopPropagation();
+    document.getElementById('chat-input-tools-menu').classList.remove('open');
+    document.getElementById('chat-input-tools-toggle').classList.remove('active');
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat) return;
+
+    if (chat.cinema && chat.cinema.active) {
+        state.cinemaMinimizedByChat[chat.id] = false;
+        renderCinemaPanel(chat, true);
+        document.getElementById('chat-cinema-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+    }
+    document.getElementById('cinema-search-input').value = '';
+    document.getElementById('cinema-link-input').value = '';
+    document.getElementById('cinema-manual-link-row').classList.add('hidden');
+    document.getElementById('cinema-manual-link-toggle').textContent = 'Или вставить ссылку вручную ›';
+    document.getElementById('cinema-search-results').innerHTML = '<div class="cinema-search-hint">Введите название фильма, ролика или сериала</div>';
+    cinemaSearchSource = 'youtube';
+    document.querySelectorAll('.cinema-source-tab').forEach(t => t.classList.toggle('active', t.dataset.source === 'youtube'));
+    document.getElementById('cinema-setup-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('cinema-search-input').focus(), 50);
+};
+
+document.getElementById('cinema-modal-cancel').onclick = function() {
+    document.getElementById('cinema-setup-modal').classList.add('hidden');
+};
+
+document.getElementById('cinema-setup-modal').onclick = function(e) {
+    if (e.target === this) this.classList.add('hidden');
+};
+
+document.getElementById('cinema-manual-link-toggle').onclick = function() {
+    const row = document.getElementById('cinema-manual-link-row');
+    const nowHidden = row.classList.toggle('hidden');
+    this.textContent = nowHidden ? 'Или вставить ссылку вручную ›' : 'Скрыть поле для ссылки ‹';
+    if (!nowHidden) setTimeout(() => document.getElementById('cinema-link-input').focus(), 50);
+};
+
+let cinemaSearchSource = 'youtube';
+
+document.getElementById('cinema-source-tabs').addEventListener('click', function(e) {
+    const tab = e.target.closest('.cinema-source-tab');
+    if (!tab) return;
+    cinemaSearchSource = tab.dataset.source;
+    document.querySelectorAll('.cinema-source-tab').forEach(t => t.classList.toggle('active', t === tab));
+    const q = document.getElementById('cinema-search-input').value.trim();
+    if (q) runCinemaSearch(q);
+});
+
+document.getElementById('cinema-search-btn').onclick = function() {
+    const q = document.getElementById('cinema-search-input').value.trim();
+    if (q) runCinemaSearch(q);
+};
+document.getElementById('cinema-search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); const q = this.value.trim(); if (q) runCinemaSearch(q); }
+});
+
+async function runCinemaSearch(query) {
+    const resultsEl = document.getElementById('cinema-search-results');
+    resultsEl.innerHTML = '<div class="cinema-search-loading">Ищем видео…</div>';
+    try {
+        const items = cinemaSearchSource === 'rutube' ? await searchRutubeVideos(query) : await searchYoutubeVideos(query);
+        if (!items.length) {
+            resultsEl.innerHTML = '<div class="cinema-search-empty">Ничего не нашлось. Попробуйте другой запрос' + (cinemaSearchSource === 'youtube' ? ' или вкладку Rutube' : '') + '.</div>';
+            return;
+        }
+        resultsEl.innerHTML = items.map((it, idx) => `
+            <button class="cinema-result-item" data-idx="${idx}" type="button">
+                ${it.thumb ? `<img class="cinema-result-thumb" src="${it.thumb}" alt="">` : `<div class="cinema-result-thumb"></div>`}
+                <div class="cinema-result-info">
+                    <div class="cinema-result-title">${escapeHtml(it.title || 'Без названия')}</div>
+                    <div class="cinema-result-channel">${escapeHtml(it.channel || '')}</div>
+                </div>
+            </button>
+        `).join('');
+        resultsEl.querySelectorAll('.cinema-result-item').forEach((btn, idx) => {
+            btn.onclick = () => launchCinemaFromSource(items[idx]);
+        });
+    } catch (err) {
+        if (err && err.code === 'NO_KEY') {
+            resultsEl.innerHTML = '<div class="cinema-search-empty">Поиск по YouTube пока не настроен (нет API-ключа). Попробуйте вкладку Rutube или вставьте ссылку вручную.</div>';
+        } else {
+            resultsEl.innerHTML = '<div class="cinema-search-empty">Не удалось выполнить поиск (' + escapeHtml(cinemaSearchSource) + '). Попробуйте другую вкладку или вставьте ссылку вручную.</div>';
+        }
+    }
+}
+
+function launchCinemaFromSource(source) {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !state.db || !source || !source.videoId) return;
+
+    const cinemaData = {
+        active: true,
+        provider: source.provider,
+        videoId: source.videoId,
+        title: source.title || '',
+        isPlaying: true,
+        position: 0,
+        updatedAt: Date.now(),
+        startedBy: state.currentUser.id,
+        startedByName: state.currentUser.name
+    };
+    update(ref(state.db, 'chats/' + chat.id), { cinema: cinemaData }).then(() => {
+        document.getElementById('cinema-setup-modal').classList.add('hidden');
+        state.cinemaMinimizedByChat[chat.id] = false;
+        const providerNames = { youtube: 'YouTube', rutube: 'Rutube', vk: 'VK Видео', direct: 'видео' };
+        const label = source.title ? `«${source.title}»` : (providerNames[source.provider] || 'видео');
+        postCinemaSystemMessage(chat.id, `🎥 ${state.currentUser.name} запустил(а) в кинотеатре ${label} — присоединяйтесь!`);
+    }).catch(e => tg.showAlert('Ошибка: ' + friendlyDbError(e)));
+}
+
+document.getElementById('cinema-modal-start').onclick = function() {
+    const raw = document.getElementById('cinema-link-input').value.trim();
+    if (!raw) { tg.showAlert('Вставьте ссылку на видео'); return; }
+    const source = detectCinemaSource(raw);
+    if (!source) { tg.showAlert('Не удалось распознать ссылку. Поддерживаются YouTube, Rutube, VK Видео и прямые ссылки на видеофайл.'); return; }
+    launchCinemaFromSource(source);
+};
+
+document.getElementById('cinema-minimize-btn').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat) return;
+    state.cinemaMinimizedByChat[chat.id] = true;
+    renderCinemaPanel(chat, true);
+};
+
+document.getElementById('cinema-mini-badge').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat) return;
+    state.cinemaMinimizedByChat[chat.id] = false;
+    renderCinemaPanel(chat, true);
+};
+
+document.getElementById('cinema-close-btn').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !cinemaCanClose(chat)) return;
+    tg.showConfirm('Закрыть кинотеатр для всех участников?', (ok) => {
+        if (!ok) return;
+        remove(ref(state.db, 'chats/' + chat.id + '/cinema')).catch(() => {});
+        remove(ref(state.db, 'chats/' + chat.id + '/cinemaWatchers')).catch(() => {});
+        postCinemaSystemMessage(chat.id, `🎥 ${state.currentUser.name} закрыл(а) кинотеатр`);
+    });
+};
+
+document.getElementById('cinema-playpause-btn').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !chat.cinema || !cinemaCanControl(chat)) return;
+    const willPlay = !chat.cinema.isPlaying;
+    const curPos = cinemaEstimatePosition(chat.cinema);
+    applyCinemaPlaybackCommand(chat.cinema.provider, { type: willPlay ? 'play' : 'pause' });
+    update(ref(state.db, 'chats/' + chat.id + '/cinema'), {
+        isPlaying: willPlay,
+        position: curPos,
+        updatedAt: Date.now()
+    }).catch(() => {});
+};
+
+function cinemaSeekRelative(delta) {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !chat.cinema || !cinemaCanControl(chat)) return;
+    const curPos = Math.max(0, cinemaEstimatePosition(chat.cinema) + delta);
+    applyCinemaPlaybackCommand(chat.cinema.provider, { type: 'seek', position: curPos });
+    update(ref(state.db, 'chats/' + chat.id + '/cinema'), { position: curPos, updatedAt: Date.now() }).catch(() => {});
+}
+
+document.getElementById('cinema-seek-back-btn').onclick = function() { cinemaSeekRelative(-10); };
+document.getElementById('cinema-seek-fwd-btn').onclick = function() { cinemaSeekRelative(10); };
+
+document.getElementById('cinema-resync-btn').onclick = function() {
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !chat.cinema) return;
+    const pos = cinemaEstimatePosition(chat.cinema);
+    applyCinemaPlaybackCommand(chat.cinema.provider, { type: 'seek', position: pos });
+    applyCinemaPlaybackCommand(chat.cinema.provider, { type: chat.cinema.isPlaying ? 'play' : 'pause' });
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+};
+
+// Присутствие «кто сейчас смотрит» — тот же приём, что и индикатор «печатает»:
+// периодическая метка времени вместо onDisconnect (надёжнее в мини-приложении).
+function cinemaSendHeartbeat() {
+    if (!state.currentChatId || !state.db) return;
+    const chat = state.chatsData.find(c => c.id === state.currentChatId);
+    if (!chat || !chat.cinema || !chat.cinema.active) return;
+    if (state.cinemaMinimizedByChat[chat.id]) return;
+    update(ref(state.db, 'chats/' + chat.id + '/cinemaWatchers'), { [state.currentUser.id]: Date.now() }).catch(() => {});
+}
+
+export function clearCinemaWatchStatus() {
+    if (state.currentChatId && state.db) remove(ref(state.db, 'chats/' + state.currentChatId + '/cinemaWatchers/' + state.currentUser.id)).catch(() => {});
+}
+
+setInterval(() => {
+    if (state.activeOverlay === 'chat' && state.currentChatId) cinemaSendHeartbeat();
+}, 4000);

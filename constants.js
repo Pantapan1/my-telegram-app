@@ -26,6 +26,13 @@ export const PASS_REASON_TO_QUEST_TYPE = { chapter: 'chapters', book: 'books', c
 
 export const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
 
+// Ключ для поиска видео на YouTube прямо в чате (Кинотеатр). Без него поиск по YouTube работать
+// не будет (можно будет только вставлять готовую ссылку). Получить свой бесплатный ключ:
+// 1. console.cloud.google.com → создать проект (или выбрать существующий)
+// 2. «API и сервисы» → «Библиотека» → включить «YouTube Data API v3»
+// 3. «Учётные данные» → «Создать учётные данные» → «Ключ API» → вставить сюда
+export const YOUTUBE_API_KEY = '';
+
 export const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
 
 export const CLOUDINARY_UPLOAD_PRESET = 'ml_default';

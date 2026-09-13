@@ -1,6 +1,6 @@
 import { remove } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { COVER_COLORS, IMGBB_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, TERRARIA_PIXEL_BITMAPS } from './constants.js';
+import { COVER_COLORS, IMGBB_API_KEY, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, TERRARIA_PIXEL_BITMAPS, YOUTUBE_API_KEY } from './constants.js';
 import { openChapter, renderChapterListView } from './books.js';
 
 export function cardFrameStyle(rarity) {
@@ -396,6 +396,85 @@ export function colorFor(str) {
         }
 
 
+
+        // === Кинотеатр в чате: распознавание ссылок YouTube/Rutube/VK Видео/прямых файлов ===
+
+        export function extractRutubeId(input) {
+            if (!input) return null;
+            const trimmed = input.trim();
+            const m = trimmed.match(/rutube\.ru\/(?:video|play\/embed)\/([a-zA-Z0-9]+)/i);
+            if (m) return m[1];
+            if (/^[a-zA-Z0-9]{20,40}$/.test(trimmed)) return trimmed; // «голый» ID Rutube (длинная hex-строка)
+            return null;
+        }
+
+        export function extractVkVideoId(input) {
+            if (!input) return null;
+            const trimmed = input.trim();
+            const m = trimmed.match(/video(-?\d+_\d+)/i) || trimmed.match(/^(-?\d+_\d+)$/);
+            return m ? m[1] : null;
+        }
+
+        // Определяет источник видео по ссылке или ID: youtube | rutube | vk | direct (прямой файл)
+        export function detectCinemaSource(input) {
+            if (!input) return null;
+            const trimmed = input.trim();
+
+            const yt = extractYoutubeId(trimmed);
+            if (yt) return { provider: 'youtube', videoId: yt };
+
+            const vk = extractVkVideoId(trimmed);
+            if (vk) return { provider: 'vk', videoId: vk };
+
+            if (/^https?:\/\/.+\.(mp4|webm|ogg|mov|m3u8)(\?.*)?$/i.test(trimmed)) {
+                return { provider: 'direct', videoId: trimmed };
+            }
+
+            const rt = extractRutubeId(trimmed);
+            if (rt) return { provider: 'rutube', videoId: rt };
+
+            return null;
+        }
+
+        // Поиск видео по названию — без ссылок. YouTube требует свой API-ключ (см. constants.js),
+        // Rutube отдаёт публичный поиск без ключа (может блокироваться CORS в некоторых сетях).
+        export async function searchYoutubeVideos(query) {
+            if (!YOUTUBE_API_KEY) { const e = new Error('Не задан YOUTUBE_API_KEY'); e.code = 'NO_KEY'; throw e; }
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) { const e = new Error('YouTube API ' + res.status); e.code = 'HTTP_' + res.status; throw e; }
+            const data = await res.json();
+            return (data.items || []).filter(it => it.id && it.id.videoId).map(it => {
+                const thumbs = it.snippet.thumbnails || {};
+                const thumb = (thumbs.medium || thumbs.high || thumbs.default || {}).url || '';
+                return {
+                    provider: 'youtube',
+                    videoId: it.id.videoId,
+                    title: it.snippet.title,
+                    channel: it.snippet.channelTitle,
+                    thumb
+                };
+            });
+        }
+
+        export async function searchRutubeVideos(query) {
+            const url = `https://rutube.ru/api/search/video/?query=${encodeURIComponent(query)}&format=json`;
+            const res = await fetch(url);
+            if (!res.ok) { const e = new Error('Rutube API ' + res.status); e.code = 'HTTP_' + res.status; throw e; }
+            const data = await res.json();
+            const list = data.results || data.items || [];
+            return list.map(it => {
+                const pageUrl = it.video_url || it.url || '';
+                const videoId = extractRutubeId(pageUrl) || (typeof it.id === 'string' ? it.id : '');
+                return {
+                    provider: 'rutube',
+                    videoId,
+                    title: it.title || it.name || 'Без названия',
+                    channel: (it.author && it.author.name) || '',
+                    thumb: it.thumbnail_url || it.thumbnail || ''
+                };
+            }).filter(v => v.videoId);
+        }
 
         document.getElementById('btn-open-yt').onclick = function() {
             if (!state.youtubeVideoId) return;

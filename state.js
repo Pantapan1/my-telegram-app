@@ -97,7 +97,8 @@ export const state = {
   selectedAttackerIid: null,
   streakRewardStore: _loadUserLocal('sr_streak_reward', '{}'),
   terrariaDayNightTimer: null,
-  renderedChatState: { chatId: null, signature: null },
+  renderedChatState: { chatId: null, signature: null, msgSigParts: [], charsLen: 0 },
+  renderedWikiPostState: { postId: null, heavySignature: null, fullSignature: null },
   replyingTo: null,
   editingMessageId: null,
   // === Ролевые группы: персонажи, инвентарь, отыгрыш ===
@@ -130,4 +131,8 @@ export const state = {
   wikiEditingWidgetId: null,     // id виджета вики, который редактируется (null = создание нового)
   communityTab: 'mine', // 'mine' | 'discover' — подвкладка экрана "Сообщество" (бывшие "Чаты")
   previewGroupId: null, // id группы, чьё превью сейчас открыто (до вступления)
+  // === 🎥 Кинотеатр в чате: совместный просмотр видео ===
+  renderedCinemaState: { chatId: null, signature: null }, // чтобы не пересоздавать iframe на каждое обновление
+  lastCinemaSyncedUpdatedAt: null,
+  cinemaMinimizedByChat: {}, // { chatId: true } — локально свёрнутая панель плеера (не сохраняется между сессиями)
 };

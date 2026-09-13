@@ -1277,6 +1277,22 @@
             <span class="text" id="chat-pinned-text"></span>
             <button id="btn-unpin-quote">✕</button>
         </div>
+        <div class="chat-cinema-panel hidden" id="chat-cinema-panel">
+            <div class="cinema-panel-header">
+                <div class="cinema-panel-title"><span>🎥</span><span id="cinema-panel-title-text">Кинотеатр</span></div>
+                <div class="cinema-watchers" id="cinema-watchers-row"></div>
+                <button class="cinema-icon-btn" id="cinema-minimize-btn" title="Свернуть">﹀</button>
+                <button class="cinema-icon-btn hidden" id="cinema-close-btn" title="Закрыть для всех">✕</button>
+            </div>
+            <div class="cinema-video-wrap" id="cinema-video-wrap"></div>
+            <div class="cinema-controls-row" id="cinema-controls-row">
+                <button class="cinema-ctrl-btn" id="cinema-playpause-btn">⏸</button>
+                <button class="cinema-ctrl-btn" id="cinema-seek-back-btn">−10с</button>
+                <button class="cinema-ctrl-btn" id="cinema-seek-fwd-btn">+10с</button>
+                <button class="cinema-ctrl-btn" id="cinema-resync-btn">🔄 Синхронизировать</button>
+            </div>
+        </div>
+        <div class="cinema-mini-badge hidden" id="cinema-mini-badge">🎥 Кинотеатр идёт — нажмите, чтобы открыть</div>
         <div class="reader-content" id="chat-body" style="position:relative; background: #f4f7f6;">
             <div class="chat-quote-watermark" id="chat-quote-watermark"></div>
             <div class="chat-messages-list" id="chat-messages-list"></div>
@@ -1308,13 +1324,71 @@
                 <button class="sticker-toggle" id="chat-input-tools-toggle" title="Ещё">⋯</button>
                 <div class="chat-input-tools-menu" id="chat-input-tools-menu">
                     <button class="sticker-toggle hidden" id="btn-toggle-action-mode" title="Реплика действия">🎬</button>
+                    <button class="sticker-toggle" id="btn-toggle-cinema" title="Кинотеатр">🎥</button>
                     <button class="sticker-toggle" id="btn-toggle-stickers" title="Стикеры">🤩</button>
                     <label class="sticker-toggle" for="chat-attach-file" id="btn-chat-attach" style="display:flex;align-items:center;justify-content:center;" title="Прикрепить файл">📎</label>
+                    <button class="sticker-toggle hidden" id="btn-toggle-chat-widget" title="Виджет (только ГМ и админ)">🧩</button>
                 </div>
             </div>
             <input type="file" id="chat-attach-file" accept="image/*,video/*,audio/*" class="hidden">
             <textarea id="chat-message-input" class="input" placeholder="Сообщение..." rows="1" style="resize:none; max-height:120px; overflow-y:auto; line-height:1.3;"></textarea>
             <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
+        </div>
+
+        <div class="cinema-modal hidden" id="chat-widget-composer-modal">
+            <div class="cinema-modal-card" style="max-height:85vh;overflow-y:auto;">
+                <div class="cinema-modal-title">🧩 Виджет для чата</div>
+                <div class="cinema-modal-sub">Виджет увидят все участники чата. Он выполняется в изолированной песочнице: без доступа к данным приложения, без localStorage/cookie и без сети (только картинки по https). Отправлять виджеты могут только ГМ и администратор.</div>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">Размер (разрешение)</label>
+                <select id="chat-widget-size" class="input" style="margin-bottom:14px;">
+                    <option value="small">Маленький</option>
+                    <option value="medium" selected>Средний</option>
+                    <option value="large">Большой</option>
+                    <option value="full">На всю ширину</option>
+                </select>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">HTML</label>
+                <textarea id="chat-widget-html" class="input" placeholder="<div class=&quot;my-widget&quot;>Привет!</div>" style="min-height:80px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">CSS</label>
+                <textarea id="chat-widget-css" class="input" placeholder=".my-widget { color: #ff6ec7; }" style="min-height:80px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">JS</label>
+                <textarea id="chat-widget-js" class="input" placeholder="document.querySelector('.my-widget').onclick = () => alert('hi');" style="min-height:80px;margin-bottom:14px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">👁 Предпросмотр</label>
+                <div style="border:1px solid var(--border-soft);border-radius:16px;overflow:hidden;margin-bottom:16px;background:var(--surface);">
+                    <iframe id="chat-widget-preview-frame" sandbox="allow-scripts" referrerpolicy="no-referrer" loading="lazy" style="width:100%;border:0;display:block;min-height:100px;"></iframe>
+                </div>
+
+                <div class="cinema-modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-chat-widget">Отмена</button>
+                    <button class="btn" id="btn-send-chat-widget">Отправить в чат</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cinema-modal hidden" id="cinema-setup-modal">
+            <div class="cinema-modal-card">
+                <div class="cinema-modal-title">🎥 Кинотеатр</div>
+                <div class="cinema-modal-sub">Найдите видео по названию — оно запустится прямо в чате, без ссылок, и увидят его все, кто зайдёт в этот чат.</div>
+                <div class="cinema-search-row">
+                    <input type="text" id="cinema-search-input" class="input" placeholder="Что посмотреть?" style="margin-bottom:0;">
+                    <button class="cinema-search-btn" id="cinema-search-btn">🔍</button>
+                </div>
+                <div class="cinema-source-tabs" id="cinema-source-tabs">
+                    <button class="cinema-source-tab active" data-source="youtube" type="button">YouTube</button>
+                    <button class="cinema-source-tab" data-source="rutube" type="button">Rutube</button>
+                </div>
+                <div class="cinema-search-results" id="cinema-search-results"></div>
+                <button class="cinema-manual-link-toggle" id="cinema-manual-link-toggle" type="button">Или вставить ссылку вручную ›</button>
+                <div class="cinema-manual-link-row hidden" id="cinema-manual-link-row">
+                    <input type="text" id="cinema-link-input" class="input" placeholder="Ссылка на видео или ID" style="margin-bottom:0;">
+                    <button class="btn" id="cinema-modal-start" style="margin-top:0;">Запустить</button>
+                </div>
+                <button class="btn btn-secondary" id="cinema-modal-cancel" style="margin-top:10px;">Закрыть</button>
+            </div>
         </div>
     </div>
 
