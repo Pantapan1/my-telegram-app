@@ -27,7 +27,8 @@ jobs:
       - name: Prepare Web Assets & Setup Capacitor
         run: |
           mkdir -p www
-          find . -maxdepth 1 ! -name '.' ! -name '.git' ! -name '.github' ! -name 'www' -exec cp -r {} www/ \;
+          cp -r *.html *.js *.css www/ 2>/dev/null || true
+          [ -d "functions" ] && cp -r functions www/ || true
 
           if [ ! -f "www/index.html" ] && [ -f "www/app.html" ]; then
             cp www/app.html www/index.html
@@ -38,19 +39,18 @@ jobs:
 
           npx cap init "BOKSER" "com.rlteam.bokser" --web-dir www
           npx cap add android
-          npx cap sync android
 
-          # Привязываем путь к Android SDK
+          # Привязываем путь к Android SDK и принимаем лицензии
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-
-          # Автоматически принимаем лицензии SDK
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+          npx cap sync android
 
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
