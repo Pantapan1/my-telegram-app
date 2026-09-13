@@ -773,9 +773,95 @@ function copyMessageText(text) {
     }
 }
 
-// URL Cloud Function из index.js (регион europe-west1 задан там же через setGlobalOptions).
-// Перевод делает MyMemory (бесплатно, без ключа) — сюда попадает только уже готовый текст.
-const TRANSLATE_FN_URL = 'https://europe-west1-book-2b50d.cloudfunctions.net/translateText';
+// Перевод делаем прямо в браузере через MyMemory (api.mymemory.translated.net) — без ключа.
+// Раньше запрос шёл через Firebase Cloud Function (домен *.cloudfunctions.net) — а это тоже
+// инфраструктура Google, до которой из России не всегда есть надёжный доступ, отсюда и было
+// "не удалось связаться с сервером перевода". MyMemory на Google не завязан, поэтому теперь
+// браузер обращается к нему напрямую, а готовый перевод кэшируется прямо в Firebase Realtime
+// Database (как и остальные данные чата в этом файле) — через неё, а не через Cloud Function.
+//
+// Необязательно: впиши сюда свой email — анонимно MyMemory даёт 5000 слов/сутки (на IP каждого
+// читателя отдельно), а с email — 50000 слов/сутки. Ниже сначала пробуем без email, и только если
+// MyMemory ответит "квота исчерпана", автоматически повторяем запрос с email — это и есть автосмена.
+const MYMEMORY_CONTACT_EMAIL = ''; // например: 'you@example.com'
+
+function utf8ByteLength(str) {
+    return new TextEncoder().encode(str).length;
+}
+
+// MyMemory ограничивает один запрос 500 байтами UTF-8 — режем длинные сообщения по границам
+// предложений/строк и переводим по кускам, иначе длинные сообщения (кириллица весит по 2 байта
+// на символ) просто не переводились бы.
+function splitIntoChunks(text, maxBytes = 480) {
+    const parts = text.split(/(?<=[.!?\n])\s+/);
+    const chunks = [];
+    let current = '';
+    for (const part of parts) {
+        const candidate = current ? current + ' ' + part : part;
+        if (utf8ByteLength(candidate) > maxBytes && current) {
+            chunks.push(current);
+            current = part;
+        } else {
+            current = candidate;
+        }
+        // Даже одна "фраза" может сама по себе быть длиннее лимита — рубим её жёстко по символам.
+        while (utf8ByteLength(current) > maxBytes) {
+            let cut = current.length;
+            while (cut > 0 && utf8ByteLength(current.slice(0, cut)) > maxBytes) cut--;
+            chunks.push(current.slice(0, cut));
+            current = current.slice(cut);
+        }
+    }
+    if (current) chunks.push(current);
+    return chunks.length ? chunks : [text];
+}
+
+// MyMemory не умеет автоопределение исходного языка (параметр "autodetect" им отклоняется) —
+// определяем сами по алфавиту; для языков из переключателя (ru/en/ko) этого достаточно.
+function guessSourceLang(text) {
+    if (/[\uAC00-\uD7A3]/.test(text)) return 'ko';
+    if (/[\u3040-\u30FF]/.test(text)) return 'ja';
+    if (/[\u4E00-\u9FFF]/.test(text)) return 'zh';
+    if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+    return 'en';
+}
+
+async function mymemoryTranslateChunk(text, source, target) {
+    const attempts = MYMEMORY_CONTACT_EMAIL ? [null, MYMEMORY_CONTACT_EMAIL] : [null];
+    let lastError = null;
+    for (const contact of attempts) {
+        const params = new URLSearchParams({ q: text, langpair: `${source}|${target}` });
+        if (contact) params.set('de', contact);
+        let data;
+        try {
+            const apiRes = await fetch(`https://api.mymemory.translated.net/get?${params.toString()}`);
+            data = await apiRes.json();
+        } catch (e) {
+            lastError = e;
+            continue;
+        }
+        const quotaExceeded = data && (
+            data.responseStatus === 403 || data.responseStatus === '403' ||
+            /quota/i.test(data.responseDetails || '') || data.quotaFinished === true
+        );
+        if (quotaExceeded) {
+            // Квота этого способа исчерпана — если есть email про запас, пробуем следующий заход цикла.
+            lastError = new Error('quota: суточная квота MyMemory исчерпана');
+            continue;
+        }
+        const translated = data && data.responseData && data.responseData.translatedText;
+        if (!translated) { lastError = new Error('MyMemory вернул пустой ответ'); continue; }
+        return translated;
+    }
+    throw lastError || new Error('Не удалось получить перевод');
+}
+
+async function mymemoryTranslate(text, source, target) {
+    const chunks = splitIntoChunks(text);
+    const results = [];
+    for (const chunk of chunks) results.push(await mymemoryTranslateChunk(chunk, source, target));
+    return results.join(' ');
+}
 
 // Язык, на который переводим. Приоритет: ручной выбор в профиле (для тех, кто зашёл не через
 // Telegram — там неоткуда иначе узнать язык) → язык Telegram → язык браузера.
@@ -802,7 +888,7 @@ async function toggleMessageTranslation(chatId, m) {
         el.classList.add('hidden');
         return;
     }
-    // Уже переводили раньше (этим или другим читателем — прилетело с сервера в самом сообщении)
+    // Уже переводили раньше (этим или другим читателем — уже лежит в самом сообщении из базы)
     if (m.translations && m.translations[lang]) {
         textEl.textContent = m.translations[lang];
         el.classList.remove('hidden');
@@ -811,36 +897,30 @@ async function toggleMessageTranslation(chatId, m) {
 
     textEl.textContent = 'Переводим…';
     el.classList.remove('hidden');
+
+    const cacheRef = (chatId && state.db && m.id) ? ref(state.db, `chats/${chatId}/messages/${m.id}/translations/${lang}`) : null;
+    const source = guessSourceLang(m.text);
+
+    // Уже на нужном языке — не тратим квоту на перевод самого в себя.
+    if (source === lang) {
+        textEl.textContent = m.text;
+        m.translations = m.translations || {};
+        m.translations[lang] = m.text;
+        if (cacheRef) set(cacheRef, m.text).catch(() => {});
+        return;
+    }
+
     try {
-        const res = await fetch(TRANSLATE_FN_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chatId, messageId: m.id, text: m.text, target: lang })
-        });
-        if (!res.ok) {
-            // Разные коды — разные причины: не молчим об этом текстом "проверьте связь",
-            // а сразу говорим, что чинить (это не про интернет пользователя).
-            let serverMsg = '';
-            try { serverMsg = (await res.json()).error || ''; } catch (e) {}
-            if (res.status === 404) textEl.textContent = 'Функция перевода не задеплоена (404)';
-            else if (res.status === 500 || res.status === 502) textEl.textContent = 'Сервер перевода: ' + (serverMsg || 'MyMemory сейчас недоступен');
-            else textEl.textContent = 'Ошибка сервера перевода (' + res.status + ')';
-            console.error('translateText вернул ошибку:', res.status, serverMsg);
-            return;
-        }
-        const data = await res.json();
-        if (data && data.translated) {
-            textEl.textContent = data.translated;
-            m.translations = m.translations || {};
-            m.translations[lang] = data.translated;
-        } else {
-            textEl.textContent = 'Пустой ответ от сервера перевода';
-        }
+        const translated = await mymemoryTranslate(m.text, source, lang);
+        textEl.textContent = translated;
+        m.translations = m.translations || {};
+        m.translations[lang] = translated;
+        // Кэшируем в самой базе — следующий читатель с тем же языком получит перевод мгновенно
+        // и бесплатно, без нового запроса к MyMemory.
+        if (cacheRef) set(cacheRef, translated).catch(() => {});
     } catch (e) {
-        // Сюда попадаем при реальном сбое сети/CORS — но чаще всего это как раз означает,
-        // что функция ещё не задеплоена (fetch на несуществующий домен тоже падает сюда).
-        textEl.textContent = 'Не удалось связаться с сервером перевода';
-        console.error('Ошибка запроса к translateText:', e);
+        textEl.textContent = /quota/i.test(e.message || '') ? 'Дневной лимит переводов исчерпан, попробуйте позже' : 'Не удалось связаться с сервером перевода (MyMemory)';
+        console.error('Ошибка перевода MyMemory:', e);
     }
 }
 
