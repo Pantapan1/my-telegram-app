@@ -350,6 +350,24 @@ export function openChat(chatId) {
 
 window.openChat = openChat;
 
+// Отмечает чат прочитанным: локально (для бейджа непрочитанных) и в Firebase (чтобы у собеседника
+// загорелась вторая галочка "прочитано"). Пишем в базу, только если реально появилось что-то новое
+// непрочитанное — иначе при каждом обновлении чата (например, чужой heartbeat lastSeen) получится
+// бесконечная дозапись: наша запись меняет узел chats -> прилетает обновление -> снова пишем.
+function markChatRead(chat) {
+    state.chatLastRead[chat.id] = Date.now();
+    saveLocal('sr_chat_last_read', state.chatLastRead);
+    document.getElementById('chats-nav-badge').classList.add('hidden');
+
+    if (!chat.messages || !state.currentUser) return;
+    const lastMsg = Object.values(chat.messages).reduce((a, b) => (b.createdAt > (a ? a.createdAt : 0) ? b : a), null);
+    if (!lastMsg) return;
+    const myReceipt = (chat.readReceipts && chat.readReceipts[state.currentUser.id]) || 0;
+    if (lastMsg.createdAt > myReceipt) {
+        update(ref(state.db, 'chats/' + chat.id + '/readReceipts'), { [state.currentUser.id]: lastMsg.createdAt }).catch(() => {});
+    }
+}
+
 export function renderChatOverlay(chat) {
     // Доп.чат вики ("чат-рум") — своя тема/CSS ГМа вики применяется и здесь, а не только
     // в самих оверлеях вики. У обычных чатов и у главного группового чата тема не трогается.
@@ -417,16 +435,14 @@ export function renderChatOverlay(chat) {
     updateTypingIndicator(chat);
     renderCinemaPanel(chat);
 
-    const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
+const messages = chat.messages ? Object.entries(chat.messages).map(([id, m]) => ({ id, ...m })).sort((a, b) => a.createdAt - b.createdAt) : [];
     const listEl = document.getElementById('chat-messages-list');
     const msgSigParts = messages.map(m => m.id + (m.edited ? ':e' : '') + (m.text ? m.text.length : 0) + (m.asCharacterId || '') + (m.messageStyle || ''));
     const charsLen = JSON.stringify(chat.characters || {}).length;
-    const signature = msgSigParts.join(',') + '|' + (pinned ? pinned.pinnedAt : '') + '|' + charsLen;
+    const signature = msgSigParts.join(',') + '|' + (pinned ? pinned.pinnedAt : '') + '|' + charsLen + '|' + JSON.stringify(chat.readReceipts || {});
 
     if (state.renderedChatState.chatId === chat.id && state.renderedChatState.signature === signature) {
-        state.chatLastRead[chat.id] = Date.now(); 
-        saveLocal('sr_chat_last_read', state.chatLastRead);
-        document.getElementById('chats-nav-badge').classList.add('hidden');
+        markChatRead(chat);
         return;
     }
 
@@ -462,12 +478,27 @@ export function renderChatOverlay(chat) {
         attachMessageGestures(listEl, messages, chat, state.currentUser.id, state.isAdmin);
     }
 
-    state.chatLastRead[chat.id] = Date.now(); 
-    saveLocal('sr_chat_last_read', state.chatLastRead);
-    document.getElementById('chats-nav-badge').classList.add('hidden');
+    markChatRead(chat);
     
     state.renderedChatState = { chatId: chat.id, signature, msgSigParts, charsLen };
     if (wasNearBottom) body.scrollTop = body.scrollHeight;
+}
+
+// Статус "доставлено / прочитано" для собственных сообщений — как в обычных мессенджерах.
+// В приватном чате: одна серая галочка — сообщение записалось в базу (доставлено), синие двойные —
+// собеседник открывал чат уже после этого сообщения (chat.readReceipts[uid] >= createdAt).
+// В групповых чатах статус "прочитано всеми" слишком шумный и почти никогда не наступает —
+// поэтому там показываем только факт отправки, без двойной галочки.
+function readTicksHtml(m, chat) {
+    if (m.senderId !== state.currentUser.id) return '';
+    if (chat.type === 'group') return `<span class="msg-ticks" title="Доставлено">✓</span>`;
+    const others = Object.keys(chat.participants || {}).filter(uid => uid !== m.senderId);
+    if (!others.length) return `<span class="msg-ticks" title="Доставлено">✓</span>`;
+    const receipts = chat.readReceipts || {};
+    const isRead = others.every(uid => (receipts[uid] || 0) >= m.createdAt);
+    return isRead
+        ? `<span class="msg-ticks read" title="Прочитано">✓✓</span>`
+        : `<span class="msg-ticks" title="Доставлено">✓</span>`;
 }
 
 // Строит HTML одного сообщения — вынесено из renderChatOverlay отдельной функцией, чтобы
@@ -532,7 +563,7 @@ function buildMessageRowHtml(m, chat) {
                 ${senderName}
                 ${replyPreview}
                 <button id="${btnId}" style="border:none;border-radius:16px;padding:14px 20px;font-size:22px;cursor:pointer;background:var(--card-bg);box-shadow:0 2px 8px rgba(0,0,0,0.08);">🔊</button>
-                <span class="msg-time sticker-time">${timeStr}</span>
+                <span class="msg-time sticker-time">${timeStr}${readTicksHtml(m, chat)}</span>
             </div>
         </div>`;
     }
@@ -544,8 +575,8 @@ function buildMessageRowHtml(m, chat) {
             <div class="msg-sticker-wrap">
                 ${senderName}
                 ${replyPreview}
-                <img src="${m.sticker}" class="msg-sticker">
-                <span class="msg-time sticker-time">${timeStr}</span>
+                <img src="${m.sticker}" class="msg-sticker" onclick="addStickerToMyPack('${escapeHtml(m.sticker)}')" title="Нажмите, чтобы добавить себе">
+                <span class="msg-time sticker-time">${timeStr}${readTicksHtml(m, chat)}</span>
             </div>
         </div>`;
     }
@@ -561,7 +592,7 @@ function buildMessageRowHtml(m, chat) {
                 ${senderName}
                 ${replyPreview}
                 <div id="${frameHostId}" class="chat-widget-card"></div>
-                <span class="msg-time sticker-time">${timeStr}</span>
+                <span class="msg-time sticker-time">${timeStr}${readTicksHtml(m, chat)}</span>
             </div>
         </div>`;
     }
@@ -571,14 +602,14 @@ function buildMessageRowHtml(m, chat) {
         return `
         <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
             ${avatarBlock}
-            <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}</span></div>
+            <div class="msg-bubble">${senderName}${replyPreview}${attachmentHtml(m.attachment)}${m.text ? `<div class="md-body">${renderMarkdown(m.text)}</div>` : ''}<span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
         </div>`;
     }
 
     return `
     <div class="msg-row ${isMine ? 'mine' : ''}" data-msg-id="${escapeHtml(m.id)}">
         ${avatarBlock}
-        <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}</span></div>
+        <div class="msg-bubble">${senderName}${replyPreview}<div class="md-body">${renderMarkdown(m.text)}</div><span class="msg-time">${timeStr}${editedMark}${readTicksHtml(m, chat)}</span></div>
     </div>`;
 }
 
@@ -656,6 +687,7 @@ export function openMessageContextMenu(chat, m, canModify) {
     if (isTextMsg) items.push({ ico: '📋', label: 'Копировать', action: () => copyMessageText(m.text) });
     if (isTextMsg) items.push({ ico: '📌', label: 'Закрепить как цитату', action: () => pinQuote(chat.id, m.text, m.senderName) });
     if (isTextMsg && canModify) items.push({ ico: '✏️', label: 'Редактировать', action: () => startEditMessage(m.id, m.text) });
+    if (m.sticker) items.push({ ico: '➕', label: 'Добавить стикер себе', action: () => addStickerToMyPack(m.sticker) });
     if (canModify) items.push({ ico: '🗑', label: 'Удалить', danger: true, action: () => deleteMessageWithConfirm(chat.id, m.id) });
 
     const backdrop = document.createElement('div');
@@ -1438,6 +1470,20 @@ function setupMyStickerUpload(fileInput, labelId) {
 window.removeMySticker = function(id) {
     if (!state.currentUser) return;
     remove(ref(state.db, 'users/' + state.currentUser.id + '/customStickers/' + id))
+        .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+// Добавить чужой (или свой) стикер из переписки в свой личный пак: по тапу на стикер в сообщении,
+// либо через пункт "Добавить стикер себе" в меню долгого нажатия. Дубликаты не создаём.
+window.addStickerToMyPack = function(url) {
+    if (!state.currentUser || !state.db) return;
+    const already = (state.myStickersData || []).some(s => s.url === url);
+    if (already) { tg.showAlert('Этот стикер уже есть у вас в «Моих стикерах»'); return; }
+    push(ref(state.db, 'users/' + state.currentUser.id + '/customStickers'), { url, createdAt: Date.now() })
+        .then(() => {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            tg.showPopup({ title: 'Готово', message: 'Стикер добавлен в «Мои стикеры»', buttons: [{ type: 'ok' }] });
+        })
         .catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
 };
 
