@@ -24,25 +24,37 @@ jobs:
         with:
           node-version: 20
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Prepare Web Assets & Setup Capacitor
         run: |
+          # 1. Создаем папку www и копируем сайт
           mkdir -p www
           cp -r *.html *.js *.css www/ 2>/dev/null || true
           [ -d "functions" ] && cp -r functions www/ || true
 
+          # 2. Назначаем точкой входа app.html
           if [ ! -f "www/index.html" ] && [ -f "www/app.html" ]; then
             cp www/app.html www/index.html
           fi
 
+          # 3. Инициализируем проект и Capacitor
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
+          # 4. Название приложения: BOKSER, пакет: com.rlteam.bokser
           npx cap init "BOKSER" "com.rlteam.bokser" --web-dir www
           npx cap add android
 
-          # Привязываем путь к Android SDK и принимаем лицензии
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          # 5. Если в репозиторий добавлен icon.png — сгенерировать иконки
+          if [ -f "icon.png" ]; then
+            npm install @capacitor/assets
+            mkdir -p assets
+            cp icon.png assets/icon.png
+            cp icon.png assets/icon-only.png
+            npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' || true
+          fi
 
           npx cap sync android
 
@@ -50,7 +62,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
