@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ app ] # <--- Теперь сборка работает для вашей ветки app
 
 jobs:
   build:
@@ -29,25 +29,21 @@ jobs:
 
       - name: Prepare Web Assets & Setup Capacitor
         run: |
-          # 1. Создаем папку www и копируем сайт
           mkdir -p www
           cp -r *.html *.js *.css www/ 2>/dev/null || true
           [ -d "functions" ] && cp -r functions www/ || true
 
-          # 2. Назначаем точкой входа app.html
           if [ ! -f "www/index.html" ] && [ -f "www/app.html" ]; then
             cp www/app.html www/index.html
           fi
 
-          # 3. Инициализируем проект и Capacitor
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # 4. Название приложения: BOKSER, пакет: com.rlteam.bokser
           npx cap init "BOKSER" "com.rlteam.bokser" --web-dir www
           npx cap add android
 
-          # 5. Если в репозиторий добавлен icon.png — сгенерировать иконки
+          # Генерация иконок, если вы загрузили icon.png в репозиторий
           if [ -f "icon.png" ]; then
             npm install @capacitor/assets
             mkdir -p assets
