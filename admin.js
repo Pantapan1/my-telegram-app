@@ -598,6 +598,7 @@ window.switchAdminTab = function(tab) {
             document.getElementById('book-author').value = book.author || ''; 
             document.getElementById('book-cover').value = book.coverImage || ''; 
             document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-approved-rl').checked = !!book.approvedRL;
             document.getElementById('book-form-heading').textContent = 'Редактировать книгу'; 
             document.getElementById('btn-add-book').textContent = 'Сохранить изменения'; 
             document.getElementById('btn-cancel-edit-book').classList.remove('hidden'); 
@@ -612,6 +613,7 @@ window.switchAdminTab = function(tab) {
             document.getElementById('book-author').value = ''; 
             document.getElementById('book-cover').value = ''; 
             document.getElementById('book-genre').value = '';
+            document.getElementById('book-approved-rl').checked = false;
             document.getElementById('book-form-heading').textContent = 'Добавить книгу'; 
             document.getElementById('btn-add-book').textContent = 'Добавить книгу'; 
             document.getElementById('btn-cancel-edit-book').classList.add('hidden');
@@ -643,7 +645,8 @@ window.switchAdminTab = function(tab) {
                 title: title, 
                 author: document.getElementById('book-author').value.trim() || 'Неизвестен', 
                 coverImage: document.getElementById('book-cover').value.trim(), 
-                genre: document.getElementById('book-genre').value.trim() 
+                genre: document.getElementById('book-genre').value.trim(),
+                approvedRL: document.getElementById('book-approved-rl').checked
             };
             
             if (state.editingBookId) { 

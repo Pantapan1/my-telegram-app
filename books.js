@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, confettiBurst, escapeHtml, friendlyDbError, initialOf, playSound, saveLocal, showTerrariaToast, updateReaderBossLabel } from './utils.js';
+import { colorFor, confettiBurst, escapeHtml, friendlyDbError, initialOf, playSound, renderMarkdown, saveLocal, showTerrariaToast, updateReaderBossLabel } from './utils.js';
 import { awardPassXP } from './pass.js';
 import { currentMultiplier } from './feed.js';
 import { renderProfileStats } from './profile.js';
@@ -9,7 +9,11 @@ export function getChapters(book) {
             if (book.chapters) {
                 return Object.entries(book.chapters)
                     .map(([id, c]) => ({ id, ...c }))
-                    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                    // Порядок задаёт явное поле order (его расставляет редактор книг при
+                    // публикации/перестановке глав); для старых глав, у которых order ещё
+                    // нет, откатываемся на дату создания — так порядок не ломается задним числом.
+                    .filter((c) => !c.draft) // черновики не показываем читателям
+                    .sort((a, b) => (a.order ?? a.createdAt ?? 0) - (b.order ?? b.createdAt ?? 0));
             }
             if (book.text) return [{ id: 'legacy', title: 'Глава 1', text: book.text }];
             return [];
@@ -124,7 +128,7 @@ export function getChapters(book) {
                 return `
                 <div class="card tappable card-anim" style="animation-delay:${Math.min(idx, 8) * 40}ms" onclick="openBook('${book.id}')">
                     ${book.coverImage ? `<img src="${book.coverImage}" class="card-image" onerror="this.style.display='none'">` : `<div class="cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
-                    <div><span class="type-tag type-${type}">${typeLabels[type]}</span>${book.genre ? `<span class="genre-tag" style="margin-left:6px;">${escapeHtml(book.genre)}</span>` : ''}</div>
+                    <div><span class="type-tag type-${type}">${typeLabels[type]}</span>${book.genre ? `<span class="genre-tag" style="margin-left:6px;">${escapeHtml(book.genre)}</span>` : ''}${book.approvedRL ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(29,161,242,0.12);color:#1da1f2;font-weight:800;font-size:11px;padding:3px 8px;border-radius:20px;margin-left:6px;"><span class="verified-badge" style="margin-left:0;">✓</span>RL™</span>` : ''}</div>
                     <div class="card-title">${escapeHtml(book.title)}</div>
                     <div class="card-subtitle">${escapeHtml(book.author || 'Неизвестен')}</div>
                     ${isRead ? '<span class="badge badge-read">✓ Прочитано</span>' : ''} 
@@ -168,6 +172,8 @@ export function getChapters(book) {
             document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
             updateReaderBossLabel(prog.readCount, prog.total);
             document.getElementById('reader-body').innerHTML = `
+                ${book.approvedRL ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(29,161,242,0.12);color:#1da1f2;font-weight:800;font-size:12px;padding:5px 10px;border-radius:20px;margin-bottom:10px;"><span class="verified-badge" style="margin-left:0;">✓</span>Одобрено RL™</div>` : ''}
+                ${book.description ? `<div style="margin-bottom:16px;color:var(--text-primary);font-size:14px;line-height:1.5;">${escapeHtml(book.description)}</div>` : ''}
                 <div style="margin-bottom:14px;color:var(--text-secondary);font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
                 ${state.currentChapters.map((ch, idx) => `
                     <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
@@ -208,7 +214,7 @@ export function getChapters(book) {
             } else {
                 document.getElementById('reader-font-controls').classList.remove('hidden');
                 readerBody.style.fontSize = state.readerFontSize + 'px';
-                readerBody.textContent = chapter.text;
+                readerBody.innerHTML = `<div class="md-body">${renderMarkdown(chapter.text)}</div>`;
             }
             document.getElementById('reader-actions-chapter').classList.remove('hidden');
             attachReaderMilestoneTracking(book);
