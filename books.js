@@ -1,9 +1,9 @@
 import { ref, push, update, remove, set, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, confettiBurst, escapeHtml, friendlyDbError, initialOf, playSound, renderMarkdown, saveLocal, showTerrariaToast, updateReaderBossLabel } from './utils.js';
-import { awardPassXP } from './pass.js';
+import { colorFor, confettiBurst, escapeHtml, formatDate, friendlyDbError, initialOf, nickColorStyle, playSound, renderMarkdown, saveLocal, showTerrariaToast, shopBadgeHtml, updateReaderBossLabel, verifiedBadge } from './utils.js';
+import { awardPassXP, passVipBadge } from './pass.js';
 import { currentMultiplier } from './feed.js';
-import { renderProfileStats } from './profile.js';
+import { renderProfileStats, openUserProfile } from './profile.js';
 
 export function getChapters(book) {
             if (book.chapters) {
@@ -148,6 +148,7 @@ export function getChapters(book) {
             state.currentBookId = id; 
             state.activeOverlay = 'reader'; 
             state.currentChapters = getChapters(book);
+            bookDetailChaptersExpanded = false;
             
             document.getElementById('reader-overlay').classList.add('active'); 
             tg.BackButton.show();
@@ -159,6 +160,60 @@ export function getChapters(book) {
             }
         };
 
+        // === Рейтинг книги (звёзды 1-5), хранится по пользователям: books/{id}/ratings/{uid} ===
+        function pluralRu(n, one, few, many) {
+            const mod10 = n % 10, mod100 = n % 100;
+            if (mod10 === 1 && mod100 !== 11) return one;
+            if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+            return many;
+        }
+
+        export function bookRatingStats(book) {
+            const ratings = book.ratings || {};
+            const vals = Object.values(ratings).map(Number).filter((v) => !isNaN(v));
+            const count = vals.length;
+            const avg = count ? vals.reduce((a, b) => a + b, 0) / count : 0;
+            const mine = state.currentUser ? ratings[state.currentUser.id] : undefined;
+            return { avg, count, mine };
+        }
+
+        export function setBookRating(bookId, stars) {
+            if (!state.db || !state.currentUser) return;
+            set(ref(state.db, 'books/' + bookId + '/ratings/' + state.currentUser.id), stars)
+                .then(() => { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); })
+                .catch((err) => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        }
+
+        // === Комментарии к книге: books/{id}/comments (та же схема, что у постов) ===
+        export function sendBookComment(bookId) {
+            const input = document.getElementById('book-comment-input');
+            if (!input || !input.value.trim() || !state.db) return;
+
+            push(ref(state.db, 'books/' + bookId + '/comments'), {
+                author: state.currentUser.name,
+                userId: state.currentUser.id,
+                text: input.value.trim(),
+                createdAt: Date.now()
+            }).then(() => {
+                input.value = '';
+                update(ref(state.db, 'users/' + state.currentUser.id), { commentsMade: increment(1) })
+                    .catch((err) => console.error('Не удалось обновить счётчик комментариев:', err));
+                awardPassXP(10, 'comment');
+            }).catch((err) => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+        }
+
+        export function deleteBookComment(bookId, commentId) {
+            tg.showConfirm('Удалить комментарий?', (ok) => {
+                if (ok) {
+                    remove(ref(state.db, 'books/' + bookId + '/comments/' + commentId))
+                        .catch((err) => tg.showAlert('Ошибка удаления: ' + friendlyDbError(err)));
+                }
+            });
+        }
+
+        // Помнит, развёрнут ли список глав на странице книги — сбрасывается при открытии новой книги.
+        let bookDetailChaptersExpanded = false;
+
         export function renderChapterListView(book) {
             document.getElementById('reader-title').textContent = book.title; 
             document.getElementById('reader-author').textContent = book.author || '';
@@ -168,20 +223,109 @@ export function getChapters(book) {
             
             const prog = bookProgress(book);
             const readIdx = state.progressStore[book.id]?.readIdx || [];
-            
+            const total = state.currentChapters.length;
+            const allRead = total > 0 && readIdx.length >= total;
+
+            let continueIdx = 0;
+            if (!allRead) {
+                const nextUnread = state.currentChapters.findIndex((c, idx) => !readIdx.includes(idx));
+                continueIdx = nextUnread !== -1 ? nextUnread : (state.progressStore[book.id]?.lastIdx || 0);
+            }
+            const continueLabel = readIdx.length === 0
+                ? '▶ Начать чтение'
+                : (allRead ? '🔄 Читать заново' : `▶ Продолжить · Глава ${continueIdx + 1}`);
+
             document.getElementById('reader-progress-inner').style.width = prog.pct + '%';
             updateReaderBossLabel(prog.readCount, prog.total);
+
+            const typeLabels = { book: '📖 Книга', manga: '🇯🇵 Манга', manhwa: '🇰🇷 Манхва' };
+            const type = book.type || 'book';
+            const rating = bookRatingStats(book);
+            const filledStars = Math.round(rating.mine || rating.avg);
+            const comments = book.comments
+                ? Object.entries(book.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt)
+                : [];
+
             document.getElementById('reader-body').innerHTML = `
-                ${book.approvedRL ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(29,161,242,0.12);color:#1da1f2;font-weight:800;font-size:12px;padding:5px 10px;border-radius:20px;margin-bottom:10px;"><span class="verified-badge" style="margin-left:0;">✓</span>Одобрено RL™</div>` : ''}
-                ${book.description ? `<div style="margin-bottom:16px;color:var(--text-primary);font-size:14px;line-height:1.5;">${escapeHtml(book.description)}</div>` : ''}
-                <div style="margin-bottom:14px;color:var(--text-secondary);font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
-                ${state.currentChapters.map((ch, idx) => `
-                    <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
-                        <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
-                        ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:var(--text-secondary); font-weight:800;">→</span>'}
+                <div class="book-detail">
+                    <div class="book-detail-cover-wrap">
+                        ${book.coverImage
+                            ? `<img src="${book.coverImage}" class="book-detail-cover" onerror="this.style.display='none'">`
+                            : `<div class="book-detail-cover-fallback" style="background:${colorFor(book.title || '')}">${initialOf(book.title)}</div>`}
                     </div>
-                `).join('')}
+                    <div class="book-detail-title">${escapeHtml(book.title)}</div>
+                    <div class="book-detail-author">${escapeHtml(book.author || 'Автор неизвестен')}</div>
+                    <div class="book-detail-tags">
+                        <span class="type-tag type-${type}" style="margin:0 4px 8px;">${typeLabels[type]}</span>
+                        ${book.genre ? `<span class="genre-tag" style="margin:0 4px 8px;">${escapeHtml(book.genre)}</span>` : ''}
+                        ${book.approvedRL ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(29,161,242,0.12);color:#1da1f2;font-weight:800;font-size:11px;padding:4px 10px;border-radius:20px;margin:0 4px 8px;vertical-align:middle;"><span class="verified-badge" style="margin-left:0;">✓</span>RL™</span>` : ''}
+                    </div>
+                    <div class="book-rating-row">
+                        <div class="star-rating" id="book-rating-stars">
+                            ${[1, 2, 3, 4, 5].map((n) => `<span class="star ${n <= filledStars ? 'filled' : ''}" data-star="${n}">★</span>`).join('')}
+                        </div>
+                        <span class="book-rating-count">${rating.count ? `${rating.avg.toFixed(1)} · ${rating.count} ${pluralRu(rating.count, 'оценка', 'оценки', 'оценок')}` : 'Пока нет оценок'}</span>
+                    </div>
+                    ${book.description ? `<div class="book-detail-desc">${escapeHtml(book.description)}</div>` : ''}
+                    <div class="book-detail-actions">
+                        <button class="btn" id="btn-continue-reading" style="margin-top:0;">${continueLabel}</button>
+                        ${total > 1 ? `<button class="btn btn-secondary" id="btn-toggle-chapters" style="margin-top:0;">${bookDetailChaptersExpanded ? '📚 Скрыть главы' : `📚 Главы (${total})`}</button>` : ''}
+                    </div>
+                    ${total > 1 ? `
+                    <div class="chapter-list-wrap ${bookDetailChaptersExpanded ? '' : 'hidden'}" id="book-chapters-list">
+                        <div style="margin:16px 0 10px;color:var(--text-secondary);font-size:13px;font-weight:600;">Выберите главу (${prog.readCount}/${prog.total} прочитано)</div>
+                        ${state.currentChapters.map((ch, idx) => `
+                            <div class="chapter-item ${readIdx.includes(idx) ? 'is-read' : ''}" onclick="openChapter('${book.id}', ${idx})">
+                                <span class="chapter-item-title">${escapeHtml(ch.title || ('Глава ' + (idx + 1)))}</span>
+                                ${readIdx.includes(idx) ? '<span class="chapter-item-check">✓</span>' : '<span style="color:var(--text-secondary); font-weight:800;">→</span>'}
+                            </div>
+                        `).join('')}
+                    </div>` : ''}
+                    <div class="comments-block">
+                        <div class="comments-title">Комментарии (${comments.length})</div>
+                        <div class="book-comment-input-row">
+                            <textarea id="book-comment-input" class="input" placeholder="Написать комментарий..." style="margin-bottom:0;flex:1;min-height:44px;padding:10px;"></textarea>
+                            <button class="chat-send-btn" id="btn-send-book-comment">➤</button>
+                        </div>
+                        ${comments.length ? comments.map((c) => `
+                            <div class="comment-item">
+                                <div>
+                                    <span class="comment-author" data-uid="${c.userId || ''}" style="cursor:pointer;${nickColorStyle(c.userId)}">${escapeHtml(c.author)}${verifiedBadge(c.userId)}${shopBadgeHtml(c.userId)}${passVipBadge(c.userId)}</span>
+                                    <span class="comment-meta">${formatDate(c.createdAt)}</span>
+                                </div>
+                                <div class="comment-text md-body">${renderMarkdown(c.text)}</div>
+                                ${(c.userId === state.currentUser.id || state.isAdmin) ? `<button class="comment-delete" data-cid="${c.id}">Удалить</button>` : ''}
+                            </div>
+                        `).join('') : '<div style="color:var(--text-secondary);font-size:13px;">Пока нет комментариев. Будьте первым!</div>'}
+                    </div>
+                </div>
             `;
+
+            document.getElementById('btn-continue-reading').onclick = () => openChapter(book.id, continueIdx);
+
+            const toggleBtn = document.getElementById('btn-toggle-chapters');
+            if (toggleBtn) {
+                toggleBtn.onclick = () => {
+                    bookDetailChaptersExpanded = !bookDetailChaptersExpanded;
+                    document.getElementById('book-chapters-list').classList.toggle('hidden', !bookDetailChaptersExpanded);
+                    toggleBtn.textContent = bookDetailChaptersExpanded ? '📚 Скрыть главы' : `📚 Главы (${total})`;
+                };
+            }
+
+            document.querySelectorAll('#book-rating-stars .star').forEach((el) => {
+                el.onclick = () => setBookRating(book.id, parseInt(el.dataset.star, 10));
+            });
+
+            document.querySelectorAll('.comments-block .comment-author').forEach((el) => {
+                el.onclick = () => { const uid = el.getAttribute('data-uid'); if (uid) openUserProfile(uid); };
+            });
+
+            document.querySelectorAll('.comments-block .comment-delete').forEach((b) => {
+                b.onclick = () => deleteBookComment(book.id, b.dataset.cid);
+            });
+
+            const sendBtn = document.getElementById('btn-send-book-comment');
+            if (sendBtn) sendBtn.onclick = () => sendBookComment(book.id);
         }
 
         export function openChapter(bookId, idx) {

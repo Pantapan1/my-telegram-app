@@ -683,6 +683,37 @@
         .chapter-item-title { font-size: 15px; font-weight: 600; color:var(--text-primary); }
         .chapter-item-check { color: #30d158; font-size: 16px; }
 
+        /* ===================== СТРАНИЦА КНИГИ (обложка + описание, в стиле манга-либ) ===================== */
+        .book-detail { white-space: normal; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .book-detail-cover-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+        .book-detail-cover {
+            width: 190px; height: 270px; object-fit: cover; border-radius: 20px;
+            box-shadow: 0 14px 30px rgba(0,0,0,0.28); background: #e0e0e0;
+        }
+        .book-detail-cover-fallback {
+            width: 190px; height: 270px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 64px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.28);
+        }
+        .book-detail-title { font-size: 21px; font-weight: 800; text-align: center; color: var(--text-primary); letter-spacing: -0.3px; margin-bottom: 4px; }
+        .book-detail-author { font-size: 13px; text-align: center; color: var(--text-secondary); margin-bottom: 10px; font-weight: 600; }
+        .book-detail-tags { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 2px; }
+        .book-rating-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 16px; flex-wrap: wrap; }
+        .star-rating { display: flex; gap: 2px; }
+        .star-rating .star { font-size: 25px; color: var(--border-soft); cursor: pointer; transition: transform .15s ease, color .15s ease; line-height: 1; }
+        .star-rating .star.filled { color: #ff9f0a; text-shadow: 0 2px 6px rgba(255,159,10,0.35); }
+        .star-rating .star:active { transform: scale(0.8); }
+        .book-rating-count { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+        .book-detail-desc {
+            font-size: 14px; line-height: 1.55; color: var(--text-primary); background: var(--input-bg);
+            border-radius: 16px; padding: 12px 14px; margin-bottom: 18px;
+        }
+        .book-detail-actions { display: flex; gap: 8px; margin-bottom: 6px; }
+        .book-detail-actions .btn { flex: 1; }
+        .chapter-list-wrap { margin-top: 4px; }
+        .chapter-list-wrap.hidden { display: none; }
+        .book-comment-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+
         .reaction-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
         .reaction-btn {
             display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 16px;
