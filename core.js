@@ -229,10 +229,11 @@ export function ensureUserProfile() {
 }
 
 // === ЭКРАН ЗАГРУЗКИ (маскот) ===
-// Прячется один раз, при первом успешном (или провалившемся по таймауту) получении ленты —
-// см. feedWatchdog/onValue('posts') в startFirebaseListeners(). Дальше приложение уже не трогает
-// этот элемент, кроме applyMascotUrl() ниже, которая просто обновляет картинку "на будущее"
-// (если экран загрузки ещё виден в момент прихода settings/mascotUrl).
+// Показывает не просто спиннер, а реальный прогресс: набор ключевых разделов данных
+// (SPLASH_STEPS), которые нужны, чтобы открыть главный экран. Каждый раздел отмечается через
+// markSplashStep() при первом успешном (или провалившемся) ответе своего onValue-листенера.
+// Экран прячется, когда собраны все шаги, либо принудительно — по общему предохранителю
+// splashSafetyTimeout, если что-то зависло (плохая сеть, ошибка правил Firebase и т.п.).
 let _splashHidden = false;
 function hideAppSplash() {
     if (_splashHidden) return;
@@ -241,6 +242,35 @@ function hideAppSplash() {
     if (!splash) return;
     splash.classList.add('app-splash-hidden');
     setTimeout(() => splash.remove(), 500);
+}
+
+const SPLASH_STEPS = [
+    { key: 'posts', label: 'Лента и посты' },
+    { key: 'books', label: 'Библиотека книг' },
+    { key: 'users', label: 'Профили пользователей' },
+    { key: 'chats', label: 'Чаты' },
+    { key: 'cards', label: 'Карточная игра' },
+    { key: 'stickers', label: 'Стикеры' },
+    { key: 'settings', label: 'Оформление' }
+];
+const _splashDone = new Set();
+function updateSplashProgress() {
+    const pct = Math.round((_splashDone.size / SPLASH_STEPS.length) * 100);
+    const bar = document.getElementById('app-splash-bar-inner');
+    const pctEl = document.getElementById('app-splash-percent');
+    const textEl = document.getElementById('app-splash-text');
+    if (bar) bar.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (textEl) {
+        const next = SPLASH_STEPS.find((s) => !_splashDone.has(s.key));
+        textEl.textContent = next ? `Загрузка: ${next.label}…` : 'Почти готово…';
+    }
+}
+function markSplashStep(key) {
+    if (_splashHidden || _splashDone.has(key)) return;
+    _splashDone.add(key);
+    updateSplashProgress();
+    if (_splashDone.size >= SPLASH_STEPS.length) hideAppSplash();
 }
 
 // Стандартный маскот "по умолчанию" — показывается на экране загрузки, пока в
@@ -272,11 +302,16 @@ export function startFirebaseListeners() {
         applyMascotUrl(snapshot.val() || null);
     });
 
+    // Общий предохранитель: если какой-то из отслеживаемых на экране загрузки разделов завис
+    // (плохая сеть, ошибка правил Firebase), не держим маскота вечно — открываем приложение с тем,
+    // что успело прийти, дальше сработают точечные обработчики ошибок внутри каждого раздела.
+    setTimeout(hideAppSplash, 10000);
+
     let feedLoaded = false;
     const feedWatchdog = setTimeout(() => {
         if (feedLoaded) return;
         feedLoaded = true;
-        hideAppSplash(); // не держим маскота вечно, даже если что-то пошло не так — дальше сработает свой экран ошибки
+        markSplashStep('posts');
         const container = document.getElementById('feed-container');
         if (container) {
             container.innerHTML = '<div class="empty-state"><span class="icon">📡</span><div class="title">Не удалось загрузить данные</div><div class="sub">Проверьте интернет-соединение или VPN</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
@@ -287,8 +322,8 @@ export function startFirebaseListeners() {
         if (!feedLoaded) {
             feedLoaded = true;
             clearTimeout(feedWatchdog);
-            hideAppSplash();
         }
+        markSplashStep('posts');
         const data = snapshot.val();
         state.postsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })).sort((a, b) => {
             if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -330,8 +365,8 @@ export function startFirebaseListeners() {
         if (!feedLoaded) {
             feedLoaded = true;
             clearTimeout(feedWatchdog);
-            hideAppSplash();
         }
+        markSplashStep('posts');
         console.error('Firebase (posts) ошибка:', error);
         const container = document.getElementById('feed-container');
         if (container) container.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span><div class="title">${friendlyDbError(error)}</div></div>`;
@@ -398,6 +433,7 @@ export function startFirebaseListeners() {
 
     onValue(ref(state.db, 'settings/theme'), (snapshot) => {
         applyTheme(snapshot.val() || 'light');
+        markSplashStep('settings');
     });
 
     onValue(ref(state.db, 'settings/sounds'), (snapshot) => {
@@ -457,6 +493,7 @@ export function startFirebaseListeners() {
         const data = snapshot.val();
         state.cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
         if (state.isAdmin) { renderAdminCardsList(); renderAdminCombosList(); renderStoryBossDeckPicker(); populateStoryRewardCardSelect(); }
+        markSplashStep('cards');
     });
 
     onValue(ref(state.db, 'storyChapters'), (snapshot) => {
@@ -598,11 +635,13 @@ export function startFirebaseListeners() {
                 renderChapterListView(book); 
             }
         }
+        markSplashStep('books');
     });
 
     onValue(ref(state.db, 'users'), (snapshot) => {
         const data = snapshot.val();
         state.usersData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        markSplashStep('users');
 
         if (state.currentUser) {
             const me = state.usersData.find(u => u.id === state.currentUser.id);
@@ -683,6 +722,7 @@ export function startFirebaseListeners() {
         if (state.activeOverlay === 'groupwiki') renderGroupWiki();
         if (state.activeOverlay === 'wikicategory') renderWikiCategory();
         if (state.activeOverlay === 'wikipost') renderWikiPost();
+        markSplashStep('chats');
     });
 
     onValue(ref(state.db, 'stickers'), (snapshot) => {
@@ -691,6 +731,7 @@ export function startFirebaseListeners() {
         
         if (state.isAdmin) renderAdminStickersList();
         renderStickerPicker();
+        markSplashStep('stickers');
     });
     
     onValue(ref(state.db, 'sticker_packs'), (snapshot) => {

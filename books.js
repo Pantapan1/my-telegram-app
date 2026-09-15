@@ -258,8 +258,11 @@ export function getChapters(book) {
                     <div class="book-detail-tags">
                         <span class="type-tag type-${type}" style="margin:0 4px 8px;">${typeLabels[type]}</span>
                         ${book.genre ? `<span class="genre-tag" style="margin:0 4px 8px;">${escapeHtml(book.genre)}</span>` : ''}
+                        ${book.status ? `<span class="book-status-tag status-${book.status}" style="margin:0 4px 8px;">${{ ongoing: '🟢 В процессе', completed: '✅ Завершена', hiatus: '⏸ Заморожена' }[book.status] || ''}</span>` : ''}
+                        ${book.ageRating ? `<span class="age-rating-tag" style="margin:0 4px 8px;">${escapeHtml(book.ageRating)}</span>` : ''}
                         ${book.approvedRL ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(29,161,242,0.12);color:#1da1f2;font-weight:800;font-size:11px;padding:4px 10px;border-radius:20px;margin:0 4px 8px;vertical-align:middle;"><span class="verified-badge" style="margin-left:0;">✓</span>RL™</span>` : ''}
                     </div>
+                    ${book.tags && book.tags.length ? `<div class="book-detail-tag-chips">${book.tags.map(t => `<span class="book-tag-chip">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
                     <div class="book-rating-row">
                         <div class="star-rating" id="book-rating-stars">
                             ${[1, 2, 3, 4, 5].map((n) => `<span class="star ${n <= filledStars ? 'filled' : ''}" data-star="${n}">★</span>`).join('')}

@@ -30,6 +30,19 @@
     .upload-row { display: flex; gap: 8px; }
     .upload-row .input { flex: 1; margin-bottom: 0; }
     .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .row-2col { display: flex; gap: 8px; }
+    .row-2col .input { flex: 1; }
+    .draft-save-indicator { font-size: 11px; color: #95a5a6; margin: -6px 0 8px; text-align: right; min-height: 14px; transition: opacity .3s ease; }
+    .comment-mod-item { background: #f8f9fa; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+    .comment-mod-item .book-tag { font-size: 11px; font-weight: 700; color: #ed8f03; margin-bottom: 3px; }
+    .comment-mod-item .c-author { font-weight: 700; font-size: 13px; }
+    .comment-mod-item .c-meta { font-size: 11px; color: #95a5a6; margin-left: 6px; }
+    .comment-mod-item .c-text { font-size: 13px; margin-top: 3px; white-space: pre-wrap; word-break: break-word; }
+    .comment-mod-item .c-del { border: none; background: none; color: #e74c3c; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 6px; padding: 0; }
+    .book-status-badge { display: inline-block; padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+    .book-status-badge.ongoing { background: #e8f5e9; color: #2e7d32; }
+    .book-status-badge.completed { background: #e3f2fd; color: #1565c0; }
+    .book-status-badge.hiatus { background: #fdecea; color: #c0392b; }
     .divider { height: 1px; background: #f0f0f0; margin: 16px 0; }
     .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; }
     .admin-item img, .cover-fallback-sm { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
@@ -114,6 +127,20 @@
                 <input type="file" id="book-cover-file" accept="image/*" style="display:none;">
             </div>
             <input type="text" id="book-genre" class="input" placeholder="Жанр (напр. Фантастика)">
+            <div class="row-2col">
+                <select id="book-status" class="input">
+                    <option value="ongoing">🟢 В процессе</option>
+                    <option value="completed">✅ Завершена</option>
+                    <option value="hiatus">⏸ Заморожена</option>
+                </select>
+                <select id="book-age-rating" class="input">
+                    <option value="0+">0+</option>
+                    <option value="12+">12+</option>
+                    <option value="16+">16+</option>
+                    <option value="18+">18+</option>
+                </select>
+            </div>
+            <input type="text" id="book-tags" class="input" placeholder="Теги через запятую (напр. попаданцы, магия, драма)">
             <textarea id="book-description" class="input" placeholder="Краткое описание книги для читателей (о чём книга) — необязательно" style="min-height:70px;"></textarea>
             <label style="display:block;font-size:12px;font-weight:700;color:#7f8c8d;margin:2px 0 6px;">🔊 Звук вехи чтения (25/50/75/100% главы) — необязательно</label>
             <div class="upload-row">
@@ -145,6 +172,8 @@
                 <div id="chapter-text-counter" style="font-size:12px;color:#95a5a6;margin:0 0 10px;text-align:right;"></div>
             </div>
 
+            <div id="chapter-draft-indicator" class="draft-save-indicator"></div>
+
             <div id="chapter-pages-wrap" style="display:none;">
                 <div class="pages-grid" id="chapter-pages-grid"></div>
                 <div class="upload-row">
@@ -163,6 +192,12 @@
         <div class="card">
             <h3 style="margin-top:0;">Мои книги</h3>
             <div id="my-books-list"></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Комментарии к моим книгам</h3>
+            <p style="font-size:12px;color:#95a5a6;margin:-6px 0 10px;">Модерация — можно удалить любой комментарий под своими книгами.</p>
+            <div id="my-books-comments-list"></div>
         </div>
     </div>
 </div>
@@ -214,6 +249,11 @@
         return `hsl(${hash % 360}, 60%, 55%)`;
     }
     function initialOf(str) { return (str || '?').trim().charAt(0).toUpperCase() || '?'; }
+    function formatDate(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
     // Порядок глав задаёт order (расставляет сам редактор при публикации/перестановке); для
     // старых глав без order откатываемся на дату создания. Черновики здесь НЕ фильтруются —
     // автору в редакторе нужно видеть и управлять ими; фильтрация черновиков — в books.js (читалка).
@@ -367,6 +407,7 @@
             const all = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
             booksData = all.filter(b => b.authorId === myId);
             renderMyBooks();
+            renderMyBooksComments();
             populateChapterSelect();
         });
 
@@ -375,12 +416,13 @@
             if (!booksData.length) { el.innerHTML = '<div class="empty-state">Ты пока не добавил ни одной книги</div>'; return; }
 
             const typeIcons = { book: '📖', manga: '🇯🇵', manhwa: '🇰🇷' };
+            const statusLabels = { ongoing: '🟢 В процессе', completed: '✅ Завершена', hiatus: '⏸ Заморожена' };
             el.innerHTML = booksData.map(book => `
                 <div class="admin-item">
                     ${book.coverImage ? `<img src="${book.coverImage}" onerror="this.style.display='none'">` : `<div class="cover-fallback-sm" style="background:${colorFor(book.title)}">${initialOf(book.title)}</div>`}
                     <div class="admin-item-info">
                         <div class="t">${typeIcons[book.type] || '📖'} ${escapeHtml(book.title)}${book.approvedRL ? ' <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:#1da1f2;border-radius:50%;color:#fff;font-size:9px;vertical-align:middle;" title="Одобрено RL™">✓</span>' : ''}</div>
-                        <div class="s">${getChapters(book).length} гл.</div>
+                        <div class="s">${getChapters(book).length} гл. · ${statusLabels[book.status] || statusLabels.ongoing} · ${book.ageRating || '0+'}</div>
                     </div>
                     <div class="admin-item-actions">
                         <button data-id="${book.id}" data-action="edit">✏️</button>
@@ -397,6 +439,43 @@
             });
         }
 
+        // === Модерация комментариев под своими книгами ===
+        function renderMyBooksComments() {
+            const el = document.getElementById('my-books-comments-list');
+            const all = [];
+            booksData.forEach(book => {
+                if (!book.comments) return;
+                Object.entries(book.comments).forEach(([cid, c]) => {
+                    all.push({ bookId: book.id, bookTitle: book.title, commentId: cid, ...c });
+                });
+            });
+            all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            if (!all.length) { el.innerHTML = '<div class="empty-state">Пока никто не оставил комментариев</div>'; return; }
+
+            el.innerHTML = all.slice(0, 100).map(c => `
+                <div class="comment-mod-item">
+                    <div class="book-tag">${escapeHtml(c.bookTitle)}</div>
+                    <div>
+                        <span class="c-author">${escapeHtml(c.author || 'Читатель')}</span>
+                        <span class="c-meta">${formatDate(c.createdAt)}</span>
+                    </div>
+                    <div class="c-text">${escapeHtml(c.text || '')}</div>
+                    <button class="c-del" data-book-id="${c.bookId}" data-comment-id="${c.commentId}">🗑 Удалить</button>
+                </div>
+            `).join('');
+
+            el.querySelectorAll('.c-del').forEach(btn => {
+                btn.onclick = () => {
+                    tg.showConfirm('Удалить этот комментарий?', (ok) => {
+                        if (!ok) return;
+                        remove(ref(db, `books/${btn.dataset.bookId}/comments/${btn.dataset.commentId}`))
+                            .catch(err => tg.showAlert('Ошибка удаления: ' + err.message));
+                    });
+                };
+            });
+        }
+
         function editBook(id) {
             const book = booksData.find(b => b.id === id);
             if (!book) return;
@@ -404,6 +483,9 @@
             document.getElementById('book-title').value = book.title || '';
             document.getElementById('book-cover').value = book.coverImage || '';
             document.getElementById('book-genre').value = book.genre || '';
+            document.getElementById('book-status').value = book.status || 'ongoing';
+            document.getElementById('book-age-rating').value = book.ageRating || '0+';
+            document.getElementById('book-tags').value = (book.tags || []).join(', ');
             document.getElementById('book-description').value = book.description || '';
             document.getElementById('book-milestone-sound').value = book.milestoneSound || '';
             // На случай если у книги стоит тип, который сейчас скрыт у автора (например, права поменялись) —
@@ -423,6 +505,9 @@
             document.getElementById('book-title').value = '';
             document.getElementById('book-cover').value = '';
             document.getElementById('book-genre').value = '';
+            document.getElementById('book-status').value = 'ongoing';
+            document.getElementById('book-age-rating').value = '0+';
+            document.getElementById('book-tags').value = '';
             document.getElementById('book-description').value = '';
             document.getElementById('book-milestone-sound').value = '';
             if (firstAllowedTab) selectBookType(firstAllowedTab.dataset.type);
@@ -485,6 +570,9 @@
                 authorId: myId,
                 coverImage: document.getElementById('book-cover').value.trim(),
                 genre: document.getElementById('book-genre').value.trim(),
+                status: document.getElementById('book-status').value,
+                ageRating: document.getElementById('book-age-rating').value,
+                tags: document.getElementById('book-tags').value.split(',').map(t => t.trim()).filter(Boolean),
                 description: document.getElementById('book-description').value.trim(),
                 milestoneSound: document.getElementById('book-milestone-sound').value.trim()
             };
@@ -566,6 +654,8 @@
             refreshChapterModeVisibility();
             document.getElementById('btn-add-chapter').textContent = 'Опубликовать главу';
             document.getElementById('btn-cancel-edit-chapter').style.display = 'none';
+            const indicator = document.getElementById('chapter-draft-indicator');
+            if (indicator) indicator.textContent = '';
         }
 
         function updateChapterCounter() {
@@ -594,9 +684,15 @@
             if (!title.trim() && !text.trim() && !pages.length) { clearChapterDraft(); return; }
             const payload = { bookId, editingChapterId, title, text, pages, draft, ts: Date.now() };
             try { localStorage.setItem('sr_book_editor_chapter_draft', JSON.stringify(payload)); } catch (e) {}
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0'), mm = String(now.getMinutes()).padStart(2, '0');
+            const indicator = document.getElementById('chapter-draft-indicator');
+            if (indicator) indicator.textContent = `💾 Черновик сохранён автоматически в ${hh}:${mm}`;
         }
         function clearChapterDraft() {
             try { localStorage.removeItem('sr_book_editor_chapter_draft'); } catch (e) {}
+            const indicator = document.getElementById('chapter-draft-indicator');
+            if (indicator) indicator.textContent = '';
         }
         function maybeOfferDraftRestore() {
             if (chapterDraftPromptShown) return;

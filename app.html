@@ -73,8 +73,13 @@
             <div id="app-splash-mascot-fallback" class="app-splash-mascot-fallback hidden">🐾</div>
             <img id="app-splash-mascot" src="https://rolorry.wordpress.com/wp-content/uploads/2026/09/1789319463147.png" alt="">
         </div>
-        <div class="app-splash-spinner"></div>
-        <div class="app-splash-text">Загрузка…</div>
+        <div class="app-splash-progress-wrap">
+            <div class="app-splash-progress-bar"><div id="app-splash-bar-inner" class="app-splash-progress-fill"></div></div>
+            <div class="app-splash-progress-row">
+                <span id="app-splash-text" class="app-splash-text">Инициализация…</span>
+                <span id="app-splash-percent" class="app-splash-percent">0%</span>
+            </div>
+        </div>
     </div>
 
     <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
