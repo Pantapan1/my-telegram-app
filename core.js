@@ -237,7 +237,7 @@ export function ensureUserProfile() {
 // markSplashStep() при первом успешном (или провалившемся) ответе своего onValue-листенера.
 // Экран прячется, когда собраны все шаги, либо принудительно — по общему предохранителю
 // splashSafetyTimeout, если что-то зависло (плохая сеть, ошибка правил Firebase и т.п.).
-let _splashHidden = false;
+var _splashHidden = false;
 function hideAppSplash() {
     if (_splashHidden) return;
     _splashHidden = true;
