@@ -305,7 +305,18 @@ export function startFirebaseListeners() {
     // Общий предохранитель: если какой-то из отслеживаемых на экране загрузки разделов завис
     // (плохая сеть, ошибка правил Firebase), не держим маскота вечно — открываем приложение с тем,
     // что успело прийти, дальше сработают точечные обработчики ошибок внутри каждого раздела.
-    setTimeout(hideAppSplash, 10000);
+    // Сдвинут на 20с, чтобы кнопка "Пропустить загрузку" (появляется на 10с) успевала пожить своей
+    // жизнью, а не пряталась авто-скрытием почти сразу же после появления.
+    setTimeout(hideAppSplash, 20000);
+
+    // На случай, если у кого-то грузится совсем долго (слабая сеть, VPN) — через 10 секунд
+    // показываем кнопку "Пропустить загрузку", чтобы не держать человека перед пустым экраном.
+    setTimeout(() => {
+        const skipBtn = document.getElementById('app-splash-skip-btn');
+        if (skipBtn && !_splashHidden) skipBtn.classList.remove('hidden');
+    }, 10000);
+    const skipBtnEl = document.getElementById('app-splash-skip-btn');
+    if (skipBtnEl) skipBtnEl.onclick = () => hideAppSplash();
 
     let feedLoaded = false;
     const feedWatchdog = setTimeout(() => {

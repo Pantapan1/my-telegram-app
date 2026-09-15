@@ -1046,6 +1046,14 @@
         .app-splash-progress-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .app-splash-progress-row .app-splash-text { text-align: left; flex: 1; }
         .app-splash-percent { font-size: 13px; font-weight: 800; color: var(--accent, #6a3de8); flex-shrink: 0; }
+        .app-splash-skip-btn {
+            margin-top: 4px; padding: 10px 22px; border: none; border-radius: 14px; cursor: pointer;
+            background: linear-gradient(135deg, var(--accent, #6a3de8), #9d7bff); color: #fff;
+            font-size: 13px; font-weight: 700; box-shadow: 0 6px 16px rgba(106,61,232,0.35);
+            animation: app-splash-skip-in 0.4s ease;
+        }
+        .app-splash-skip-btn:active { transform: scale(0.96); }
+        @keyframes app-splash-skip-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         .hidden { display: none !important; }
         .divider { height: 1px; background: rgba(0,0,0,0.06); margin: 20px 0; }
