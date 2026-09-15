@@ -45,12 +45,9 @@ export function initApp() {
     initNativePush();
 }
 
-// === НАТИВНЫЕ PUSH-УВЕДОМЛЕНИЯ (для сборки в APK через Capacitor) ===
-// Работает ТОЛЬКО когда сайт запущен внутри нативной Capacitor-оболочки (см. capacitor-setup.md) —
-// то есть в собранном APK, а не в Telegram Mini App и не в обычном браузере. Там, где плагина нет,
-// функция ничего не делает — это безопасно вызывать всегда, при каждом запуске.
-// Токен устройства сохраняется в users/{id}/fcmTokens/{token} — Cloud Functions (functions/index.js)
-// используют его, чтобы прислать пуш через Firebase Cloud Messaging, даже если приложение закрыто.
+// === Нативные push-уведомления (только внутри Capacitor-сборки APK, см. capacitor-setup.md) ===
+// Без нативного плагина ничего не делает — безопасно вызывать всегда. Токен сохраняется в
+// users/{id}/fcmTokens/{token}, Cloud Functions (functions/index.js) шлют по нему push через FCM.
 function initNativePush() {
     if (!state.currentUser || !state.db) return;
     const cap = window.Capacitor;
@@ -58,10 +55,8 @@ function initNativePush() {
 
     const LocalNotifications = cap.Plugins && cap.Plugins.LocalNotifications;
     if (LocalNotifications) {
-        // Тот же системный разрешение на уведомления (Android 13+), которым пользуется и
-        // PushNotifications ниже — запрашиваем и тут на случай, если FCM-плагина в сборке нет
-        // (см. capacitor-setup.md: без тарифа Blaze серверные push недоступны, работают только
-        // локальные — showNotification() в utils.js использует именно этот плагин).
+        // То же системное разрешение (Android 13+), что и у PushNotifications ниже — запрашиваем
+        // и тут на случай, если FCM-плагина в сборке нет (без тарифа Blaze работают только локальные).
         LocalNotifications.checkPermissions().then((res) => {
             if (res.display !== 'granted') LocalNotifications.requestPermissions().catch(() => {});
         }).catch(() => {});
@@ -231,12 +226,9 @@ export function ensureUserProfile() {
     update(ref(state.db, 'users/' + state.currentUser.id), payload).catch(() => {});
 }
 
-// === ЭКРАН ЗАГРУЗКИ (маскот) ===
-// Показывает не просто спиннер, а реальный прогресс: набор ключевых разделов данных
-// (SPLASH_STEPS), которые нужны, чтобы открыть главный экран. Каждый раздел отмечается через
-// markSplashStep() при первом успешном (или провалившемся) ответе своего onValue-листенера.
-// Экран прячется, когда собраны все шаги, либо принудительно — по общему предохранителю
-// splashSafetyTimeout, если что-то зависло (плохая сеть, ошибка правил Firebase и т.п.).
+// === Экран загрузки (маскот) === показывает реальный прогресс по SPLASH_STEPS: каждый раздел
+// отмечается через markSplashStep() при первом ответе своего onValue-листенера, экран прячется
+// когда все собраны, либо принудительно по splashSafetyTimeout если что-то зависло.
 var _splashHidden = false;
 function hideAppSplash() {
     if (_splashHidden) return;
@@ -432,6 +424,19 @@ export function startFirebaseListeners() {
 
     onValue(ref(state.db, 'settings/badgeColor'), (snapshot) => {
         if (snapshot.val()) state.badgeColor = snapshot.val();
+        renderFeed();
+        renderOwnProfileHeader();
+        if (state.activeOverlay === 'post') renderPostOverlay();
+        if (state.activeOverlay === 'userprofile' && state.viewingUserId) renderUserProfileOverlay(state.viewingUserId);
+        if (state.activeOverlay === 'chat' && state.currentChatId) {
+            state.renderedChatState = { chatId: null, signature: null };
+            const chat = state.chatsData.find(c => c.id === state.currentChatId);
+            if (chat) renderChatOverlay(chat);
+        }
+    });
+
+    onValue(ref(state.db, 'settings/badgeSymbol'), (snapshot) => {
+        if (snapshot.val()) state.badgeSymbol = snapshot.val();
         renderFeed();
         renderOwnProfileHeader();
         if (state.activeOverlay === 'post') renderPostOverlay();

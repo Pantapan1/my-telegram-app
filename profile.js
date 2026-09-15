@@ -1,6 +1,6 @@
 import { ref, push, update, remove, runTransaction, increment, get, child, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, hashPassword, initialOf, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
+import { colorFor, confettiBurst, escapeHtml, formatDate, formatTimeSpent, friendlyDbError, hashPassword, initialOf, isAllowedAdmin, nickColorStyle, playSound, shopBadgeHtml, showTerrariaToast, verifiedBadge } from './utils.js';
 import { awardPassXP, passVipBadge, renderPassButton } from './pass.js';
 import { currentMultiplier, populateBossAdminForm, renderBossParticipantsList } from './feed.js';
 import { startChatWith } from './chats.js';
@@ -137,6 +137,10 @@ export function checkDailyCoinReward() {
             
             document.getElementById('profile-display-name').innerHTML = `<span style="${nickColorStyle(state.currentUser.id)}">${escapeHtml(name)}</span>` + verifiedBadge(state.currentUser.id) + shopBadgeHtml(state.currentUser.id) + passVipBadge(state.currentUser.id); 
             document.getElementById('profile-display-bio').textContent = bio;
+
+            // Кнопка "Панель автора" видна только пользователю с логином tsuma
+            const adminBtn = document.getElementById('admin-login-btn');
+            if (adminBtn) adminBtn.classList.toggle('hidden', !isAllowedAdmin());
             
             const avatarImg = document.getElementById('profile-avatar-img');
             const avatarFallback = document.getElementById('profile-avatar-fallback');
@@ -421,6 +425,7 @@ export function checkDailyCoinReward() {
 
         // === АДМИН ===
         document.getElementById('admin-login-btn').onclick = function() {
+            if (!isAllowedAdmin()) return;
             if (state.isAdmin) { 
                 document.getElementById('admin-panel').classList.toggle('hidden'); 
                 return; 

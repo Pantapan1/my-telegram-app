@@ -189,7 +189,7 @@
 <div class="joy-zone" id="joy-move-zone"><div class="joy-base" id="joy-move-base"><div class="joy-stick" id="joy-move-stick"></div></div></div>
 <div class="joy-zone" id="joy-fire-zone"><div class="joy-base" id="joy-fire-base"><div class="joy-stick" id="joy-fire-stick"></div></div></div>
 <button id="ability-btn">✨<div id="ability-cd-overlay"></div><div id="ability-cd-text"></div></button>
-<div id="admin-gear-btn" onclick="window.arenaOpenAdmin()">⚙️</div>
+<div id="admin-gear-btn" style="display:none;" onclick="window.arenaOpenAdmin()">⚙️</div>
 
 <div id="hero-select-screen">
     <div class="hs-title">🎮 Выбери героя</div>
@@ -254,6 +254,14 @@ if (!myId) {
         if (stored) { myId = stored.id; myName = stored.name; }
     } catch (e) {}
 }
+
+// Шестерёнка админки арены видна и доступна только пользователю с логином tsuma
+const ADMIN_LOGIN = 'tsuma';
+const _arenaStoredAuth = (() => { try { return JSON.parse(localStorage.getItem('sr_auth_user') || 'null'); } catch (e) { return null; } })();
+const arenaMyLogin = ((tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) || (_arenaStoredAuth && _arenaStoredAuth.name) || '').toLowerCase();
+const isAllowedAdminUser = arenaMyLogin === ADMIN_LOGIN;
+const arenaAdminGearEl = document.getElementById('admin-gear-btn');
+if (arenaAdminGearEl && isAllowedAdminUser) arenaAdminGearEl.style.display = 'flex';
 
 function goBackToApp() {
     const q = `?uid=${encodeURIComponent(myId || '')}&name=${encodeURIComponent(myName || '')}`;
@@ -320,6 +328,7 @@ window.arenaStartWithHero = function () {
 
 // ===================== АДМИН-ПАНЕЛЬ АРЕНЫ =====================
 window.arenaOpenAdmin = function () {
+    if (!isAllowedAdminUser) return;
     const pwd = prompt('Пароль администратора:');
     if (pwd === null) return;
     if (pwd !== 'admin123') { alert('Неверный пароль'); return; }

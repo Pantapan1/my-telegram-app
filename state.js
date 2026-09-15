@@ -1,14 +1,6 @@
-// Раньше здесь было `window.Telegram.WebApp` напрямую. Для пользователей, которые открывают
-// приложение НЕ из Telegram (обычная ссылка в браузере), скрипт https://telegram.org/js/telegram-web-app.js
-// иногда не успевает загрузиться или блокируется (медленная сеть, блокировщики рекламы, фильтры
-// провайдера и т.п.) — тогда window.Telegram оказывается undefined, и обращение к
-// window.Telegram.WebApp падало с ошибкой прямо на этой строке. Поскольку state.js — самый первый
-// импортируемый модуль, эта ошибка обрывала загрузку ВСЕХ модулей (core.js, feed.js и т.д.) ещё до
-// того, как успевал отработать код показа формы входа или экрана "не удалось загрузить" — снаружи
-// это выглядело как вечная загрузка ленты, за которой ничего не происходит. Теперь при отсутствии
-// настоящего Telegram WebApp подставляется безопасная заглушка с теми же методами (в браузере вне
-// Telegram они и раньше работали как обычные alert/confirm — сам telegram-web-app.js их так и
-// реализует), чтобы приложение продолжало грузиться и для не-telegram пользователей.
+// Заглушка на случай, если window.Telegram недоступен (открыто не из Telegram, а скрипт
+// telegram-web-app.js не загрузился/заблокирован) — иначе обращение к window.Telegram.WebApp
+// падает прямо здесь, в самом первом импортируемом модуле, и обрывает загрузку всего приложения.
 function createFallbackWebApp() {
     return {
         initData: '',
@@ -36,11 +28,8 @@ export const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.
 
 const _tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
 const _authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
-// Тот же id, что станет state.currentUser.id в core.js — нужен уже здесь, ДО того как currentUser
-// определится, чтобы личные данные (прочитанное, прогресс чтения, стрик, закладки) читались сразу
-// из-под своего пользователя, а не из-под того, кто последним заходил с этого браузера/устройства.
-// Раньше все эти данные хранились под общими ключами localStorage без привязки к пользователю —
-// поэтому при заходе другим аккаунтом на том же устройстве/браузере читалось (и правилось) чужое.
+// Тот же id, что станет state.currentUser.id в core.js — нужен уже здесь, чтобы личные данные
+// (прочитанное, прогресс, стрик, закладки) читались под своим пользователем, а не чужим на этом устройстве.
 const _localUid = _tgUser ? String(_tgUser.id) : (_authUser ? String(_authUser.id) : 'guest');
 function _loadUserLocal(key, fallbackJson) {
   try { return JSON.parse(localStorage.getItem(key + '__u' + _localUid) || fallbackJson); }
@@ -53,6 +42,7 @@ export const state = {
   authUser: _authUser,
   mascotUrl: null, // картинка маскота для экрана загрузки, задаётся в админке (settings/mascotUrl)
   badgeColor: '#1da1f2',  // цвет по умолчанию для тех, у кого нет своего
+  badgeSymbol: '✦',  // символ значка издателя по умолчанию (не галочка ✓, чтобы не путать с прочитанным)
   seasonPassData: null,  // { name, endsAt, premiumPrice, levels:{n:{...}}, weeklyQuests:{id:{...}} }
   myPassState: null,  // локальная копия users/{uid}/pass
   timeTrackingStarted: false,

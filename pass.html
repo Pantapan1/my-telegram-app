@@ -182,7 +182,7 @@
             </div>
         </div>
 
-        <div class="admin-toggle" id="admin-toggle">⚙ управление пассом</div>
+        <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ управление пассом</div>
 
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Текущий сезон: <span id="pass-admin-season-id"></span></h3>
@@ -416,6 +416,13 @@
     if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
     else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
     else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    // Админ-панель пасса видна и доступна только пользователю с логином tsuma
+    const ADMIN_LOGIN = 'tsuma';
+    const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
+    const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
+    const passAdminToggleEl = document.getElementById('admin-toggle');
+    if (passAdminToggleEl && isAllowedAdminUser) passAdminToggleEl.style.display = 'block';
 
     if (!myId) {
         document.getElementById('no-session').style.display = 'block';

@@ -266,7 +266,7 @@
         <div class="section-title">🏆 Мои трофеи</div>
         <div class="grid" id="trophies-grid"></div>
 
-        <div class="admin-toggle" id="admin-toggle">⚙ управление товарами</div>
+        <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ управление товарами</div>
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Добавить товар</h3>
             <select id="item-category" class="input">
@@ -358,6 +358,13 @@
     if (tgUser) { myId = String(tgUser.id); myName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'Читатель'; }
     else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
     else if (authUser) { myId = authUser.id; myName = authUser.name; }
+
+    // Админ-панель магазина видна и доступна только пользователю с логином tsuma
+    const ADMIN_LOGIN = 'tsuma';
+    const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
+    const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
+    const shopAdminToggleEl = document.getElementById('admin-toggle');
+    if (shopAdminToggleEl && isAllowedAdminUser) shopAdminToggleEl.style.display = 'block';
 
     if (!myId) {
         document.getElementById('no-session').style.display = 'block';
@@ -791,6 +798,7 @@
 
         // === Админ-режим (тот же пароль, что в основном приложении) ===
         document.getElementById('admin-toggle').onclick = function() {
+            if (!isAllowedAdminUser) return;
             if (isAdmin) {
                 const showing = document.getElementById('admin-panel').style.display !== 'none';
                 document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';

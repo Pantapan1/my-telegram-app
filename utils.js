@@ -9,18 +9,9 @@ export function cardFrameStyle(rarity) {
     return `border-image: url('${url}') 30 stretch; border-width: 6px; border-style: solid;`;
 }
 
-// ============================================================
-// Санитайзер + скоупер пользовательского CSS для темы вики (ГМ пишет свой CSS,
-// он применяется у ВСЕХ участников группы — поэтому нельзя пускать его как есть).
-// Что вырезаем: @import (подгрузка чужих таблиц стилей), expression()/javascript: (старые
-// XSS-вектора), и любой url() кроме https:// и data:image/ (никаких file:/javascript: схем).
-// Что делаем с оставшимся: каждый top-level селектор жёстко скоупим под .wiki-theme,
-// чтобы стили физически не могли "убежать" за пределы оверлеев вики. Это не полноценный
-// CSS-парсер (в сложных крайних случаях с фигурными скобками внутри строк возможны огрехи),
-// но для реального пользовательского оформления темы этого достаточно и безопасно.
-// Только очистка от опасных конструкций, БЕЗ скоупинга. Скоуп зависит от того, для какой
-// конкретно вики применяется CSS (см. scopeWikiCss/sanitizeAndScopeWikiCss ниже), поэтому
-// в хранимых данных держим именно чистый, но ещё не привязанный к конкретной вики CSS.
+// Чистит пользовательский CSS темы вики от @import/expression()/javascript: и чужих url()
+// (применяется у всех участников группы, поэтому нельзя пускать как есть). Скоупинг — отдельно,
+// в scopeWikiCss/sanitizeAndScopeWikiCss ниже, т.к. хранится именно нескоупленный вариант.
 export function sanitizeWikiCss(rawCss) {
     const MAX_LEN = 20000;
     let css = String(rawCss || '').slice(0, MAX_LEN);
@@ -138,29 +129,10 @@ export function colorFor(str) {
 
 
 
-        // ============================================================
-        // === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (Markdown-lite) ===
-        // ============================================================
-        // Единая функция форматирования для постов, комментариев, чатов,
-        // описаний профилей и групп. Всегда сначала экранирует ввод (защита
-        // от XSS), затем применяет разметку, затем расставляет переносы строк.
-        //
-        // Поддерживаемый синтаксис:
-        //   **жирный**        -> <strong>
-        //   *курсив* / _курсив_ -> <em>
-        //   ***жирный курсив*** -> <strong><em>
-        //   ~~зачёркнутый~~   -> <del>
-        //   __подчёркнутый__ / ++подчёркнутый++ -> <u>
-        //   ||спойлер||       -> <span class="md-spoiler">
-        //   `код`             -> <code>
-        //   ```блок кода```   -> <pre><code>
-        //   > цитата          -> <blockquote>
-        //   [текст](url)      -> <a href="url" target="_blank" rel="noopener">
-        //   # / ## / ###      -> <h1> / <h2> / <h3>
-        //   ---  (своя строка) -> <hr>
-        //   * пункт / - пункт  -> <ul><li>
-        //
-        // Использование: renderMarkdown(rawUserText)
+        // Markdown-lite для постов/комментариев/чатов/описаний: экранирует ввод (XSS), затем
+        // разметку, затем переносы строк. Синтаксис: **жирный** *курсив*/_курсив_ ***жирный курсив***
+        // ~~зачёркнутый~~ __подчёркнутый__/++подчёркнутый++ ||спойлер|| `код` ```блок кода```
+        // > цитата  [текст](url)  # ## ###  ---(hr)  * пункт/- пункт
 
         // Разрешаем только http(s) и относительные ссылки в [текст](url), чтобы
         // исключить javascript: и другие опасные схемы после экранирования.
@@ -323,14 +295,39 @@ export function colorFor(str) {
 
 
 
-        // Значок-галочка рядом с именем одобренных издателей
-
+        // Значок рядом с именем одобренных издателей.
+        // Символ (не обычная галочка ✓, чтобы не путать с прочитанными сообщениями/квестами)
+        // и цвет можно менять глобально (settings/badgeSymbol, settings/badgeColor) или
+        // индивидуально для конкретного издателя (users/{id}.badgeSymbol, .badgeColor) —
+        // настраивается в publisher-application.html.
+        export function publisherBadgeSymbol(userId) {
+            const u = state.usersData.find(x => x.id === userId);
+            return (u && u.badgeSymbol) || state.badgeSymbol || '✦';
+        }
 
         export function verifiedBadge(userId) {
             const u = state.usersData.find(x => x.id === userId);
             if (!u || !u.isPublisher) return '';
             const color = u.badgeColor || state.badgeColor;
-            return `<span class="verified-badge" style="background:${color}" title="Проверенный издатель">✓</span>`;
+            const symbol = publisherBadgeSymbol(userId);
+            return `<span class="verified-badge" style="background:${color}" title="Проверенный издатель">${symbol}</span>`;
+        }
+
+
+        // Доступ к админ-панелям приложения (кнопка "Панель автора" и все разделы админки)
+        // разрешён только пользователю с логином tsuma — это либо его юзернейм в Telegram (@tsuma),
+        // либо логин, под которым он вошёл/привязался вне Telegram (см. authUser.name и
+        // users/{id}.authLogin в profile.js).
+        export const ADMIN_LOGIN = 'tsuma';
+
+        export function isAllowedAdmin() {
+            const tgLogin = (state.tgUser && state.tgUser.username) || '';
+            if (tgLogin.toLowerCase() === ADMIN_LOGIN) return true;
+            const authLogin = (state.authUser && state.authUser.name) || '';
+            if (authLogin.toLowerCase() === ADMIN_LOGIN) return true;
+            const me = state.currentUser && state.usersData.find(u => u.id === state.currentUser.id);
+            if (me && me.authLogin && me.authLogin.toLowerCase() === ADMIN_LOGIN) return true;
+            return false;
         }
 
 
@@ -349,14 +346,10 @@ export function colorFor(str) {
 
 
 
-        // ============================================================
-        // === СЕЗОННЫЙ ПАСС (Battle Pass) ============================
-        // ============================================================
-        // Типы наград пасса. Первые 5 — это РЕАЛЬНЫЕ категории магазина (shopItems):
-        // при сохранении уровня для них автоматически создаётся скрытый товар в магазине
-        // (hidden:true), который выдаётся игроку в инвентарь — экипировка работает
-        // через уже существующую систему (users/{uid}/equipped.frame/badge/nickColor/decorations),
-        // и такой предмет также появится в разделе «Мои трофеи» в shop.html.
+        // === Сезонный пасс (Battle Pass) ===
+        // Первые 5 типов наград — реальные категории магазина: при сохранении уровня для них
+        // автоматически создаётся скрытый товар (hidden:true), который выдаётся в инвентарь через
+        // обычную экипировку (users/{uid}/equipped) и виден в «Моих трофеях» в shop.html.
 
 
         export function pad2v(n) { return String(n).padStart(2, '0'); }

@@ -1,6 +1,6 @@
 import { ref, push, update, remove, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, compressImage, escapeHtml, extractYoutubeId, formatDate, friendlyDbError, getImagesFromContainer, initialOf, populateImagesContainer, toLocalInputValue, uploadToImgbb } from './utils.js';
+import { colorFor, compressImage, escapeHtml, extractYoutubeId, formatDate, friendlyDbError, getImagesFromContainer, initialOf, populateImagesContainer, publisherBadgeSymbol, toLocalInputValue, uploadToImgbb, verifiedBadge } from './utils.js';
 import { getChapters } from './books.js';
 import { questTypeLabel } from './profile.js';
 
@@ -875,14 +875,14 @@ window.switchAdminTab = function(tab) {
                     <div class="admin-item-info">
                         <div class="admin-item-title">
                             ${escapeHtml(u.name || 'Без имени')}
-                            ${u.isPublisher ? ' <span class="verified-badge" title="Издатель">✓</span>' : ''}
+                            ${verifiedBadge(u.id)}
                             ${u.banned ? ' <span style="color:#e74c3c;font-size:11px;font-weight:700;">ЗАБЛОКИРОВАН</span>' : ''}
                         </div>
                         <div class="admin-item-sub">ID: ${escapeHtml(String(u.id))} · 🪙 ${u.coins || 0} · с ${u.joinedAt ? formatDate(u.joinedAt) : '—'}</div>
                     </div>
                     <div class="admin-item-actions" style="flex-wrap:wrap;">
                         <button class="icon-btn" title="Изменить баланс монет" onclick="adminChangeUserCoins('${u.id}')">🪙</button>
-                        <button class="icon-btn" title="${u.isPublisher ? 'Забрать статус издателя' : 'Выдать статус издателя'}" onclick="adminTogglePublisher('${u.id}')">${u.isPublisher ? '✓' : '📗'}</button>
+                        <button class="icon-btn" title="${u.isPublisher ? 'Забрать статус издателя' : 'Выдать статус издателя'}" onclick="adminTogglePublisher('${u.id}')">${u.isPublisher ? publisherBadgeSymbol(u.id) : '📗'}</button>
                         <button class="icon-btn ${u.banned ? '' : 'danger'}" title="${u.banned ? 'Разблокировать' : 'Заблокировать'}" onclick="adminToggleBan('${u.id}')">${u.banned ? '🔓' : '🚫'}</button>
                         <button class="icon-btn danger" title="Удалить пользователя" onclick="adminDeleteUser('${u.id}')">🗑</button>
                     </div>

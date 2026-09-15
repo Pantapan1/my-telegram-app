@@ -405,6 +405,11 @@
     else if (params.get('uid')) myId = params.get('uid');
     else if (authUser) myId = authUser.id;
 
+    // Редактор новелл виден и доступен только пользователю с логином tsuma
+    const ADMIN_LOGIN = 'tsuma';
+    const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
+    const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
+
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
     const inRealTelegram = !!(tg && tg.initData);
     function safeAlert(msg) { try { if (inRealTelegram && tg.showAlert) { tg.showAlert(msg); return; } } catch (e) {} alert(msg); }
@@ -2202,9 +2207,11 @@ label имя:                                           — новая сцен�
     }
 
     const savedAuth = sessionStorage.getItem('nv_editor_admin') === '1';
-    if (savedAuth) {
+    if (savedAuth && isAllowedAdminUser) {
         document.getElementById('editor-root').style.display = 'block';
         startEditor();
+    } else if (!isAllowedAdminUser) {
+        document.getElementById('locked-view').style.display = 'block';
     } else {
         const pwd = prompt('Пароль администратора:');
         if (pwd === 'admin123') {

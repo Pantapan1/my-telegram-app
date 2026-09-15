@@ -113,7 +113,7 @@
             <button class="btn" id="btn-submit-application" disabled>Отправить заявку</button>
         </div>
 
-        <div class="admin-toggle" id="admin-toggle">⚙ рассмотрение заявок</div>
+        <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ рассмотрение заявок</div>
         <div id="admin-panel" style="display:none;">
             <div class="card">
                 <h3 style="margin-top:0;">Заявки на рассмотрении</h3>
@@ -132,6 +132,23 @@
                 <div style="display:flex;gap:10px;align-items:center;">
                     <input type="color" id="badge-color-input" value="#1da1f2" style="width:50px;height:40px;border:none;border-radius:10px;padding:0;background:none;">
                     <button class="btn" id="btn-save-badge-color" style="margin:0;">Сохранить цвет</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Символ значка издателя</h3>
+                <p style="margin-top:0;color:#7f8c8d;font-size:13px;">Показывается рядом с именем издателя вместо обычной галочки ✓ (чтобы не путать с «прочитано» и другими галочками в приложении).</p>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="text" id="badge-symbol-input" value="✦" maxlength="2" style="width:60px;height:40px;text-align:center;font-size:18px;border-radius:10px;border:1px solid #ddd;">
+                    <button class="btn" id="btn-save-badge-symbol" style="margin:0;">Сохранить символ</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:#95a5a6;width:100%;">Варианты:</span>
+                    <button type="button" class="badge-symbol-preset" data-symbol="✦" style="border:none;border-radius:10px;padding:8px 12px;font-size:16px;background:#f1f2f6;cursor:pointer;">✦</button>
+                    <button type="button" class="badge-symbol-preset" data-symbol="★" style="border:none;border-radius:10px;padding:8px 12px;font-size:16px;background:#f1f2f6;cursor:pointer;">★</button>
+                    <button type="button" class="badge-symbol-preset" data-symbol="❖" style="border:none;border-radius:10px;padding:8px 12px;font-size:16px;background:#f1f2f6;cursor:pointer;">❖</button>
+                    <button type="button" class="badge-symbol-preset" data-symbol="◆" style="border:none;border-radius:10px;padding:8px 12px;font-size:16px;background:#f1f2f6;cursor:pointer;">◆</button>
+                    <button type="button" class="badge-symbol-preset" data-symbol="✒" style="border:none;border-radius:10px;padding:8px 12px;font-size:16px;background:#f1f2f6;cursor:pointer;">✒</button>
                 </div>
             </div>
 
@@ -174,6 +191,12 @@
         const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
     }
 
+    // Раздел "рассмотрение заявок" виден и доступен только пользователю с логином tsuma —
+    // остальным кнопка-переключатель админки просто не показывается.
+    const ADMIN_LOGIN = 'tsuma';
+    const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
+    const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
+
     if (!myId) {
         document.getElementById('no-session').style.display = 'block';
     } else {
@@ -183,6 +206,8 @@
 
     function startPage() {
         let isAdmin = false;
+        const adminToggleEl = document.getElementById('admin-toggle');
+        if (adminToggleEl && isAllowedAdminUser) adminToggleEl.style.display = 'block';
 
         // Правила подачи и публикации — показываем всем перед формой
         onValue(ref(db, 'settings/publicationRules'), (snap) => {
@@ -269,6 +294,7 @@
 
         // === Админ: рассмотрение заявок ===
         document.getElementById('admin-toggle').onclick = function() {
+            if (!isAllowedAdminUser) return;
             if (isAdmin) {
                 const p = document.getElementById('admin-panel');
                 p.style.display = p.style.display === 'none' ? 'block' : 'none';
@@ -281,6 +307,7 @@
                 listenAllApplications();
                 listenPublishers();
                 listenBadgeColor();
+                listenBadgeSymbol();
                 listenRulesEditor();
             } else if (pwd) {
                 alert('Неверный пароль');
@@ -317,6 +344,25 @@
             }).catch(err => alert('Ошибка: ' + err.message));
         };
 
+        function listenBadgeSymbol() {
+            onValue(ref(db, 'settings/badgeSymbol'), (snap) => {
+                const symbol = snap.val();
+                if (symbol) document.getElementById('badge-symbol-input').value = symbol;
+            });
+        }
+
+        document.getElementById('btn-save-badge-symbol').onclick = function() {
+            const symbol = document.getElementById('badge-symbol-input').value.trim();
+            if (!symbol) return alert('Введите символ');
+            set(ref(db, 'settings/badgeSymbol'), symbol).then(() => {
+                alert('Символ значка обновлён у всех');
+            }).catch(err => alert('Ошибка: ' + err.message));
+        };
+
+        document.querySelectorAll('.badge-symbol-preset').forEach(btn => {
+            btn.onclick = () => { document.getElementById('badge-symbol-input').value = btn.dataset.symbol; };
+        });
+
         function listenPublishers() {
             onValue(ref(db, 'users'), (snap) => {
                 const data = snap.val();
@@ -328,12 +374,18 @@
 
                 el.innerHTML = publishers.map(u => `
                     <div class="app-item">
-                        <div class="name">✓ ${escapeHtml(u.name || u.uid)}</div>
+                        <div class="name">${escapeHtml(u.badgeSymbol || '✦')} ${escapeHtml(u.name || u.uid)}</div>
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                             <input type="color" class="publisher-color-input" data-uid="${u.uid}" value="${u.badgeColor || '#1da1f2'}" style="width:44px;height:36px;border:none;border-radius:10px;padding:0;background:none;flex-shrink:0;">
                             <span style="font-size:12px;color:#95a5a6;flex:1;">${u.badgeColor ? 'Свой цвет галочки' : 'Используется общий цвет по умолчанию'}</span>
                             <button class="publisher-color-save" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;background:#eafaf1;color:#27ae60;cursor:pointer;">Сохранить</button>
                             ${u.badgeColor ? `<button class="publisher-color-reset" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;background:#f1f2f6;color:#7f8c8d;cursor:pointer;">Сбросить</button>` : ''}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <input type="text" class="publisher-symbol-input" data-uid="${u.uid}" maxlength="2" value="${escapeHtml(u.badgeSymbol || '')}" placeholder="✦" style="width:44px;height:36px;text-align:center;font-size:16px;border-radius:10px;border:1px solid #ddd;flex-shrink:0;">
+                            <span style="font-size:12px;color:#95a5a6;flex:1;">${u.badgeSymbol ? 'Свой символ галочки' : 'Используется общий символ по умолчанию'}</span>
+                            <button class="publisher-symbol-save" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;background:#eafaf1;color:#27ae60;cursor:pointer;">Сохранить</button>
+                            ${u.badgeSymbol ? `<button class="publisher-symbol-reset" data-uid="${u.uid}" style="border:none;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;background:#f1f2f6;color:#7f8c8d;cursor:pointer;">Сбросить</button>` : ''}
                         </div>
                         <div class="app-actions">
                             <button class="btn-reject" data-uid="${u.uid}">Забрать галочку</button>
@@ -359,7 +411,27 @@
                     };
                 });
 
-                el.querySelectorAll('button[data-uid]:not(.publisher-color-save):not(.publisher-color-reset)').forEach(btn => {
+                el.querySelectorAll('.publisher-symbol-save').forEach(btn => {
+                    btn.onclick = () => {
+                        const uid = btn.dataset.uid;
+                        const input = el.querySelector(`.publisher-symbol-input[data-uid="${uid}"]`);
+                        const symbol = input.value.trim();
+                        if (!symbol) return alert('Введите символ');
+                        update(ref(db, 'users/' + uid), { badgeSymbol: symbol }).then(() => {
+                            alert('Индивидуальный символ галочки сохранён для этого издателя');
+                        }).catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('.publisher-symbol-reset').forEach(btn => {
+                    btn.onclick = () => {
+                        if (!confirm('Убрать индивидуальный символ? Будет использоваться общий символ по умолчанию.')) return;
+                        update(ref(db, 'users/' + btn.dataset.uid), { badgeSymbol: null })
+                            .catch(err => alert('Ошибка: ' + err.message));
+                    };
+                });
+
+                el.querySelectorAll('button[data-uid]:not(.publisher-color-save):not(.publisher-color-reset):not(.publisher-symbol-save):not(.publisher-symbol-reset)').forEach(btn => {
                     btn.onclick = () => {
                         if (!confirm('Забрать статус издателя у этого пользователя?')) return;
                         update(ref(db, 'users/' + btn.dataset.uid), { isPublisher: false });
