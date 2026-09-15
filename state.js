@@ -1,4 +1,38 @@
-export const tg = window.Telegram.WebApp;
+// Раньше здесь было `window.Telegram.WebApp` напрямую. Для пользователей, которые открывают
+// приложение НЕ из Telegram (обычная ссылка в браузере), скрипт https://telegram.org/js/telegram-web-app.js
+// иногда не успевает загрузиться или блокируется (медленная сеть, блокировщики рекламы, фильтры
+// провайдера и т.п.) — тогда window.Telegram оказывается undefined, и обращение к
+// window.Telegram.WebApp падало с ошибкой прямо на этой строке. Поскольку state.js — самый первый
+// импортируемый модуль, эта ошибка обрывала загрузку ВСЕХ модулей (core.js, feed.js и т.д.) ещё до
+// того, как успевал отработать код показа формы входа или экрана "не удалось загрузить" — снаружи
+// это выглядело как вечная загрузка ленты, за которой ничего не происходит. Теперь при отсутствии
+// настоящего Telegram WebApp подставляется безопасная заглушка с теми же методами (в браузере вне
+// Telegram они и раньше работали как обычные alert/confirm — сам telegram-web-app.js их так и
+// реализует), чтобы приложение продолжало грузиться и для не-telegram пользователей.
+function createFallbackWebApp() {
+    return {
+        initData: '',
+        initDataUnsafe: {},
+        colorScheme: 'light',
+        themeParams: {},
+        expand: function () {},
+        ready: function () {},
+        close: function () {},
+        openLink: function (url) { window.open(url, '_blank'); },
+        showAlert: function (message, callback) { window.alert(message); if (callback) callback(); },
+        showConfirm: function (message, callback) { const ok = window.confirm(message); if (callback) callback(ok); },
+        showPopup: function (params, callback) {
+            const text = params && (params.message || params.title) ? [params.title, params.message].filter(Boolean).join('\n') : '';
+            window.alert(text);
+            if (callback) callback('');
+        },
+        HapticFeedback: { impactOccurred: function () {}, notificationOccurred: function () {}, selectionChanged: function () {} },
+        BackButton: { show: function () {}, hide: function () {}, onClick: function () {}, offClick: function () {} },
+        MainButton: { show: function () {}, hide: function () {}, onClick: function () {}, offClick: function () {}, setText: function () {}, setParams: function () {} }
+    };
+}
+
+export const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : createFallbackWebApp();
 
 const _tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
 const _authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');

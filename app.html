@@ -101,6 +101,29 @@
         }, 10000);
     </script>
 
+    <!-- ВТОРОЙ НЕЗАВИСИМЫЙ ПРЕДОХРАНИТЕЛЬ — на случай, если сам core.js (модульный скрипт) вообще
+         не смог выполниться (например, упал ДО того, как успел скрыть заставку/показать форму
+         входа — так было у пользователей не из Telegram, когда telegram-web-app.js с telegram.org
+         не успевал загрузиться и state.js падал на обращении к window.Telegram.WebApp). Раньше в
+         этом случае заставка (см. предохранитель выше) всё равно пряталась через 10 секунд, но
+         за ней просто ничего не было — ни формы входа, ни ошибки, только вечные "скелетоны"
+         ленты, потому что ни одна строчка core.js не выполнялась. Этот скрипт не модульный и ни от
+         чего не зависит: через 12 секунд проверяет, реально ли что-то отрисовалось (форма входа
+         или лента), и если нет — показывает понятную ошибку с кнопкой "Обновить" вместо вечной
+         загрузки. -->
+    <script>
+        setTimeout(function () {
+            var feedContainer = document.getElementById('feed-container');
+            var authOverlay = document.getElementById('auth-overlay');
+            var authVisible = authOverlay && getComputedStyle(authOverlay).display !== 'none';
+            var feedHasContent = feedContainer && !feedContainer.querySelector('.skeleton');
+            if (authVisible || feedHasContent) return; // всё в порядке, приложение реально загрузилось
+            if (feedContainer) {
+                feedContainer.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span><div class="title">Не удалось загрузить приложение</div><div class="sub">Проверьте интернет-соединение и обновите страницу</div><button class="btn" style="margin-top:12px;" onclick="location.reload()">Обновить</button></div>';
+            }
+        }, 12000);
+    </script>
+
     <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
     <div id="terraria-daynight-overlay"></div>
     <div id="terraria-daynight-stars"></div>
