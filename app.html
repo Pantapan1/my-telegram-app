@@ -83,6 +83,24 @@
         <button id="app-splash-skip-btn" class="app-splash-skip-btn hidden">Пропустить загрузку →</button>
     </div>
 
+    <!-- НЕЗАВИСИМЫЙ ПРЕДОХРАНИТЕЛЬ — обычный, не модульный скрипт, который не ждёт Firebase и
+         вообще ничего из core.js. Раньше весь предохранитель жил внутри core.js как ES-модуля —
+         если сам модуль не успевал загрузиться (заблокирован CDN, VPN режет запрос к
+         www.gstatic.com, медленная сеть и т.п.), то НИ ОДНА строчка кода внутри него не
+         выполнялась вообще, включая тот таймер, и экран загрузки повисал намертво. Этот скрипт
+         запускается сразу же, ни от чего не зависит, и через 10 секунд гарантированно убирает
+         заставку, что бы ни случилось с остальным JS. -->
+    <script>
+        setTimeout(function () {
+            var el = document.getElementById('app-splash');
+            if (!el) return;
+            el.style.transition = 'opacity .3s ease';
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 350);
+        }, 10000);
+    </script>
+
     <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
     <div id="terraria-daynight-overlay"></div>
     <div id="terraria-daynight-stars"></div>
