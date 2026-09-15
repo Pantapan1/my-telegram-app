@@ -746,12 +746,12 @@
             margin-top: 10px; background: none; border: none; cursor: pointer; font-weight: 600;
         }
 
-        .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); }
+        .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
         .comments-title { font-size: 14px; font-weight: 800; color:var(--text-primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .comment-item { padding: 12px 14px; background: #ffffff; border-radius: 18px; border: 1px solid rgba(0,0,0,0.04); margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .comment-item { padding: 12px 14px; background: var(--card-bg); border-radius: 18px; border: 1px solid var(--card-border); margin-bottom: 8px; box-shadow: 0 2px 6px var(--card-shadow); height: fit-content; align-self: flex-start; }
         .comment-author { font-weight: 700; font-size: 14px; color:var(--text-primary); }
         .comment-meta { font-size: 11px; color:var(--text-secondary); margin-left: 8px; font-weight: 500; }
-        .comment-text { font-size: 14px; line-height: 1.5; color: #4a4a4a; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+        .comment-text { font-size: 14px; line-height: 1.5; color: var(--text-primary); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
         .comment-delete { color: #e74c3c; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 6px; font-weight: 600; padding: 0; }
         .comment-sticker { max-width: 100px; height: auto; border-radius: 10px; object-fit: contain; margin-top: 6px; display: block; }
         .attachment-img { max-width: 220px; width: 100%; height: auto; border-radius: 12px; margin-top: 6px; display: block; }
