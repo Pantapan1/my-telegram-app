@@ -98,6 +98,9 @@ if (state.tgUser) {
     state.currentUser = state.authUser;
     initApp();
 } else {
+    // Пользователь ещё не вошёл — грузить нечего, экран загрузки тут только мешал бы: показываем
+    // форму входа сразу и прячем сплэш без анимации ожидания.
+    hideAppSplash();
     const authOverlay = document.getElementById('auth-overlay');
     if (authOverlay) authOverlay.style.display = 'flex';
 }
