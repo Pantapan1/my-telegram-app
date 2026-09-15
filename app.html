@@ -65,6 +65,24 @@
 </head>
 <body>
 
+    <!-- ЭКРАН ЗАГРУЗКИ — виден поверх всего, пока не пришли первые данные с сервера.
+         Картинка маскота задаётся в админке (вкладка "Оформление"), размер подгоняется CSS
+         автоматически (object-fit: contain), какого бы разрешения ни был загруженный файл. -->
+    <div id="app-splash">
+        <div class="app-splash-mascot-wrap">
+            <div id="app-splash-mascot-fallback" class="app-splash-mascot-fallback hidden">🐾</div>
+            <img id="app-splash-mascot" src="https://rolorry.wordpress.com/wp-content/uploads/2026/09/1789319463147.png" alt="">
+        </div>
+        <div class="app-splash-progress-wrap">
+            <div class="app-splash-progress-bar"><div id="app-splash-bar-inner" class="app-splash-progress-fill"></div></div>
+            <div class="app-splash-progress-row">
+                <span id="app-splash-text" class="app-splash-text">Инициализация…</span>
+                <span id="app-splash-percent" class="app-splash-percent">0%</span>
+            </div>
+        </div>
+        <button id="app-splash-skip-btn" class="app-splash-skip-btn hidden">Пропустить загрузку →</button>
+    </div>
+
     <!-- Слои дня/ночи для темы Terraria (управляются из админки) -->
     <div id="terraria-daynight-overlay"></div>
     <div id="terraria-daynight-stars"></div>
@@ -229,6 +247,7 @@
                 <button class="profile-menu-item" id="btn-edit-profile"><span class="pmi-icon">✏️</span><span class="pmi-label">Редактировать</span></button>
                 <button class="profile-menu-item hidden" id="btn-toggle-notifications"><span class="pmi-icon">🔔</span><span class="pmi-label">Уведомления</span></button>
                 <button class="profile-menu-item" id="btn-toggle-sound"><span class="pmi-icon">🔊</span><span class="pmi-label">Звук: вкл</span></button>
+                <button class="profile-menu-item" id="btn-toggle-translate-lang"><span class="pmi-icon">🌐</span><span class="pmi-label">Перевод: Авто</span></button>
                 <button class="profile-menu-item" id="btn-open-shop"><span class="pmi-icon">🛍</span><span class="pmi-label">Магазин</span></button>
                 <button class="profile-menu-item" id="btn-open-events" onclick="openEventsCalendar()"><span class="pmi-icon">📅</span><span class="pmi-label">Календарь</span></button>
                 <button class="profile-menu-item" id="btn-open-decks" onclick="openCardGameMenu()"><span class="pmi-icon">🃏</span><span class="pmi-label">Карты</span></button>
@@ -253,6 +272,16 @@
                 </div>
 
                 <button class="btn" id="btn-save-profile">Сохранить профиль</button>
+
+                <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);">
+                    <h4 style="margin: 0 0 4px; color:var(--text-primary); font-size: 15px;">Логин и пароль</h4>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Задайте логин и пароль, чтобы заходить в этот же аккаунт вне Telegram (например, в мобильном приложении). Работает вместе с входом через Telegram, не вместо него.</div>
+                    <div id="profile-login-status" style="font-size:12.5px;color:var(--text-secondary);margin-bottom:8px;"></div>
+                    <input type="text" id="profile-login-username" class="input" placeholder="Логин (латиница, цифры, _)" autocomplete="off">
+                    <input type="password" id="profile-login-password" class="input" placeholder="Пароль" autocomplete="new-password">
+                    <button class="btn btn-secondary" id="btn-set-login-password">Сохранить логин и пароль</button>
+                </div>
+
             </div>
 
             <div class="divider"></div>
@@ -366,6 +395,10 @@
                         <input type="file" id="book-cover-file" accept="image/*" class="hidden">
                     </div>
                     <input type="text" id="book-genre" class="input" placeholder="Жанр (напр. Фантастика)">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:6px 0 10px;">
+                        <input type="checkbox" id="book-approved-rl" style="width:16px;height:16px;flex-shrink:0;">
+                        ✅ Одобрено RL™ — синяя печать в описании книги для читателей
+                    </label>
                     <button class="btn" id="btn-add-book">Добавить книгу</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-book">Отменить редактирование</button>
 
@@ -418,6 +451,19 @@
 
                     <div class="divider"></div>
 
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">🐾 Маскот экрана загрузки</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Картинка, которая крутится на экране загрузки, пока приложение подтягивает данные. Размер картинки любой — впишется автоматически.</p>
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                        <img id="admin-mascot-preview" src="" alt="" style="width:64px; height:64px; object-fit:contain; border-radius:12px; background:rgba(0,0,0,0.04); display:none;">
+                        <span id="admin-mascot-empty-hint" style="font-size:12px;color:var(--text-secondary);">Пока не загружен — используется значок по умолчанию</span>
+                    </div>
+                    <input type="file" id="admin-mascot-file" accept="image/*" class="hidden">
+                    <button class="btn btn-secondary" id="btn-upload-mascot">📁 Загрузить картинку</button>
+                    <button class="btn" id="btn-remove-mascot" style="background:var(--danger,#e05252);">Сбросить на стандартный</button>
+                    <div id="admin-mascot-progress" style="font-size:12px;color:var(--text-secondary);margin-top:6px;"></div>
+
+                    <div class="divider"></div>
+
                     <h3 style="margin-bottom:4px; color:var(--text-primary);">📺 Мини-плеер YouTube</h3>
                     <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Видео, которое откроется по кнопке «Отдохнуть» в профиле игрока.</p>
                     <input type="text" id="yt-video-id" class="input" placeholder="Ссылка на видео или ID (напр. dQw4w9WgXcQ)">
@@ -427,6 +473,7 @@
 
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">🔊 Звуки</h3>
                     <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Вставь ссылку на mp3 или загрузи файл через 📁</p>
+
 
                     <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Новое сообщение / комментарий</label>
                     <div class="image-field-row">
@@ -1221,6 +1268,12 @@
 
             <button class="btn" id="btn-save-edit-group">Сохранить изменения</button>
 
+            <div id="transfer-admin-section" style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);">
+                <h4 style="margin: 0 0 6px; color:var(--text-primary); font-size: 15px;">Передать права администратора:</h4>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Новый администратор получит полный контроль над группой (настройки, модераторы, удаление). Вы станете обычным участником.</div>
+                <div id="transfer-admin-list"></div>
+            </div>
+
             <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);">
                 <button class="btn btn-danger" id="btn-delete-group">🗑 Удалить группу</button>
                 <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;text-align:center;">Группа, все сообщения, персонажи и инвентари будут удалены безвозвратно.</div>
@@ -1277,6 +1330,22 @@
             <span class="text" id="chat-pinned-text"></span>
             <button id="btn-unpin-quote">✕</button>
         </div>
+        <div class="chat-cinema-panel hidden" id="chat-cinema-panel">
+            <div class="cinema-panel-header">
+                <div class="cinema-panel-title"><span>🎥</span><span id="cinema-panel-title-text">Кинотеатр</span></div>
+                <div class="cinema-watchers" id="cinema-watchers-row"></div>
+                <button class="cinema-icon-btn" id="cinema-minimize-btn" title="Свернуть">﹀</button>
+                <button class="cinema-icon-btn hidden" id="cinema-close-btn" title="Закрыть для всех">✕</button>
+            </div>
+            <div class="cinema-video-wrap" id="cinema-video-wrap"></div>
+            <div class="cinema-controls-row" id="cinema-controls-row">
+                <button class="cinema-ctrl-btn" id="cinema-playpause-btn">⏸</button>
+                <button class="cinema-ctrl-btn" id="cinema-seek-back-btn">−10с</button>
+                <button class="cinema-ctrl-btn" id="cinema-seek-fwd-btn">+10с</button>
+                <button class="cinema-ctrl-btn" id="cinema-resync-btn">🔄 Синхронизировать</button>
+            </div>
+        </div>
+        <div class="cinema-mini-badge hidden" id="cinema-mini-badge">🎥 Кинотеатр идёт — нажмите, чтобы открыть</div>
         <div class="reader-content" id="chat-body" style="position:relative; background: #f4f7f6;">
             <div class="chat-quote-watermark" id="chat-quote-watermark"></div>
             <div class="chat-messages-list" id="chat-messages-list"></div>
@@ -1308,13 +1377,71 @@
                 <button class="sticker-toggle" id="chat-input-tools-toggle" title="Ещё">⋯</button>
                 <div class="chat-input-tools-menu" id="chat-input-tools-menu">
                     <button class="sticker-toggle hidden" id="btn-toggle-action-mode" title="Реплика действия">🎬</button>
+                    <button class="sticker-toggle" id="btn-toggle-cinema" title="Кинотеатр">🎥</button>
                     <button class="sticker-toggle" id="btn-toggle-stickers" title="Стикеры">🤩</button>
                     <label class="sticker-toggle" for="chat-attach-file" id="btn-chat-attach" style="display:flex;align-items:center;justify-content:center;" title="Прикрепить файл">📎</label>
+                    <button class="sticker-toggle hidden" id="btn-toggle-chat-widget" title="Виджет (только ГМ и админ)">🧩</button>
                 </div>
             </div>
             <input type="file" id="chat-attach-file" accept="image/*,video/*,audio/*" class="hidden">
             <textarea id="chat-message-input" class="input" placeholder="Сообщение..." rows="1" style="resize:none; max-height:120px; overflow-y:auto; line-height:1.3;"></textarea>
             <button class="chat-send-btn" id="btn-send-chat-message">➤</button>
+        </div>
+
+        <div class="cinema-modal hidden" id="chat-widget-composer-modal">
+            <div class="cinema-modal-card" style="max-height:85vh;overflow-y:auto;">
+                <div class="cinema-modal-title">🧩 Виджет для чата</div>
+                <div class="cinema-modal-sub">Виджет увидят все участники чата. Он выполняется в изолированной песочнице: без доступа к данным приложения, без localStorage/cookie и без сети (только картинки по https). Отправлять виджеты могут только ГМ и администратор.</div>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">Размер (разрешение)</label>
+                <select id="chat-widget-size" class="input" style="margin-bottom:14px;">
+                    <option value="small">Маленький</option>
+                    <option value="medium" selected>Средний</option>
+                    <option value="large">Большой</option>
+                    <option value="full">На всю ширину</option>
+                </select>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">HTML</label>
+                <textarea id="chat-widget-html" class="input" placeholder="<div class=&quot;my-widget&quot;>Привет!</div>" style="min-height:80px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">CSS</label>
+                <textarea id="chat-widget-css" class="input" placeholder=".my-widget { color: #ff6ec7; }" style="min-height:80px;margin-bottom:12px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">JS</label>
+                <textarea id="chat-widget-js" class="input" placeholder="document.querySelector('.my-widget').onclick = () => alert('hi');" style="min-height:80px;margin-bottom:14px;font-family:monospace;font-size:12.5px;white-space:pre;"></textarea>
+
+                <label style="font-size:13px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:6px;">👁 Предпросмотр</label>
+                <div style="border:1px solid var(--border-soft);border-radius:16px;overflow:hidden;margin-bottom:16px;background:var(--surface);">
+                    <iframe id="chat-widget-preview-frame" sandbox="allow-scripts" referrerpolicy="no-referrer" loading="lazy" style="width:100%;border:0;display:block;min-height:100px;"></iframe>
+                </div>
+
+                <div class="cinema-modal-actions">
+                    <button class="btn-secondary" id="btn-cancel-chat-widget">Отмена</button>
+                    <button class="btn" id="btn-send-chat-widget">Отправить в чат</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cinema-modal hidden" id="cinema-setup-modal">
+            <div class="cinema-modal-card">
+                <div class="cinema-modal-title">🎥 Кинотеатр</div>
+                <div class="cinema-modal-sub">Найдите видео по названию — оно запустится прямо в чате, без ссылок, и увидят его все, кто зайдёт в этот чат.</div>
+                <div class="cinema-search-row">
+                    <input type="text" id="cinema-search-input" class="input" placeholder="Что посмотреть?" style="margin-bottom:0;">
+                    <button class="cinema-search-btn" id="cinema-search-btn">🔍</button>
+                </div>
+                <div class="cinema-source-tabs" id="cinema-source-tabs">
+                    <button class="cinema-source-tab active" data-source="youtube" type="button">YouTube</button>
+                    <button class="cinema-source-tab" data-source="rutube" type="button">Rutube</button>
+                </div>
+                <div class="cinema-search-results" id="cinema-search-results"></div>
+                <button class="cinema-manual-link-toggle" id="cinema-manual-link-toggle" type="button">Или вставить ссылку вручную ›</button>
+                <div class="cinema-manual-link-row hidden" id="cinema-manual-link-row">
+                    <input type="text" id="cinema-link-input" class="input" placeholder="Ссылка на видео или ID" style="margin-bottom:0;">
+                    <button class="btn" id="cinema-modal-start" style="margin-top:0;">Запустить</button>
+                </div>
+                <button class="btn btn-secondary" id="cinema-modal-cancel" style="margin-top:10px;">Закрыть</button>
+            </div>
         </div>
     </div>
 
