@@ -10,124 +10,299 @@
 <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    :root {
+        --pass-c1: #6a3de8;
+        --pass-c2: #a239ff;
+        --pass-accent: #ffb300;
+        --surface-card: #ffffff;
+        --surface-sub: #f8fafc;
+        --text-main: #1e1b4b;
+        --text-sub: #64748b;
+        --border-soft: rgba(0,0,0,0.06);
+    }
+
     body {
-        margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: linear-gradient(180deg, #1b1030 0%, #2a1750 220px, #f7f5fb 220px); color: #2c3e50; padding-bottom: 50px;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: radial-gradient(circle at 50% 0%, #2e1065 0%, #170836 280px, #f1f5f9 280px);
+        color: var(--text-main);
+        min-height: 100vh;
+        padding-bottom: 50px;
+        -webkit-font-smoothing: antialiased;
     }
-    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
-    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 14px; position: relative; z-index: 1; }
+
+    /* Верхняя панель */
+    .topbar {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+        position: sticky; top: 0; z-index: 40; padding: 8px 0;
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
     .back-link {
-        text-decoration: none; color: #fff; background: rgba(255,255,255,0.14); width: 40px; height: 40px; border-radius: 12px;
-        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        text-decoration: none; color: #fff; background: rgba(255,255,255,0.12); width: 42px; height: 42px;
+        border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.18); font-weight: 700; transition: transform .15s ease, background .15s;
     }
-    .topbar h1 { font-size: 18px; margin: 0; flex: 1; color: #fff; }
-    .currency-badges { display: flex; gap: 6px; flex-shrink: 0; }
-    .cur-badge { background: rgba(255,255,255,0.16); color: #fff; font-weight: 800; padding: 7px 10px; border-radius: 12px; font-size: 13px; white-space: nowrap; }
+    .back-link:active { transform: scale(0.92); background: rgba(255,255,255,0.22); }
+    .topbar h1 { font-size: 20px; font-weight: 800; margin: 0; flex: 1; color: #fff; letter-spacing: -0.3px; }
+    
+    .currency-badges { display: flex; gap: 8px; flex-shrink: 0; }
+    .cur-badge {
+        background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.18); color: #fff; font-weight: 800;
+        padding: 8px 12px; border-radius: 14px; font-size: 13.5px; white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 
+    /* Карточка сезона */
     .season-card {
-        background: linear-gradient(135deg, #6a3de8, #a239ff);
-        border-radius: 22px; padding: 18px; color: #fff; margin-bottom: 16px;
-        box-shadow: 0 10px 30px rgba(106,61,232,0.35);
+        background: linear-gradient(135deg, var(--pass-c1), var(--pass-c2));
+        border-radius: 24px; padding: 20px; color: #fff; margin-bottom: 18px;
+        box-shadow: 0 12px 36px rgba(106,61,232,0.35); position: relative; overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.2);
     }
-    .season-name { font-weight: 900; font-size: 19px; margin-bottom: 2px; }
-    .season-countdown { font-size: 12px; opacity: .85; margin-bottom: 14px; }
+    .season-card::before {
+        content: ''; position: absolute; top: -50%; right: -30%; width: 220px; height: 220px;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .season-name { font-weight: 900; font-size: 21px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); letter-spacing: -0.3px; }
+    .season-countdown { font-size: 12px; opacity: .9; margin-bottom: 16px; font-weight: 600; }
+    
     .season-level-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .season-level-badge { background: rgba(255,255,255,0.22); border-radius: 14px; padding: 8px 12px; font-weight: 900; font-size: 15px; flex-shrink: 0; }
-    .xp-bar-outer { flex: 1; height: 10px; border-radius: 6px; background: rgba(255,255,255,0.22); overflow: hidden; }
-    .xp-bar-inner { height: 100%; background: linear-gradient(90deg,#ffe27a,#ffb300); border-radius: 6px; transition: width .4s ease; }
-    .xp-caption { font-size: 11px; opacity: .85; margin-top: 6px; }
-    .premium-row { margin-top: 14px; display: flex; gap: 8px; align-items: center; }
-    .premium-btn { flex: 1; border: none; border-radius: 14px; padding: 12px; font-weight: 800; font-size: 14px; cursor: pointer; background: linear-gradient(135deg,#ffe27a,#ffb300); color: #4a2c00; }
-    .premium-active { background: rgba(46,204,113,0.25); color: #eafaf1; border-radius: 14px; padding: 12px; text-align: center; font-weight: 800; flex: 1; }
+    .season-level-badge {
+        background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 16px; padding: 8px 14px; font-weight: 900; font-size: 16px;
+        flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .xp-bar-outer {
+        flex: 1; height: 12px; border-radius: 8px; background: rgba(0,0,0,0.25);
+        overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .xp-bar-inner {
+        height: 100%; background: linear-gradient(90deg, var(--pass-accent), #ff9100);
+        border-radius: 8px; transition: width .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 0 12px var(--pass-accent);
+    }
+    .xp-caption { font-size: 11.5px; opacity: .92; margin-top: 4px; font-weight: 600; text-align: right; }
 
-    .section-title { font-weight: 800; font-size: 16px; margin: 22px 0 10px; color: #2c3e50; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-    .tab-btn { flex: 1; border: none; border-radius: 12px; padding: 10px 0; font-weight: 700; font-size: 13px; background: #efeaf9; color: #6a3de8; cursor: pointer; }
-    .tab-btn.active { background: #6a3de8; color: #fff; }
+    .premium-row { margin-top: 16px; display: flex; gap: 8px; align-items: center; }
+    .premium-btn {
+        flex: 1; border: none; border-radius: 16px; padding: 13px; font-weight: 900; font-size: 14.5px;
+        cursor: pointer; background: linear-gradient(135deg, #ffd700 0%, #ff9f0a 100%); color: #422006;
+        box-shadow: 0 6px 20px rgba(255,159,10,0.4); transition: transform .15s ease, filter .15s;
+    }
+    .premium-btn:active { transform: scale(0.97); }
+    .premium-active {
+        background: rgba(16,185,129,0.22); border: 1px solid rgba(16,185,129,0.4); color: #ecfdf5;
+        border-radius: 16px; padding: 12px; text-align: center; font-weight: 800; font-size: 13.5px;
+        flex: 1; backdrop-filter: blur(6px);
+    }
 
+    /* Табы */
+    .tabs {
+        display: flex; gap: 8px; margin-bottom: 16px; background: rgba(0,0,0,0.04);
+        padding: 5px; border-radius: 18px;
+    }
+    .tab-btn {
+        flex: 1; border: none; border-radius: 14px; padding: 11px 0; font-weight: 800; font-size: 13px;
+        background: transparent; color: #64748b; cursor: pointer; transition: all .2s ease;
+    }
+    .tab-btn.active {
+        background: #ffffff; color: var(--pass-c1); box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    /* Трек уровней */
     .pass-track { display: flex; flex-direction: column; gap: 10px; }
-    .level-row { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; padding: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
-    .level-num-col { width: 42px; text-align: center; font-weight: 900; color: #95a5a6; font-size: 13px; flex-shrink: 0; }
-    .level-num-col.reached { color: #6a3de8; }
-    .reward-cell { flex: 1; border-radius: 12px; padding: 8px; text-align: center; background: #f7f5fb; position: relative; }
-    .reward-cell.premium { background: #fff8e6; }
-    .reward-icon { font-size: 24px; }
-    .reward-label { font-size: 10.5px; font-weight: 700; color: #6a5a7a; margin-top: 2px; line-height: 1.2; min-height: 24px; }
-    .reward-claim-btn { margin-top: 6px; width: 100%; border: none; border-radius: 9px; padding: 6px 0; font-weight: 800; font-size: 11px; cursor: pointer; background: #6a3de8; color: #fff; }
-    .reward-claim-btn.done { background: #eafaf1; color: #27ae60; }
-    .reward-claim-btn.locked { background: #f1f2f6; color: #b0b0b0; }
+    .level-row {
+        display: flex; align-items: stretch; gap: 10px; background: #ffffff;
+        border-radius: 20px; padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.05); position: relative;
+    }
+    .level-num-col {
+        width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-weight: 900; color: #94a3b8; font-size: 14px; flex-shrink: 0;
+        background: #f8fafc; border-radius: 14px; border: 1px solid rgba(0,0,0,0.04);
+    }
+    .level-num-col.reached {
+        color: #ffffff; background: linear-gradient(135deg, var(--pass-c1), var(--pass-c2));
+        box-shadow: 0 4px 10px rgba(106,61,232,0.3); border: none;
+    }
+    
+    .reward-cell {
+        flex: 1; border-radius: 16px; padding: 10px 8px; text-align: center;
+        background: #f8fafc; position: relative; display: flex; flex-direction: column;
+        justify-content: space-between; border: 1px solid rgba(0,0,0,0.04);
+    }
+    .reward-cell.premium {
+        background: linear-gradient(180deg, #fffdf5 0%, #fff9e6 100%);
+        border: 1.5px solid #fde68a;
+    }
+    .reward-track-tag {
+        font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px;
+        margin-bottom: 4px; color: #94a3b8;
+    }
+    .reward-cell.premium .reward-track-tag { color: #d97706; }
+    .reward-icon { font-size: 26px; line-height: 1.1; margin: 4px 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08)); }
+    .reward-label {
+        font-size: 11px; font-weight: 700; color: #475569; margin: 2px 0 6px;
+        line-height: 1.25; min-height: 26px; display: flex; align-items: center; justify-content: center;
+    }
+    .reward-claim-btn {
+        width: 100%; border: none; border-radius: 11px; padding: 8px 0; font-weight: 800; font-size: 11.5px;
+        cursor: pointer; background: var(--pass-c1); color: #fff; box-shadow: 0 3px 10px rgba(106,61,232,0.25);
+        transition: transform .15s ease;
+    }
+    .reward-claim-btn:active { transform: scale(0.94); }
+    .reward-claim-btn.done { background: #dcfce7; color: #15803d; box-shadow: none; cursor: default; }
+    .reward-claim-btn.locked { background: #f1f5f9; color: #94a3b8; box-shadow: none; cursor: not-allowed; }
     .reward-cell.locked-premium::after {
         content: '🔒'; position: absolute; top: 6px; right: 8px; font-size: 12px;
     }
 
-    .quest-card { background: #fff; border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
-    .quest-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .quest-title { font-weight: 800; font-size: 14px; }
-    .quest-xp { font-weight: 800; color: #6a3de8; font-size: 12px; white-space: nowrap; }
-    .progress-outer { height: 8px; border-radius: 5px; background: #eee; overflow: hidden; }
-    .progress-inner { height: 100%; background: linear-gradient(90deg,#a239ff,#6a3de8); border-radius: 5px; }
-    .quest-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-    .quest-meta { font-size: 12px; color: #95a5a6; }
-    .btn-claim-small { border: none; border-radius: 10px; padding: 8px 16px; font-weight: 800; font-size: 12px; cursor: pointer; background: #6a3de8; color: #fff; }
-
-    .inv-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
-    .inv-card { background: #fff; border-radius: 16px; padding: 12px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
-    .inv-icon { font-size: 30px; margin-bottom: 6px; }
-    .inv-name { font-size: 12px; font-weight: 700; margin-bottom: 8px; min-height: 30px; }
-    .inv-btn { border: none; border-radius: 10px; padding: 7px 0; width: 100%; font-weight: 800; font-size: 12px; cursor: pointer; }
-    .inv-equip { background: #eafaf1; color: #27ae60; }
-    .inv-unequip { background: #fdecea; color: #e74c3c; }
-    .empty-state { text-align: center; color: #95a5a6; padding: 30px 0; font-size: 14px; }
-    .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
-
-    body.theme-dark { background: linear-gradient(180deg, #1b1030 0%, #2a1750 220px, #14161f 220px); color: #ecedf1; }
-    body.theme-dark .card, body.theme-dark .level-row, body.theme-dark .quest-card, body.theme-dark .inv-card { background: #232632; }
-    body.theme-dark .reward-cell { background: #2a2d3a; }
-    body.theme-dark .reward-cell.premium { background: #3a3320; }
-    body.theme-dark .section-title { color: #ecedf1; }
-    body.theme-dark .tab-btn { background: #2a2d3a; color: #c9b6ff; }
-    body.theme-dark .reward-label { color: #b8aed0; }
-
-    /* === Встроенная админ-панель пасса === */
-    .input {
-        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
-        font-size: 14px; background: #f4f6f7; color: #2c3e50;
+    /* Задания */
+    .quest-card {
+        background: #ffffff; border-radius: 20px; padding: 14px 16px; margin-bottom: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);
     }
-    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#6a3de8,#a239ff); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-    .btn-secondary { background: #f1f2f6; color: #2c3e50; }
-    .divider { height: 1px; background: rgba(0,0,0,0.08); margin: 18px 0; }
-    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #b0b0b0; cursor: pointer; border-radius: 10px; }
-    .admin-toggle:hover { color: #6a3de8; }
-    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; }
-    .admin-item-info { flex: 1; font-size: 13px; }
-    .admin-item-title { font-weight: 700; }
-    .admin-item-sub { color: #95a5a6; font-size: 11px; margin-top: 2px; }
-    .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .icon-btn { border: none; background: #eee; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; }
-    .icon-btn.danger { background: #fdecea; color: #e74c3c; }
-    .upload-row { display: flex; gap: 8px; }
-    .upload-row .input { flex: 1; margin-bottom: 0; }
-    .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 18px; }
-    body.theme-dark .input { background: #2a2d3a; color: #ecedf1; border-color: rgba(255,255,255,0.08); }
-    body.theme-dark .btn-secondary { background: #2a2d3a; color: #ecedf1; }
-    body.theme-dark .admin-item { background: #232632; }
-    body.theme-dark .upload-btn { background: #2a2d3a; }
-    body.theme-dark .admin-toggle { color: #7a8090; }
+    .quest-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .quest-title { font-weight: 800; font-size: 14.5px; color: var(--text-main); }
+    .quest-xp {
+        font-weight: 900; color: var(--pass-c1); font-size: 13px; background: #f3e8ff;
+        padding: 4px 10px; border-radius: 10px;
+    }
+    .progress-outer { height: 10px; border-radius: 6px; background: #f1f5f9; overflow: hidden; margin: 8px 0; }
+    .progress-inner { height: 100%; background: linear-gradient(90deg, var(--pass-c2), var(--pass-c1)); border-radius: 6px; }
+    .quest-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .quest-meta { font-size: 12px; color: #94a3b8; font-weight: 600; }
+    .btn-claim-small {
+        border: none; border-radius: 12px; padding: 8px 18px; font-weight: 800; font-size: 12.5px;
+        cursor: pointer; background: var(--pass-c1); color: #fff; box-shadow: 0 4px 12px rgba(106,61,232,0.25);
+    }
+    .btn-claim-small:active { transform: scale(0.95); }
 
-    /* === Модальное окно для пароля === */
+    /* Инвентарь */
+    .inv-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+    .inv-card {
+        background: #ffffff; border-radius: 20px; padding: 14px; text-align: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);
+        display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .inv-icon { font-size: 34px; margin-bottom: 6px; }
+    .inv-name { font-size: 12.5px; font-weight: 800; margin-bottom: 10px; min-height: 28px; line-height: 1.25; }
+    .inv-btn {
+        border: none; border-radius: 12px; padding: 9px 0; width: 100%; font-weight: 800;
+        font-size: 12px; cursor: pointer; transition: transform .15s;
+    }
+    .inv-btn:active { transform: scale(0.95); }
+    .inv-equip { background: #dcfce7; color: #15803d; }
+    .inv-unequip { background: #fee2e2; color: #b91c1c; }
+
+    .empty-state { text-align: center; color: #94a3b8; padding: 32px 14px; font-size: 14px; font-weight: 600; }
+    .card {
+        background: #ffffff; border-radius: 20px; padding: 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.05); margin-bottom: 14px;
+    }
+
+    /* АДМИН-ПАНЕЛЬ */
+    .admin-toggle {
+        text-align: center; margin-top: 36px; padding: 12px; font-size: 12.5px;
+        color: #94a3b8; cursor: pointer; border-radius: 12px; font-weight: 700;
+        transition: color .2s ease;
+    }
+    .admin-toggle:hover { color: var(--pass-c1); }
+    
+    .admin-section-box {
+        background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px;
+        padding: 14px; margin-bottom: 14px;
+    }
+    .admin-section-title {
+        font-weight: 800; font-size: 14px; margin-bottom: 10px; color: #334155;
+        display: flex; align-items: center; gap: 6px;
+    }
+    
+    .input {
+        width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #cbd5e1;
+        margin-bottom: 10px; font-size: 14px; background: #ffffff; color: #1e293b; outline: none;
+    }
+    .input:focus { border-color: var(--pass-c1); box-shadow: 0 0 0 3px rgba(106,61,232,0.15); }
+    
+    .btn {
+        width: 100%; padding: 13px; border: none; border-radius: 15px;
+        background: linear-gradient(135deg, var(--pass-c1), var(--pass-c2)); color: #fff;
+        font-weight: 800; font-size: 14px; cursor: pointer; margin-bottom: 8px;
+        box-shadow: 0 4px 14px rgba(106,61,232,0.25); transition: transform .15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-secondary {
+        background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; box-shadow: none;
+    }
+    .btn-danger-outline {
+        background: transparent; border: 1.5px solid #fca5a5; color: #dc2626; font-weight: 800;
+    }
+    
+    .divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
+    
+    .admin-item {
+        display: flex; align-items: center; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0;
+        border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .admin-item-info { flex: 1; font-size: 13px; min-width: 0; }
+    .admin-item-title { font-weight: 800; color: #1e293b; margin-bottom: 2px; }
+    .admin-item-sub { color: #64748b; font-size: 11.5px; }
+    .admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .icon-btn {
+        border: none; background: #f1f5f9; border-radius: 10px; width: 34px; height: 34px;
+        cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center;
+        font-weight: 700;
+    }
+    .icon-btn:active { transform: scale(0.9); }
+    .icon-btn.danger { background: #fee2e2; color: #dc2626; }
+    
+    .upload-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .upload-row .input { flex: 1; margin-bottom: 0; }
+    .upload-btn {
+        background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 14px; width: 46px;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 18px;
+    }
+
+    /* Модальное окно */
     .modal-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.7); z-index: 99999;
-        display: flex; align-items: center; justify-content: center;
-        backdrop-filter: blur(4px);
+        position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99999;
+        display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);
     }
     .modal-box {
-        background: #fff; border-radius: 20px; padding: 24px; width: 90%; max-width: 320px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;
+        background: #ffffff; border-radius: 24px; padding: 24px; width: 90%; max-width: 320px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center;
     }
-    body.theme-dark .modal-box { background: #14161f; }
     .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
-    .modal-buttons .btn { margin-bottom: 0; flex: 1; padding: 12px; }
+    .modal-buttons .btn { margin-bottom: 0; flex: 1; }
+
+    /* ТЁМНАЯ ТЕМА */
+    body.theme-dark {
+        background: radial-gradient(circle at 50% 0%, #2e1065 0%, #170836 280px, #0f172a 280px);
+        color: #f8fafc;
+    }
+    body.theme-dark .card, body.theme-dark .level-row, body.theme-dark .quest-card, body.theme-dark .inv-card,
+    body.theme-dark .modal-box { background: #1e293b; border-color: rgba(255,255,255,0.08); }
+    body.theme-dark .level-num-col { background: #0f172a; border-color: rgba(255,255,255,0.06); color: #64748b; }
+    body.theme-dark .reward-cell { background: #0f172a; border-color: rgba(255,255,255,0.06); }
+    body.theme-dark .reward-cell.premium { background: #2b2315; border-color: #854d0e; }
+    body.theme-dark .reward-label { color: #cbd5e1; }
+    body.theme-dark .reward-claim-btn.locked { background: #334155; color: #64748b; }
+    body.theme-dark .tabs { background: #1e293b; }
+    body.theme-dark .tab-btn { color: #94a3b8; }
+    body.theme-dark .tab-btn.active { background: #334155; color: #fff; }
+    body.theme-dark .progress-outer { background: #0f172a; }
+    body.theme-dark .input { background: #0f172a; border-color: #334155; color: #fff; }
+    body.theme-dark .admin-section-box { background: #0f172a; border-color: #334155; }
+    body.theme-dark .admin-section-title { color: #cbd5e1; }
+    body.theme-dark .admin-item { background: #0f172a; border-color: #334155; }
+    body.theme-dark .admin-item-title { color: #fff; }
+    body.theme-dark .upload-btn, body.theme-dark .icon-btn, body.theme-dark .btn-secondary { background: #334155; border-color: transparent; color: #fff; }
+    body.theme-dark .divider { background: #334155; }
 </style>
 </head>
 <body>
@@ -142,13 +317,12 @@
         </div>
     </div>
 
-    <div id="no-session" class="card" style="display:none;">
-        Не удалось определить пользователя. Открой пасс из профиля в приложении.
-        <a href="app.html" style="display:block;margin-top:10px;color:#6a3de8;font-weight:700;">← Вернуться в приложение</a>
+    <div id="no-session" class="card" style="display:none; text-align:center;">
+        Не удалось определить пользователя. Откройте пасс из профиля в приложении.
+        <a href="app.html" style="display:block;margin-top:10px;color:var(--pass-c1);font-weight:700;">← Вернуться в приложение</a>
     </div>
 
     <div id="pass-root" style="display:none;">
-
         <div id="pass-user-content">
             <div class="season-card">
                 <div class="season-name" id="pc-season-name">Сезонный пасс</div>
@@ -172,62 +346,68 @@
             </div>
 
             <div id="tab-quests" style="display:none;">
-                <p style="font-size:12px;color:#95a5a6;margin:0 0 12px;">Обновляются каждую неделю. Прогресс копится, пока идёт сезон.</p>
+                <p style="font-size:12.5px;color:#94a3b8;margin:0 0 12px;font-weight:600;">Задания обновляются еженедельно. Прогресс копится в течение сезона.</p>
                 <div id="pass-quests-list"></div>
             </div>
 
             <div id="tab-inv" style="display:none;">
-                <p style="font-size:12px;color:#95a5a6;margin:0 0 12px;">Открытые титулы, питомцы, оверлеи и другие косметические награды пасса. Рамки, значки, декор и цвет ника — в разделе «🛍 Магазин», там же можно их надеть.</p>
+                <p style="font-size:12.5px;color:#94a3b8;margin:0 0 12px;font-weight:600;">Титулы, питомцы, оверлеи и косметика пасса. Надеть рамки и значки можно в «🛍 Магазине».</p>
                 <div class="inv-grid" id="pass-inv-grid"></div>
             </div>
         </div>
 
         <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ управление пассом</div>
 
-        <div class="card" id="admin-panel" style="display:none;">
-            <h3 style="margin-top:0;">Текущий сезон: <span id="pass-admin-season-id"></span></h3>
-            <p style="font-size:12px;color:#95a5a6;margin-bottom:12px;">Сброс прогресса игроков происходит автоматически 1-го числа каждого месяца.</p>
+        <!-- АДМИН-ПАНЕЛЬ -->
+        <div class="card" id="admin-panel" style="display:none; margin-top:20px;">
+            <h3 style="margin-top:0; font-size:18px;">Текущий сезон: <span id="pass-admin-season-id" style="color:var(--pass-c1);"></span></h3>
+            <p style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Сброс прогресса игроков происходит автоматически 1-го числа каждого месяца.</p>
 
-            <input type="text" id="pass-season-number" class="input" placeholder="Номер сезона для игроков (напр. «Сезон 5»)">
-            <input type="text" id="pass-season-name" class="input" placeholder="Название сезона (напр. «Террария: Пробуждение»)">
-            <input type="datetime-local" id="pass-season-ends" class="input" placeholder="Окончание сезона">
-            <input type="number" id="pass-premium-price" class="input" placeholder="Цена премиум-пасса, монет" min="0">
-            <label style="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer;">
-                <input type="checkbox" id="pass-enabled-toggle" style="width:20px;height:20px;">
-                <span>Пасс включён (кнопка видна игрокам)</span>
-            </label>
+            <div class="admin-section-box">
+                <div class="admin-section-title">⚙️ Основные настройки</div>
+                <input type="text" id="pass-season-number" class="input" placeholder="Номер сезона (напр. «Сезон 5»)">
+                <input type="text" id="pass-season-name" class="input" placeholder="Название сезона (напр. «Террария: Пробуждение»)">
+                <input type="datetime-local" id="pass-season-ends" class="input" placeholder="Окончание сезона">
+                <input type="number" id="pass-premium-price" class="input" placeholder="Цена премиум-пасса, монет" min="0">
+                <label style="display:flex;align-items:center;gap:10px;margin:8px 0;cursor:pointer;font-size:13.5px;font-weight:600;">
+                    <input type="checkbox" id="pass-enabled-toggle" style="width:18px;height:18px;">
+                    <span>Пасс включён (виден игрокам)</span>
+                </label>
+            </div>
 
-            <div class="card" style="padding:12px;margin-bottom:10px;">
-                <div style="font-weight:800;margin-bottom:8px;">🎨 Тематическое оформление страницы пасса</div>
+            <div class="admin-section-box">
+                <div class="admin-section-title">🎨 Цветовая тема пасса</div>
                 <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <label style="font-size:12px;color:#95a5a6;flex:1;">Цвет градиента 1</label>
-                    <input type="color" id="pass-theme-color1" value="#6a3de8" style="width:52px;height:36px;border:none;border-radius:8px;">
+                    <label style="font-size:12.5px;color:#64748b;flex:1;font-weight:600;">Градиент 1</label>
+                    <input type="color" id="pass-theme-color1" value="#6a3de8" style="width:48px;height:34px;border:none;border-radius:8px;">
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <label style="font-size:12px;color:#95a5a6;flex:1;">Цвет градиента 2</label>
-                    <input type="color" id="pass-theme-color2" value="#a239ff" style="width:52px;height:36px;border:none;border-radius:8px;">
+                    <label style="font-size:12.5px;color:#64748b;flex:1;font-weight:600;">Градиент 2</label>
+                    <input type="color" id="pass-theme-color2" value="#a239ff" style="width:48px;height:34px;border:none;border-radius:8px;">
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
-                    <label style="font-size:12px;color:#95a5a6;flex:1;">Акцентный цвет (XP-бар, кнопки)</label>
-                    <input type="color" id="pass-theme-accent" value="#ffb300" style="width:52px;height:36px;border:none;border-radius:8px;">
+                    <label style="font-size:12.5px;color:#64748b;flex:1;font-weight:600;">Акцент (XP-бар, кнопки)</label>
+                    <input type="color" id="pass-theme-accent" value="#ffb300" style="width:48px;height:34px;border:none;border-radius:8px;">
                 </div>
             </div>
 
-            <button class="btn" id="btn-save-pass-season">💾 Сохранить настройки сезона</button>
+            <button class="btn" id="btn-save-pass-season">💾 Сохранить сезон</button>
 
             <div class="divider"></div>
 
-            <h3 id="pass-level-form-heading">Добавить/изменить уровень</h3>
-            <input type="number" id="pass-level-num" class="input" placeholder="Номер уровня (1-100)" min="1" max="100">
-            <input type="number" id="pass-level-xp" class="input" placeholder="Нужно XP всего, чтобы открыть уровень" min="1">
+            <h3 id="pass-level-form-heading" style="margin-top:0;">Добавить/изменить уровень</h3>
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="pass-level-num" class="input" placeholder="Уровень (1-100)" min="1" max="100" style="flex:1;">
+                <input type="number" id="pass-level-xp" class="input" placeholder="Требуется XP" min="1" style="flex:1;">
+            </div>
 
-            <div class="card" style="padding:12px;margin-bottom:10px;">
-                <div style="font-weight:800;margin-bottom:8px;">🆓 Бесплатная награда</div>
+            <div class="admin-section-box">
+                <div class="admin-section-title">🆓 Бесплатная награда</div>
                 <select id="pass-free-type" class="input" style="appearance:none;"></select>
-                <input type="text" id="pass-free-label" class="input" placeholder="Название награды (напр. «Титул: Новичок»)">
+                <input type="text" id="pass-free-label" class="input" placeholder="Название награды">
                 
                 <div class="upload-row" id="pass-free-upload-row">
-                    <input type="text" id="pass-free-value" class="input" placeholder="Значение (число/HEX/эмодзи/URL)">
+                    <input type="text" id="pass-free-value" class="input" placeholder="Значение (число/HEX/URL)">
                     <label class="upload-btn" for="pass-free-value-file" id="pass-free-value-label">📁</label>
                     <input type="file" id="pass-free-value-file" accept="image/*,audio/*" style="display:none;">
                 </div>
@@ -237,17 +417,16 @@
                 <div id="pass-free-cardpack-select-container" style="display:none;">
                     <select id="pass-free-cardpack-select" class="input"></select>
                 </div>
-                
-                <input type="text" id="pass-free-icon" class="input" placeholder="Эмодзи-иконка (напр. 🪙)">
+                <input type="text" id="pass-free-icon" class="input" placeholder="Иконка-эмодзи (напр. 🪙)">
             </div>
 
-            <div class="card" style="padding:12px;margin-bottom:10px;">
-                <div style="font-weight:800;margin-bottom:8px;">💎 Премиум награда</div>
+            <div class="admin-section-box">
+                <div class="admin-section-title">💎 Премиум награда</div>
                 <select id="pass-premium-type" class="input" style="appearance:none;"></select>
                 <input type="text" id="pass-premium-label" class="input" placeholder="Название награды">
                 
                 <div class="upload-row" id="pass-premium-upload-row">
-                    <input type="text" id="pass-premium-value" class="input" placeholder="Значение (число/HEX/эмодзи/URL)">
+                    <input type="text" id="pass-premium-value" class="input" placeholder="Значение (число/HEX/URL)">
                     <label class="upload-btn" for="pass-premium-value-file" id="pass-premium-value-label">📁</label>
                     <input type="file" id="pass-premium-value-file" accept="image/*,audio/*" style="display:none;">
                 </div>
@@ -257,8 +436,7 @@
                 <div id="pass-premium-cardpack-select-container" style="display:none;">
                     <select id="pass-premium-cardpack-select" class="input"></select>
                 </div>
-
-                <input type="text" id="pass-premium-icon" class="input" placeholder="Эмодзи-иконка (напр. 👑)">
+                <input type="text" id="pass-premium-icon" class="input" placeholder="Иконка-эмодзи (напр. 👑)">
             </div>
 
             <button class="btn" id="btn-save-pass-level">Сохранить уровень</button>
@@ -269,41 +447,43 @@
             <div id="admin-pass-levels-list"></div>
 
             <div class="divider"></div>
-            <h3 id="pass-quest-form-heading">Добавить ивентовое задание пасса</h3>
+            <h3 id="pass-quest-form-heading">Добавить задание пасса</h3>
             <input type="text" id="pass-quest-title" class="input" placeholder="Название (напр. «Шахтёрская смена»)">
             <select id="pass-quest-type" class="input" style="appearance:none;">
-                <option value="chapters">Прочитано глав (за неделю)</option>
+                <option value="chapters">Прочитано глав</option>
                 <option value="books">Дочитано книг</option>
                 <option value="comments">Оставлено комментариев</option>
                 <option value="messages">Отправлено сообщений</option>
                 <option value="reactions">Поставлено реакций</option>
                 <option value="boss">Ударов по боссу</option>
             </select>
-            <input type="number" id="pass-quest-goal" class="input" placeholder="Цель (число)" min="1">
-            <input type="number" id="pass-quest-xp" class="input" placeholder="Награда XP" min="1">
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="pass-quest-goal" class="input" placeholder="Цель (число)" min="1" style="flex:1;">
+                <input type="number" id="pass-quest-xp" class="input" placeholder="Награда XP" min="1" style="flex:1;">
+            </div>
             <button class="btn" id="btn-add-pass-quest">Добавить задание</button>
             <button class="btn btn-secondary" id="btn-cancel-edit-pass-quest" style="display:none;">Отменить редактирование</button>
 
             <div class="divider"></div>
-            <h3>Ивентовые задания сезона</h3>
+            <h3>Задания сезона</h3>
             <div id="admin-pass-quests-list"></div>
 
             <div class="divider"></div>
             <h3>Прогресс игроков</h3>
-            <input type="text" id="pass-user-search" class="input" placeholder="🔍 Поиск по имени">
+            <input type="text" id="pass-user-search" class="input" placeholder="🔍 Поиск игрока по имени">
             <div id="admin-pass-users-list"></div>
 
             <div class="divider"></div>
-            <button class="btn btn-secondary" id="btn-pass-new-season" style="color:#e74c3c;">🔄 Начать новый сезон вручную (сбросить прогресс всех игроков)</button>
-            <button class="btn btn-secondary" id="btn-pass-delete-season" style="color:#e74c3c;">🗑 Удалить всю конфигурацию сезона (уровни, задания, настройки)</button>
+            <button class="btn btn-danger-outline" id="btn-pass-new-season">🔄 Сбросить прогресс всех игроков (новый сезон)</button>
+            <button class="btn btn-danger-outline" id="btn-pass-delete-season" style="margin-top:6px;">🗑 Удалить конфигурацию текущего сезона</button>
         </div>
     </div>
 </div>
 
-<!-- Модальное окно (изначально скрыто) -->
+<!-- Модальное окно авторизации админки -->
 <div id="admin-auth-modal" class="modal-overlay" style="display:none;">
     <div class="modal-box">
-        <h3 style="margin-top:0; margin-bottom:16px;">Вход в управление</h3>
+        <h3 style="margin-top:0; margin-bottom:14px; font-size:18px;">Панель автора</h3>
         <input type="password" id="admin-pwd-input" class="input" placeholder="Пароль администратора">
         <div class="modal-buttons">
             <button id="btn-admin-cancel" class="btn btn-secondary">Отмена</button>
@@ -330,13 +510,12 @@
     const tg = window.Telegram.WebApp;
     try { tg.expand(); tg.ready(); } catch (e) {}
 
-    // === 1. КОНСТАНТЫ ===
     const QUEST_TYPE_LABEL = { chapters: 'глав прочитано', books: 'книг дочитано', comments: 'комментариев', messages: 'сообщений', reactions: 'реакций', boss: 'ударов по боссу' };
     const REWARD_ICON_FALLBACK = { coins: '🪙', gems: '💎', frame: '🖼', decoration: '🎀', badge: '🏅', nickcolor: '🎨', buff: '⚡', title: '🏷', vip: '✨', overlay: '👑', pet: '🐾', chatbg: '🖼', reaction: '😄', sound: '🔊', chest: '🎁', exclusive: '🔒', shop_item: '🛍' };
 
     const PASS_REWARD_TYPES = [
         { id: 'coins',      label: '🪙 Монеты — value: число' },
-        { id: 'shop_item',  label: '🛍 Существующий товар из магазина' }, // НОВАЯ ОПЦИЯ
+        { id: 'shop_item',  label: '🛍 Существующий товар из магазина' },
         { id: 'frame',      label: '🖼 Создать рамку (скрытый товар) — value: URL' },
         { id: 'decoration', label: '🎀 Создать декор (скрытый товар) — value: URL' },
         { id: 'badge',      label: '🏅 Создать значок (скрытый товар) — value: URL' },
@@ -350,9 +529,9 @@
         { id: 'chatbg',     label: '🖼 Фон чата — value: URL картинки' },
         { id: 'reaction',   label: '😄 Кастомная реакция — value: эмодзи или URL' },
         { id: 'sound',      label: '🔊 Звуковой стикер — value: URL аудио' },
-        { id: 'chest',      label: '🎁 Сундук — варианты через запятую, напр. 50,100' },
+        { id: 'chest',      label: '🎁 Сундук — варианты через запятую (напр. 50,100)' },
         { id: 'exclusive',  label: '🔒 Эксклюзивный контент — описание' },
-        { id: 'cardpack',   label: '🃏 Набор карточек — value: ID набора из админки «Карточки»' },
+        { id: 'cardpack',   label: '🃏 Набор карточек — выбор набора' },
     ];
     
     const PASS_SHOP_LINKED_TYPES = ['frame', 'decoration', 'badge', 'nickcolor'];
@@ -360,7 +539,6 @@
     const CLOUDINARY_CLOUD_NAME = 'fwwhxxrl';
     const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
 
-    // === 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
     function escapeHtml(str) {
         const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
     }
@@ -407,7 +585,6 @@
         });
     }
 
-    // === 3. АВТОРИЗАЦИЯ ===
     const params = new URLSearchParams(window.location.search);
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
     const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
@@ -417,7 +594,6 @@
     else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
     else if (authUser) { myId = authUser.id; myName = authUser.name; }
 
-    // Админ-панель пасса видна и доступна только пользователю с логином tsuma
     const ADMIN_LOGIN = 'tsuma';
     const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
     const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
@@ -431,10 +607,8 @@
         startPass();
     }
 
-    // Глобальная переменная для товаров, чтобы использовать в наградах
     let shopItemsData = [];
 
-    // === 4. ОСНОВНАЯ ЛОГИКА ПАССА ===
     function startPass() {
         let myUser = {};
         let seasonPassData = { name: 'Сезонный пасс', endsAt: null, premiumPrice: 300, levels: {}, weeklyQuests: {} };
@@ -450,7 +624,7 @@
             const data = snap.val();
             shopItemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
             updateAdminShopSelects();
-            if (currentTab === 'levels') renderLevels(); // Перерисовка на случай изменения названия товара
+            if (currentTab === 'levels') renderLevels();
         });
 
         onValue(ref(db, 'seasonPass/' + season), (snap) => {
@@ -458,7 +632,6 @@
             renderAll();
         });
 
-        // === для награды типа "Набор карточек" ===
         let cardsData = [];
         let cardPacksData = [];
         onValue(ref(db, 'cards'), (snap) => { const d = snap.val(); cardsData = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; });
@@ -552,22 +725,17 @@
             const c1 = theme.color1 || '#6a3de8';
             const c2 = theme.color2 || '#a239ff';
             const accent = theme.accent || '#ffb300';
-            const seasonCardEl = document.querySelector('.season-card');
-            if (seasonCardEl) seasonCardEl.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
-            document.querySelectorAll('.xp-bar-inner').forEach(elx => elx.style.background = `linear-gradient(90deg, ${accent}, ${c2})`);
-            document.querySelectorAll('.tab-btn.active').forEach(elx => elx.style.background = c1);
-            document.querySelectorAll('.reward-claim-btn:not(.done):not(.locked)').forEach(elx => elx.style.background = c1);
-            document.querySelectorAll('.btn-claim-small').forEach(elx => elx.style.background = c1);
-            document.querySelectorAll('.progress-inner').forEach(elx => elx.style.background = `linear-gradient(90deg, ${c2}, ${c1})`);
-            document.querySelectorAll('.level-num-col.reached').forEach(elx => elx.style.color = c1);
-            const premiumBtnStyleEl = document.getElementById('btn-buy-premium');
-            if (premiumBtnStyleEl) premiumBtnStyleEl.style.background = `linear-gradient(135deg, ${accent}, ${c2})`;
+            
+            document.documentElement.style.setProperty('--pass-c1', c1);
+            document.documentElement.style.setProperty('--pass-c2', c2);
+            document.documentElement.style.setProperty('--pass-accent', accent);
         }
 
         function renderSeasonHeader() {
             const numberPrefix = seasonPassData.seasonNumber ? escapeHtml(seasonPassData.seasonNumber) + ' — ' : '';
             document.getElementById('pc-season-name').textContent = numberPrefix + (seasonPassData.name || 'Сезонный пасс');
             applyDynamicPassTheme();
+            
             const ends = seasonPassData.endsAt;
             const countdownEl = document.getElementById('pc-countdown');
             if (ends) {
@@ -575,7 +743,7 @@
                 if (ms > 0) {
                     const d = Math.floor(ms / 86400000);
                     const h = Math.floor((ms % 86400000) / 3600000);
-                    countdownEl.textContent = `Сезон закончится через ${d} дн. ${h} ч.`;
+                    countdownEl.textContent = `⏳ Сезон завершится через ${d} дн. ${h} ч.`;
                 } else {
                     countdownEl.textContent = 'Сезон завершается...';
                 }
@@ -597,15 +765,15 @@
             const pct = nextLevel ? Math.round((progressed / span) * 100) : 100;
             document.getElementById('pc-xp-bar').style.width = pct + '%';
             document.getElementById('pc-xp-caption').textContent = nextLevel
-                ? `${p.xp || 0} / ${target} XP до уровня ${nextLevel.level}`
-                : `${p.xp || 0} XP · макс. уровень достигнут`;
+                ? `${p.xp || 0} / ${target} XP (до ур. ${nextLevel.level})`
+                : `${p.xp || 0} XP · максимальный уровень`;
 
             const premiumRow = document.getElementById('pc-premium-row');
             if (p.premium) {
                 premiumRow.innerHTML = `<div class="premium-active">💎 Премиум-пасс активен</div>`;
             } else {
                 const price = seasonPassData.premiumPrice || 300;
-                premiumRow.innerHTML = `<button class="premium-btn" id="btn-buy-premium">Купить премиум-пасс · ${price} 🪙</button>`;
+                premiumRow.innerHTML = `<button class="premium-btn" id="btn-buy-premium">Купить премиум · ${price} 🪙</button>`;
                 document.getElementById('btn-buy-premium').onclick = () => buyPremium(price);
             }
         }
@@ -648,7 +816,7 @@
         function renderLevels() {
             const el = document.getElementById('pass-levels-list');
             const levels = sortedLevels();
-            if (!levels.length) { el.innerHTML = '<div class="empty-state">Уровни пасса ещё не настроены администратором</div>'; return; }
+            if (!levels.length) { el.innerHTML = '<div class="empty-state">Уровни пасса ещё не настроены</div>'; return; }
             const p = myUser.pass || { xp: 0, claimed: {}, premium: false };
             const xp = p.xp || 0;
             const claimed = p.claimed || {};
@@ -661,30 +829,31 @@
                 const premDone = !!claimed[premKey];
 
                 const freeBtn = freeDone
-                    ? `<div class="reward-claim-btn done">✓ Получено</div>`
+                    ? `<div class="reward-claim-btn done">✓ Забрано</div>`
                     : (reached ? `<button class="reward-claim-btn" onclick="window.claimPassReward(${l.level},'free')">Забрать</button>` : `<div class="reward-claim-btn locked">🔒 ${l.xpRequired} XP</div>`);
 
                 const premLocked = !p.premium;
                 const premBtn = premDone
-                    ? `<div class="reward-claim-btn done">✓ Получено</div>`
-                    : (premLocked ? `<div class="reward-claim-btn locked">💎 Нужен премиум</div>` : (reached ? `<button class="reward-claim-btn" onclick="window.claimPassReward(${l.level},'premium')">Забрать</button>` : `<div class="reward-claim-btn locked">🔒 ${l.xpRequired} XP</div>`));
+                    ? `<div class="reward-claim-btn done">✓ Забрано</div>`
+                    : (premLocked ? `<div class="reward-claim-btn locked">💎 Нужен VIP</div>` : (reached ? `<button class="reward-claim-btn" onclick="window.claimPassReward(${l.level},'premium')">Забрать</button>` : `<div class="reward-claim-btn locked">🔒 ${l.xpRequired} XP</div>`));
 
                 return `
                 <div class="level-row">
                     <div class="level-num-col ${reached ? 'reached' : ''}">${l.level}</div>
                     <div class="reward-cell">
+                        <span class="reward-track-tag">Бесплатно</span>
                         <div class="reward-icon">${rewardIcon(l.free)}</div>
                         <div class="reward-label">${escapeHtml(rewardLabel(l.free))}</div>
                         ${freeBtn}
                     </div>
                     <div class="reward-cell premium ${premLocked ? 'locked-premium' : ''}">
+                        <span class="reward-track-tag">Премиум</span>
                         <div class="reward-icon">${rewardIcon(l.premium)}</div>
                         <div class="reward-label">${escapeHtml(rewardLabel(l.premium))}</div>
                         ${premBtn}
                     </div>
                 </div>`;
             }).join('');
-            applyDynamicPassTheme();
         }
 
         window.claimPassReward = function(levelNum, track) {
@@ -792,7 +961,7 @@
         function renderQuests() {
             const el = document.getElementById('pass-quests-list');
             const list = questsList();
-            if (!list.length) { el.innerHTML = '<div class="empty-state">Заданий пока нет — загляни позже</div>'; return; }
+            if (!list.length) { el.innerHTML = '<div class="empty-state">Заданий пока нет — загляните позже</div>'; return; }
             const p = myUser.pass || {};
             const progressMap = p.weeklyProgress || {};
             const claimedMap = p.weeklyClaimed || {};
@@ -812,11 +981,10 @@
                     <div class="progress-outer"><div class="progress-inner" style="width:${pct}%;"></div></div>
                     <div class="quest-bottom">
                         <div class="quest-meta">${Math.min(progress, goal)} / ${goal} · ${QUEST_TYPE_LABEL[q.type] || q.type}</div>
-                        ${claimed ? '<span style="color:#27ae60;font-weight:800;font-size:12px;">✓ Получено</span>' : (done ? `<button class="btn-claim-small" onclick="window.claimPassQuest('${q.id}')">Забрать</button>` : '')}
+                        ${claimed ? '<span style="color:#16a34a;font-weight:800;font-size:12px;">✓ Получено</span>' : (done ? `<button class="btn-claim-small" onclick="window.claimPassQuest('${q.id}')">Забрать</button>` : '')}
                     </div>
                 </div>`;
             }).join('');
-            applyDynamicPassTheme();
         }
 
         window.claimPassQuest = function(id) {
@@ -868,14 +1036,14 @@
                 cards.push(invSoundCard(val));
             });
             Object.entries(unlocked.exclusive || {}).forEach(([key, val]) => {
-                cards.push(`<div class="inv-card" style="text-align:left;"><div class="inv-icon">🔒</div><div class="inv-name" style="min-height:auto;">${escapeHtml(val.label || 'Эксклюзив')}</div><div style="font-size:11px;color:#95a5a6;">${escapeHtml(val.value || '')}</div></div>`);
+                cards.push(`<div class="inv-card" style="text-align:left;"><div class="inv-icon">🔒</div><div class="inv-name" style="min-height:auto;">${escapeHtml(val.label || 'Эксклюзив')}</div><div style="font-size:11px;color:#94a3b8;">${escapeHtml(val.value || '')}</div></div>`);
             });
             if (p.vipUntil && p.vipUntil > Date.now()) {
                 const days = Math.ceil((p.vipUntil - Date.now()) / 86400000);
                 cards.push(`<div class="inv-card"><div class="inv-icon">✨</div><div class="inv-name">VIP-статус активен ещё ${days} дн.</div></div>`);
             }
 
-            el.innerHTML = cards.length ? cards.join('') : '<div class="empty-state" style="grid-column:1/-1;">Пока нечего показать — забирай награды на вкладке «Уровни»</div>';
+            el.innerHTML = cards.length ? cards.join('') : '<div class="empty-state" style="grid-column:1/-1;">Награды ещё не открыты — повышайте уровень пасса!</div>';
         }
 
         function invCard(icon, name, isEq, onClick) {
@@ -886,7 +1054,7 @@
         function invCardImg(url, name, isEq, onClick) {
             const id = 'invbtn_' + Math.random().toString(36).slice(2);
             setTimeout(() => { const b = document.getElementById(id); if (b && onClick) b.onclick = onClick; }, 0);
-            return `<div class="inv-card"><img src="${url}" style="width:60px;height:60px;object-fit:contain;margin-bottom:6px;"><div class="inv-name">${escapeHtml(name)}</div>${onClick ? `<button class="inv-btn ${isEq ? 'inv-unequip' : 'inv-equip'}" id="${id}">${isEq ? 'Снять' : 'Надеть'}</button>` : ''}</div>`;
+            return `<div class="inv-card"><img src="${url}" style="width:58px;height:58px;object-fit:contain;margin-bottom:6px;"><div class="inv-name">${escapeHtml(name)}</div>${onClick ? `<button class="inv-btn ${isEq ? 'inv-unequip' : 'inv-equip'}" id="${id}">${isEq ? 'Снять' : 'Надеть'}</button>` : ''}</div>`;
         }
         function invSoundCard(url) {
             const id = 'sndbtn_' + Math.random().toString(36).slice(2);
@@ -910,9 +1078,7 @@
             renderAll();
         };
 
-        // ============================================================
-        // === ВСТРОЕННАЯ АДМИН-ПАНЕЛЬ ПАССА ==========================
-        // ============================================================
+        // АДМИН-ПАНЕЛЬ
         let isAdmin = false;
         let allUsersForAdmin = [];
 
@@ -937,7 +1103,6 @@
             document.getElementById('pass-premium-cardpack-select').innerHTML = options || '<option value="">Наборов пока нет</option>';
         }
 
-        // Логика переключения между текстовым вводом и выбором из магазина
         function toggleRewardInputType(track) {
             const type = document.getElementById(`pass-${track}-type`).value;
             const uploadRow = document.getElementById(`pass-${track}-upload-row`);
@@ -1030,17 +1195,17 @@
         };
 
         document.getElementById('btn-pass-delete-season').onclick = function() {
-            if (!confirm('Удалить ВСЮ конфигурацию текущего сезона (уровни, задания, настройки)? Прогресс игроков не тронется, но забирать будет нечего.')) return;
+            if (!confirm('Удалить ВСЮ конфигурацию текущего сезона?')) return;
             remove(ref(db, 'seasonPass/' + season)).then(() => alert('Конфигурация сезона удалена')).catch(err => alert('Ошибка: ' + err.message));
         };
 
         document.getElementById('btn-pass-new-season').onclick = function() {
-            if (!confirm('Обнулить прогресс пасса всех игроков в этом сезоне? Действие необратимо.')) return;
+            if (!confirm('Обнулить прогресс пасса всех игроков в этом сезоне?')) return;
             const updates = {};
             allUsersForAdmin.forEach(u => {
                 updates['users/' + u.id + '/pass'] = { season, xp: 0, level: 0, premium: false, claimed: {}, weeklyProgress: {}, weeklyClaimed: {} };
             });
-            update(ref(db), updates).then(() => alert('Прогресс сезона обнулён у всех игроков')).catch(err => alert('Ошибка: ' + err.message));
+            update(ref(db), updates).then(() => alert('Прогресс обнулен у всех игроков')).catch(err => alert('Ошибка: ' + err.message));
         };
 
         let editingLevelNum = null;
@@ -1058,11 +1223,11 @@
         function renderAdminLevelsList() {
             const el = document.getElementById('admin-pass-levels-list');
             const levels = sortedLevels();
-            if (!levels.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Уровни ещё не добавлены</div>'; return; }
+            if (!levels.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12.5px;">Уровни ещё не добавлены</div>'; return; }
             
             el.innerHTML = levels.map(l => {
-                const freeLabel = l.free ? (l.free.type === 'shop_item' ? `🛍 Товар (ID: ${l.free.value})` : l.free.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.free.value) || {}).name || 'Набор (не найден)'}` : `${l.free.icon || ''} ${l.free.label || l.free.type}`) : '—';
-                const premLabel = l.premium ? (l.premium.type === 'shop_item' ? `🛍 Товар (ID: ${l.premium.value})` : l.premium.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.premium.value) || {}).name || 'Набор (не найден)'}` : `${l.premium.icon || ''} ${l.premium.label || l.premium.type}`) : '—';
+                const freeLabel = l.free ? (l.free.type === 'shop_item' ? `🛍 Товар (ID: ${l.free.value})` : l.free.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.free.value) || {}).name || 'Набор'}` : `${l.free.icon || ''} ${l.free.label || l.free.type}`) : '—';
+                const premLabel = l.premium ? (l.premium.type === 'shop_item' ? `🛍 Товар (ID: ${l.premium.value})` : l.premium.type === 'cardpack' ? `🃏 ${(cardPacksData.find(p => p.id === l.premium.value) || {}).name || 'Набор'}` : `${l.premium.icon || ''} ${l.premium.label || l.premium.type}`) : '—';
                 return `
                 <div class="admin-item">
                     <div class="admin-item-info">
@@ -1156,7 +1321,7 @@
         function renderAdminQuestsListPass() {
             const el = document.getElementById('admin-pass-quests-list');
             const list = questsList();
-            if (!list.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Заданий пока нет</div>'; return; }
+            if (!list.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12.5px;">Заданий пока нет</div>'; return; }
             el.innerHTML = list.map(q => `
                 <div class="admin-item">
                     <div class="admin-item-info">
@@ -1223,12 +1388,12 @@
             let list = allUsersForAdmin.slice();
             if (query) list = list.filter(u => (u.name || '').toLowerCase().includes(query));
             list.sort((a, b) => (b.pass.xp || 0) - (a.pass.xp || 0));
-            if (!list.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:12px;">Пока никто не участвует в сезоне</div>'; return; }
+            if (!list.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12.5px;">Пока никто не участвует в сезоне</div>'; return; }
             el.innerHTML = list.slice(0, 60).map(u => `
                 <div class="admin-item">
                     <div class="admin-item-info">
                         <div class="admin-item-title">${escapeHtml(u.name || 'Читатель')}</div>
-                        <div class="admin-item-sub">Ур. ${u.pass.level || 0} · ${u.pass.xp || 0} XP ${u.pass.premium ? '· 💎 премиум' : ''}</div>
+                        <div class="admin-item-sub">Ур. ${u.pass.level || 0} · ${u.pass.xp || 0} XP ${u.pass.premium ? '· 💎 VIP' : ''}</div>
                     </div>
                     <div class="admin-item-actions" style="gap:4px;">
                         <button class="icon-btn" title="Выдать XP" onclick="adminGiveXp('${u.id}')">➕XP</button>

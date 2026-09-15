@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Магазин</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<!-- Асинхронная загрузка рекламы без блокировки отрисовки интерфейса -->
+<script async src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
@@ -13,186 +14,189 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
         margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: linear-gradient(180deg, #fff8f0 0%, #fff 200px); color: #2c3e50; padding-bottom: 40px;
+        background: #f8fafc; color: #1e293b; padding-bottom: 40px;
+        -webkit-font-smoothing: antialiased;
     }
-    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
-    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .container { max-width: 640px; margin: 0 auto; padding: 14px; position: relative; z-index: 1; }
+    
+    /* Шапка магазина */
+    .topbar {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+        position: sticky; top: 0; z-index: 50; padding: 8px 0;
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
     .back-link {
-        text-decoration: none; color: #2c3e50; background: #fff; width: 40px; height: 40px; border-radius: 12px;
-        display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0;
+        text-decoration: none; color: #1e293b; background: #ffffff; width: 42px; height: 42px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.06); flex-shrink: 0; font-weight: 700; transition: transform .15s ease;
     }
-    h1 { font-size: 20px; margin: 0; flex: 1; }
+    .back-link:active { transform: scale(0.92); }
+    h1 { font-size: 22px; font-weight: 800; margin: 0; flex: 1; letter-spacing: -0.4px; }
     .coins-badge {
-        background: linear-gradient(135deg, #ffb75e, #ed8f03); color: #fff; font-weight: 800; padding: 8px 14px;
-        border-radius: 14px; font-size: 15px; box-shadow: 0 4px 12px rgba(237,143,3,0.3); flex-shrink: 0;
+        background: linear-gradient(135deg, #ff9f0a 0%, #ed8f03 100%); color: #fff; font-weight: 800;
+        padding: 8px 14px; border-radius: 14px; font-size: 14px; box-shadow: 0 4px 14px rgba(237,143,3,0.3);
+        display: flex; align-items: center; gap: 5px; flex-shrink: 0; letter-spacing: 0.2px;
     }
-    .section-title { font-weight: 800; font-size: 16px; margin: 22px 0 10px; color: #2c3e50; }
+
+    /* БАННЕРЫ МАГАЗИНА */
+    .shop-banners-wrap { margin-bottom: 18px; position: relative; }
+    .shop-banners-carousel {
+        display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+        padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .shop-banners-carousel::-webkit-scrollbar { display: none; }
+    .shop-banner-slide {
+        flex: 0 0 100%; scroll-snap-align: start; border-radius: 20px; overflow: hidden;
+        position: relative; height: 140px; background: #2a2d3a center/cover no-repeat;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.07); cursor: pointer; display: flex; align-items: flex-end;
+    }
+    .shop-banner-overlay {
+        width: 100%; padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%);
+        color: #fff; box-sizing: border-box;
+    }
+    .shop-banner-tag {
+        display: inline-block; background: #ed8f03; color: #fff; font-size: 10.5px;
+        font-weight: 800; padding: 2px 7px; border-radius: 6px; margin-bottom: 4px; text-transform: uppercase;
+    }
+    .shop-banner-title { font-size: 16px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+    .shop-banner-dots { display: flex; justify-content: center; gap: 5px; margin-top: 6px; }
+    .shop-banner-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,0.18); transition: all .2s; }
+    .shop-banner-dot.active { width: 16px; border-radius: 4px; background: #ed8f03; }
+
+    /* Чипы категорий */
+    .filter-chips-row {
+        display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    }
+    .filter-chips-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+        padding: 8px 14px; border-radius: 12px; background: #ffffff; border: 1px solid rgba(0,0,0,0.06);
+        color: #64748b; font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all .15s ease;
+    }
+    .filter-chip:active { transform: scale(0.94); }
+    .filter-chip.active { background: #ed8f03; color: #fff; border-color: #ed8f03; box-shadow: 0 4px 12px rgba(237,143,3,0.3); }
+
+    .section-title {
+        font-weight: 800; font-size: 16px; margin: 20px 0 10px; color: #1e293b;
+        display: flex; align-items: center; justify-content: space-between;
+    }
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+    /* КАРТОЧКА ТОВАРА */
     .item-card {
-        background: #fff; border-radius: 18px; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        background: #ffffff; border-radius: 20px; padding: 14px 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05);
         display: flex; flex-direction: column; align-items: center; text-align: center;
+        position: relative; content-visibility: auto; contain-intrinsic-size: 180px;
+        transition: transform .2s ease, box-shadow .2s ease;
     }
-    .item-img { width: 84px; height: 84px; object-fit: contain; margin-bottom: 8px; }
-    .item-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .item-price { color: #ed8f03; font-weight: 800; font-size: 13px; margin-bottom: 10px; }
+    .item-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
+    .item-img { width: 86px; height: 86px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06)); }
+    .item-name { font-weight: 800; font-size: 13.5px; margin-bottom: 4px; color: #1e293b; line-height: 1.25; }
+    .item-price { color: #ed8f03; font-weight: 800; font-size: 13.5px; margin-bottom: 10px; }
+    .item-price .old-price { text-decoration: line-through; color: #94a3b8; font-weight: 500; font-size: 11.5px; margin-right: 5px; }
+
     .item-btn {
-        border: none; border-radius: 12px; padding: 9px 0; width: 100%; font-weight: 700; font-size: 13px; cursor: pointer;
+        border: none; border-radius: 14px; padding: 10px 0; width: 100%;
+        font-weight: 700; font-size: 13px; cursor: pointer; transition: transform .15s ease, opacity .15s;
     }
-    .btn-buy { background: linear-gradient(135deg, #ffb75e, #ed8f03); color: #fff; }
-    .btn-equip { background: #eafaf1; color: #27ae60; }
-    .btn-unequip { background: #fdecea; color: #e74c3c; }
-    .btn-disabled { background: #f1f2f6; color: #95a5a6; }
-    .empty-state { text-align: center; color: #95a5a6; padding: 30px 0; font-size: 14px; }
-    .card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); margin-bottom: 14px; }
+    .item-btn:active { transform: scale(0.95); }
+    .btn-buy { background: linear-gradient(135deg, #ff9f0a 0%, #ed8f03 100%); color: #fff; box-shadow: 0 4px 12px rgba(237,143,3,0.3); }
+    .btn-equip { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .btn-unequip { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .btn-disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+    .empty-state { text-align: center; color: #94a3b8; padding: 24px 0; font-size: 13.5px; font-weight: 600; grid-column: 1 / -1; }
+    .card {
+        background: #ffffff; border-radius: 20px; padding: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05); margin-bottom: 14px;
+    }
     .input {
-        width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; margin-bottom: 10px;
-        font-size: 14px; background: #f4f6f7;
+        width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0;
+        margin-bottom: 10px; font-size: 14px; background: #f8fafc; color: #1e293b; outline: none;
     }
-    .btn { width: 100%; padding: 13px; border: none; border-radius: 14px; background: linear-gradient(135deg,#ffb75e,#ed8f03); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
-    .btn-secondary { background: #f1f2f6; color: #2c3e50; }
-    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #b0b0b0; cursor: pointer; transition: color .2s ease, transform .2s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 10px; }
-    .admin-toggle:hover { color: #ed8f03; }
-    .admin-toggle:active { transform: scale(0.95); }
-    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 8px; margin-bottom: 8px; }
-    .admin-item img { width: 40px; height: 40px; object-fit: contain; }
-    .admin-item-info { flex: 1; font-size: 13px; }
-    .admin-item button { border: none; background: #fdecea; color: #e74c3c; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
-    .upload-row { display: flex; gap: 8px; }
-    .upload-row .input { flex: 1; margin-bottom: 0; }
-    .upload-btn { background: #f1f2f6; border-radius: 12px; width: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .input:focus { border-color: #ed8f03; background: #fff; }
+    .btn {
+        width: 100%; padding: 13px; border: none; border-radius: 15px;
+        background: linear-gradient(135deg, #ff9f0a, #ed8f03); color: #fff; font-weight: 800;
+        font-size: 14px; cursor: pointer; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(237,143,3,0.25);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-secondary { background: #f1f5f9; color: #334155; box-shadow: none; border: 1px solid #e2e8f0; }
 
+    /* Товар дня */
     .deal-card {
-        background: linear-gradient(135deg,#ffe0b2,#fff3e0); border: 2px solid #ed8f03; border-radius: 18px;
-        padding: 14px; margin-bottom: 18px; display: flex; align-items: center; gap: 14px;
+        background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1.5px solid #fed7aa;
+        border-radius: 20px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px;
+        box-shadow: 0 4px 14px rgba(237,143,3,0.1);
     }
-    .deal-card img { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
-    .deal-badge { display:inline-block; background:#ed8f03; color:#fff; font-size:11px; font-weight:800; padding:2px 8px; border-radius:8px; margin-bottom:4px; }
-    .deal-old-price { text-decoration: line-through; color: #95a5a6; font-size: 12px; margin-right: 6px; }
-    .item-price .old-price { text-decoration: line-through; color: #95a5a6; font-weight: 500; margin-right: 5px; }
-    .urgent-stock { color: #e74c3c !important; font-weight: 800 !important; }
-    .nickcolor-swatch { width: 84px; height: 84px; border-radius: 50%; margin-bottom: 8px; box-shadow: inset 0 0 0 3px rgba(0,0,0,0.08); }
+    .deal-card img { width: 68px; height: 68px; object-fit: contain; flex-shrink: 0; }
+    .deal-badge { display: inline-block; background: #ed8f03; color: #fff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 8px; margin-bottom: 4px; }
+    .deal-old-price { text-decoration: line-through; color: #94a3b8; font-size: 12px; margin-right: 6px; }
+    .urgent-stock { color: #ef4444 !important; font-weight: 800 !important; }
+    .nickcolor-swatch { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; box-shadow: inset 0 0 0 3px rgba(0,0,0,0.08); }
     .gift-btn {
-        position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: none; border-radius: 50%;
-        width: 26px; height: 26px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.95);
+        border: 1px solid rgba(0,0,0,0.06); border-radius: 50%; width: 28px; height: 28px;
+        font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform .15s;
     }
-    .item-card { position: relative; }
-    .trophy-empty { grid-column: 1 / -1; }
-    body.theme-dark .deal-card { background: linear-gradient(135deg,#3a2e1a,#2a2416); border-color: #ed8f03; }
-    body.theme-dark .gift-btn { background: rgba(40,42,54,0.9); color: #ecedf1; }
-    body.theme-dark {
-        background: linear-gradient(180deg, #14161f 0%, #1c1f2b 200px); color: #ecedf1;
-    }
-    body.theme-dark .card, body.theme-dark .item-card, body.theme-dark .admin-item { background: #232632; }
-    body.theme-dark .back-link, body.theme-dark .input, body.theme-dark .upload-btn { background: #2a2d3a; color: #ecedf1; border-color: rgba(255,255,255,0.08); }
-    body.theme-dark .btn-secondary { background: #2a2d3a; color: #ecedf1; }
-    body.theme-dark .empty-state, body.theme-dark .admin-toggle { color: #7a8090; }
+    .gift-btn:active { transform: scale(0.88); }
 
-    /* ============================================================
-       ТЕМА «TERRARIA» — синхронизирована с основным приложением
-       ============================================================ */
+    .admin-toggle { text-align: center; margin-top: 30px; padding: 10px; font-size: 12px; color: #94a3b8; cursor: pointer; border-radius: 10px; }
+    .admin-item { display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 9px 12px; margin-bottom: 8px; }
+    .admin-item img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; }
+    .admin-item-info { flex: 1; font-size: 13px; min-width: 0; }
+    .admin-item button { border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; font-weight: 700; }
+    .upload-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .upload-row .input { flex: 1; margin-bottom: 0; }
+    .upload-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 14px; width: 46px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+    /* ТЁМНАЯ ТЕМА */
+    body.theme-dark { background: #0f172a; color: #f8fafc; }
+    body.theme-dark .topbar { background: transparent; }
+    body.theme-dark .back-link { background: #1e293b; color: #f8fafc; border-color: rgba(255,255,255,0.06); }
+    body.theme-dark .filter-chip { background: #1e293b; color: #94a3b8; border-color: rgba(255,255,255,0.06); }
+    body.theme-dark .filter-chip.active { background: #ed8f03; color: #fff; }
+    body.theme-dark .section-title { color: #f8fafc; }
+    body.theme-dark .card, body.theme-dark .item-card { background: #1e293b; border-color: rgba(255,255,255,0.06); }
+    body.theme-dark .item-name { color: #f8fafc; }
+    body.theme-dark .deal-card { background: linear-gradient(135deg, #2d1f11 0%, #1e293b 100%); border-color: #9a5500; }
+    body.theme-dark .btn-disabled { background: #334155; color: #64748b; }
+    body.theme-dark .gift-btn { background: #334155; color: #fff; border-color: transparent; }
+    body.theme-dark .input { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    body.theme-dark .admin-item { background: #0f172a; border-color: #334155; }
+    body.theme-dark .upload-btn, body.theme-dark .btn-secondary { background: #334155; color: #f8fafc; border-color: transparent; }
+
+    /* ТЕМА TERRARIA */
     body.theme-terraria {
-        background: linear-gradient(180deg,
-            #7ec8f2 0%, #a3ddf5 10%,
-            #b9e77f 11%, #8bc34a 16%, #7cb342 24%,
-            #9c7148 25%, #7a5230 40%,
-            #5c3d21 60%, #402a15 82%, #2c1c0d 100%) fixed;
-        color: #ffe9b3;
-        font-family: 'Handjet', 'Courier New', monospace;
-        font-variation-settings: 'ELSH' 0, 'ELGR' 1;
-        font-weight: 700;
-        letter-spacing: 0.3px; font-size: 1.14em; line-height: 1.5;
-        position: relative;
+        background: linear-gradient(180deg, #7ec8f2 0%, #a3ddf5 10%, #b9e77f 11%, #8bc34a 16%, #7cb342 24%, #9c7148 25%, #7a5230 40%, #5c3d21 60%, #402a15 82%, #2c1c0d 100%) fixed;
+        color: #ffe9b3; font-family: 'Handjet', monospace; font-weight: 700; font-size: 1.12em;
     }
-    body.theme-terraria .container { position: relative; z-index: 1; }
-    body.theme-terraria img { filter: saturate(1.12) contrast(1.06); }
-
-    /* тёплое пульсирующее свечение факела */
-    body.theme-terraria::before {
-        content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-        background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255,178,56,0.20), transparent 60%);
-        animation: terraria-glow 4s ease-in-out infinite;
-    }
-    @keyframes terraria-glow {
-        0%, 100% { opacity: .5; }
-        50% { opacity: 1; }
-    }
-
-    /* парящие искры */
-    body.theme-terraria::after {
-        content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    #terraria-embers { display: none; }
+    body.theme-terraria #terraria-embers {
+        display: block; position: fixed; inset: 0; pointer-events: none; z-index: 0;
         background-image:
-            radial-gradient(2px 2px at 8% 30%, rgba(255,178,56,.95), transparent 60%),
-            radial-gradient(1.5px 1.5px at 22% 70%, rgba(255,210,110,.85), transparent 60%),
-            radial-gradient(2px 2px at 38% 15%, rgba(255,160,50,.9), transparent 60%),
-            radial-gradient(1.5px 1.5px at 55% 55%, rgba(255,200,90,.8), transparent 60%),
-            radial-gradient(2px 2px at 68% 85%, rgba(255,178,56,.9), transparent 60%),
-            radial-gradient(1.5px 1.5px at 82% 25%, rgba(255,210,110,.85), transparent 60%),
-            radial-gradient(2px 2px at 94% 65%, rgba(255,160,50,.9), transparent 60%);
-        background-size: 100% 200%;
-        background-repeat: repeat-y;
-        animation: terraria-embers 9s linear infinite;
+            radial-gradient(2px 2px at 15% 30%, rgba(255,178,56,.9), transparent 60%),
+            radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,210,110,.8), transparent 60%),
+            radial-gradient(2px 2px at 75% 20%, rgba(255,160,50,.85), transparent 60%);
+        background-size: 100% 50%; background-repeat: repeat-y;
+        animation: terrariaEmbersFloat 9s linear infinite; will-change: transform;
     }
-    @keyframes terraria-embers {
-        from { background-position: 0 0; }
-        to { background-position: 0 -200%; }
+    @keyframes terrariaEmbersFloat { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
+    body.theme-terraria h1, body.theme-terraria .section-title { color: #ffd873; text-shadow: 2px 2px 0 #2c1c0d; }
+    body.theme-terraria .card, body.theme-terraria .item-card, body.theme-terraria .back-link, body.theme-terraria .filter-chip {
+        background: #6b4726; border: 3px solid #2c1c0d; border-radius: 8px; color: #ffe9b3; box-shadow: inset 0 0 0 2px #8a6236;
     }
-
-    body.theme-terraria h1 {
-        color: #ffd873; text-shadow: 2px 2px 0 #2c1c0d, 0 0 8px rgba(255,178,56,.55);
-        animation: terraria-torch 2.2s ease-in-out infinite;
-    }
-    @keyframes terraria-torch {
-        0%, 100% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 7px rgba(255,178,56,.5); }
-        50% { text-shadow: 2px 2px 0 #2c1c0d, 0 0 14px rgba(255,178,56,.95); }
-    }
-    body.theme-terraria .section-title { color: #ffe9b3; text-shadow: 1px 1px 0 #2c1c0d; }
-
-    body.theme-terraria .coins-badge {
-        background: linear-gradient(180deg, #c17d33 0%, #8a5a24 100%);
-        border: 3px solid #2c1c0d; border-radius: 5px;
-        color: #fff1cf; text-shadow: 1px 1px 0 #2c1c0d;
-        box-shadow: inset 0 0 0 2px #e0a355;
-    }
-
-    body.theme-terraria .card,
-    body.theme-terraria .item-card,
-    body.theme-terraria .admin-item {
-        background: #6b4726; border: 3px solid #2c1c0d; border-radius: 6px;
-        box-shadow: inset 0 0 0 2px #8a6236, 0 8px 18px rgba(0,0,0,.45);
-        color: #ffe9b3;
-    }
-    body.theme-terraria .item-name { color: #ffe9b3; text-shadow: 1px 1px 0 #2c1c0d; }
-    body.theme-terraria .item-price { color: #ffd873; }
-    body.theme-terraria .empty-state, body.theme-terraria .admin-toggle { color: #c9a876; }
-
-    body.theme-terraria .back-link, body.theme-terraria .upload-btn {
-        background: #6b4726; border: 3px solid #2c1c0d; color: #ffe9b3; border-radius: 5px;
-        box-shadow: inset 0 0 0 2px #8a6236;
-    }
-
-    body.theme-terraria .btn, body.theme-terraria .btn-buy {
-        background: linear-gradient(180deg, #c17d33 0%, #8a5a24 100%);
-        border: 3px solid #2c1c0d; border-radius: 5px;
-        color: #fff1cf; text-shadow: 1px 1px 0 #2c1c0d;
+    body.theme-terraria .btn, body.theme-terraria .btn-buy, body.theme-terraria .coins-badge {
+        background: linear-gradient(180deg, #c17d33, #8a5a24); border: 3px solid #2c1c0d; border-radius: 8px; color: #fff1cf;
         box-shadow: inset 0 0 0 2px #e0a355, 0 4px 0 #201206;
     }
-    body.theme-terraria .btn:active, body.theme-terraria .btn-buy:active {
-        transform: translateY(3px); box-shadow: inset 0 0 0 2px #e0a355, 0 1px 0 #201206;
-    }
-    body.theme-terraria .btn-secondary {
-        background: linear-gradient(180deg, #6b4726 0%, #4a3319 100%);
-        border: 3px solid #2c1c0d; color: #ffe9b3;
-    }
-    body.theme-terraria .btn-equip { background: #2e5c2e; color: #cdf0cd; border: 2px solid #1c3d1c; border-radius: 5px; }
-    body.theme-terraria .btn-unequip { background: #6e2318; color: #ffe0d6; border: 2px solid #2c1c0d; border-radius: 5px; }
-    body.theme-terraria .btn-disabled { background: #4a3d33; color: #a1907c; border-radius: 5px; }
-
-    body.theme-terraria .input {
-        background: #4f3620; border: 2px solid #2c1c0d; color: #ffe9b3; border-radius: 5px;
-    }
-    body.theme-terraria .input::placeholder { color: #a98860; }
-
-    body.theme-terraria #wheel { border-color: #2c1c0d !important; box-shadow: inset 0 0 0 2px #8a6236, 0 6px 20px rgba(0,0,0,.45) !important; }
+    body.theme-terraria .btn-equip { background: #2e5c2e; color: #cdf0cd; border: 2px solid #1c3d1c; border-radius: 6px; }
+    body.theme-terraria .btn-unequip { background: #6e2318; color: #ffe0d6; border: 2px solid #2c1c0d; border-radius: 6px; }
+    body.theme-terraria .input { background: #4f3620; border: 2px solid #2c1c0d; color: #ffe9b3; }
 
     @keyframes confettiFall {
         to { left: var(--end-x); top: 110%; transform: translate(-50%,-50%) rotate(var(--rotate)); opacity: 0; }
@@ -200,6 +204,8 @@
 </style>
 </head>
 <body>
+
+<div id="terraria-embers"></div>
 
 <div class="container">
     <div class="topbar">
@@ -213,46 +219,90 @@
         <a href="app.html" style="display:block;margin-top:10px;color:#ed8f03;font-weight:700;">← Вернуться в приложение</a>
     </div>
 
-    <div id="shop-root" style="display:none;">
+    <div id="shop-root">
+        <!-- БАННЕРЫ -->
+        <div id="shop-banners-wrap" class="shop-banners-wrap" style="display:none;">
+            <div id="shop-banners-carousel" class="shop-banners-carousel"></div>
+            <div id="shop-banners-dots" class="shop-banner-dots"></div>
+        </div>
+
+        <!-- ФИЛЬТР ПО КАТЕГОРИЯМ -->
+        <div class="filter-chips-row" id="shop-category-filters">
+            <button class="filter-chip active" data-cat="all">🌟 Всё</button>
+            <button class="filter-chip" data-cat="packs">🃏 Карты</button>
+            <button class="filter-chip" data-cat="frame">🖼 Рамки</button>
+            <button class="filter-chip" data-cat="decoration">🎀 Декор</button>
+            <button class="filter-chip" data-cat="badge">🏅 Значки</button>
+            <button class="filter-chip" data-cat="nickcolor">🎨 Цвета</button>
+            <button class="filter-chip" data-cat="buff_daily">⚡ Баффы</button>
+            <button class="filter-chip" data-cat="wheel">🎡 Рулетка</button>
+            <button class="filter-chip" data-cat="trophies">🏆 Трофеи</button>
+        </div>
+
+        <!-- ТОВАР ДНЯ -->
         <div id="deal-of-day-wrap"></div>
 
-        <div class="section-title">📺 Реклама за монеты</div>
-        <div class="card" style="text-align:center;">
-            <div style="font-size:13px;color:var(--text-secondary,#95a5a6);margin-bottom:12px;">Посмотри короткую рекламу и получи монеты</div>
-            <button class="btn" id="btn-watch-ad">Смотреть рекламу (+10 🪙)</button>
-            <div id="ad-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
-        </div>
-
-        <div class="section-title">🃏 Наборы карточек</div>
-        <div class="grid" id="packs-grid"></div>
-
-        <div class="section-title">🖼 Рамки аватара</div>
-        <div class="grid" id="frames-grid"></div>
-
-        <div class="section-title">🎀 Декор профиля <span style="color:#95a5a6;font-weight:400;font-size:12px;">(до 5 одновременно)</span></div>
-        <div class="grid" id="decor-grid"></div>
-
-        <div class="section-title">🏅 Значки у ника</div>
-        <div class="grid" id="badges-grid"></div>
-
-        <div class="section-title">🎨 Цвет ника</div>
-        <div class="grid" id="nickcolor-grid"></div>
-
-        <div class="section-title">⚡ Баффы</div>
-        <div class="grid" id="buffs-grid"></div>
-
-        <div class="section-title">🎡 Колесо фортуны <span style="color:#95a5a6;font-weight:400;font-size:12px;" id="wheel-cost-label">(20 🪙 за попытку)</span></div>
-        <div class="card" style="text-align:center;">
-            <div id="wheel-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
-                <div id="wheel" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:6px solid #fff;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
-                <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;">🔻</div>
+        <!-- РЕКЛАМА -->
+        <div class="shop-section" data-section="all" id="ad-section">
+            <div class="card" style="text-align:center; padding:16px;">
+                <div style="font-size:13.5px;color:#64748b;margin-bottom:10px;font-weight:600;">📺 Посмотри короткую рекламу и забери монеты</div>
+                <button class="btn" id="btn-watch-ad">Смотреть рекламу (+10 🪙)</button>
+                <div id="ad-result" style="margin-top:8px;font-weight:700;font-size:13px;min-height:18px;"></div>
             </div>
-            <button class="btn" id="btn-spin-wheel">Крутить</button>
-            <div id="wheel-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
         </div>
 
-        <div id="wheel2-section" style="display:none;">
-            <div class="section-title">🌟 Ивентовое колесо <span style="color:#95a5a6;font-weight:400;font-size:12px;" id="wheel2-cost-label"></span></div>
+        <!-- НАБОРЫ КАРТОЧЕК -->
+        <div class="shop-section" data-section="packs">
+            <div class="section-title"><span>🃏 Наборы карточек</span></div>
+            <div class="grid" id="packs-grid"></div>
+        </div>
+
+        <!-- РАМКИ -->
+        <div class="shop-section" data-section="frame">
+            <div class="section-title"><span>🖼 Рамки аватара</span></div>
+            <div class="grid" id="frames-grid"></div>
+        </div>
+
+        <!-- ДЕКОР -->
+        <div class="shop-section" data-section="decoration">
+            <div class="section-title"><span>🎀 Декор профиля</span> <span style="font-size:11.5px;color:#94a3b8;font-weight:600;">(до 5 одновременно)</span></div>
+            <div class="grid" id="decor-grid"></div>
+        </div>
+
+        <!-- ЗНАЧКИ -->
+        <div class="shop-section" data-section="badge">
+            <div class="section-title"><span>🏅 Значки у ника</span></div>
+            <div class="grid" id="badges-grid"></div>
+        </div>
+
+        <!-- ЦВЕТ НИКА -->
+        <div class="shop-section" data-section="nickcolor">
+            <div class="section-title"><span>🎨 Цвет ника</span></div>
+            <div class="grid" id="nickcolor-grid"></div>
+        </div>
+
+        <!-- БАФФЫ -->
+        <div class="shop-section" data-section="buff_daily">
+            <div class="section-title"><span>⚡ Баффы</span></div>
+            <div class="grid" id="buffs-grid"></div>
+        </div>
+
+        <!-- КОЛЕСО 1 -->
+        <div class="shop-section" data-section="wheel">
+            <div class="section-title"><span>🎡 Колесо фортуны</span> <span style="font-size:11.5px;color:#94a3b8;font-weight:600;" id="wheel-cost-label">(20 🪙 за попытку)</span></div>
+            <div class="card" style="text-align:center;">
+                <div id="wheel-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
+                    <div id="wheel" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:6px solid #fff;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
+                    <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;">🔻</div>
+                </div>
+                <button class="btn" id="btn-spin-wheel">Крутить</button>
+                <div id="wheel-result" style="margin-top:10px;font-weight:700;min-height:20px;"></div>
+            </div>
+        </div>
+
+        <!-- ИВЕНТОВОЕ КОЛЕСО -->
+        <div id="wheel2-section" class="shop-section" data-section="wheel" style="display:none;">
+            <div class="section-title"><span>🌟 Ивентовое колесо</span> <span style="font-size:11.5px;color:#94a3b8;font-weight:600;" id="wheel2-cost-label"></span></div>
             <div class="card" style="text-align:center;">
                 <div id="wheel2-wrap" style="position:relative;width:220px;height:220px;margin:10px auto 16px;">
                     <div id="wheel2" style="width:100%;height:100%;border-radius:50%;position:relative;box-shadow:0 6px 20px rgba(237,143,3,0.35);border:6px solid #ffd873;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);"></div>
@@ -263,10 +313,28 @@
             </div>
         </div>
 
-        <div class="section-title">🏆 Мои трофеи</div>
-        <div class="grid" id="trophies-grid"></div>
+        <!-- ТРОФЕИ -->
+        <div class="shop-section" data-section="trophies">
+            <div class="section-title"><span>🏆 Мои трофеи</span></div>
+            <div class="grid" id="trophies-grid"></div>
+        </div>
 
-        <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ управление товарами</div>
+        <!-- АДМИН-ПАНЕЛЬ -->
+        <div class="admin-toggle" id="admin-toggle" style="display:none;">⚙ управление магазином</div>
+
+        <div class="card" id="admin-banners-panel" style="display:none;">
+            <h3 style="margin-top:0;">🎯 Баннеры магазина</h3>
+            <input type="text" id="shop-banner-title-input" class="input" placeholder="Заголовок баннера">
+            <div class="upload-row">
+                <input type="text" id="shop-banner-image-input" class="input" placeholder="Ссылка на картинку баннера (URL)">
+                <label class="upload-btn" for="shop-banner-file-input">📁</label>
+                <input type="file" id="shop-banner-file-input" accept="image/*" style="display:none;">
+            </div>
+            <input type="text" id="shop-banner-link-input" class="input" placeholder="Ссылка при клике (необязательно)">
+            <button class="btn" id="btn-add-shop-banner">Опубликовать баннер</button>
+            <div id="admin-shop-banners-list" style="margin-top:12px;"></div>
+        </div>
+
         <div class="card" id="admin-panel" style="display:none;">
             <h3 style="margin-top:0;">Добавить товар</h3>
             <select id="item-category" class="input">
@@ -305,9 +373,7 @@
 
         <div class="card" id="admin-wheel-panel" style="display:none;">
             <h3 style="margin-top:0;">🎡 Настройка колеса фортуны</h3>
-            <p style="font-size:12px;color:#95a5a6;margin-bottom:10px;">
-                Шанс сектора = его вес ÷ сумма всех весов. Например, если у всех весов сумма 100, вес 10 = 10% шанс.
-            </p>
+            <p style="font-size:12px;color:#94a3b8;margin-bottom:10px;">Шанс сектора = вес ÷ сумма всех весов.</p>
             <input type="number" id="wheel-cost" class="input" placeholder="Стоимость прокрутки" min="1">
             <div id="wheel-segments-form"></div>
             <button class="btn" id="btn-save-wheel">Сохранить настройки колеса</button>
@@ -315,9 +381,6 @@
 
         <div class="card" id="admin-wheel2-panel" style="display:none;">
             <h3 style="margin-top:0;">🌟 Ивентовое колесо (редкое)</h3>
-            <p style="font-size:12px;color:#95a5a6;margin-bottom:10px;">
-                Отдельное, более дорогое колесо с более крутыми призами. Можно включать только на время ивента.
-            </p>
             <label style="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer;">
                 <input type="checkbox" id="wheel2-enabled" style="width:20px;height:20px;">
                 <span>Показывать игрокам</span>
@@ -349,7 +412,6 @@
     const tg = window.Telegram.WebApp;
     try { tg.expand(); tg.ready(); } catch (e) {}
 
-    // === Определяем текущего пользователя (те же правила, что в app.html) ===
     const params = new URLSearchParams(window.location.search);
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
     const authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
@@ -359,7 +421,6 @@
     else if (params.get('uid')) { myId = params.get('uid'); myName = params.get('name') || 'Читатель'; }
     else if (authUser) { myId = authUser.id; myName = authUser.name; }
 
-    // Админ-панель магазина видна и доступна только пользователю с логином tsuma
     const ADMIN_LOGIN = 'tsuma';
     const myLogin = ((tgUser && tgUser.username) || (authUser && authUser.name) || '').toLowerCase();
     const isAllowedAdminUser = myLogin === ADMIN_LOGIN;
@@ -368,8 +429,8 @@
 
     if (!myId) {
         document.getElementById('no-session').style.display = 'block';
+        document.getElementById('shop-root').style.display = 'none';
     } else {
-        document.getElementById('shop-root').style.display = 'block';
         startShop();
     }
 
@@ -388,7 +449,51 @@
         let wheel2Cost = 50;
         let wheel2Enabled = false;
 
-        // Применяем ту же тему и звуки/эффекты, что настроены в основном приложении
+        let activeCatFilter = 'all';
+
+        // Фильтрация разделов чипами
+        document.querySelectorAll('#shop-category-filters .filter-chip').forEach(chip => {
+            chip.onclick = () => {
+                document.querySelectorAll('#shop-category-filters .filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                activeCatFilter = chip.dataset.cat;
+                applyCategoryVisibility();
+            };
+        });
+
+        function applyCategoryVisibility() {
+            document.querySelectorAll('.shop-section').forEach(sec => {
+                const s = sec.dataset.section;
+                if (activeCatFilter === 'all') {
+                    sec.style.display = (sec.id === 'wheel2-section' && !wheel2Enabled) ? 'none' : 'block';
+                } else {
+                    sec.style.display = (s === activeCatFilter) ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Оптимизированный рендеринг через requestAnimationFrame
+        let shopRenderPending = false;
+        function scheduleRenderShop() {
+            if (shopRenderPending) return;
+            shopRenderPending = true;
+            requestAnimationFrame(() => {
+                shopRenderPending = false;
+                renderShop();
+            });
+        }
+
+        let packsRenderPending = false;
+        function scheduleRenderPacks() {
+            if (packsRenderPending) return;
+            packsRenderPending = true;
+            requestAnimationFrame(() => {
+                packsRenderPending = false;
+                renderPacksGrid();
+            });
+        }
+
+        // Темы оформления
         onValue(ref(db, 'settings/theme'), (snap) => {
             const theme = snap.val();
             document.body.classList.toggle('theme-dark', theme === 'dark');
@@ -423,32 +528,111 @@
             setTimeout(() => container.remove(), 2200);
         }
 
+        // === БАННЕРЫ МАГАЗИНА ===
+        let bannersList = [];
+        let bannerIdx = 0;
+        let bannerTimer = null;
+
+        function setupBannersListener() {
+            onValue(ref(db, 'shopBanners'), (snap) => {
+                const data = snap.val();
+                if (data && Object.keys(data).length) {
+                    bannersList = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+                    renderBanners();
+                } else {
+                    // Fallback на общие баннеры ленты
+                    onValue(ref(db, 'banners'), (snap2) => {
+                        const data2 = snap2.val();
+                        bannersList = data2 ? Object.entries(data2).map(([id, v]) => ({ id, ...v })) : [];
+                        renderBanners();
+                    }, { onlyOnce: true });
+                }
+            });
+        }
+        setupBannersListener();
+
+        function renderBanners() {
+            const wrap = document.getElementById('shop-banners-wrap');
+            const carousel = document.getElementById('shop-banners-carousel');
+            const dots = document.getElementById('shop-banners-dots');
+            if (!wrap || !carousel || !dots) return;
+
+            if (!bannersList.length) {
+                wrap.style.display = 'none';
+                return;
+            }
+            wrap.style.display = 'block';
+
+            carousel.innerHTML = bannersList.map(b => `
+                <div class="shop-banner-slide" style="background-image:url('${b.image || ''}')" data-link="${escapeHtml(b.link || '')}">
+                    <div class="shop-banner-overlay">
+                        <span class="shop-banner-tag">Акции & События</span>
+                        <div class="shop-banner-title">${escapeHtml(b.title || '')}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            dots.innerHTML = bannersList.map((_, i) => `<div class="shop-banner-dot ${i === 0 ? 'active' : ''}"></div>`).join('');
+
+            carousel.querySelectorAll('.shop-banner-slide').forEach(slide => {
+                slide.onclick = () => {
+                    const l = slide.getAttribute('data-link');
+                    if (l) {
+                        if (tg.openLink) tg.openLink(l); else window.open(l, '_blank');
+                    }
+                };
+            });
+
+            // Автоскролл баннеров
+            if (bannerTimer) clearInterval(bannerTimer);
+            if (bannersList.length > 1) {
+                bannerTimer = setInterval(() => {
+                    bannerIdx = (bannerIdx + 1) % bannersList.length;
+                    const w = carousel.clientWidth;
+                    carousel.scrollTo({ left: bannerIdx * w, behavior: 'smooth' });
+                    dots.querySelectorAll('.shop-banner-dot').forEach((d, i) => d.classList.toggle('active', i === bannerIdx));
+                }, 4500);
+            }
+
+            carousel.onscroll = () => {
+                const w = carousel.clientWidth;
+                if (w > 0) {
+                    const cur = Math.round(carousel.scrollLeft / w);
+                    if (cur !== bannerIdx && cur >= 0 && cur < bannersList.length) {
+                        bannerIdx = cur;
+                        dots.querySelectorAll('.shop-banner-dot').forEach((d, i) => d.classList.toggle('active', i === bannerIdx));
+                    }
+                }
+            };
+
+            if (isAdmin) renderAdminShopBanners();
+        }
+
         onValue(ref(db, 'shopItems'), (snap) => {
             const data = snap.val();
             itemsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-            renderShop();
+            scheduleRenderShop();
             if (isAdmin) renderAdminList();
         });
 
-        // === Наборы карточек (карточная игра) ===
+        // Карты и наборы
         let cardsData = [];
         let cardPacksData = [];
 
         onValue(ref(db, 'cards'), (snap) => {
             const data = snap.val();
             cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-            renderPacksGrid();
+            scheduleRenderPacks();
         });
         onValue(ref(db, 'cardPacks'), (snap) => {
             const data = snap.val();
             cardPacksData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
-            renderPacksGrid();
+            scheduleRenderPacks();
         });
 
         const RARITY_LABELS_SHOP = { common: 'Обычная', rare: 'Редкая', epic: 'Эпическая', legendary: 'Легендарная' };
         const RARITY_WEIGHTS_SHOP = { common: 60, rare: 25, epic: 12, legendary: 3 };
         const RARITY_ORDER_SHOP = ['common', 'rare', 'epic', 'legendary'];
-        // Пыль: после DUST_CONVERT_AFTER_COPIES копий карты новые копии сразу идут в пыль вместо коллекции
         const DUST_VALUES_SHOP = { common: 5, rare: 20, epic: 100, legendary: 400 };
         const DUST_CONVERT_AFTER_COPIES_SHOP = 8;
 
@@ -462,16 +646,16 @@
                 const canAfford = (myUser.coins || 0) >= price;
                 const guaranteeLine = pack.minRarity ? `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:4px;">Гарантия: ${RARITY_LABELS_SHOP[pack.minRarity] || ''}+</div>` : '';
                 const imageBlock = pack.image
-                    ? `<img src="${pack.image}" class="item-img" onerror="this.style.opacity=0.2">`
-                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f5f0e8;border-radius:12px;">🃏</div>`;
+                    ? `<img src="${pack.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`
+                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f1f5f9;border-radius:14px;">🃏</div>`;
                 return `
                 <div class="item-card">
                     ${imageBlock}
                     <div class="item-name">${escapeHtml(pack.name || '')}</div>
-                    <div style="font-size:12px;color:#95a5a6;margin-bottom:4px;">${pack.count || 1} карт${(pack.count || 1) === 1 ? 'а' : ''}</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-bottom:4px;font-weight:600;">${pack.count || 1} карт${(pack.count || 1) === 1 ? 'а' : ''}</div>
                     ${guaranteeLine}
                     <div class="item-price">${price} 🪙</div>
-                    <button class="item-btn ${canAfford ? 'btn-buy' : 'btn-disabled'}" data-pack-id="${pack.id}">Купить</button>
+                    <button class="item-btn ${canAfford ? 'btn-buy' : 'btn-disabled'}" data-pack-id="${pack.id}">${canAfford ? 'Купить' : 'Мало монет'}</button>
                 </div>`;
             }).join('');
 
@@ -543,7 +727,7 @@
 
         onValue(ref(db, 'settings/shop/dealItemId'), (snap) => {
             dealOfDayId = snap.val() || null;
-            renderShop();
+            scheduleRenderShop();
             if (isAdmin) renderAdminList();
         });
 
@@ -561,25 +745,25 @@
 
         onValue(ref(db, 'settings/wheel2/enabled'), (snap) => {
             wheel2Enabled = !!snap.val();
-            document.getElementById('wheel2-section').style.display = wheel2Enabled ? 'block' : 'none';
+            applyCategoryVisibility();
         });
 
         onValue(ref(db, 'users/' + myId), (snap) => {
             myUser = snap.val() || {};
             document.getElementById('my-coins').textContent = myUser.coins || 0;
-            renderShop();
-            renderPacksGrid();
+            scheduleRenderShop();
+            scheduleRenderPacks();
         });
 
-        // === Реклама за монеты (AdsGram) ===
+        // AdsGram Реклама
         const AD_BLOCK_ID = '39983';
         const AD_REWARD = 10;
-        const AD_COOLDOWN_MS = 30000; // защита от спам-кликов, чтобы не звать show() слишком часто
+        const AD_COOLDOWN_MS = 30000;
 
         let adController = null;
         try {
             if (window.Adsgram) adController = window.Adsgram.init({ blockId: AD_BLOCK_ID });
-        } catch (e) { console.warn('Adsgram init error', e); }
+        } catch (e) {}
 
         const btnWatchAd = document.getElementById('btn-watch-ad');
         const adResultEl = document.getElementById('ad-result');
@@ -590,38 +774,41 @@
             btnWatchAd.onclick = function () {
                 if (adBusy) return;
                 if (!adController) {
-                    adResultEl.textContent = 'Реклама сейчас недоступна, попробуй позже';
-                    adResultEl.style.color = '#95a5a6';
-                    return;
+                    if (window.Adsgram) {
+                        try { adController = window.Adsgram.init({ blockId: AD_BLOCK_ID }); } catch(e){}
+                    }
+                    if (!adController) {
+                        adResultEl.textContent = 'Реклама сейчас недоступна, попробуйте позже';
+                        adResultEl.style.color = '#94a3b8';
+                        return;
+                    }
                 }
                 if (Date.now() - lastAdShownAt < AD_COOLDOWN_MS) {
-                    adResultEl.textContent = 'Подожди немного перед следующим просмотром';
-                    adResultEl.style.color = '#95a5a6';
+                    adResultEl.textContent = 'Подождите немного перед следующим просмотром';
+                    adResultEl.style.color = '#94a3b8';
                     return;
                 }
 
                 adBusy = true;
                 btnWatchAd.disabled = true;
-                adResultEl.textContent = 'Загружаем рекламу…';
-                adResultEl.style.color = '#95a5a6';
+                adResultEl.textContent = 'Загрузка рекламы…';
+                adResultEl.style.color = '#94a3b8';
 
                 adController.show().then(() => {
-                    // Реклама досмотрена до конца — начисляем монеты
                     lastAdShownAt = Date.now();
                     update(ref(db, 'users/' + myId), { coins: (myUser.coins || 0) + AD_REWARD }).then(() => {
                         adResultEl.textContent = `🎉 +${AD_REWARD} монет за просмотр!`;
-                        adResultEl.style.color = '#27ae60';
+                        adResultEl.style.color = '#16a34a';
                         playSound('coin'); confettiBurst();
                         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                     }).catch(() => {
-                        adResultEl.textContent = 'Ошибка начисления монет, попробуй ещё раз';
-                        adResultEl.style.color = '#e74c3c';
+                        adResultEl.textContent = 'Ошибка начисления монет';
+                        adResultEl.style.color = '#ef4444';
                     });
                 }).catch((result) => {
-                    // Пользователь закрыл рекламу раньше времени, либо реклама не найдена
-                    const reason = result && result.description ? result.description : 'Реклама не досмотрена — монеты не начислены';
+                    const reason = result && result.description ? result.description : 'Реклама не досмотрена';
                     adResultEl.textContent = reason;
-                    adResultEl.style.color = '#95a5a6';
+                    adResultEl.style.color = '#94a3b8';
                 }).finally(() => {
                     adBusy = false;
                     btnWatchAd.disabled = false;
@@ -644,16 +831,16 @@
             wrap.innerHTML = `
                 <div class="deal-card">
                     ${item.category === 'nickcolor'
-                        ? `<span class="nickcolor-swatch" style="width:56px;height:56px;background:${item.color || '#ccc'};"></span>`
-                        : `<img src="${item.image}" onerror="this.style.opacity=0.2">`}
+                        ? `<span class="nickcolor-swatch" style="width:58px;height:58px;background:${item.color || '#ccc'};"></span>`
+                        : `<img src="${item.image}" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`}
                     <div style="flex:1;">
                         <div class="deal-badge">🔥 ТОВАР ДНЯ</div>
                         <div style="font-weight:800;font-size:15px;">${escapeHtml(item.name)}</div>
-                        <div style="font-weight:800;color:#ed8f03;">
+                        <div style="font-weight:800;color:#ed8f03;font-size:14px;margin-top:2px;">
                             ${(price !== item.price) ? `<span class="deal-old-price">${item.price}🪙</span>` : ''}${price} 🪙
                         </div>
                     </div>
-                    ${owned ? '' : `<button class="btn" style="width:auto;padding:10px 16px;margin:0;" data-deal-buy="${item.id}">Купить</button>`}
+                    ${owned ? '<span style="font-size:12.5px;color:#16a34a;font-weight:700;">Куплено</span>' : `<button class="btn" style="width:auto;padding:10px 18px;margin:0;" data-deal-buy="${item.id}">Купить</button>`}
                 </div>
             `;
             const buyBtn = wrap.querySelector('[data-deal-buy]');
@@ -682,29 +869,29 @@
 
                     if (category === 'buff_daily') {
                         const active = myUser.buffUntil && Date.now() < myUser.buffUntil && myUser.buffItemId === item.id;
-                        btnLabel = active ? `Активен ещё ${Math.ceil((myUser.buffUntil - Date.now()) / 3600000)}ч (продлить: ${price}🪙)` : `Купить за ${price}🪙`;
+                        btnLabel = active ? `Активен (${Math.ceil((myUser.buffUntil - Date.now()) / 3600000)}ч)` : `Купить: ${price}🪙`;
                         btnClass = (myUser.coins || 0) >= price ? 'btn-buy' : 'btn-disabled';
                     } else if (!owned) {
                         if (!hasStock) { btnLabel = 'Раскуплено'; btnClass = 'btn-disabled'; }
-                        else { btnLabel = `Купить за ${price}🪙`; btnClass = (myUser.coins || 0) >= price ? 'btn-buy' : 'btn-disabled'; }
+                        else { btnLabel = `Купить: ${price}🪙`; btnClass = (myUser.coins || 0) >= price ? 'btn-buy' : 'btn-disabled'; }
                     } else if (isEquipped) { btnLabel = 'Снять'; btnClass = 'btn-unequip'; }
                     else { btnLabel = 'Надеть'; btnClass = 'btn-equip'; }
 
                     const stockNum = item.stock;
                     const lowStock = (stockNum !== undefined && stockNum !== null && stockNum > 0 && stockNum <= 3);
                     const stockLine = (category !== 'buff_daily' && stockNum !== undefined && stockNum !== null)
-                        ? `<div class="${lowStock ? 'urgent-stock' : ''}" style="font-size:11px;margin-bottom:4px;color:#95a5a6;">${stockNum > 0 ? (lowStock ? '🔥 Осталось всего ' + stockNum + ' шт.!' : 'Осталось: ' + stockNum + ' шт.') : 'Раскуплено'}</div>`
+                        ? `<div class="${lowStock ? 'urgent-stock' : ''}" style="font-size:11px;margin-bottom:4px;color:#94a3b8;font-weight:600;">${stockNum > 0 ? (lowStock ? 'Осталось всего ' + stockNum + '!' : 'Осталось: ' + stockNum) : 'Раскуплено'}</div>`
                         : '';
-                    const exclusiveLine = item.hidden ? `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:4px;">🐲 Награда за босса</div>` : '';
+                    const exclusiveLine = item.hidden ? `<div style="font-size:10.5px;color:#ed8f03;font-weight:800;margin-bottom:4px;">🐲 Босс-награда</div>` : '';
                     const priceLine = category === 'buff_daily'
                         ? `x${item.buffMultiplier} на ${item.buffHours}ч`
-                        : (owned ? (isEquipped ? '✅ Надето' : '📦 В инвентаре') : (onSale ? `<span class="old-price">${item.price}</span>${price} 🪙` : price + ' 🪙'));
+                        : (owned ? (isEquipped ? '✅ Надето' : '📦 В наличии') : (onSale ? `<span class="old-price">${item.price}</span>${price} 🪙` : price + ' 🪙'));
 
                     const giftBtn = (!owned && category !== 'buff_daily' && hasStock) ? `<button class="gift-btn" title="Подарить другу" data-gift="${item.id}">🎁</button>` : '';
 
                     const imageBlock = category === 'nickcolor'
                         ? `<span class="nickcolor-swatch" style="background:${item.color || '#ccc'};"></span>`
-                        : `<img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">`;
+                        : `<img src="${item.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`;
 
                     return `
                     <div class="item-card">
@@ -734,6 +921,7 @@
 
             renderDealOfDay();
             renderTrophies();
+            applyCategoryVisibility();
         }
 
         function handleItemClick(itemId, category, owned, isEquipped) {
@@ -785,7 +973,6 @@
                 return;
             }
 
-            // decoration — до 5 одновременно
             const decorations = { ...(myUser.equipped && myUser.equipped.decorations) };
             if (isEquipped) {
                 delete decorations[itemId];
@@ -796,12 +983,13 @@
             update(ref(db, 'users/' + myId + '/equipped'), { decorations }).catch(err => alert('Ошибка: ' + err.message));
         }
 
-        // === Админ-режим (тот же пароль, что в основном приложении) ===
+        // Админ-панель
         document.getElementById('admin-toggle').onclick = function() {
             if (!isAllowedAdminUser) return;
             if (isAdmin) {
                 const showing = document.getElementById('admin-panel').style.display !== 'none';
                 document.getElementById('admin-panel').style.display = showing ? 'none' : 'block';
+                document.getElementById('admin-banners-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-coins-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-wheel-panel').style.display = showing ? 'none' : 'block';
                 document.getElementById('admin-wheel2-panel').style.display = showing ? 'none' : 'block';
@@ -811,10 +999,12 @@
             if (pwd === 'admin123') {
                 isAdmin = true;
                 document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('admin-banners-panel').style.display = 'block';
                 document.getElementById('admin-coins-panel').style.display = 'block';
                 document.getElementById('admin-wheel-panel').style.display = 'block';
                 document.getElementById('admin-wheel2-panel').style.display = 'block';
                 renderAdminList();
+                renderAdminShopBanners();
                 listenAllUsersForCoins();
                 wheel1Controller.populateForm();
                 wheel2Controller.populateForm();
@@ -823,7 +1013,53 @@
             }
         };
 
-        // === Управление монетами пользователей ===
+        // Управление баннерами в админке
+        document.getElementById('shop-banner-file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.success) document.getElementById('shop-banner-image-input').value = json.data.url;
+                else alert('Ошибка: ' + (json.error?.message || 'не удалось загрузить'));
+            } catch (err) { alert('Ошибка сети при загрузке'); }
+        });
+
+        document.getElementById('btn-add-shop-banner').onclick = function() {
+            const title = document.getElementById('shop-banner-title-input').value.trim();
+            const image = document.getElementById('shop-banner-image-input').value.trim();
+            const link = document.getElementById('shop-banner-link-input').value.trim();
+            if (!title || !image) return alert('Укажи заголовок и картинку');
+
+            push(ref(db, 'shopBanners'), { title, image, link: link || null, createdAt: Date.now() })
+                .then(() => {
+                    document.getElementById('shop-banner-title-input').value = '';
+                    document.getElementById('shop-banner-image-input').value = '';
+                    document.getElementById('shop-banner-link-input').value = '';
+                }).catch(e => alert(e.message));
+        };
+
+        function renderAdminShopBanners() {
+            const el = document.getElementById('admin-shop-banners-list');
+            if (!el) return;
+            if (!bannersList.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Баннеров нет</div>'; return; }
+            el.innerHTML = bannersList.map(b => `
+                <div class="admin-item">
+                    <img src="${b.image}">
+                    <div class="admin-item-info"><b>${escapeHtml(b.title)}</b></div>
+                    <button data-del-banner="${b.id}">🗑</button>
+                </div>
+            `).join('');
+            el.querySelectorAll('[data-del-banner]').forEach(btn => {
+                btn.onclick = () => {
+                    if (confirm('Удалить баннер?')) remove(ref(db, 'shopBanners/' + btn.dataset.delBanner));
+                };
+            });
+        }
+
+        // Пользователи и монеты
         let allUsersForCoins = [];
         function listenAllUsersForCoins() {
             onValue(ref(db, 'users'), (snap) => {
@@ -840,13 +1076,13 @@
             if (term) list = list.filter(u => (u.name || '').toLowerCase().includes(term));
             list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-            if (!list.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:13px;">Никого не найдено</div>'; return; }
+            if (!list.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Никого не найдено</div>'; return; }
 
             el.innerHTML = list.map(u => `
                 <div class="admin-item">
                     <div class="admin-item-info">${escapeHtml(u.name)} · 🪙 ${u.coins || 0}</div>
-                    <button data-uid="${u.uid}" data-action="give" style="background:#eafaf1;color:#27ae60;width:auto;height:auto;padding:8px 10px;font-size:12px;font-weight:700;white-space:nowrap;">➕ Выдать</button>
-                    <button data-uid="${u.uid}" data-action="take" style="background:#fdecea;color:#e74c3c;width:auto;height:auto;padding:8px 10px;font-size:12px;font-weight:700;white-space:nowrap;">➖ Забрать</button>
+                    <button data-uid="${u.uid}" data-action="give" style="background:#dcfce7;color:#15803d;width:auto;height:auto;padding:8px 10px;font-size:12px;font-weight:700;">➕ Выдать</button>
+                    <button data-uid="${u.uid}" data-action="take" style="background:#fee2e2;color:#b91c1c;width:auto;height:auto;padding:8px 10px;font-size:12px;font-weight:700;">➖ Забрать</button>
                 </div>
             `).join('');
 
@@ -871,14 +1107,14 @@
 
         function renderAdminList() {
             const el = document.getElementById('admin-items-list');
-            if (!itemsData.length) { el.innerHTML = '<div style="color:#95a5a6;font-size:13px;">Товаров пока нет</div>'; return; }
+            if (!itemsData.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Товаров пока нет</div>'; return; }
             el.innerHTML = itemsData.map(item => {
                 const stockLabel = (item.stock === undefined || item.stock === null) ? '∞' : item.stock;
                 const isBuff = item.category === 'buff_daily';
                 const saleActive = item.saleUntil && Date.now() < item.saleUntil && item.salePrice;
                 const preview = item.category === 'nickcolor'
                     ? `<span style="display:inline-block;width:40px;height:40px;border-radius:50%;background:${item.color || '#ccc'};flex-shrink:0;"></span>`
-                    : `<img src="${item.image}" onerror="this.style.opacity=0.2">`;
+                    : `<img src="${item.image}" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`;
                 const priceLine = isBuff
                     ? `x${item.buffMultiplier} на ${item.buffHours}ч · ${item.price}🪙`
                     : (saleActive ? `<s>${item.price}</s> 🔥${item.salePrice}🪙` : `${item.price}🪙`);
@@ -886,9 +1122,9 @@
                 <div class="admin-item">
                     ${preview}
                     <div class="admin-item-info">${escapeHtml(item.name)} · ${priceLine} · ${categoryLabels[item.category] || item.category}${isBuff ? '' : ' · шт: ' + stockLabel}${dealOfDayId === item.id ? ' · ⭐ товар дня' : ''}</div>
-                    ${isBuff ? '' : `<button data-id="${item.id}" data-action="stock" title="Изменить количество" style="background:#eafaf1;color:#27ae60;">✏️</button>`}
-                    ${(!isBuff && item.category !== 'nickcolor') ? `<button data-id="${item.id}" data-action="sale" title="Скидка" style="background:#fff3e0;color:#ed8f03;">🔥</button>` : ''}
-                    ${(!isBuff) ? `<button data-id="${item.id}" data-action="deal" title="Товар дня" style="background:#fff9e6;color:#f0a500;">⭐</button>` : ''}
+                    ${isBuff ? '' : `<button data-id="${item.id}" data-action="stock" title="Изменить количество" style="background:#dcfce7;color:#15803d;">✏️</button>`}
+                    ${(!isBuff && item.category !== 'nickcolor') ? `<button data-id="${item.id}" data-action="sale" title="Скидка" style="background:#ffedd5;color:#ea580c;">🔥</button>` : ''}
+                    ${(!isBuff) ? `<button data-id="${item.id}" data-action="deal" title="Товар дня" style="background:#fef9c3;color:#ca8a04;">⭐</button>` : ''}
                     <button data-id="${item.id}" data-action="delete">🗑</button>
                 </div>`;
             }).join('');
@@ -959,7 +1195,7 @@
 
             if (category === 'nickcolor') {
                 payload.color = document.getElementById('item-color').value;
-                payload.image = ''; // у цвета ника нет картинки, только образец цвета
+                payload.image = '';
             } else {
                 const image = document.getElementById('item-image').value.trim();
                 if (!image) return alert('Укажи картинку');
@@ -989,7 +1225,7 @@
             }).catch(err => alert('Ошибка: ' + err.message));
         };
 
-        // === Колесо фортуны (обычное + ивентовое, оба настраиваются в админке) ===
+        // Колеса фортуны
         function createWheelController(cfg) {
             let segments = cfg.defaultSegments.map(s => ({ ...s }));
             const segAngle = 360 / segments.length;
@@ -1045,11 +1281,11 @@
                 formEl.innerHTML = segments.map((s, i) => {
                     const pct = total ? Math.round((s.weight / total) * 1000) / 10 : 0;
                     return `
-                    <div style="background:#f8f9fa;border-radius:12px;padding:10px;margin-bottom:8px;">
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-bottom:8px;">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                             <span style="width:14px;height:14px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
                             <input type="text" class="input ${cfg.key}-field" data-i="${i}" data-field="label" value="${s.label.replace(/"/g,'&quot;')}" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
-                            <span style="font-size:12px;color:#95a5a6;white-space:nowrap;">${pct}%</span>
+                            <span style="font-size:12px;color:#94a3b8;white-space:nowrap;">${pct}%</span>
                         </div>
                         <div style="display:flex;gap:6px;">
                             <select class="input ${cfg.key}-field" data-i="${i}" data-field="type" style="margin-bottom:0;flex:1;font-size:13px;padding:8px;">
@@ -1070,7 +1306,7 @@
                     if (field === 'weight' || field === 'value') updated[i][field] = parseInt(el.value, 10) || 0;
                     else updated[i][field] = el.value;
                 });
-                if (updated.every(s => s.weight <= 0)) return alert('Хотя бы один сектор должен иметь вес больше нуля');
+                if (updated.every(s => s.weight <= 0)) return alert('Хотя бы один сектор должен иметь вес');
 
                 const costEl = document.getElementById(cfg.costInputId);
                 const newCost = costEl ? parseInt(costEl.value, 10) : null;
@@ -1081,7 +1317,7 @@
                 }
 
                 Promise.all(tasks)
-                    .then(() => alert('Настройки колеса сохранены'))
+                    .then(() => alert('Настройки сохранены'))
                     .catch(err => alert('Ошибка: ' + err.message));
             };
 
@@ -1123,11 +1359,11 @@
                     const delta = segment.value;
                     update(ref(db, 'users/' + myId), { coins: Math.max(0, (myUser.coins || 0) + delta) }).catch(() => {});
                     resultEl.textContent = delta > 0 ? `🎉 Выигрыш: +${delta} монет!` : (delta < 0 ? `😬 Потеря: ${delta} монет` : '');
-                    resultEl.style.color = delta > 0 ? '#27ae60' : (delta < 0 ? '#e74c3c' : '#95a5a6');
+                    resultEl.style.color = delta > 0 ? '#16a34a' : (delta < 0 ? '#ef4444' : '#94a3b8');
                     if (delta > 0) { playSound('coin'); confettiBurst(); }
                 } else if (segment.type === 'nothing') {
                     resultEl.textContent = 'Пусто — повезёт в следующий раз!';
-                    resultEl.style.color = '#95a5a6';
+                    resultEl.style.color = '#94a3b8';
                 } else {
                     const inventory = myUser.inventory || {};
                     const candidates = itemsData.filter(i => i.category === segment.type && (!i.hidden) && !inventory[i.id]);
@@ -1186,25 +1422,25 @@
             document.getElementById('wheel2-enabled').checked = !!snap.val();
         });
 
-        // === Мои трофеи ===
+        // Трофеи
         function renderTrophies() {
             const el = document.getElementById('trophies-grid');
             if (!el) return;
             const inventory = myUser.inventory || {};
             const owned = itemsData.filter(i => inventory[i.id]);
-            if (!owned.length) { el.innerHTML = '<div class="empty-state trophy-empty">Пока нет трофеев — заходи в колесо фортуны или бей боссов ⚔️</div>'; return; }
+            if (!owned.length) { el.innerHTML = '<div class="empty-state">Пока нет трофеев — заходи в колесо фортуны или побеждай боссов ⚔️</div>'; return; }
             el.innerHTML = owned.map(item => `
                 <div class="item-card">
                     ${item.category === 'nickcolor'
                         ? `<span class="nickcolor-swatch" style="background:${item.color || '#ccc'};"></span>`
-                        : `<img src="${item.image}" class="item-img" onerror="this.style.opacity=0.2">`}
+                        : `<img src="${item.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`}
                     <div class="item-name">${escapeHtml(item.name)}</div>
-                    ${item.hidden ? '<div style="font-size:11px;color:#ed8f03;font-weight:700;">🐲 Награда за босса</div>' : ''}
+                    ${item.hidden ? '<div style="font-size:10.5px;color:#ed8f03;font-weight:800;margin-top:2px;">🐲 Награда за босса</div>' : ''}
                 </div>
             `).join('');
         }
 
-        // === Подарить предмет другу ===
+        // Подарок другу
         window.giftItem = async function(itemId) {
             const item = itemsData.find(i => i.id === itemId);
             if (!item) return;
@@ -1224,8 +1460,6 @@
 
                 if (!confirm(`Подарить «${item.name}» пользователю ${friendData.name} за ${item.price}🪙?`)) return;
 
-                // Один атомарный update() на общий узел 'users' — списание монет дарителя и выдача
-                // предмета другу применяются вместе, без риска потерять одну из частей.
                 await update(ref(db, 'users'), {
                     [myId + '/coins']: increment(-item.price),
                     [friendUid + '/inventory/' + itemId]: true

@@ -71,11 +71,6 @@
             50% { opacity: 1; }
         }
 
-        /* парящие искры/светлячки, поднимающиеся снизу вверх.
-           Раньше это был ::after с анимацией background-position — она заставляет
-           браузер перерисовывать весь экран на каждый кадр и сильно лагает на слабых
-           телефонах. Теперь это отдельный элемент вдвое выше экрана, который просто
-           сдвигается через transform (GPU-композитинг, дёшево). */
         #terraria-embers { display: none; }
         body.theme-terraria #terraria-embers {
             display: block; position: fixed; left: 0; top: 0; width: 100%; height: 200%;
@@ -190,10 +185,6 @@
         body.theme-terraria ::-webkit-scrollbar-thumb { background: #8a5a24; }
         body.theme-terraria ::-webkit-scrollbar-thumb:hover { background: #b5762f; }
 
-        /* ==================================================================
-           ДОПОЛНИТЕЛЬНЫЕ ФИЧИ ТЕМЫ TERRARIA — управляются из админ-панели
-           ================================================================== */
-
         /* --- 1. Смена дня/ночи --- */
         #terraria-daynight-overlay {
             position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -265,9 +256,7 @@
             }
         }
 
-        /* --- 7. Свечение галочки издателя как руда ---
-           Раньше анимировались box-shadow + filter — оба дорогие, а в чате такой
-           значок может быть у каждого сообщения одновременно, отсюда лаги. */
+        /* --- 7. Свечение галочки издателя как руда --- */
         body.theme-terraria.terraria-oreglow-on .verified-badge {
             box-shadow: 0 0 8px 2px rgba(255,178,56,.7);
             animation: terraria-ore-glow 1.8s ease-in-out infinite;
@@ -406,7 +395,6 @@
             border-radius: 50%; cursor: pointer; flex-shrink: 0; font-size: 13px; line-height: 1;
         }
 
-        /* постраничный (мангa/манхва) режим читалки — растягиваем на всю ширину, без внутренних отступов */
         .manga-pages { display: flex; flex-direction: column; gap: 2px; margin: -26px -22px -34px; }
         .manga-pages img { width: 100%; display: block; background: #eee; }
 
@@ -592,10 +580,9 @@
             display: none; flex-direction: column; transition: background .4s ease;
         }
         .reader-overlay.active { display: flex; animation: slideUpFade 0.3s ease forwards; }
-        /* Профиль пользователя может открываться поверх чата/постов/читалки — всегда должен быть сверху */
         #user-profile-overlay.active { z-index: 10010; }
 
-        /* ===================== Читалка книг — тёплая "бумажная" тема, единая с --surface ===================== */
+        /* ===================== Читалка книг ===================== */
         :root {
             --reader-paper: #fffdf8;
             --reader-paper-shadow: rgba(60,40,10,0.05);
@@ -624,10 +611,30 @@
             max-width: 720px; margin: 0 auto; width: 100%;
             transition: background .4s ease;
         }
-        .reader-content::first-letter {
+
+        /* Буквица применяется только к самой книге, а не ко всем экранам подряд */
+        #reader-body::first-letter {
             font-size: 2.5em; font-weight: 800; float: left; line-height: 0.85; padding: 4px 6px 0 0;
             color: var(--reader-accent);
         }
+
+        /* Полная изоляция оверлея постов от стилей книжной читалки */
+        #post-overlay-content {
+            white-space: normal !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            line-height: 1.5 !important;
+            letter-spacing: normal !important;
+            font-size: 15px !important;
+        }
+        #post-overlay-content::first-letter {
+            font-size: inherit !important;
+            font-weight: inherit !important;
+            float: none !important;
+            line-height: inherit !important;
+            padding: 0 !important;
+            color: inherit !important;
+        }
+
         .manga-pages { max-width: none; }
         .reader-actions {
             padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
@@ -663,7 +670,6 @@
         }
         .font-size-btn:active { background: var(--card-border); transform: scale(0.95); }
 
-        /* Тихая вспышка на полях при достижении вехи чтения (25/50/75/100%) — не мешает читать */
         @keyframes readerMilestonePulse {
             0% { box-shadow: inset 0 0 0 0 rgba(237,143,3,0); }
             30% { box-shadow: inset 0 0 60px -10px rgba(237,143,3,0.35); }
@@ -683,7 +689,7 @@
         .chapter-item-title { font-size: 15px; font-weight: 600; color:var(--text-primary); }
         .chapter-item-check { color: #30d158; font-size: 16px; }
 
-        /* ===================== СТРАНИЦА КНИГИ (обложка + описание, в стиле манга-либ) ===================== */
+        /* ===================== СТРАНИЦА КНИГИ ===================== */
         .book-detail { white-space: normal; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
         .book-detail-cover-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
         .book-detail-cover {
@@ -746,13 +752,72 @@
             margin-top: 10px; background: none; border: none; cursor: pointer; font-weight: 600;
         }
 
+        /* ===================== БЛОК КОММЕНТАРИЕВ ===================== */
         .comments-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
         .comments-title { font-size: 14px; font-weight: 800; color:var(--text-primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .comment-item { padding: 12px 14px; background: var(--card-bg); border-radius: 18px; border: 1px solid var(--card-border); margin-bottom: 8px; box-shadow: 0 2px 6px var(--card-shadow); height: fit-content; align-self: flex-start; }
-        .comment-author { font-weight: 700; font-size: 14px; color:var(--text-primary); }
-        .comment-meta { font-size: 11px; color:var(--text-secondary); margin-left: 8px; font-weight: 500; }
-        .comment-text { font-size: 14px; line-height: 1.5; color: var(--text-primary); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
-        .comment-delete { color: #e74c3c; font-size: 12px; background: none; border: none; cursor: pointer; margin-top: 6px; font-weight: 600; padding: 0; }
+
+        .comment-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 14px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            margin-bottom: 8px;
+            box-shadow: 0 2px 6px var(--card-shadow);
+            width: 100%;
+            box-sizing: border-box;
+            white-space: normal;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .comment-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .comment-author {
+            font-weight: 700;
+            font-size: 13.5px;
+            color: var(--text-primary);
+        }
+
+        .comment-meta {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+            font-weight: 500;
+        }
+
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.45;
+            color: var(--text-primary);
+            margin-top: 4px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .comment-delete {
+            color: #e74c3c;
+            font-size: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-top: 6px;
+            font-weight: 600;
+            padding: 0;
+            align-self: flex-start;
+        }
         .comment-sticker { max-width: 100px; height: auto; border-radius: 10px; object-fit: contain; margin-top: 6px; display: block; }
         .attachment-img { max-width: 220px; width: 100%; height: auto; border-radius: 12px; margin-top: 6px; display: block; }
         .attachment-video { max-width: 260px; width: 100%; border-radius: 12px; margin-top: 6px; display: block; }
@@ -793,7 +858,6 @@
         .profile-name-row h2 { font-size: 20px; font-weight: 800; margin-bottom: 2px; color:var(--text-primary); }
         .profile-bio { font-size: 13.5px; color:var(--text-secondary); margin-bottom: 8px; min-height: 4px; line-height: 1.5; text-align: center; max-width: 320px; margin-left: auto; margin-right: auto; white-space: pre-wrap; word-break: break-word; }
 
-        /* Компактное сеточное меню профиля вместо длинного списка кнопок на всю ширину */
         .profile-menu-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;
         }
@@ -818,7 +882,6 @@
         .genre-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 14px; font-weight: 500; color:var(--text-primary); }
         .genre-stat-row:last-child { border-bottom: none; }
 
-        /* Компактная сводная сетка статистики профиля — вместо 7 отдельных карточек */
         .profile-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; }
         .psg-item { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 12px 4px; border-radius: 14px; transition: background .15s ease; }
         .psg-item:active { background: var(--input-bg); }
@@ -863,7 +926,6 @@
         .msg-row { display: flex; margin-bottom: 6px; align-items: flex-end; font-size: 15px; line-height: 1.35; animation: msgPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .msg-row.mine { justify-content: flex-end; }
         
-        /* ИСПРАВЛЕННЫЕ КОМПАКТНЫЕ ПУЗЫРИ СООБЩЕНИЙ */
         .msg-bubble { 
             max-width: 75%; width: fit-content; height: fit-content; padding: 8px 12px; border-radius: 18px; 
             font-size: 15px; line-height: 1.35; position: relative; white-space: pre-wrap;
@@ -917,7 +979,6 @@
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* Свайп-влево (ответ) и долгое нажатие (меню действий) на сообщении */
         .msg-context-backdrop {
             position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10050;
             display: flex; align-items: flex-end; justify-content: center;
@@ -956,8 +1017,6 @@
         .sticker-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 4px; transition: transform 0.2s;}
         .sticker-toggle:active { transform: scale(0.9); }
 
-        /* Панель стикеров: паки подписаны и разложены по своим горизонтально-скроллящимся рядам,
-           сверху всегда идут личные стикеры пользователя с плиткой "+" для загрузки своих. */
         .sticker-picker { padding: 10px 14px 6px; max-height: 260px; overflow-y: auto; }
         .sticker-pack-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .sticker-pack-group:last-child { margin-bottom: 2px; }
@@ -1004,7 +1063,7 @@
         @keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
         /* ============================================================
-           ЭКРАН ЗАГРУЗКИ (маскот крутится, пока не пришли первые данные)
+           ЭКРАН ЗАГРУЗКИ
            ============================================================ */
         #app-splash {
             position: fixed; inset: 0; z-index: 30000;
@@ -1020,7 +1079,7 @@
         .app-splash-mascot-wrap img,
         .app-splash-mascot-fallback {
             max-width: 100%; max-height: 100%; width: auto; height: auto;
-            object-fit: contain; /* любые пропорции и разрешение картинки из админки впишутся без искажений */
+            object-fit: contain;
         }
         .app-splash-mascot-fallback { font-size: 96px; line-height: 1; }
         @keyframes app-splash-bounce {
@@ -1062,8 +1121,9 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
         /* ============================================================
-           СЕЗОННЫЙ ПАСС — стили кнопки в профиле, значков и виджета питомца
+           СЕЗОННЫЙ ПАСС
            ============================================================ */
         .pass-corner-btn {
             position: absolute;
@@ -1131,7 +1191,7 @@
         .pass-track-row { display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px 14px; }
 
         /* ============================================================
-           КАЛЕНДАРЬ СОБЫТИЙ (горизонтальный таймлайн)
+           КАЛЕНДАРЬ СОБЫТИЙ
            ============================================================ */
         .events-scroll { overflow-x: auto; overflow-y: hidden; height: 100%; -webkit-overflow-scrolling: touch; }
         .events-inner { position: relative; padding: 44px 20px 20px; box-sizing: border-box; }
@@ -1183,7 +1243,6 @@
         body.theme-terraria .events-date-mark { color: var(--text-secondary); }
         body.theme-terraria .event-bar { border: 1px solid #2c1c0d; }
 
-        /* мини-карточка события (по клику на полосу) */
         .event-detail-backdrop {
             display: none; position: fixed; inset: 0; z-index: 10500;
             background: rgba(0,0,0,.55); align-items: center; justify-content: center; padding: 24px;
@@ -1212,7 +1271,7 @@
         .event-detail-status.active { background: #ed8f03; }
 
         /* ============================================================
-           ГЛАВНОЕ МЕНЮ КАРТОЧНОЙ ИГРЫ («Врата Бездны»)
+           ГЛАВНОЕ МЕНЮ КАРТОЧНОЙ ИГРЫ
            ============================================================ */
         .cg-menu-header {
             text-align: center; padding: 18px 0 22px; position: relative; overflow: hidden;
@@ -1277,7 +1336,6 @@
            ============================================================ */
         .battle-arena { display: flex; flex-direction: column; height: 100%; }
 
-        /* Полоска руки (сверху — соперник рубашками вниз, снизу — твои карты лицом) */
         .battle-hand-strip { flex: 0 0 auto; display: flex; flex-direction: column; position: relative; z-index: 3; }
         .battle-hand-row {
             display: flex; gap: clamp(6px, 2vw, 10px); padding: 6px clamp(8px, 3vw, 14px); overflow-x: auto; align-items: center;
@@ -1286,8 +1344,6 @@
         .battle-hand-strip.opp { border-bottom: 1px solid var(--border-soft); }
         .battle-hand-strip.mine { border-top: 1px solid var(--border-soft); }
 
-        /* Плашка с именем и хп/маной героя, "нахлёстом" на границу руки и поля боя.
-           У соперника граница с полем — снизу его полоски руки; у игрока — сверху его полоски. */
         .battle-name-tab {
             align-self: flex-start; margin-left: 14px; background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 999px; padding: 5px 14px; display: flex; align-items: center; gap: 8px;
@@ -1298,16 +1354,12 @@
         .bnt-name { font-weight: 800; color: var(--text-primary); font-size: 12px; }
         .bnt-stats { font-size: 11px; color: var(--text-secondary); font-weight: 700; }
 
-        /* Рубашка карты соперника — мы не видим, что там */
         .battle-card-back {
             flex-shrink: 0; width: clamp(44px, 14vw, 56px); height: clamp(58px, 18vw, 74px); border-radius: 10px;
             background: repeating-linear-gradient(135deg, #3a2c1a, #3a2c1a 6px, #4a3a24 6px, #4a3a24 12px);
             border: 2px solid #6b5636; box-shadow: 0 2px 4px rgba(0,0,0,.35);
         }
 
-        /* Единое поле боя — стол соперника сверху, твой снизу, разделены индикатором хода.
-           justify-content:space-between держит поле соперника у самого верха, а твоё — у самого
-           низа (рядом с твоей рукой), не давая им "слипаться" в центре на маленьких экранах. */
         .battle-battlefield {
             flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between;
             background: radial-gradient(ellipse at center, #2f5c3f 0%, #1c3c28 65%, #14301f 100%);
@@ -1347,8 +1399,6 @@
         .battle-actions-row { flex: 0 0 auto; display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 8px 14px; }
         .battle-actions-row .btn { padding: 9px 16px; margin: 0; width: auto; }
 
-        /* Экран боя не должен скроллиться — всё поле, рука и кнопки обязаны помещаться на экране
-           одним взглядом. #battle-body переопределяет обычный overflow:auto у .reader-content. */
         #battle-body { overflow: hidden !important; }
 
         .battle-emoji-wrap { position: relative; }
@@ -1375,7 +1425,6 @@
             animation: battleReactionPop 3s ease forwards;
         }
 
-        /* Существо на столе — прямоугольный портрет с самоцветами атаки/здоровья по бокам */
         .battle-minion { flex-shrink: 0; width: clamp(50px, 16vw, 64px); text-align: center; position: relative; opacity: .6; box-sizing: border-box; }
         .battle-minion.can-attack { opacity: 1; cursor: pointer; }
         .battle-minion.can-attack .bm-portrait { box-shadow: 0 0 0 3px #ed8f03, 0 0 10px rgba(237,143,3,.7); }
@@ -1392,10 +1441,8 @@
         }
         .bm-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
         .battle-minion-fallback { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
-        .bm-badges { display: none; } /* устарело */
+        .bm-badges { display: none; }
         .bm-atk, .bm-hp {
-            /* Позиционируются от .battle-minion (не от .bm-portrait), чтобы не зависеть от строки ключевых слов под портретом
-               и не раздувать кликабельную область существа при загрузке картинки. */
             position: absolute; top: calc(clamp(60px, 19.5vw, 78px) - 8px); z-index: 3; width: 20px; height: 20px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff;
             border: 2px solid #2a2015; box-shadow: 0 2px 3px rgba(0,0,0,.4);
@@ -1507,7 +1554,6 @@
             font-size: 11px; border: 2px solid #2a2015; box-shadow: 0 2px 3px rgba(0,0,0,.4); cursor: pointer;
         }
 
-
         @keyframes heroHitFlash {
             0% { box-shadow: 0 0 0 0 rgba(255,69,58,0); background: var(--card-bg); }
             30% { box-shadow: 0 0 0 6px rgba(255,69,58,.35); background: rgba(255,69,58,.25); }
@@ -1546,7 +1592,6 @@
             100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(.2); opacity: 0; }
         }
 
-        /* Реакция карты на розыгрыш из руки на стол */
         @keyframes cardPlayedPop {
             0% { transform: scale(1.3) translateY(-18px); opacity: 0; filter: brightness(1.6); }
             60% { transform: scale(1.08) translateY(0); opacity: 1; filter: brightness(1.15); }
@@ -1554,7 +1599,6 @@
         }
         .battle-minion.just-played { animation: cardPlayedPop .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-        /* Вспышка при использовании способности существа или комбо */
         @keyframes comboFlash {
             0% { box-shadow: 0 0 0 0 rgba(191,90,242,.7); }
             60% { box-shadow: 0 0 0 14px rgba(191,90,242,0); }
@@ -1568,882 +1612,855 @@
         }
         .battle-pulse { animation: battlePulse 1.6s ease-in-out infinite; }
 
+        /* ===================== СЮЖЕТНЫЙ РЕЖИМ ===================== */
+        #story-mode-body.story-has-bg {
+            background-size: cover; background-position: center; background-attachment: fixed;
+            position: relative;
+        }
+        #story-mode-body.story-has-bg::before {
+            content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.75));
+            pointer-events: none; z-index: 0;
+        }
+        #story-mode-body.story-has-bg > * { position: relative; z-index: 1; }
 
+        .story-chapter-card {
+            position: relative; display: flex; align-items: stretch; gap: 0; margin-bottom: 14px;
+            border-radius: 16px; overflow: hidden; cursor: pointer; min-height: 92px;
+            background: var(--card-bg); border: 2px solid var(--card-border);
+            box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: transform .15s ease, box-shadow .15s ease;
+            animation: storyCardIn .35s ease both;
+        }
+        .story-chapter-card:active { transform: scale(.98); }
+        .story-chapter-card.locked { opacity: .5; filter: grayscale(.4); cursor: not-allowed; }
+        .story-chapter-card.available { border-color: #ed8f03; box-shadow: 0 4px 18px rgba(237,143,3,.35); }
+        .story-chapter-card.cleared { border-color: #30d158; }
 
+        .story-chapter-banner {
+            width: 92px; flex-shrink: 0; background-size: cover; background-position: center;
+            background-color: #2a2a2a; position: relative;
+        }
+        .story-chapter-banner::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, rgba(0,0,0,.15), rgba(0,0,0,.05));
+        }
+        .story-chapter-number {
+            position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(0,0,0,.6); color: #fff; font-size: 12px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; z-index: 2;
+            border: 1px solid rgba(255,255,255,.4);
+        }
+        .story-chapter-body { flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+        .story-chapter-name { font-size: 14px; font-weight: 800; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .story-chapter-boss { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+        .story-chapter-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; margin-top: 2px; }
+        .story-status-pill {
+            display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
+            letter-spacing: .2px;
+        }
+        .story-status-pill.locked { background: rgba(140,140,140,.25); color: #9a9a9a; }
+        .story-status-pill.available { background: rgba(237,143,3,.18); color: #ed8f03; }
+        .story-status-pill.cleared { background: rgba(48,209,88,.18); color: #22a147; }
+        .story-reward-badge { color: #ed8f03; font-weight: 700; }
+        .story-replay-badge { color: var(--text-secondary); font-weight: 700; }
+        .story-chapter-stars { font-size: 11px; letter-spacing: 1px; }
 
-/* ===================== СЮЖЕТНЫЙ РЕЖИМ (главы/боссы + диалоги визуальной новеллы) ===================== */
+        .story-chapter-connector { width: 2px; height: 14px; margin: -6px auto; background: repeating-linear-gradient(180deg, var(--border-soft) 0 4px, transparent 4px 8px); position: relative; z-index: 1; }
 
-/* Фон-«обложка» всего сюжетного режима, настраивается в админке (settings/story/bgImage).
-   Полупрозрачная тёмная плёнка поверх картинки, чтобы текст и карточки глав оставались читаемыми. */
-#story-mode-body.story-has-bg {
-    background-size: cover; background-position: center; background-attachment: fixed;
-    position: relative;
-}
-#story-mode-body.story-has-bg::before {
-    content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.75));
-    pointer-events: none; z-index: 0;
-}
-#story-mode-body.story-has-bg > * { position: relative; z-index: 1; }
+        @keyframes storyCardIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-/* Карточка главы — большая, с баннером-портретом босса, статусной рамкой и медальоном номера.
-   Заменяет обычный плоский admin-item на более «игровой», насыщенный вид. */
-.story-chapter-card {
-    position: relative; display: flex; align-items: stretch; gap: 0; margin-bottom: 14px;
-    border-radius: 16px; overflow: hidden; cursor: pointer; min-height: 92px;
-    background: var(--card-bg); border: 2px solid var(--card-border);
-    box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: transform .15s ease, box-shadow .15s ease;
-    animation: storyCardIn .35s ease both;
-}
-.story-chapter-card:active { transform: scale(.98); }
-.story-chapter-card.locked { opacity: .5; filter: grayscale(.4); cursor: not-allowed; }
-.story-chapter-card.available { border-color: #ed8f03; box-shadow: 0 4px 18px rgba(237,143,3,.35); }
-.story-chapter-card.cleared { border-color: #30d158; }
+        .story-completion-badge {
+            display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 14px;
+            border-radius: 14px; background: linear-gradient(135deg, #ffd76a, #ed8f03);
+            color: #3a2400; font-weight: 800; font-size: 13px; box-shadow: 0 4px 14px rgba(237,143,3,.4);
+            animation: storyCardIn .4s ease both;
+        }
 
-.story-chapter-banner {
-    width: 92px; flex-shrink: 0; background-size: cover; background-position: center;
-    background-color: #2a2a2a; position: relative;
-}
-.story-chapter-banner::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(90deg, rgba(0,0,0,.15), rgba(0,0,0,.05));
-}
-.story-chapter-number {
-    position: absolute; top: 6px; left: 6px; width: 24px; height: 24px; border-radius: 50%;
-    background: rgba(0,0,0,.6); color: #fff; font-size: 12px; font-weight: 800;
-    display: flex; align-items: center; justify-content: center; z-index: 2;
-    border: 1px solid rgba(255,255,255,.4);
-}
-.story-chapter-body { flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-.story-chapter-name { font-size: 14px; font-weight: 800; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.story-chapter-boss { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
-.story-chapter-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; margin-top: 2px; }
-.story-status-pill {
-    display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
-    letter-spacing: .2px;
-}
-.story-status-pill.locked { background: rgba(140,140,140,.25); color: #9a9a9a; }
-.story-status-pill.available { background: rgba(237,143,3,.18); color: #ed8f03; }
-.story-status-pill.cleared { background: rgba(48,209,88,.18); color: #22a147; }
-.story-reward-badge { color: #ed8f03; font-weight: 700; }
-.story-replay-badge { color: var(--text-secondary); font-weight: 700; }
-.story-chapter-stars { font-size: 11px; letter-spacing: 1px; }
+        .story-preview-banner {
+            height: 160px; background-size: cover; background-position: center; position: relative;
+            display: flex; align-items: flex-end;
+        }
+        .story-preview-banner-fade {
+            position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.75) 100%);
+        }
+        .story-preview-banner-title { position: relative; z-index: 1; padding: 14px 16px; color: #fff; }
+        .story-preview-chapter-idx { font-size: 11px; font-weight: 700; opacity: .85; text-transform: uppercase; letter-spacing: .5px; }
+        .story-preview-name { font-size: 20px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.5); }
+        .story-preview-lore {
+            font-size: 13px; line-height: 1.55; color: var(--text-secondary); background: rgba(0,0,0,.04);
+            border-radius: 12px; padding: 12px 14px; margin-top: 4px; white-space: pre-wrap;
+        }
+        .story-deck-preview-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .story-deck-chip {
+            position: relative; width: 40px; height: 52px; border-radius: 8px; background: var(--card-bg);
+            border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center;
+            font-size: 18px; overflow: hidden; flex-shrink: 0;
+        }
+        .story-deck-chip img { width: 100%; height: 100%; object-fit: cover; }
+        .story-deck-chip-count {
+            position: absolute; bottom: 1px; right: 2px; font-size: 9px; font-weight: 800; color: #fff;
+            background: rgba(0,0,0,.65); border-radius: 6px; padding: 0 3px;
+        }
 
-/* Соединительная линия между карточками глав — создаёт ощущение «пути приключений» */
-.story-chapter-connector { width: 2px; height: 14px; margin: -6px auto; background: repeating-linear-gradient(180deg, var(--border-soft) 0 4px, transparent 4px 8px); position: relative; z-index: 1; }
+        .story-chapter-locked { opacity: .55; }
 
-@keyframes storyCardIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+        .story-dialogue-overlay {
+            position: fixed; inset: 0; z-index: 10090;
+            background: rgba(0,0,0,0.55);
+            display: none; align-items: flex-end; justify-content: center;
+            padding: 0 12px 22px;
+        }
+        .story-dialogue-overlay.active { display: flex; }
 
-/* Медальон полного прохождения сюжета */
-.story-completion-badge {
-    display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 14px;
-    border-radius: 14px; background: linear-gradient(135deg, #ffd76a, #ed8f03);
-    color: #3a2400; font-weight: 800; font-size: 13px; box-shadow: 0 4px 14px rgba(237,143,3,.4);
-    animation: storyCardIn .4s ease both;
-}
+        .story-dlg-box {
+            width: 100%; max-width: 520px; background: var(--surface);
+            border-radius: 18px; padding: 16px; display: flex; gap: 14px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35); cursor: pointer;
+            border: 1px solid var(--border-soft); animation: slideUpFade .25s ease;
+        }
 
-/* Экран-«визитка» главы перед боем */
-.story-preview-banner {
-    height: 160px; background-size: cover; background-position: center; position: relative;
-    display: flex; align-items: flex-end;
-}
-.story-preview-banner-fade {
-    position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.75) 100%);
-}
-.story-preview-banner-title { position: relative; z-index: 1; padding: 14px 16px; color: #fff; }
-.story-preview-chapter-idx { font-size: 11px; font-weight: 700; opacity: .85; text-transform: uppercase; letter-spacing: .5px; }
-.story-preview-name { font-size: 20px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.5); }
-.story-preview-lore {
-    font-size: 13px; line-height: 1.55; color: var(--text-secondary); background: rgba(0,0,0,.04);
-    border-radius: 12px; padding: 12px 14px; margin-top: 4px; white-space: pre-wrap;
-}
-.story-deck-preview-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.story-deck-chip {
-    position: relative; width: 40px; height: 52px; border-radius: 8px; background: var(--card-bg);
-    border: 1px solid var(--card-border); display: flex; align-items: center; justify-content: center;
-    font-size: 18px; overflow: hidden; flex-shrink: 0;
-}
-.story-deck-chip img { width: 100%; height: 100%; object-fit: cover; }
-.story-deck-chip-count {
-    position: absolute; bottom: 1px; right: 2px; font-size: 9px; font-weight: 800; color: #fff;
-    background: rgba(0,0,0,.65); border-radius: 6px; padding: 0 3px;
-}
+        .story-dlg-avatar {
+            width: 64px; height: 64px; border-radius: 14px; object-fit: cover;
+            flex-shrink: 0; background: var(--input-bg); font-size: 26px;
+            display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff;
+        }
+        .story-dlg-avatar-player { background: linear-gradient(135deg, #0a84ff, #64d2ff); font-size: 30px; }
 
-.story-chapter-locked { opacity: .55; }
+        .story-dlg-textwrap { flex: 1; min-width: 0; }
+        .story-dlg-name { font-weight: 800; color: var(--text-primary); font-size: 14px; margin-bottom: 4px; }
+        .story-dlg-text { color: var(--text-primary); font-size: 14.5px; line-height: 1.45; word-break: break-word; }
+        .story-dlg-hint { margin-top: 8px; font-size: 11px; color: var(--text-secondary); text-align: right; }
 
-.story-dialogue-overlay {
-    position: fixed; inset: 0; z-index: 10090;
-    background: rgba(0,0,0,0.55);
-    display: none; align-items: flex-end; justify-content: center;
-    padding: 0 12px 22px;
-}
-.story-dialogue-overlay.active { display: flex; }
+        .story-dlg-skip {
+            position: absolute; bottom: 100px; right: 24px; background: rgba(0,0,0,0.45); color: #fff;
+            border: none; border-radius: 10px; padding: 7px 12px; font-size: 12px; cursor: pointer; z-index: 1;
+        }
 
-.story-dlg-box {
-    width: 100%; max-width: 520px; background: var(--surface);
-    border-radius: 18px; padding: 16px; display: flex; gap: 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.35); cursor: pointer;
-    border: 1px solid var(--border-soft); animation: slideUpFade .25s ease;
-}
+        /* ============================================================
+           МЕНЮ ДЕЙСТВИЙ ЧАТА
+           ============================================================ */
+        .chat-actions-wrap { position: relative; flex-shrink: 0; }
+        .chat-actions-menu {
+            position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
+            background: var(--surface); border: 1px solid var(--border-soft);
+            border-radius: 16px; box-shadow: 0 14px 34px rgba(0,0,0,0.16);
+            padding: 6px; min-width: 216px;
+            display: flex; flex-direction: column; gap: 2px;
+            opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.96);
+            transform-origin: top right;
+            transition: opacity .18s ease, transform .18s ease, visibility .18s;
+        }
+        .chat-actions-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        .chat-actions-menu-item {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 10px 12px; border-radius: 12px; border: none; background: none;
+            color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: left;
+            cursor: pointer; transition: background .15s ease;
+        }
+        .chat-actions-menu-item:active { transform: scale(0.98); }
+        .chat-actions-menu-item:not(.hidden):hover { background: var(--input-bg); }
+        .chat-actions-menu-item .cam-icon { font-size: 18px; flex-shrink: 0; }
+        .chat-actions-menu-item .cam-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #chat-actions-toggle { font-size: 20px; font-weight: 900; line-height: 1; }
+        #chat-actions-toggle.active { background: var(--input-bg); }
 
-.story-dlg-avatar {
-    width: 64px; height: 64px; border-radius: 14px; object-fit: cover;
-    flex-shrink: 0; background: var(--input-bg); font-size: 26px;
-    display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff;
-}
-.story-dlg-avatar-player { background: linear-gradient(135deg, #0a84ff, #64d2ff); font-size: 30px; }
+        /* ============================================================
+           ВИКИ ГРУППЫ ("ДРОП")
+           ============================================================ */
+        .wiki-hero {
+            position: relative; margin: -26px -22px 40px; padding-bottom: 6px;
+        }
+        .wiki-hero-banner {
+            height: 118px; border-radius: 0 0 28px 28px;
+            background: linear-gradient(135deg, #6b21a8 0%, #9333ea 45%, #ed8f03 100%);
+            position: relative; overflow: hidden;
+        }
+        .wiki-hero-banner::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.28), transparent 60%);
+        }
+        .wiki-hero-avatar {
+            width: 72px; height: 72px; border-radius: 50%; position: absolute; left: 50%; top: 84px;
+            transform: translateX(-50%); border: 4px solid var(--surface, #fff); background: var(--surface, #fff);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;
+            font-size: 30px; overflow: hidden; color: #fff;
+        }
+        .wiki-hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .wiki-hero-title {
+            text-align: center; margin-top: 46px; font-size: 17px; font-weight: 800;
+            color: var(--text-primary); letter-spacing: -0.2px;
+        }
+        .wiki-hero-stats { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-weight: 600; }
+        .wiki-hero-announcement {
+            margin: 12px auto 0; max-width: 90%; text-align: center; font-size: 12.5px; font-weight: 700;
+            color: #fff; background: linear-gradient(135deg, rgba(237,143,3,0.9), rgba(155,89,255,0.9));
+            padding: 8px 14px; border-radius: 12px; box-shadow: 0 4px 14px rgba(237,143,3,0.25); line-height: 1.4;
+        }
 
-.story-dlg-textwrap { flex: 1; min-width: 0; }
-.story-dlg-name { font-weight: 800; color: var(--text-primary); font-size: 14px; margin-bottom: 4px; }
-.story-dlg-text { color: var(--text-primary); font-size: 14.5px; line-height: 1.45; word-break: break-word; }
-.story-dlg-hint { margin-top: 8px; font-size: 11px; color: var(--text-secondary); text-align: right; }
+        .wiki-section-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+        .wiki-section-head:first-of-type { margin-top: 4px; }
+        .wiki-mini-add-btn {
+            width: 30px; height: 30px; border-radius: 10px; border: none; background: linear-gradient(135deg,#ed8f03,#ff9f0a);
+            color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(237,143,3,0.3);
+        }
+        .wiki-mini-add-btn:active { transform: scale(0.9); }
 
-.story-dlg-skip {
-    position: absolute; bottom: 100px; right: 24px; background: rgba(0,0,0,0.45); color: #fff;
-    border: none; border-radius: 10px; padding: 7px 12px; font-size: 12px; cursor: pointer; z-index: 1;
-}
+        .wiki-add-row {
+            display: flex; gap: 8px; margin-bottom: 16px; background: var(--surface);
+            border: 1px solid var(--border-soft); border-radius: 16px; padding: 6px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        }
+        .wiki-add-row input {
+            flex: 1; margin: 0; border: none; background: transparent; padding: 10px 12px;
+            font-size: 14px; color: var(--text-primary); border-radius: 10px;
+        }
+        .wiki-add-row input:focus { outline: none; background: var(--input-bg); }
+        .wiki-add-row button {
+            flex-shrink: 0; width: 42px; height: 42px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #ed8f03, #ff9f0a); color: #fff; font-size: 20px;
+            font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(237,143,3,0.35);
+            transition: transform .15s ease;
+        }
+        .wiki-add-row button:active { transform: scale(0.9); }
 
-/* ============================================================
-   МЕНЮ ДЕЙСТВИЙ ЧАТА — одна кнопка "⋯" вместо кучи кнопок в шапке
-   ============================================================ */
-.chat-actions-wrap { position: relative; flex-shrink: 0; }
-.chat-actions-menu {
-    position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
-    background: var(--surface); border: 1px solid var(--border-soft);
-    border-radius: 16px; box-shadow: 0 14px 34px rgba(0,0,0,0.16);
-    padding: 6px; min-width: 216px;
-    display: flex; flex-direction: column; gap: 2px;
-    opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.96);
-    transform-origin: top right;
-    transition: opacity .18s ease, transform .18s ease, visibility .18s;
-}
-.chat-actions-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-.chat-actions-menu-item {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 10px 12px; border-radius: 12px; border: none; background: none;
-    color: var(--text-primary); font-size: 14px; font-weight: 600; text-align: left;
-    cursor: pointer; transition: background .15s ease;
-}
-.chat-actions-menu-item:active { transform: scale(0.98); }
-.chat-actions-menu-item:not(.hidden):hover { background: var(--input-bg); }
-.chat-actions-menu-item .cam-icon { font-size: 18px; flex-shrink: 0; }
-.chat-actions-menu-item .cam-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#chat-actions-toggle { font-size: 20px; font-weight: 900; line-height: 1; }
-#chat-actions-toggle.active { background: var(--input-bg); }
+        .wiki-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6px; }
+        .wiki-cat-card {
+            position: relative; border-radius: 22px; padding: 16px 14px; min-height: 128px;
+            display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
+            color: #fff; overflow: hidden; box-shadow: 0 10px 22px -8px rgba(0,0,0,0.35);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .wiki-cat-card:active { transform: scale(0.96); }
+        .wiki-cat-card::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%), radial-gradient(circle at 100% 0%, rgba(255,255,255,0.28), transparent 55%);
+            pointer-events: none;
+        }
+        .wiki-cat-card .wcc-icon {
+            font-size: 20px; position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 12px;
+            background: rgba(255,255,255,0.22); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+        }
+        .wiki-cat-card .wcc-del {
+            position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 9px;
+            border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        }
+        .wiki-cat-card .wcc-del:active { transform: scale(0.9); }
+        .wiki-cat-card .wcc-name {
+            font-size: 15px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        }
+        .wiki-cat-card .wcc-count {
+            font-size: 11px; font-weight: 700; opacity: 0.9; margin-top: 3px; position: relative; z-index: 1;
+        }
 
-/* ============================================================
-   ВИКИ ГРУППЫ ("ДРОП") — оформление в стиле Amino
-   ============================================================ */
-.wiki-hero {
-    position: relative; margin: -26px -22px 40px; padding-bottom: 6px;
-}
-.wiki-hero-banner {
-    height: 118px; border-radius: 0 0 28px 28px;
-    background: linear-gradient(135deg, #6b21a8 0%, #9333ea 45%, #ed8f03 100%);
-    position: relative; overflow: hidden;
-}
-.wiki-hero-banner::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.28), transparent 60%);
-}
-.wiki-hero-avatar {
-    width: 72px; height: 72px; border-radius: 50%; position: absolute; left: 50%; top: 84px;
-    transform: translateX(-50%); border: 4px solid var(--surface, #fff); background: var(--surface, #fff);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;
-    font-size: 30px; overflow: hidden; color: #fff;
-}
-.wiki-hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.wiki-hero-title {
-    text-align: center; margin-top: 46px; font-size: 17px; font-weight: 800;
-    color: var(--text-primary); letter-spacing: -0.2px;
-}
-.wiki-hero-stats { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-weight: 600; }
-.wiki-hero-announcement {
-    margin: 12px auto 0; max-width: 90%; text-align: center; font-size: 12.5px; font-weight: 700;
-    color: #fff; background: linear-gradient(135deg, rgba(237,143,3,0.9), rgba(155,89,255,0.9));
-    padding: 8px 14px; border-radius: 12px; box-shadow: 0 4px 14px rgba(237,143,3,0.25); line-height: 1.4;
-}
+        .wiki-empty {
+            text-align: center; padding: 46px 20px; color: var(--text-secondary);
+        }
+        .wiki-empty .we-emoji { font-size: 44px; margin-bottom: 10px; opacity: 0.8; }
+        .wiki-empty .we-text { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
 
-.wiki-section-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
-.wiki-section-head:first-of-type { margin-top: 4px; }
-.wiki-mini-add-btn {
-    width: 30px; height: 30px; border-radius: 10px; border: none; background: linear-gradient(135deg,#ed8f03,#ff9f0a);
-    color: #fff; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 10px rgba(237,143,3,0.3);
-}
-.wiki-mini-add-btn:active { transform: scale(0.9); }
+        .wiki-post-list { display: flex; flex-direction: column; gap: 14px; }
+        .wiki-post-card {
+            position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; height: 168px;
+            display: flex; align-items: flex-end; box-shadow: 0 8px 18px -8px rgba(0,0,0,0.3);
+            transition: transform .15s ease, box-shadow .15s ease; background: var(--input-bg);
+        }
+        .wiki-post-card:active { transform: scale(0.98); }
+        .wiki-post-cover {
+            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+        }
+        .wiki-post-cover-fallback {
+            position: absolute; inset: 0; width: 100%; height: 100%; display: flex;
+            align-items: center; justify-content: center; font-size: 40px; color: rgba(255,255,255,0.85);
+        }
+        .wiki-post-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.72) 100%);
+        }
+        .wiki-post-info { position: relative; z-index: 1; padding: 14px; width: 100%; }
+        .wiki-post-title { font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.4); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .wiki-post-meta { font-size: 11.5px; color: rgba(255,255,255,0.85); margin-top: 4px; font-weight: 700; }
+        .wiki-post-del {
+            position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border-radius: 10px;
+            border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; cursor: pointer; backdrop-filter: blur(4px);
+        }
+        .wiki-post-del:active { transform: scale(0.9); }
 
-.wiki-add-row {
-    display: flex; gap: 8px; margin-bottom: 16px; background: var(--surface);
-    border: 1px solid var(--border-soft); border-radius: 16px; padding: 6px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-}
-.wiki-add-row input {
-    flex: 1; margin: 0; border: none; background: transparent; padding: 10px 12px;
-    font-size: 14px; color: var(--text-primary); border-radius: 10px;
-}
-.wiki-add-row input:focus { outline: none; background: var(--input-bg); }
-.wiki-add-row button {
-    flex-shrink: 0; width: 42px; height: 42px; border: none; border-radius: 12px;
-    background: linear-gradient(135deg, #ed8f03, #ff9f0a); color: #fff; font-size: 20px;
-    font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(237,143,3,0.35);
-    transition: transform .15s ease;
-}
-.wiki-add-row button:active { transform: scale(0.9); }
+        .wiki-post-gallery-wrap { margin: -26px -22px 20px; position: relative; }
+        .wiki-post-gallery {
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .wiki-post-gallery::-webkit-scrollbar { display: none; }
+        .wiki-post-gallery img {
+            width: 100%; flex: 0 0 100%; height: 280px; object-fit: cover; scroll-snap-align: start; cursor: zoom-in;
+        }
+        .wiki-post-gallery-dots {
+            position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px;
+        }
+        .wiki-post-gallery-dots span {
+            width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all .2s ease;
+        }
+        .wiki-post-gallery-dots span.active { background: #fff; width: 16px; border-radius: 4px; }
+        .wiki-post-body-title { font-size: 21px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.25; }
+        .wiki-post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+        .wiki-post-author-row .wpar-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+        .wiki-post-author-row .wpar-date { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }
+        .wiki-post-body-text { font-size: 15px; line-height: 1.7; color: var(--text-primary); font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
 
-.wiki-cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6px; }
-.wiki-cat-card {
-    position: relative; border-radius: 22px; padding: 16px 14px; min-height: 128px;
-    display: flex; flex-direction: column; justify-content: flex-end; cursor: pointer;
-    color: #fff; overflow: hidden; box-shadow: 0 10px 22px -8px rgba(0,0,0,0.35);
-    transition: transform .18s ease, box-shadow .18s ease;
-}
-.wiki-cat-card:active { transform: scale(0.96); }
-.wiki-cat-card::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%), radial-gradient(circle at 100% 0%, rgba(255,255,255,0.28), transparent 55%);
-    pointer-events: none;
-}
-.wiki-cat-card .wcc-icon {
-    font-size: 20px; position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 12px;
-    background: rgba(255,255,255,0.22); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
-}
-.wiki-cat-card .wcc-del {
-    position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 9px;
-    border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 13px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
-}
-.wiki-cat-card .wcc-del:active { transform: scale(0.9); }
-.wiki-cat-card .wcc-name {
-    font-size: 15px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.35);
-}
-.wiki-cat-card .wcc-count {
-    font-size: 11px; font-weight: 700; opacity: 0.9; margin-top: 3px; position: relative; z-index: 1;
-}
+        .wiki-viewer-hint { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 600; }
 
-.wiki-empty {
-    text-align: center; padding: 46px 20px; color: var(--text-secondary);
-}
-.wiki-empty .we-emoji { font-size: 44px; margin-bottom: 10px; opacity: 0.8; }
-.wiki-empty .we-text { font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+        .wiki-editor-images {
+            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+        }
+        .wiki-editor-img-tile { position: relative; width: 78px; height: 78px; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+        .wiki-editor-img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .wiki-editor-img-tile .wet-rm {
+            position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
+            border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wiki-editor-add-tile {
+            width: 78px; height: 78px; border-radius: 14px; border: 2px dashed var(--border-soft);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            color: var(--text-secondary); font-size: 22px; cursor: pointer; background: var(--input-bg);
+            transition: all .2s ease; flex-shrink: 0;
+        }
+        .wiki-editor-add-tile span.wet-label { font-size: 10px; font-weight: 700; }
+        .wiki-editor-add-tile.uploading { opacity: 0.5; pointer-events: none; }
+        .wiki-editor-add-tile:active { transform: scale(0.94); }
 
-/* Список постов вики — карточки-«журналы», как записи вики в Amino */
-.wiki-post-list { display: flex; flex-direction: column; gap: 14px; }
-.wiki-post-card {
-    position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; height: 168px;
-    display: flex; align-items: flex-end; box-shadow: 0 8px 18px -8px rgba(0,0,0,0.3);
-    transition: transform .15s ease, box-shadow .15s ease; background: var(--input-bg);
-}
-.wiki-post-card:active { transform: scale(0.98); }
-.wiki-post-cover {
-    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-}
-.wiki-post-cover-fallback {
-    position: absolute; inset: 0; width: 100%; height: 100%; display: flex;
-    align-items: center; justify-content: center; font-size: 40px; color: rgba(255,255,255,0.85);
-}
-.wiki-post-card::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.72) 100%);
-}
-.wiki-post-info { position: relative; z-index: 1; padding: 14px; width: 100%; }
-.wiki-post-title { font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.4); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.wiki-post-meta { font-size: 11.5px; color: rgba(255,255,255,0.85); margin-top: 4px; font-weight: 700; }
-.wiki-post-del {
-    position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border-radius: 10px;
-    border: none; background: rgba(0,0,0,0.4); color: #fff; font-size: 13px; cursor: pointer; backdrop-filter: blur(4px);
-}
-.wiki-post-del:active { transform: scale(0.9); }
+        /* ============================================================
+           МЕНЮ ИНСТРУМЕНТОВ В СТРОКЕ ВВОДА
+           ============================================================ */
+        .chat-input-tools-wrap { position: relative; flex-shrink: 0; }
+        #chat-input-tools-toggle { font-size: 20px; font-weight: 900; }
+        #chat-input-tools-toggle.active { background: #ff9f0a; color: #fff; }
+        .chat-input-tools-menu {
+            position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 50;
+            display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--border-soft);
+            border-radius: 18px; padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            opacity: 0; visibility: hidden; transform: translateY(6px) scale(0.94);
+            transform-origin: bottom left;
+            transition: opacity .18s ease, transform .18s ease, visibility .18s;
+        }
+        .chat-input-tools-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
 
-/* Просмотр поста: карусель-обложка с точками */
-.wiki-post-gallery-wrap { margin: -26px -22px 20px; position: relative; }
-.wiki-post-gallery {
-    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-.wiki-post-gallery::-webkit-scrollbar { display: none; }
-.wiki-post-gallery img {
-    width: 100%; flex: 0 0 100%; height: 280px; object-fit: cover; scroll-snap-align: start; cursor: zoom-in;
-}
-.wiki-post-gallery-dots {
-    position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px;
-}
-.wiki-post-gallery-dots span {
-    width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all .2s ease;
-}
-.wiki-post-gallery-dots span.active { background: #fff; width: 16px; border-radius: 4px; }
-.wiki-post-body-title { font-size: 21px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.25; }
-.wiki-post-author-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.wiki-post-author-row .wpar-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.wiki-post-author-row .wpar-date { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; }
-.wiki-post-body-text { font-size: 15px; line-height: 1.7; color: var(--text-primary); font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; }
+        /* ============================================================
+           ВКЛАДКА "СООБЩЕСТВО"
+           ============================================================ */
+        .community-section-title { font-size: 14px; font-weight: 800; color: var(--text-primary); margin: 4px 0 10px; }
 
-/* Полноэкранный просмотр картинки поста */
-.wiki-viewer-hint { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 600; }
+        .community-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px; scroll-snap-type: x proximity; }
+        .community-rail::-webkit-scrollbar { display: none; }
+        .community-rail-card {
+            flex: 0 0 auto; width: 132px; border-radius: 18px; overflow: hidden; cursor: pointer; position: relative;
+            background: var(--surface); border: 1px solid var(--border-soft); scroll-snap-align: start;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05); transition: transform .15s ease;
+        }
+        .community-rail-card:active { transform: scale(0.96); }
+        .community-rail-del {
+            position: absolute; top: 6px; right: 6px; z-index: 2; width: 26px; height: 26px; border-radius: 9px;
+            border: none; background: rgba(0,0,0,0.45); color: #fff; font-size: 12px; cursor: pointer; backdrop-filter: blur(4px);
+        }
+        .community-rail-del:active { transform: scale(0.9); }
+        .community-rail-card-main { border: 1px solid rgba(237,143,3,0.5); box-shadow: 0 3px 12px rgba(237,143,3,0.18); }
+        .community-rail-home-badge {
+            position: absolute; top: 6px; left: 6px; z-index: 2; width: 26px; height: 26px; border-radius: 9px;
+            background: rgba(237,143,3,0.85); color: #fff; font-size: 13px; display: flex; align-items: center;
+            justify-content: center; backdrop-filter: blur(4px);
+        }
+        .community-rail-cover { width: 100%; height: 84px; object-fit: cover; background: var(--input-bg); display: block; }
+        .community-rail-cover-fallback { width: 100%; height: 84px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; }
+        .community-rail-info { padding: 8px 9px; }
+        .community-rail-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .community-rail-count { font-size: 10.5px; color: var(--text-secondary); font-weight: 600; margin-top: 2px; }
 
-/* Редактор поста */
-.wiki-editor-images {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
-}
-.wiki-editor-img-tile { position: relative; width: 78px; height: 78px; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
-.wiki-editor-img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.wiki-editor-img-tile .wet-rm {
-    position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
-    border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-}
-.wiki-editor-add-tile {
-    width: 78px; height: 78px; border-radius: 14px; border: 2px dashed var(--border-soft);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    color: var(--text-secondary); font-size: 22px; cursor: pointer; background: var(--input-bg);
-    transition: all .2s ease; flex-shrink: 0;
-}
-.wiki-editor-add-tile span.wet-label { font-size: 10px; font-weight: 700; }
-.wiki-editor-add-tile.uploading { opacity: 0.5; pointer-events: none; }
-.wiki-editor-add-tile:active { transform: scale(0.94); }
+        .community-groups-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .community-group-card {
+            position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; height: 150px;
+            background: var(--surface); border: 1px solid var(--border-soft); box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            transition: transform .15s ease;
+        }
+        .community-group-card:active { transform: scale(0.96); }
+        .community-group-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .community-group-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; color: #fff; }
+        .community-group-card::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 55%, transparent 100%);
+        }
+        .community-group-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 11px; z-index: 1; }
+        .community-group-name { font-size: 13.5px; font-weight: 800; color: #fff; line-height: 1.25; text-shadow: 0 2px 6px rgba(0,0,0,0.3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .community-group-count { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); margin-top: 3px; }
+        .community-group-rp-badge {
+            position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 10.5px; font-weight: 800; color: #fff;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 8px;
+        }
+        .community-joined-badge {
+            position: absolute; top: 8px; right: 8px; z-index: 1; font-size: 10px; font-weight: 800; color: #fff;
+            background: rgba(46,125,50,0.85); padding: 3px 7px; border-radius: 8px;
+        }
+        .group-preview-avatar { width: 84px; height: 84px; border-radius: 24px; object-fit: cover; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+        .group-preview-avatar-fallback { width: 84px; height: 84px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
 
-/* ============================================================
-   МЕНЮ ИНСТРУМЕНТОВ В СТРОКЕ ВВОДА — одна кнопка "⋯" вместо 🎬 🤩 📎
-   ============================================================ */
-.chat-input-tools-wrap { position: relative; flex-shrink: 0; }
-#chat-input-tools-toggle { font-size: 20px; font-weight: 900; }
-#chat-input-tools-toggle.active { background: #ff9f0a; color: #fff; }
-.chat-input-tools-menu {
-    position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 50;
-    display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--border-soft);
-    border-radius: 18px; padding: 6px; box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-    opacity: 0; visibility: hidden; transform: translateY(6px) scale(0.94);
-    transform-origin: bottom left;
-    transition: opacity .18s ease, transform .18s ease, visibility .18s;
-}
-.chat-input-tools-menu.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        #chat-wiki-btn { position: relative; }
+        #chat-wiki-btn.has-new-dot::after {
+            content: ''; position: absolute; top: 2px; right: 2px; width: 9px; height: 9px;
+            border-radius: 50%; background: #ff453a; border: 2px solid var(--surface);
+        }
 
-/* ============================================================
-   ВКЛАДКА "СООБЩЕСТВО" — популярные группы (рейл) и общая сетка
-   ============================================================ */
-.community-section-title { font-size: 14px; font-weight: 800; color: var(--text-primary); margin: 4px 0 10px; }
+        #wiki-subchats-section { margin-bottom: 6px; }
+        #wiki-subchats-rail:empty { display: none; }
 
-.community-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px; scroll-snap-type: x proximity; }
-.community-rail::-webkit-scrollbar { display: none; }
-.community-rail-card {
-    flex: 0 0 auto; width: 132px; border-radius: 18px; overflow: hidden; cursor: pointer; position: relative;
-    background: var(--surface); border: 1px solid var(--border-soft); scroll-snap-align: start;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.05); transition: transform .15s ease;
-}
-.community-rail-card:active { transform: scale(0.96); }
-.community-rail-del {
-    position: absolute; top: 6px; right: 6px; z-index: 2; width: 26px; height: 26px; border-radius: 9px;
-    border: none; background: rgba(0,0,0,0.45); color: #fff; font-size: 12px; cursor: pointer; backdrop-filter: blur(4px);
-}
-.community-rail-del:active { transform: scale(0.9); }
-.community-rail-card-main { border: 1px solid rgba(237,143,3,0.5); box-shadow: 0 3px 12px rgba(237,143,3,0.18); }
-.community-rail-home-badge {
-    position: absolute; top: 6px; left: 6px; z-index: 2; width: 26px; height: 26px; border-radius: 9px;
-    background: rgba(237,143,3,0.85); color: #fff; font-size: 13px; display: flex; align-items: center;
-    justify-content: center; backdrop-filter: blur(4px);
-}
-.community-rail-cover { width: 100%; height: 84px; object-fit: cover; background: var(--input-bg); display: block; }
-.community-rail-cover-fallback { width: 100%; height: 84px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; }
-.community-rail-info { padding: 8px 9px; }
-.community-rail-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.community-rail-count { font-size: 10.5px; color: var(--text-secondary); font-weight: 600; margin-top: 2px; }
+        #wiki-playlist-section { margin-bottom: 6px; }
+        #wiki-playlist-list:empty::after {
+            content: 'Пока нет треков'; display: block; text-align: center; font-size: 12.5px;
+            color: var(--text-secondary); padding: 14px 0 4px;
+        }
+        .wiki-playlist-track {
+            display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 16px;
+            background: var(--surface); border: 1px solid var(--border-soft); margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .wpt-row-top { display: flex; align-items: center; gap: 8px; }
+        .wpt-icon {
+            width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+            background: linear-gradient(135deg, #6b21a8, #ed8f03); color: #fff; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wpt-info { flex: 1; min-width: 0; }
+        .wpt-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wpt-added-by { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+        .wpt-del {
+            flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px; border: 1px solid #ffcdd2;
+            background: #ffebee; color: #c62828; font-size: 12px; cursor: pointer;
+        }
+        .wpt-del:active { transform: scale(0.9); }
+        .wpt-audio { width: 100%; height: 34px; }
 
-.community-groups-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.community-group-card {
-    position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; height: 150px;
-    background: var(--surface); border: 1px solid var(--border-soft); box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-    transition: transform .15s ease;
-}
-.community-group-card:active { transform: scale(0.96); }
-.community-group-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.community-group-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; color: #fff; }
-.community-group-card::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 55%, transparent 100%);
-}
-.community-group-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 11px; z-index: 1; }
-.community-group-name { font-size: 13.5px; font-weight: 800; color: #fff; line-height: 1.25; text-shadow: 0 2px 6px rgba(0,0,0,0.3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.community-group-count { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.85); margin-top: 3px; }
-.community-group-rp-badge {
-    position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 10.5px; font-weight: 800; color: #fff;
-    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 8px;
-}
-.community-joined-badge {
-    position: absolute; top: 8px; right: 8px; z-index: 1; font-size: 10px; font-weight: 800; color: #fff;
-    background: rgba(46,125,50,0.85); padding: 3px 7px; border-radius: 8px;
-}
-.group-preview-avatar { width: 84px; height: 84px; border-radius: 24px; object-fit: cover; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
-.group-preview-avatar-fallback { width: 84px; height: 84px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+        .wiki-accent-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .wiki-accent-chip {
+            width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 3px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: transform .15s ease, border-color .15s ease;
+        }
+        .wiki-accent-chip:active { transform: scale(0.9); }
+        .wiki-accent-chip.active { border-color: var(--text-primary); transform: scale(1.08); }
 
-/* Точка "есть новый пост" на кнопке 📦 Дроп в шапке чата */
-#chat-wiki-btn { position: relative; }
-#chat-wiki-btn.has-new-dot::after {
-    content: ''; position: absolute; top: 2px; right: 2px; width: 9px; height: 9px;
-    border-radius: 50%; background: #ff453a; border: 2px solid var(--surface);
-}
+        .wiki-mod-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 12px; }
+        .wiki-mod-item:active { background: var(--input-bg); }
+        .wiki-mod-name { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+        .wiki-mod-owner-tag { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); }
 
-/* ============================================================
-   ВИКИ — доп. чаты, настройки (баннер/цвет/модераторы), лайки, закреп
-   ============================================================ */
-#wiki-subchats-section { margin-bottom: 6px; }
-#wiki-subchats-rail:empty { display: none; }
-#wiki-subchats-rail:empty + #wiki-playlist-section #wiki-playlist-list:empty { }
+        .wiki-like-btn {
+            display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--input-bg);
+            color: var(--text-primary); font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: 14px;
+            cursor: pointer; margin-bottom: 16px; transition: transform .15s ease, background .15s ease;
+        }
+        .wiki-like-btn:active { transform: scale(0.94); }
+        .wiki-like-btn.liked { background: rgba(255,69,88,0.12); color: #ff4558; }
 
-#wiki-playlist-section { margin-bottom: 6px; }
-#wiki-playlist-list:empty::after {
-    content: 'Пока нет треков'; display: block; text-align: center; font-size: 12.5px;
-    color: var(--text-secondary); padding: 14px 0 4px;
-}
-.wiki-playlist-track {
-    display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 16px;
-    background: var(--surface); border: 1px solid var(--border-soft); margin-bottom: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-.wpt-row-top { display: flex; align-items: center; gap: 8px; }
-.wpt-icon {
-    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
-    background: linear-gradient(135deg, #6b21a8, #ed8f03); color: #fff; font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-}
-.wpt-info { flex: 1; min-width: 0; }
-.wpt-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wpt-added-by { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
-.wpt-del {
-    flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px; border: 1px solid #ffcdd2;
-    background: #ffebee; color: #c62828; font-size: 12px; cursor: pointer;
-}
-.wpt-del:active { transform: scale(0.9); }
-.wpt-audio { width: 100%; height: 34px; }
+        .wiki-cat-card .wcc-pin { position: absolute; top: 10px; right: 46px; width: 28px; height: 28px; border-radius: 9px; border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .wiki-cat-card .wcc-pin:active { transform: scale(0.9); }
+        .wiki-cat-card .wcc-pin.active { background: #ff9f0a; }
+        .wiki-pin-badge { display: inline-block; font-size: 10px; margin-right: 4px; }
 
-.wiki-accent-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-.wiki-accent-chip {
-    width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 3px solid transparent;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: transform .15s ease, border-color .15s ease;
-}
-.wiki-accent-chip:active { transform: scale(0.9); }
-.wiki-accent-chip.active { border-color: var(--text-primary); transform: scale(1.08); }
+        /* ============================================================ */
+        /* === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (.md-body) ====== */
+        /* ============================================================ */
+        .md-body { white-space: pre-wrap; word-break: break-word; }
+        .md-body p { margin: 0 0 8px 0; }
+        .md-body p:last-child { margin-bottom: 0; }
+        .md-body h1, .md-body h2, .md-body h3 { margin: 10px 0 6px 0; line-height: 1.25; font-weight: 800; }
+        .md-body h1 { font-size: 1.5em; }
+        .md-body h2 { font-size: 1.3em; }
+        .md-body h3 { font-size: 1.12em; }
+        .md-body hr { border: none; border-top: 1px solid var(--border-soft, rgba(0,0,0,0.12)); margin: 10px 0; }
+        .md-body ul { margin: 4px 0 8px 0; padding-left: 22px; }
+        .md-body li { margin-bottom: 2px; }
+        .md-body blockquote {
+            margin: 6px 0; padding: 6px 12px; border-left: 3px solid rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.04); border-radius: 4px; font-style: italic; opacity: 0.92;
+        }
+        .md-body code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 4px; font-size: 0.9em;
+        }
+        .md-body pre {
+            background: rgba(0,0,0,0.08); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0;
+        }
+        .md-body pre code { background: none; padding: 0; }
+        .md-body a { color: #ed8f03; text-decoration: underline; word-break: break-all; }
+        .md-body del { opacity: 0.65; }
+        .md-spoiler {
+            background: rgba(0,0,0,0.65); color: transparent; border-radius: 4px; padding: 0 2px; cursor: pointer;
+            transition: color .15s ease, background .15s ease; user-select: none;
+        }
+        .md-spoiler.revealed { background: rgba(0,0,0,0.06); color: inherit; cursor: text; user-select: text; }
+        .msg-row.mine .md-spoiler:not(.revealed) { background: rgba(255,255,255,0.55); }
 
-.wiki-mod-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 12px; }
-.wiki-mod-item:active { background: var(--input-bg); }
-.wiki-mod-name { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
-.wiki-mod-owner-tag { font-size: 10.5px; font-weight: 700; color: var(--text-secondary); }
+        .msg-system-row {
+            text-align: center; font-size: 12px; color: var(--text-secondary, #7a7a7a);
+            background: rgba(0,0,0,0.05); border-radius: 10px; padding: 6px 12px; margin: 6px auto; max-width: 90%; width: fit-content;
+        }
 
-.wiki-like-btn {
-    display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--input-bg);
-    color: var(--text-primary); font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: 14px;
-    cursor: pointer; margin-bottom: 16px; transition: transform .15s ease, background .15s ease;
-}
-.wiki-like-btn:active { transform: scale(0.94); }
-.wiki-like-btn.liked { background: rgba(255,69,88,0.12); color: #ff4558; }
+        /* ============================================================
+           ВИКИ — РЕДИЗАЙН «DARK LO-FI»
+           ============================================================ */
+        .wiki-theme {
+            --text-primary: #ece5da;
+            --text-secondary: #a89985;
+            --surface: rgba(38, 33, 28, 0.6);
+            --card-bg: rgba(38, 33, 28, 0.55);
+            --card-border: rgba(255,255,255,0.06);
+            --input-bg: rgba(255,255,255,0.045);
+            --border-soft: rgba(168, 153, 133, 0.25);
+            --overlay-bg: #14100d;
+            --wt-accent: #c9a876;
+            --wt-accent2: #b98b6f;
+            --wt-accent3: #8fa08a;
+            --wt-neon-grad: linear-gradient(135deg, #4a3f35 0%, #6b5645 55%, #8a6f52 100%);
+            background: radial-gradient(ellipse 130% 70% at 50% -8%, #2a2420 0%, #1c1713 42%, #100d0a 78%, #0a0807 100%);
+            isolation: isolate;
+            overflow: hidden;
+        }
+        .wiki-theme > * { position: relative; z-index: 1; }
 
-.wiki-cat-card .wcc-pin { position: absolute; top: 10px; right: 46px; width: 28px; height: 28px; border-radius: 9px; border: none; background: rgba(0,0,0,0.28); color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.wiki-cat-card .wcc-pin:active { transform: scale(0.9); }
-.wiki-cat-card .wcc-pin.active { background: #ff9f0a; }
-.wiki-pin-badge { display: inline-block; font-size: 10px; margin-right: 4px; }
+        .wiki-theme::before {
+            content: '';
+            position: absolute; inset: -10% -10%; z-index: 0; pointer-events: none;
+            background-image:
+                radial-gradient(1.4px 1.4px at 12% 18%, rgba(236,229,218,0.4), transparent 100%),
+                radial-gradient(1.1px 1.1px at 34% 62%, rgba(236,229,218,0.3), transparent 100%),
+                radial-gradient(1.6px 1.6px at 58% 28%, rgba(236,229,218,0.35), transparent 100%),
+                radial-gradient(1px 1px at 76% 74%, rgba(236,229,218,0.25), transparent 100%),
+                radial-gradient(1.2px 1.2px at 88% 40%, rgba(236,229,218,0.3), transparent 100%),
+                radial-gradient(1.1px 1.1px at 22% 90%, rgba(236,229,218,0.25), transparent 100%),
+                radial-gradient(1.4px 1.4px at 6% 52%, rgba(236,229,218,0.3), transparent 100%),
+                radial-gradient(1px 1px at 66% 10%, rgba(236,229,218,0.25), transparent 100%),
+                radial-gradient(900px circle at 18% 12%, rgba(201,168,118,0.10), transparent 60%),
+                radial-gradient(760px circle at 88% 22%, rgba(185,139,111,0.08), transparent 62%),
+                radial-gradient(820px circle at 40% 92%, rgba(143,160,138,0.07), transparent 65%);
+            background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
+            background-size: 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, auto, auto, auto;
+            animation: wtStarDrift 220s linear infinite;
+        }
+        @keyframes wtStarDrift {
+            from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+            to   { background-position: -220px -220px, 220px -220px, -220px 220px, 220px 220px, -110px 110px, 110px -110px, -220px 0, 0 -220px, 0 0, 0 0, 0 0; }
+        }
 
-/* ============================================================ */
-/* === ГЛОБАЛЬНЫЙ ПАРСЕР ФОРМАТИРОВАНИЯ ТЕКСТА (.md-body) ====== */
-/* ============================================================ */
-/* Обёртка .md-body применяется везде, где текст пропущен через  */
-/* renderMarkdown(): посты, комментарии, чаты, описания.         */
-.md-body { white-space: pre-wrap; word-break: break-word; }
-.md-body p { margin: 0 0 8px 0; }
-.md-body p:last-child { margin-bottom: 0; }
-.md-body h1, .md-body h2, .md-body h3 { margin: 10px 0 6px 0; line-height: 1.25; font-weight: 800; }
-.md-body h1 { font-size: 1.5em; }
-.md-body h2 { font-size: 1.3em; }
-.md-body h3 { font-size: 1.12em; }
-.md-body hr { border: none; border-top: 1px solid var(--border-soft, rgba(0,0,0,0.12)); margin: 10px 0; }
-.md-body ul { margin: 4px 0 8px 0; padding-left: 22px; }
-.md-body li { margin-bottom: 2px; }
-.md-body blockquote {
-    margin: 6px 0; padding: 6px 12px; border-left: 3px solid rgba(0,0,0,0.2);
-    background: rgba(0,0,0,0.04); border-radius: 4px; font-style: italic; opacity: 0.92;
-}
-.md-body code {
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 4px; font-size: 0.9em;
-}
-.md-body pre {
-    background: rgba(0,0,0,0.08); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0;
-}
-.md-body pre code { background: none; padding: 0; }
-.md-body a { color: #ed8f03; text-decoration: underline; word-break: break-all; }
-.md-body del { opacity: 0.65; }
-.md-spoiler {
-    background: rgba(0,0,0,0.65); color: transparent; border-radius: 4px; padding: 0 2px; cursor: pointer;
-    transition: color .15s ease, background .15s ease; user-select: none;
-}
-.md-spoiler.revealed { background: rgba(0,0,0,0.06); color: inherit; cursor: text; user-select: text; }
-.msg-row.mine .md-spoiler:not(.revealed) { background: rgba(255,255,255,0.55); }
+        .wiki-theme::after {
+            content: '';
+            position: absolute; inset: 0; z-index: 5; pointer-events: none;
+            background-image:
+                repeating-linear-gradient(180deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+                radial-gradient(ellipse 90% 70% at 50% 45%, transparent 55%, rgba(6,4,3,0.5) 100%);
+            background-size: 100% 3px, 140px 140px, 100% 100%;
+            opacity: 0.35;
+            mix-blend-mode: overlay;
+        }
 
-.msg-system-row {
-    text-align: center; font-size: 12px; color: var(--text-secondary, #7a7a7a);
-    background: rgba(0,0,0,0.05); border-radius: 10px; padding: 6px 12px; margin: 6px auto; max-width: 90%; width: fit-content;
-}
+        .wiki-theme .reader-header > div[style*="flex:1"],
+        .wiki-theme .wiki-hero-title,
+        .wiki-theme .wiki-post-body-title,
+        .wiki-theme .wcc-name,
+        .wiki-theme .wiki-post-title,
+        .wiki-theme .community-section-title,
+        .wiki-theme .comments-title {
+            font-family: 'Unbounded', sans-serif;
+            letter-spacing: 0.1px;
+        }
 
-/* ============================================================
-   ВИКИ — РЕДИЗАЙН «DARK LO-FI»: тёплый тёмный уголь, приглушённое
-   стекло, лёгкая пылинка/грейн винила, без неона и пульсаций.
-   Область действия: только .wiki-theme (оверлеи вики группы).
-   ============================================================ */
-.wiki-theme {
-    --text-primary: #ece5da;
-    --text-secondary: #a89985;
-    --surface: rgba(38, 33, 28, 0.6);
-    --card-bg: rgba(38, 33, 28, 0.55);
-    --card-border: rgba(255,255,255,0.06);
-    --input-bg: rgba(255,255,255,0.045);
-    --border-soft: rgba(168, 153, 133, 0.25);
-    --overlay-bg: #14100d;
-    --wt-accent: #c9a876;
-    --wt-accent2: #b98b6f;
-    --wt-accent3: #8fa08a;
-    --wt-neon-grad: linear-gradient(135deg, #4a3f35 0%, #6b5645 55%, #8a6f52 100%);
-    background: radial-gradient(ellipse 130% 70% at 50% -8%, #2a2420 0%, #1c1713 42%, #100d0a 78%, #0a0807 100%);
-    isolation: isolate;
-    overflow: hidden;
-}
-.wiki-theme > * { position: relative; z-index: 1; }
+        .wiki-theme .reader-header {
+            position: relative;
+            z-index: 6;
+            background: rgba(20, 16, 13, 0.6);
+            backdrop-filter: blur(16px) saturate(1.05);
+            -webkit-backdrop-filter: blur(16px) saturate(1.05);
+            border-bottom: 1px solid rgba(168,153,133,0.16);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+        }
+        .wiki-theme .reader-header > div[style*="flex:1"] { text-shadow: 0 0 10px rgba(201,168,118,0.2); }
+        .wiki-theme .reader-content { background: transparent; }
 
-/* --- пылинки/зерно винила (за контентом), тепло и приглушённо --- */
-.wiki-theme::before {
-    content: '';
-    position: absolute; inset: -10% -10%; z-index: 0; pointer-events: none;
-    background-image:
-        radial-gradient(1.4px 1.4px at 12% 18%, rgba(236,229,218,0.4), transparent 100%),
-        radial-gradient(1.1px 1.1px at 34% 62%, rgba(236,229,218,0.3), transparent 100%),
-        radial-gradient(1.6px 1.6px at 58% 28%, rgba(236,229,218,0.35), transparent 100%),
-        radial-gradient(1px 1px at 76% 74%, rgba(236,229,218,0.25), transparent 100%),
-        radial-gradient(1.2px 1.2px at 88% 40%, rgba(236,229,218,0.3), transparent 100%),
-        radial-gradient(1.1px 1.1px at 22% 90%, rgba(236,229,218,0.25), transparent 100%),
-        radial-gradient(1.4px 1.4px at 6% 52%, rgba(236,229,218,0.3), transparent 100%),
-        radial-gradient(1px 1px at 66% 10%, rgba(236,229,218,0.25), transparent 100%),
-        radial-gradient(900px circle at 18% 12%, rgba(201,168,118,0.10), transparent 60%),
-        radial-gradient(760px circle at 88% 22%, rgba(185,139,111,0.08), transparent 62%),
-        radial-gradient(820px circle at 40% 92%, rgba(143,160,138,0.07), transparent 65%);
-    background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
-    background-size: 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, 220px 220px, auto, auto, auto;
-    animation: wtStarDrift 220s linear infinite;
-}
-@keyframes wtStarDrift {
-    from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
-    to   { background-position: -220px -220px, 220px -220px, -220px 220px, 220px 220px, -110px 110px, 110px -110px, -220px 0, 0 -220px, 0 0, 0 0, 0 0; }
-}
+        .wiki-theme .btn {
+            background: var(--wt-neon-grad);
+            box-shadow: 0 6px 20px -6px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset;
+        }
+        .wiki-theme .btn:hover { box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset; }
+        .wiki-theme .btn-secondary {
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        }
+        .wiki-theme .input { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .wiki-theme .input:focus { border-color: var(--wt-accent); box-shadow: 0 0 0 3px rgba(201,168,118,0.18), 0 0 14px rgba(201,168,118,0.18); }
+        .wiki-theme .input::placeholder { color: rgba(168,153,133,0.65); }
 
-/* --- лёгкий грейн, статичный, без мигания — винтажность без шума --- */
-.wiki-theme::after {
-    content: '';
-    position: absolute; inset: 0; z-index: 5; pointer-events: none;
-    background-image:
-        repeating-linear-gradient(180deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-        radial-gradient(ellipse 90% 70% at 50% 45%, transparent 55%, rgba(6,4,3,0.5) 100%);
-    background-size: 100% 3px, 140px 140px, 100% 100%;
-    opacity: 0.35;
-    mix-blend-mode: overlay;
-}
-
-/* --- заголовки: шрифт Unbounded для вывесок вики --- */
-.wiki-theme .reader-header > div[style*="flex:1"],
-.wiki-theme .wiki-hero-title,
-.wiki-theme .wiki-post-body-title,
-.wiki-theme .wcc-name,
-.wiki-theme .wiki-post-title,
-.wiki-theme .community-section-title,
-.wiki-theme .comments-title {
-    font-family: 'Unbounded', sans-serif;
-    letter-spacing: 0.1px;
-}
-
-/* --- шапка оверлея: приглушённое тёмное стекло --- */
-.wiki-theme .reader-header {
-    position: relative;
-    z-index: 6;
-    background: rgba(20, 16, 13, 0.6);
-    backdrop-filter: blur(16px) saturate(1.05);
-    -webkit-backdrop-filter: blur(16px) saturate(1.05);
-    border-bottom: 1px solid rgba(168,153,133,0.16);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.35);
-}
-.wiki-theme .reader-header > div[style*="flex:1"] { text-shadow: 0 0 10px rgba(201,168,118,0.2); }
-.wiki-theme .reader-content { background: transparent; }
-
-/* --- кнопки --- */
-.wiki-theme .btn {
-    background: var(--wt-neon-grad);
-    box-shadow: 0 6px 20px -6px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset;
-}
-.wiki-theme .btn:hover { box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset; }
-.wiki-theme .btn-secondary {
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-}
-.wiki-theme .input { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.wiki-theme .input:focus { border-color: var(--wt-accent); box-shadow: 0 0 0 3px rgba(201,168,118,0.18), 0 0 14px rgba(201,168,118,0.18); }
-.wiki-theme .input::placeholder { color: rgba(168,153,133,0.65); }
-
-/* --- шапка "Дроп" (hero) --- */
-.wiki-theme .wiki-hero-banner {
-    background: linear-gradient(135deg, #2f2822 0%, #55442f 42%, #7a5c3a 78%, #9c7a4d 100%);
-    box-shadow: 0 14px 34px -14px rgba(0,0,0,0.65);
-}
-.wiki-theme .wiki-hero-banner::before {
-    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.14), transparent 60%),
+        .wiki-theme .wiki-hero-banner {
+            background: linear-gradient(135deg, #2f2822 0%, #55442f 42%, #7a5c3a 78%, #9c7a4d 100%);
+            box-shadow: 0 14px 34px -14px rgba(0,0,0,0.65);
+        }
+        .wiki-theme .wiki-hero-banner::before {
+            background: radial-gradient(circle at 85% -10%, rgba(255,255,255,0.14), transparent 60%),
                 radial-gradient(circle at 10% 110%, rgba(143,160,138,0.12), transparent 55%);
-}
-.wiki-theme .wiki-hero-avatar {
-    border-color: rgba(20,16,13,0.9);
-    background: var(--overlay-bg);
-    box-shadow: 0 0 0 3px rgba(185,139,111,0.35), 0 0 18px rgba(0,0,0,0.5);
-}
-.wiki-theme .wiki-hero-announcement {
-    background: linear-gradient(135deg, rgba(74,63,53,0.85), rgba(122,92,58,0.85));
-    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-}
+        }
+        .wiki-theme .wiki-hero-avatar {
+            border-color: rgba(20,16,13,0.9);
+            background: var(--overlay-bg);
+            box-shadow: 0 0 0 3px rgba(185,139,111,0.35), 0 0 18px rgba(0,0,0,0.5);
+        }
+        .wiki-theme .wiki-hero-announcement {
+            background: linear-gradient(135deg, rgba(74,63,53,0.85), rgba(122,92,58,0.85));
+            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        }
 
-/* --- мини-кнопки добавления, ряд добавления категории --- */
-.wiki-theme .wiki-mini-add-btn,
-.wiki-theme .wiki-add-row button {
-    background: var(--wt-neon-grad);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-}
-.wiki-theme .wiki-add-row {
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-}
+        .wiki-theme .wiki-mini-add-btn,
+        .wiki-theme .wiki-add-row button {
+            background: var(--wt-neon-grad);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+        .wiki-theme .wiki-add-row {
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
 
-/* --- карточки категорий --- */
-.wiki-theme .wiki-cat-card {
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 12px 28px -12px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.04);
-    transition: transform .18s ease, box-shadow .18s ease;
-}
-.wiki-theme .wiki-cat-card::after {
-    background: linear-gradient(180deg, rgba(10,8,6,0.12) 35%, rgba(6,5,4,0.78) 100%),
+        .wiki-theme .wiki-cat-card {
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 12px 28px -12px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.04);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .wiki-theme .wiki-cat-card::after {
+            background: linear-gradient(180deg, rgba(10,8,6,0.12) 35%, rgba(6,5,4,0.78) 100%),
                 radial-gradient(circle at 100% 0%, rgba(255,255,255,0.12), transparent 55%);
-}
-.wiki-theme .wiki-cat-card:active {
-    box-shadow: 0 0 0 2px rgba(185,139,111,0.4), 0 10px 24px -10px rgba(0,0,0,0.6);
-}
-.wiki-theme .wiki-cat-card .wcc-icon,
-.wiki-theme .wiki-cat-card .wcc-del,
-.wiki-theme .wiki-cat-card .wcc-pin,
-.wiki-theme .wiki-post-del {
-    background: rgba(20,16,13,0.5);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-.wiki-theme .wiki-cat-card .wcc-pin.active { background: linear-gradient(135deg,#6b5645,#8a6f52); }
+        }
+        .wiki-theme .wiki-cat-card:active {
+            box-shadow: 0 0 0 2px rgba(185,139,111,0.4), 0 10px 24px -10px rgba(0,0,0,0.6);
+        }
+        .wiki-theme .wiki-cat-card .wcc-icon,
+        .wiki-theme .wiki-cat-card .wcc-del,
+        .wiki-theme .wiki-cat-card .wcc-pin,
+        .wiki-theme .wiki-post-del {
+            background: rgba(20,16,13,0.5);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .wiki-theme .wiki-cat-card .wcc-pin.active { background: linear-gradient(135deg,#6b5645,#8a6f52); }
 
-/* --- карточки постов внутри категории --- */
-.wiki-theme .wiki-post-card {
-    background: var(--input-bg);
-    border: 1px solid rgba(255,255,255,0.07);
-    box-shadow: 0 10px 24px -12px rgba(0,0,0,0.6);
-}
-.wiki-theme .wiki-post-card::before {
-    background: linear-gradient(180deg, rgba(8,6,5,0) 30%, rgba(6,5,4,0.82) 100%);
-}
-.wiki-theme .wiki-post-card:active {
-    box-shadow: 0 0 0 2px rgba(201,168,118,0.35), 0 10px 22px -12px rgba(0,0,0,0.6);
-}
-.wiki-theme .wiki-post-cover-fallback { color: rgba(255,255,255,0.85); }
+        .wiki-theme .wiki-post-card {
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow: 0 10px 24px -12px rgba(0,0,0,0.6);
+        }
+        .wiki-theme .wiki-post-card::before {
+            background: linear-gradient(180deg, rgba(8,6,5,0) 30%, rgba(6,5,4,0.82) 100%);
+        }
+        .wiki-theme .wiki-post-card:active {
+            box-shadow: 0 0 0 2px rgba(201,168,118,0.35), 0 10px 22px -12px rgba(0,0,0,0.6);
+        }
+        .wiki-theme .wiki-post-cover-fallback { color: rgba(255,255,255,0.85); }
 
-/* --- пустое состояние --- */
-.wiki-theme .wiki-empty {
-    border: 1px dashed rgba(168,153,133,0.28); border-radius: 22px;
-    background: rgba(255,255,255,0.025);
-}
-.wiki-theme .wiki-empty .we-emoji { filter: drop-shadow(0 0 8px rgba(201,168,118,0.35)); }
+        .wiki-theme .wiki-empty {
+            border: 1px dashed rgba(168,153,133,0.28); border-radius: 22px;
+            background: rgba(255,255,255,0.025);
+        }
+        .wiki-theme .wiki-empty .we-emoji { filter: drop-shadow(0 0 8px rgba(201,168,118,0.35)); }
 
-/* --- просмотр поста --- */
-.wiki-theme .wiki-post-body-title { text-shadow: 0 0 10px rgba(201,168,118,0.2); }
-.wiki-theme .wiki-post-body-text { font-family: inherit; color: var(--text-primary); }
-.wiki-theme .wiki-post-author-row .wpar-name { color: var(--wt-accent3); }
-.wiki-theme .wiki-like-btn {
-    border: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-}
-.wiki-theme .wiki-like-btn.liked {
-    background: rgba(185,139,111,0.16); color: var(--wt-accent2);
-    box-shadow: 0 0 10px rgba(185,139,111,0.25);
-}
-.wiki-theme .comment-item {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-    color: var(--text-primary); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    box-shadow: none;
-}
-.wiki-theme .chat-send-btn { background: var(--wt-neon-grad); box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
-.wiki-theme .wiki-post-gallery-dots span.active { background: var(--wt-accent2); box-shadow: 0 0 6px rgba(185,139,111,0.5); }
+        .wiki-theme .wiki-post-body-title { text-shadow: 0 0 10px rgba(201,168,118,0.2); }
+        .wiki-theme .wiki-post-body-text { font-family: inherit; color: var(--text-primary); }
+        .wiki-theme .wiki-post-author-row .wpar-name { color: var(--wt-accent3); }
+        .wiki-theme .wiki-like-btn {
+            border: 1px solid rgba(255,255,255,0.07);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        }
+        .wiki-theme .wiki-like-btn.liked {
+            background: rgba(185,139,111,0.16); color: var(--wt-accent2);
+            box-shadow: 0 0 10px rgba(185,139,111,0.25);
+        }
+        .wiki-theme .comment-item {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            color: var(--text-primary); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            box-shadow: none;
+        }
+        .wiki-theme .chat-send-btn { background: var(--wt-neon-grad); box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+        .wiki-theme .wiki-post-gallery-dots span.active { background: var(--wt-accent2); box-shadow: 0 0 6px rgba(185,139,111,0.5); }
 
-/* --- редактор поста --- */
-.wiki-theme .wiki-editor-add-tile { background: var(--input-bg); backdrop-filter: blur(6px); }
-.wiki-theme .wiki-editor-img-tile { box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+        .wiki-theme .wiki-editor-add-tile { background: var(--input-bg); backdrop-filter: blur(6px); }
+        .wiki-theme .wiki-editor-img-tile { box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
 
-/* --- настройки вики: акценты, модераторы --- */
-.wiki-theme .wiki-accent-chip.active { border-color: var(--wt-accent3); box-shadow: 0 0 0 3px rgba(143,160,138,0.2); }
-.wiki-theme .wiki-mod-item:active { background: rgba(255,255,255,0.05); }
+        .wiki-theme .wiki-accent-chip.active { border-color: var(--wt-accent3); box-shadow: 0 0 0 3px rgba(143,160,138,0.2); }
+        .wiki-theme .wiki-mod-item:active { background: rgba(255,255,255,0.05); }
 
-/* --- доп. чаты (рейл) и плейлист внутри вики --- */
-.wiki-theme .community-rail-card {
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-}
-.wiki-theme .community-rail-card-main { border-color: rgba(185,139,111,0.4); box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
-.wiki-theme .community-rail-home-badge { background: rgba(122,92,58,0.85); }
-.wiki-theme .community-section-title::before {
-    content: ''; display: inline-block; width: 4px; height: 13px; border-radius: 2px;
-    background: linear-gradient(180deg, #c9a876, #b98b6f); margin-right: 8px; vertical-align: -2px;
-    box-shadow: 0 0 6px rgba(201,168,118,0.4);
-}
-.wiki-theme .wiki-playlist-track { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 3px 12px rgba(0,0,0,0.25); }
-.wiki-theme .wpt-icon { background: var(--wt-neon-grad); }
+        .wiki-theme .community-rail-card {
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+        }
+        .wiki-theme .community-rail-card-main { border-color: rgba(185,139,111,0.4); box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
+        .wiki-theme .community-rail-home-badge { background: rgba(122,92,58,0.85); }
+        .wiki-theme .community-section-title::before {
+            content: ''; display: inline-block; width: 4px; height: 13px; border-radius: 2px;
+            background: linear-gradient(180deg, #c9a876, #b98b6f); margin-right: 8px; vertical-align: -2px;
+            box-shadow: 0 0 6px rgba(201,168,118,0.4);
+        }
+        .wiki-theme .wiki-playlist-track { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 3px 12px rgba(0,0,0,0.25); }
+        .wiki-theme .wpt-icon { background: var(--wt-neon-grad); }
 
-/* --- виджеты вики (песочница) --- */
-.wiki-home-widgets { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-.wiki-home-widgets.hidden { display: none; }
-.wiki-widget-card {
-    border-radius: 18px; overflow: hidden; background: var(--surface, rgba(38,33,28,0.55));
-    border: 1px solid var(--border-soft, rgba(168,153,133,0.25));
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-}
+        .wiki-home-widgets { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .wiki-home-widgets.hidden { display: none; }
+        .wiki-widget-card {
+            border-radius: 18px; overflow: hidden; background: var(--surface, rgba(38,33,28,0.55));
+            border: 1px solid var(--border-soft, rgba(168,153,133,0.25));
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
 
-/* --- виджеты прямо в чате (только ГМ/админ, та же песочница что и у виджетов вики) --- */
-.chat-widget-wrap { display: flex; flex-direction: column; max-width: 92%; }
-.msg-row:not(.mine) .chat-widget-wrap { align-items: flex-start; }
-.msg-row.mine .chat-widget-wrap { align-items: flex-end; }
-.chat-widget-card {
-    width: 100%; border-radius: 16px; overflow: hidden; background: var(--card-bg, var(--surface));
-    border: 1px solid var(--border-soft, rgba(0,0,0,0.06)); box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-}
-.chat-widget-size-small { width: 220px; }
-.chat-widget-size-medium { width: 300px; }
-.chat-widget-size-large { width: 380px; }
-.chat-widget-size-full { width: min(460px, 86vw); }
+        .chat-widget-wrap { display: flex; flex-direction: column; max-width: 92%; }
+        .msg-row:not(.mine) .chat-widget-wrap { align-items: flex-start; }
+        .msg-row.mine .chat-widget-wrap { align-items: flex-end; }
+        .chat-widget-card {
+            width: 100%; border-radius: 16px; overflow: hidden; background: var(--card-bg, var(--surface));
+            border: 1px solid var(--border-soft, rgba(0,0,0,0.06)); box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        }
+        .chat-widget-size-small { width: 220px; }
+        .chat-widget-size-medium { width: 300px; }
+        .chat-widget-size-large { width: 380px; }
+        .chat-widget-size-full { width: min(460px, 86vw); }
 
-/* --- мини-тост (напр. "Скопировано") --- */
-.mini-copy-toast {
-    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(10px);
-    background: rgba(20,20,20,0.9); color: #fff; font-size: 13px; font-weight: 600;
-    padding: 9px 16px; border-radius: 999px; z-index: 10100; opacity: 0; pointer-events: none;
-    transition: opacity .18s ease, transform .18s ease; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-}
-.mini-copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.wiki-widget-row {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 10px 12px; border-radius: 14px; background: var(--input-bg); margin-bottom: 8px;
-}
-.wwr-info { min-width: 0; }
-.wwr-title { font-weight: 700; font-size: 13.5px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wwr-place { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
-.wiki-editor-widget-row.hidden { display: none; }
+        .mini-copy-toast {
+            position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(10px);
+            background: rgba(20,20,20,0.9); color: #fff; font-size: 13px; font-weight: 600;
+            padding: 9px 16px; border-radius: 999px; z-index: 10100; opacity: 0; pointer-events: none;
+            transition: opacity .18s ease, transform .18s ease; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .mini-copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .wiki-widget-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 10px 12px; border-radius: 14px; background: var(--input-bg); margin-bottom: 8px;
+        }
+        .wwr-info { min-width: 0; }
+        .wwr-title { font-weight: 700; font-size: 13.5px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wwr-place { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+        .wiki-editor-widget-row.hidden { display: none; }
 
-/* --- уважение к "уменьшить анимации" --- */
-@media (prefers-reduced-motion: reduce) {
-    .wiki-theme::before { animation: none; }
-}
+        @media (prefers-reduced-motion: reduce) {
+            .wiki-theme::before { animation: none; }
+        }
 
-/* ============================================================
-   🎥 КИНОТЕАТР В ЧАТЕ — совместный просмотр видео (YouTube/Rutube/VK/файл)
-   ============================================================ */
-.chat-cinema-panel {
-    flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border-soft);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06); z-index: 3;
-    display: flex; flex-direction: column;
-}
-.chat-cinema-panel.hidden { display: none; }
-.cinema-panel-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-.cinema-panel-title { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 55%; }
-.cinema-panel-title span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cinema-watchers { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: -6px; min-width: 0; }
-.cinema-watcher-avatar { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; margin-left: -6px; border: 2px solid var(--surface); flex-shrink: 0; }
-.cinema-watcher-img, .cinema-watcher-img-fallback { width: 100%; height: 100%; object-fit: cover; }
-.cinema-watcher-img-fallback { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff; }
-.cinema-watcher-extra {
-    margin-left: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--input-bg);
-    border: 2px solid var(--surface); font-size: 9px; font-weight: 800; color: var(--text-secondary);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.cinema-icon-btn {
-    border: none; background: var(--input-bg); color: var(--text-primary); width: 28px; height: 28px;
-    border-radius: 10px; font-size: 14px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-}
-.cinema-icon-btn:active { transform: scale(0.9); }
-.cinema-icon-btn.hidden { display: none; }
-.cinema-video-wrap {
-    width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; overflow: hidden;
-}
-.cinema-video-wrap iframe, .cinema-video-wrap video { width: 100%; height: 100%; border: none; display: block; }
-.cinema-controls-row { display: flex; gap: 6px; padding: 8px 12px; }
-.cinema-ctrl-btn {
-    flex: 1; border: none; background: var(--input-bg); color: var(--text-primary); padding: 8px 4px;
-    border-radius: 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
-}
-.cinema-ctrl-btn:active { transform: scale(0.96); }
-#cinema-playpause-btn { flex: 0 0 46px; font-size: 15px; }
+        /* ============================================================
+           🎥 КИНОТЕАТР В ЧАТЕ
+           ============================================================ */
+        .chat-cinema-panel {
+            flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border-soft);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06); z-index: 3;
+            display: flex; flex-direction: column;
+        }
+        .chat-cinema-panel.hidden { display: none; }
+        .cinema-panel-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+        .cinema-panel-title { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 55%; }
+        .cinema-panel-title span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cinema-watchers { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: -6px; min-width: 0; }
+        .cinema-watcher-avatar { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; margin-left: -6px; border: 2px solid var(--surface); flex-shrink: 0; }
+        .cinema-watcher-img, .cinema-watcher-img-fallback { width: 100%; height: 100%; object-fit: cover; }
+        .cinema-watcher-img-fallback { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff; }
+        .cinema-watcher-extra {
+            margin-left: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--input-bg);
+            border: 2px solid var(--surface); font-size: 9px; font-weight: 800; color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .cinema-icon-btn {
+            border: none; background: var(--input-bg); color: var(--text-primary); width: 28px; height: 28px;
+            border-radius: 10px; font-size: 14px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .cinema-icon-btn:active { transform: scale(0.9); }
+        .cinema-icon-btn.hidden { display: none; }
+        .cinema-video-wrap {
+            width: 100%; aspect-ratio: 16 / 9; background: #000; position: relative; overflow: hidden;
+        }
+        .cinema-video-wrap iframe, .cinema-video-wrap video { width: 100%; height: 100%; border: none; display: block; }
+        .cinema-controls-row { display: flex; gap: 6px; padding: 8px 12px; }
+        .cinema-ctrl-btn {
+            flex: 1; border: none; background: var(--input-bg); color: var(--text-primary); padding: 8px 4px;
+            border-radius: 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+        }
+        .cinema-ctrl-btn:active { transform: scale(0.96); }
+        #cinema-playpause-btn { flex: 0 0 46px; font-size: 15px; }
 
-.cinema-mini-badge {
-    flex-shrink: 0; margin: 8px 12px 0; padding: 9px 14px; border-radius: 14px;
-    background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff;
-    font-size: 12.5px; font-weight: 700; text-align: center; cursor: pointer;
-    box-shadow: 0 4px 14px rgba(237, 143, 3, 0.3);
-}
-.cinema-mini-badge.hidden { display: none; }
-.cinema-mini-badge:active { transform: scale(0.97); }
+        .cinema-mini-badge {
+            flex-shrink: 0; margin: 8px 12px 0; padding: 9px 14px; border-radius: 14px;
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff;
+            font-size: 12.5px; font-weight: 700; text-align: center; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(237, 143, 3, 0.3);
+        }
+        .cinema-mini-badge.hidden { display: none; }
+        .cinema-mini-badge:active { transform: scale(0.97); }
 
-.cinema-modal {
-    position: fixed; inset: 0; z-index: 10020; background: rgba(0,0,0,0.55);
-    display: flex; align-items: flex-end; justify-content: center;
-    animation: cinemaModalFade .2s ease;
-}
-.cinema-modal.hidden { display: none; }
-@keyframes cinemaModalFade { from { opacity: 0; } to { opacity: 1; } }
-.cinema-modal-card {
-    width: 100%; max-width: 480px; background: var(--surface); border-radius: 22px 22px 0 0;
-    padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
-}
-.cinema-modal-title { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
-.cinema-modal-sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px; }
-.cinema-modal-actions { display: flex; gap: 10px; }
-.cinema-modal-actions .btn, .cinema-modal-actions .btn-secondary { flex: 1; }
+        .cinema-modal {
+            position: fixed; inset: 0; z-index: 10020; background: rgba(0,0,0,0.55);
+            display: flex; align-items: flex-end; justify-content: center;
+            animation: cinemaModalFade .2s ease;
+        }
+        .cinema-modal.hidden { display: none; }
+        @keyframes cinemaModalFade { from { opacity: 0; } to { opacity: 1; } }
+        .cinema-modal-card {
+            width: 100%; max-width: 480px; background: var(--surface); border-radius: 22px 22px 0 0;
+            padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        }
+        .cinema-modal-title { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
+        .cinema-modal-sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px; }
+        .cinema-modal-actions { display: flex; gap: 10px; }
+        .cinema-modal-actions .btn, .cinema-modal-actions .btn-secondary { flex: 1; }
 
-.cinema-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
-.cinema-search-row .input { flex: 1; margin-bottom: 0; }
-.cinema-search-btn {
-    flex-shrink: 0; width: 46px; border: none; border-radius: 14px;
-    background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 17px; cursor: pointer;
-}
-.cinema-search-btn:active { transform: scale(0.94); }
-.cinema-source-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
-.cinema-source-tab {
-    flex: 1; border: 1px solid var(--border-soft); background: var(--input-bg); color: var(--text-secondary);
-    font-size: 12.5px; font-weight: 700; padding: 8px 4px; border-radius: 12px; cursor: pointer;
-}
-.cinema-source-tab.active { background: #ed8f03; border-color: #ed8f03; color: #fff; }
-.cinema-search-results { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
-.cinema-result-item {
-    display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 14px;
-    background: var(--input-bg); cursor: pointer; text-align: left; border: none; width: 100%;
-}
-.cinema-result-item:active { transform: scale(0.98); }
-.cinema-result-thumb { width: 84px; height: 48px; border-radius: 8px; object-fit: cover; background: #000; flex-shrink: 0; }
-.cinema-result-info { min-width: 0; flex: 1; }
-.cinema-result-title {
-    font-size: 12.5px; font-weight: 700; color: var(--text-primary); display: -webkit-box;
-    -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35;
-}
-.cinema-result-channel { font-size: 11px; color: var(--text-secondary); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cinema-search-hint, .cinema-search-empty, .cinema-search-loading {
-    font-size: 12.5px; color: var(--text-secondary); text-align: center; padding: 18px 8px;
-}
-.cinema-manual-link-toggle {
-    border: none; background: none; color: #ed8f03; font-size: 12.5px; font-weight: 700; cursor: pointer;
-    padding: 6px 0; text-align: left;
-}
-.cinema-manual-link-row { display: flex; gap: 8px; margin-top: 4px; }
-.cinema-manual-link-row.hidden { display: none; }
-.cinema-manual-link-row .input { flex: 1; margin-bottom: 0; }
-.cinema-manual-link-row .btn { flex-shrink: 0; width: auto; padding: 0 18px; }
+        .cinema-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .cinema-search-row .input { flex: 1; margin-bottom: 0; }
+        .cinema-search-btn {
+            flex-shrink: 0; width: 46px; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, #ffb75e 0%, #ed8f03 100%); color: #fff; font-size: 17px; cursor: pointer;
+        }
+        .cinema-search-btn:active { transform: scale(0.94); }
+        .cinema-source-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+        .cinema-source-tab {
+            flex: 1; border: 1px solid var(--border-soft); background: var(--input-bg); color: var(--text-secondary);
+            font-size: 12.5px; font-weight: 700; padding: 8px 4px; border-radius: 12px; cursor: pointer;
+        }
+        .cinema-source-tab.active { background: #ed8f03; border-color: #ed8f03; color: #fff; }
+        .cinema-search-results { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+        .cinema-result-item {
+            display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 14px;
+            background: var(--input-bg); cursor: pointer; text-align: left; border: none; width: 100%;
+        }
+        .cinema-result-item:active { transform: scale(0.98); }
+        .cinema-result-thumb { width: 84px; height: 48px; border-radius: 8px; object-fit: cover; background: #000; flex-shrink: 0; }
+        .cinema-result-info { min-width: 0; flex: 1; }
+        .cinema-result-title {
+            font-size: 12.5px; font-weight: 700; color: var(--text-primary); display: -webkit-box;
+            -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35;
+        }
+        .cinema-result-channel { font-size: 11px; color: var(--text-secondary); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cinema-search-hint, .cinema-search-empty, .cinema-search-loading {
+            font-size: 12.5px; color: var(--text-secondary); text-align: center; padding: 18px 8px;
+        }
+        .cinema-manual-link-toggle {
+            border: none; background: none; color: #ed8f03; font-size: 12.5px; font-weight: 700; cursor: pointer;
+            padding: 6px 0; text-align: left;
+        }
+        .cinema-manual-link-row { display: flex; gap: 8px; margin-top: 4px; }
+        .cinema-manual-link-row.hidden { display: none; }
+        .cinema-manual-link-row .input { flex: 1; margin-bottom: 0; }
+        .cinema-manual-link-row .btn { flex-shrink: 0; width: auto; padding: 0 18px; }
+        /* Ускоряем анимацию появления оверлея на смартфонах */
+        .reader-overlay.active {
+            will-change: transform, opacity;
+            transform: translateZ(0);
+        }
+
+        /* Отключаем дорогой blur внутри магазина, чтобы убрать просадки FPS */
+        #pack-shop-overlay .card,
+        #shop-overlay .card,
+        .shop-item-card {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            content-visibility: auto; /* Браузер не рендерит карточки, пока они вне экрана */
+            contain-intrinsic-size: 120px;
+        }
