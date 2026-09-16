@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CARDVERSE</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- defer — раньше грузился синхронно и блокировал разбор страницы, пока не ответит telegram.org
+         (см. пояснение у "ВТОРОГО ПРЕДОХРАНИТЕЛЯ" ниже) — вне Telegram это и давало ощущение подвисания -->
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- ВРЕМЕННАЯ КОНСОЛЬ ОТЛАДКИ: открывается только по ссылке с ?debug=1 в конце,
          обычных пользователей не затрагивает. Показывает точный файл и строку ошибки
          прямо на экране телефона — тапни на плавающую кнопку внизу справа. -->

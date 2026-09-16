@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Сезонный пасс</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script defer src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&display=swap" rel="stylesheet">
@@ -507,8 +507,47 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const tg = window.Telegram.WebApp;
+    // window.Telegram.WebApp может быть недоступен (открыто не из Telegram, скрипт
+    // заблокирован) — тогда обращение к .WebApp упадёт прямо здесь и оборвёт всю страницу.
+    const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
+        initData: '', initDataUnsafe: {}, colorScheme: 'light', themeParams: {},
+        expand: function () {}, ready: function () {}, close: function () {},
+        openLink: function (url) { window.open(url, '_blank'); },
+        showAlert: function (message, callback) { window.alert(message); if (callback) callback(); },
+        showConfirm: function (message, callback) { const ok = window.confirm(message); if (callback) callback(ok); },
+        showPopup: function (params, callback) {
+            const text = params && (params.message || params.title) ? [params.title, params.message].filter(Boolean).join('\n') : '';
+            window.alert(text);
+            if (callback) callback('');
+        },
+        HapticFeedback: { impactOccurred: function () {}, notificationOccurred: function () {}, selectionChanged: function () {} },
+        BackButton: { show: function () {}, hide: function () {}, onClick: function () {}, offClick: function () {} },
+        MainButton: { show: function () {}, hide: function () {}, onClick: function () {}, offClick: function () {}, setText: function () {}, setParams: function () {} }
+    };
     try { tg.expand(); tg.ready(); } catch (e) {}
+
+    // showPopup/showAlert/showConfirm вне настоящего Telegram (initData пуст — например, открыто
+    // напрямую в браузере) либо кидают исключение, либо (что здесь и есть причина "кнопка ничего
+    // не делает" при покупке премиума) молча ничего не делают — callback просто никогда не
+    // вызывается, try/catch тут не спасает. Подробное пояснение — в state.js рядом с тем же кодом,
+    // это его копия (страница не импортирует state.js). Если сессия не похожа на настоящий
+    // Telegram — сразу используем фолбэк браузера, не пытаясь звать родной метод.
+    const _isRealTelegramSession = !!tg.initData;
+    [['showPopup', (params, callback) => {
+        const text = params && (params.message || params.title) ? [params.title, params.message].filter(Boolean).join('\n') : '';
+        window.alert(text);
+        if (callback) callback('');
+    }], ['showAlert', (message, callback) => { window.alert(message); if (callback) callback(); }],
+      ['showConfirm', (message, callback) => { const ok = window.confirm(message); if (callback) callback(ok); }]
+    ].forEach(([method, fallback]) => {
+        const original = tg[method];
+        if (typeof original !== 'function') return;
+        if (!_isRealTelegramSession) { tg[method] = fallback; return; }
+        tg[method] = function (...args) {
+            try { return original.apply(tg, args); }
+            catch (e) { return fallback(...args); }
+        };
+    });
 
     const QUEST_TYPE_LABEL = { chapters: 'глав прочитано', books: 'книг дочитано', comments: 'комментариев', messages: 'сообщений', reactions: 'реакций', boss: 'ударов по боссу' };
     const REWARD_ICON_FALLBACK = { coins: '🪙', gems: '💎', frame: '🖼', decoration: '🎀', badge: '🏅', nickcolor: '🎨', buff: '⚡', title: '🏷', vip: '✨', overlay: '👑', pet: '🐾', chatbg: '🖼', reaction: '😄', sound: '🔊', chest: '🎁', exclusive: '🔒', shop_item: '🛍' };

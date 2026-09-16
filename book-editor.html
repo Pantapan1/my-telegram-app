@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Редактор книг</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script defer src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
@@ -271,10 +271,27 @@
         if (/^(https?:)?\/\//i.test(u) || /^#/.test(u) || /^mailto:/i.test(u)) return u;
         return '#';
     }
+    // Жёсткий минимум, вырезаемый из "сырого" HTML всегда, вместе с содержимым — исполняемый
+    // код/подгрузка стороннего документа. Не трогать даже по просьбе "без ограничений" —
+    // без этого HTML в пользовательском тексте = захват чужого аккаунта. Остальные теги
+    // пользователя пропускаются как есть (см. пояснение в utils.js рядом с extractSafeHtml).
+    const DANGEROUS_HTML_BLOCK = /<(script|style|iframe|object|embed|noscript|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+    const DANGEROUS_HTML_SELFCLOSING = /<(script|style|iframe|object|embed|noscript|form|link|meta|base)\b[^>]*\/?>/gi;
+    function extractSafeHtml(text) {
+        text = text.replace(DANGEROUS_HTML_BLOCK, '').replace(DANGEROUS_HTML_SELFCLOSING, '');
+        const stash = [];
+        text = text.replace(/<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s+[^<>]*)?\/?>/g, (tag) => { stash.push(tag); return `\u0000HTAG${stash.length - 1}\u0000`; });
+        return { text, stash };
+    }
+    function restoreSafeHtml(html, stash) { return html.replace(/\u0000HTAG(\d+)\u0000/g, (m, i) => stash[Number(i)]); }
     function applyInlineMarkdown(line) {
         const codeStash = [];
         line = line.replace(/`([^`\n]+)`/g, (m, code) => { codeStash.push(`<code>${code}</code>`); return `\u0000CODE${codeStash.length - 1}\u0000`; });
         line = line.replace(/\|\|([\s\S]+?)\|\|/g, '<span class="md-spoiler" onclick="this.classList.add(\'revealed\')">$1</span>');
+        line = line.replace(/\{color:([^{}]+?)\}([\s\S]+?)\{\/color\}/gi, (m, color, inner) => {
+            const safeColor = /^#[0-9a-fA-F]{3,8}$|^[a-zA-Z]{3,20}$/.test(color.trim()) ? color.trim() : null;
+            return safeColor ? `<span style="color:${safeColor}">${inner}</span>` : inner;
+        });
         line = line.replace(/\*\*\*([^\*]+?)\*\*\*/g, '<strong><em>$1</em></strong>');
         line = line.replace(/\*\*([^\*]+?)\*\*/g, '<strong>$1</strong>');
         line = line.replace(/__([^_]+?)__/g, '<u>$1</u>');
@@ -282,19 +299,38 @@
         line = line.replace(/~~([^~]+?)~~/g, '<del>$1</del>');
         line = line.replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
         line = line.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, '$1<em>$2</em>');
+        line = line.replace(/!\[([^\]]*?)\]\(([^)\s]+?)\)/g, (m, alt, url) => `<img src="${sanitizeMdUrl(url)}" alt="${alt}" loading="lazy" style="max-width:100%;border-radius:8px;">`);
         line = line.replace(/\[([^\]]+?)\]\(([^)\s]+?)\)/g, (m, text, url) => `<a href="${sanitizeMdUrl(url)}" target="_blank" rel="noopener">${text}</a>`);
         line = line.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => codeStash[Number(i)]);
         return line;
     }
+    // Вложенные списки: 2 пробела отступа = 1 уровень вложенности.
+    function buildNestedList(items) {
+        let i = 0;
+        function parse(minLevel) {
+            let html = '<ul>';
+            while (i < items.length && items[i].level >= minLevel) {
+                const level = items[i].level, content = items[i].content;
+                i++;
+                html += `<li>${applyInlineMarkdown(content)}`;
+                if (i < items.length && items[i].level > level) html += parse(level + 1);
+                html += '</li>';
+            }
+            html += '</ul>';
+            return html;
+        }
+        return items.length ? parse(items[0].level) : '';
+    }
     function renderMarkdown(rawText) {
         if (!rawText) return '';
-        let text = escapeHtml(String(rawText)).replace(/\r\n/g, '\n');
+        const { text: withHtmlStash, stash: htmlStash } = extractSafeHtml(String(rawText));
+        let text = escapeHtml(withHtmlStash).replace(/\r\n/g, '\n');
         const blockStash = [];
         text = text.replace(/```([\s\S]*?)```/g, (m, code) => { blockStash.push(`<pre><code>${code.replace(/^\n/, '')}</code></pre>`); return `\u0000BLOCK${blockStash.length - 1}\u0000`; });
         const lines = text.split('\n');
         const htmlParts = [];
         let listBuffer = [], quoteBuffer = [], paraBuffer = [];
-        function flushList() { if (listBuffer.length) { htmlParts.push('<ul>' + listBuffer.map(li => `<li>${applyInlineMarkdown(li)}</li>`).join('') + '</ul>'); listBuffer = []; } }
+        function flushList() { if (listBuffer.length) { htmlParts.push(buildNestedList(listBuffer)); listBuffer = []; } }
         function flushQuote() { if (quoteBuffer.length) { htmlParts.push('<blockquote>' + quoteBuffer.map(applyInlineMarkdown).join('<br>') + '</blockquote>'); quoteBuffer = []; } }
         function flushPara() { if (paraBuffer.length) { htmlParts.push('<p>' + paraBuffer.map(applyInlineMarkdown).join('<br>') + '</p>'); paraBuffer = []; } }
         function flushAll() { flushList(); flushQuote(); flushPara(); }
@@ -307,13 +343,13 @@
             const headingMatch = trimmed.match(/^(#{1,3})\s+(.*)$/);
             if (headingMatch) { flushAll(); const level = headingMatch[1].length; htmlParts.push(`<h${level}>${applyInlineMarkdown(headingMatch[2])}</h${level}>`); return; }
             if (/^&gt;\s?/.test(trimmed)) { flushList(); flushPara(); quoteBuffer.push(trimmed.replace(/^&gt;\s?/, '')); return; }
-            const listMatch = trimmed.match(/^[\*\-]\s+(.*)$/);
-            if (listMatch) { flushQuote(); flushPara(); listBuffer.push(listMatch[1]); return; }
+            const listMatch = line.match(/^(\s*)[\*\-]\s+(.*)$/);
+            if (listMatch) { flushQuote(); flushPara(); listBuffer.push({ level: Math.floor(listMatch[1].replace(/\t/g, '  ').length / 2), content: listMatch[2] }); return; }
             flushList(); flushQuote();
             paraBuffer.push(line);
         });
         flushAll();
-        return htmlParts.join('');
+        return restoreSafeHtml(htmlParts.join(''), htmlStash);
     }
     function compressImage(file, maxDim = 1600, quality = 0.82) {
         return new Promise((resolve) => {

@@ -26,12 +26,21 @@ function createFallbackWebApp() {
 
 export const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : createFallbackWebApp();
 
-// showPopup/showAlert/showConfirm требуют Bot API 6.1+. В клиентах со старой версией (или при
-// открытии вне настоящего Telegram) реальный tg.WebApp не игнорирует вызов, а кидает исключение —
-// это ломало, например, успешную публикацию поста: запись в базу уже проходила, но следующий же
-// tg.showPopup('Опубликовано!') падал с ошибкой, а обработчик catch, пытаясь показать tg.showAlert
-// с текстом ошибки, падал точно так же. Подстраховываем эти три метода: если родной вызов
-// выбрасывает исключение — тихо показываем обычный alert/confirm браузера вместо падения скрипта.
+// showPopup/showAlert/showConfirm требуют Bot API 6.1+ и в целом работают только внутри
+// настоящего Telegram. Вне его (открыто напрямую в браузере, через ?uid=&name= — этот вход
+// поддерживается штатно, см. ниже) есть ДВА разных отказа:
+//   1) старые клиенты кидают исключение при вызове — ловится try/catch (было починено раньше,
+//      см. историю: сразу после успешной публикации поста звался tg.showPopup('Опубликовано!'),
+//      он падал с ошибкой, а catch, пытаясь показать tg.showAlert с текстом ошибки, падал так же);
+//   2) НЕ настоящий Telegram (initData пустой) — метод НЕ кидает исключение, а просто ничего не
+//      делает: событие уходит нативному Telegram-клиенту, а слушать некому, callback не вызывается
+//      никогда. try/catch тут бессилен — исключения нет. Это и есть причина серии багов "кнопка
+//      ничего не делает" (удаление баннеров/постов в админке, закрытие кинотеатра в личных чатах,
+//      покупка премиум-пасса) — все они спрятаны за tg.showConfirm/showPopup.
+// Поэтому: если tg.initData пуст — используем фолбэк браузера СРАЗУ, не пытаясь звать родной метод
+// (иначе он "съест" вызов и до фолбэка дело не дойдёт). Если initData не пуст (то есть мы вроде бы
+// в настоящем Telegram), пробуем родной метод и подстраховываемся try/catch на случай (1).
+const _isRealTelegramSession = !!tg.initData;
 [['showPopup', (params, callback) => {
     const text = params && (params.message || params.title) ? [params.title, params.message].filter(Boolean).join('\n') : '';
     window.alert(text);
@@ -41,6 +50,7 @@ export const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.
 ].forEach(([method, fallback]) => {
     const original = tg[method];
     if (typeof original !== 'function') return;
+    if (!_isRealTelegramSession) { tg[method] = fallback; return; }
     tg[method] = function (...args) {
         try { return original.apply(tg, args); }
         catch (e) { return fallback(...args); }

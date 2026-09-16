@@ -3758,6 +3758,12 @@ function cinemaCanClose(chat) {
     if (!chat || !chat.cinema) return false;
     if (state.isAdmin) return true;
     if (chat.cinema.startedBy === state.currentUser.id) return true;
+    // В личном (1-на-1) чате нет ГМ/модераторов вики — раньше это означало, что кнопка закрытия
+    // видна ТОЛЬКО тому, кто запустил кинотеатр, а второй участник вообще не может его закрыть
+    // (кнопка у него скрыта, isGroupGM/isWikiModerator всегда false вне группы). Отсюда и баг
+    // "не закрывается кинотеатр в личных чатах" — со стороны собеседника кнопки попросту не было.
+    // Раз в личном чате нет иерархии ролей, закрыть общий просмотр может любой из двух участников.
+    if (chat.type !== 'group') return !!(chat.participants && chat.participants[state.currentUser.id]);
     return isGroupGM(chat) || isWikiModerator(chat);
 }
 
