@@ -462,6 +462,7 @@ export function renderPostOverlay() {
     
     const comments = post.comments ? Object.entries(post.comments).map(([cid, c]) => ({ id: cid, ...c })).sort((a, b) => a.createdAt - b.createdAt) : [];
     const isOwner = post.authorId && post.authorId === state.currentUser.id;
+    const canManagePost = isOwner || state.isAdmin;
 
     const authorBlock = post.authorId ? `
         <div class="post-author-row" style="margin-bottom:12px;" data-author-id="${post.authorId}" data-author-name="${escapeHtml(post.authorName)}">
@@ -481,7 +482,7 @@ export function renderPostOverlay() {
         <div class="md-body" style="font-size:15px;line-height:1.6;color:var(--text-primary);">${renderMarkdown(post.text)}</div>
         <div class="card-meta" style="margin-top: 12px;">${formatDate(post.createdAt)}</div>
         
-        ${isOwner ? `
+        ${canManagePost ? `
         <div style="display:flex;gap:8px;margin-top:14px;">
             <button class="btn btn-secondary" style="margin:0;flex:1; border-radius:14px;" id="btn-edit-own-post">✏️ Изменить</button>
             <button class="btn btn-danger" style="margin:0;flex:1; border-radius:14px;" id="btn-delete-own-post">🗑 Удалить</button>

@@ -71,6 +71,8 @@ export const state = {
   sessionStartedAt: 0,
   lastFlushedAt: 0,
   postsData: [],
+  siteWidgetsData: [],
+  editingSiteWidgetId: null,
   bannersData: [],
   shopItemsData: [],
   editingBannerId: null,

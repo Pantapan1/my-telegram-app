@@ -67,18 +67,24 @@ window.switchAdminTab = function(tab) {
         }
 
         window.deleteStickerPack = function(id) {
-            if (!confirm('Удалить весь пак?')) return;
-            remove(ref(state.db, 'sticker_packs/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить весь пак?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'sticker_packs/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
         window.deletePackSticker = function(packId, stickerId) {
-            if (!confirm('Удалить стикер?')) return;
-            remove(ref(state.db, 'sticker_packs/' + packId + '/stickers/' + stickerId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить стикер?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'sticker_packs/' + packId + '/stickers/' + stickerId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
         window.deleteLooseSticker = function(id) {
-            if (!confirm('Удалить стикер?')) return;
-            remove(ref(state.db, 'stickers/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить стикер?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'stickers/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
 
@@ -114,8 +120,10 @@ window.switchAdminTab = function(tab) {
         }
 
         window.deletePost = function(id) {
-            if (!confirm('Удалить новость?')) return;
-            remove(ref(state.db, 'posts/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить новость?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'posts/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
         window.togglePinPost = function(id, pinned) {
@@ -294,8 +302,10 @@ window.switchAdminTab = function(tab) {
 
 
         window.deleteBanner = function(id) {
-            if (!confirm('Удалить баннер?')) return;
-            remove(ref(state.db, 'banners/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить баннер?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'banners/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
 
@@ -837,8 +847,10 @@ window.switchAdminTab = function(tab) {
         };
 
         window.deleteEvent = function(id) {
-            if (!confirm('Удалить событие?')) return;
-            remove(ref(state.db, 'events/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Удалить событие?', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'events/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };
 
 
@@ -913,13 +925,19 @@ window.switchAdminTab = function(tab) {
             const u = state.usersData.find(x => x.id === userId);
             if (!u) return;
             const next = !u.banned;
-            if (next && !confirm('Заблокировать пользователя «' + (u.name || 'Без имени') + '»? Он не сможет пользоваться приложением.')) return;
-            update(ref(state.db, 'users/' + userId), { banned: next }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            const doUpdate = () => update(ref(state.db, 'users/' + userId), { banned: next }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            if (next) {
+                tg.showConfirm('Заблокировать пользователя «' + (u.name || 'Без имени') + '»? Он не сможет пользоваться приложением.', (ok) => { if (ok) doUpdate(); });
+            } else {
+                doUpdate();
+            }
         };
 
         window.adminDeleteUser = function(userId) {
             const u = state.usersData.find(x => x.id === userId);
             if (!u) return;
-            if (!confirm('Полностью удалить пользователя «' + (u.name || 'Без имени') + '»? Это действие необратимо.')) return;
-            remove(ref(state.db, 'users/' + userId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            tg.showConfirm('Полностью удалить пользователя «' + (u.name || 'Без имени') + '»? Это действие необратимо.', (ok) => {
+                if (!ok) return;
+                remove(ref(state.db, 'users/' + userId)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+            });
         };

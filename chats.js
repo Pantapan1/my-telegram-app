@@ -3755,6 +3755,7 @@ function cinemaCanControl(chat) {
 
 function cinemaCanClose(chat) {
     if (!chat || !chat.cinema) return false;
+    if (state.isAdmin) return true;
     if (chat.cinema.startedBy === state.currentUser.id) return true;
     return isGroupGM(chat) || isWikiModerator(chat);
 }
