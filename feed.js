@@ -243,6 +243,7 @@ export function renderBanners() {
 
 export function renderFeed() {
     const container = document.getElementById('feed-container');
+    if (!container) return;
     let list = state.postsData;
     
     if (state.feedSearchTerm) {

@@ -1228,6 +1228,7 @@ export function colorFor(str) {
 
         export function renderNotificationsToggle() {
             const btn = document.getElementById('btn-toggle-notifications');
+            if (!btn) return;
 
             // Внутри собранного APK работает нативный push (Capacitor), а не браузерный Notification API —
             // у него другой, асинхронный способ узнать текущее разрешение, поэтому статус кэшируем локально

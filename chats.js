@@ -137,6 +137,7 @@ export function updateChatRpStatusBar(chat) {
 
 export function renderChatsList() {
     const container = document.getElementById('chats-container');
+    if (!container) return;
     const myChats = state.chatsData.filter(c => c.participants && c.participants[state.currentUser.id]);
     
     if (!myChats.length) {

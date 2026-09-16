@@ -244,7 +244,7 @@ const SPLASH_STEPS = [
     { key: 'books', label: 'Библиотека книг' },
     { key: 'users', label: 'Профили пользователей' },
     { key: 'chats', label: 'Чаты' },
-    { key: 'cards', label: 'Карточная игра' },
+    { key: 'cards', label: 'CARDVERSE' },
     { key: 'stickers', label: 'Стикеры' },
     { key: 'settings', label: 'Оформление' }
 ];

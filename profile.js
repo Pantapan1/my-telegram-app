@@ -129,6 +129,7 @@ export function checkDailyCoinReward() {
         }
 
         export function renderOwnProfileHeader() {
+            if (!document.getElementById('profile-display-name')) return;
             const me = state.usersData.find(u => u.id === state.currentUser.id);
             const name = (me && me.name) || state.currentUser.name;
             const bio = (me && me.bio) || '';
@@ -365,6 +366,7 @@ export function checkDailyCoinReward() {
         };
 
         export function renderProfileStats() {
+            if (!document.getElementById('stats-read')) return;
             document.getElementById('stats-read').textContent = state.readBooks.length; 
             document.getElementById('stats-bookmarks').textContent = state.bookmarkedBooks.length; 
             document.getElementById('stats-streak').textContent = state.streakStore.count || 0;

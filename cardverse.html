@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Reader App</title>
+    <title>CARDVERSE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- ВРЕМЕННАЯ КОНСОЛЬ ОТЛАДКИ: открывается только по ссылке с ?debug=1 в конце,
          обычных пользователей не затрагивает. Показывает точный файл и строку ошибки
@@ -20,6 +20,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Handjet:wght@500..700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- Стили карточной игры CARDVERSE вынесены в отдельный файл, подключаются только здесь -->
+    <link rel="stylesheet" href="cardverse.css">
 </head>
 <body>
 
@@ -249,7 +251,7 @@
                 <button class="profile-menu-item" id="btn-toggle-translate-lang"><span class="pmi-icon">🌐</span><span class="pmi-label">Перевод: Авто</span></button>
                 <button class="profile-menu-item" id="btn-open-shop"><span class="pmi-icon">🛍</span><span class="pmi-label">Магазин</span></button>
                 <button class="profile-menu-item" id="btn-open-events" onclick="openEventsCalendar()"><span class="pmi-icon">📅</span><span class="pmi-label">Календарь</span></button>
-                <button class="profile-menu-item" id="btn-open-decks" onclick="location.href='cardverse.html'"><span class="pmi-icon">🃏</span><span class="pmi-label">CARDVERSE</span></button>
+                <button class="profile-menu-item" id="btn-open-decks" onclick="openCardGameMenu()"><span class="pmi-icon">🃏</span><span class="pmi-label">Карты</span></button>
                 <button class="profile-menu-item" id="btn-open-novels"><span class="pmi-icon">📖</span><span class="pmi-label">Новеллы</span></button>
                 <button class="profile-menu-item" id="btn-open-publisher-app"><span class="pmi-icon">📝</span><span class="pmi-label">Публикация</span></button>
                 <button class="profile-menu-item hidden" id="btn-open-book-editor"><span class="pmi-icon">📚</span><span class="pmi-label">Мои книги</span></button>
@@ -1731,8 +1733,82 @@
     </div>
 
 
-    <!-- Карточная игра CARDVERSE (меню/колоды/коллекция/магазин наборов/сюжет/бой) переехала
-         на отдельную страницу cardverse.html — см. кнопку "CARDVERSE" в меню профиля выше. -->
+    <!-- КОЛОДЫ (КАРТОЧНАЯ ИГРА) -->
+    <div id="card-game-menu-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="card-menu-back-btn" onclick="location.href='app.html'">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">CARDVERSE</div>
+            </div>
+        </div>
+        <div class="reader-content" id="card-game-menu-body"></div>
+    </div>
+
+    <div id="story-mode-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="story-mode-back-btn" onclick="closeStoryMode()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">📖 Сюжетный режим</div>
+            </div>
+        </div>
+        <div style="padding:10px 16px 0;">
+            <div id="story-progress-wrap" class="hidden" style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">
+                    <span id="story-progress-label">Пройдено 0 из 0</span>
+                    <span id="story-progress-pct">0%</span>
+                </div>
+                <div class="progress-outer"><div class="progress-inner" id="story-progress-bar" style="width:0%;"></div></div>
+            </div>
+            <input type="text" id="story-search-input" class="input hidden" placeholder="🔍 Поиск главы или соперника..." style="margin-bottom:10px;" oninput="window.renderStoryListView()">
+        </div>
+        <div class="reader-content" id="story-mode-body"></div>
+    </div>
+
+    <div id="pack-shop-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="pack-shop-back-btn" onclick="closePackShop()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;">Магазин наборов</div>
+            </div>
+        </div>
+        <div class="reader-content" id="pack-shop-body"></div>
+    </div>
+
+
+    <div id="card-collection-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="card-collection-back-btn" onclick="closeCardCollection()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="card-collection-title-text">Коллекция</div>
+            </div>
+            <div id="collection-dust-label" style="font-weight:800;color:var(--text-primary);font-size:13px;padding:6px 10px;background:rgba(127,127,127,.15);border-radius:10px;">✨ 0</div>
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0 0 0 8px;border-radius:12px;font-size:12px;" id="btn-toggle-craft" onclick="toggleCraftView()">🛠 Крафт</button>
+        </div>
+        <div class="reader-content" id="card-collection-body"></div>
+    </div>
+
+    <div id="decks-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="decks-back-btn" onclick="decksGoBack()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="decks-header-title">Мои колоды</div>
+            </div>
+            <button class="btn btn-secondary hidden" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="deck-save-btn" onclick="saveDeck()">Сохранить</button>
+        </div>
+        <div class="reader-content" id="decks-body"></div>
+    </div>
+
+    <!-- БОЙ (КАРТОЧНАЯ ИГРА) -->
+    <div id="battle-overlay" class="reader-overlay">
+        <div class="reader-header">
+            <button class="btn btn-secondary" style="width:auto;padding:8px 14px;margin:0; border-radius:12px;" id="battle-back-btn" onclick="leaveBattle()">←</button>
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:800; color:var(--text-primary); font-size:15px;" id="battle-header-title">Бой</div>
+            </div>
+        </div>
+        <div class="reader-content" id="battle-body" style="padding:0;"></div>
+    </div>
+    <audio id="battle-bgm" loop preload="none"></audio>
 
     <div id="events-overlay" class="reader-overlay">
         <div class="reader-header">
@@ -1783,6 +1859,12 @@
         </div>
     </div>
 
+    <!-- ДИАЛОГИ СЮЖЕТНОГО РЕЖИМА (визуальная новелла), поверх всего интерфейса, включая бой -->
+    <div id="story-dialogue-overlay" class="story-dialogue-overlay">
+        <button class="story-dlg-skip" onclick="skipStoryDialogue(event)">Пропустить ✕</button>
+        <div class="story-dlg-box" id="story-dialogue-box" onclick="advanceStoryDialogue()"></div>
+    </div>
+
     <!-- === ЯКОРНАЯ НАВИГАЦИЯ === -->
     <div id="pass-pet-widget" class="hidden">🐾</div>
 
@@ -1811,5 +1893,27 @@
 
     <!-- FIREBASE + ЛОГИКА (разбито на модули: state, constants, utils, pass, feed, books, profile, chats, admin, core) -->
     <script type="module" src="core.js"></script>
+
+    <!-- Эта страница — отдельный вход в карточную игру CARDVERSE. Как только приложение
+         прогрузится (сплэш спрячется) и пользователь окажется авторизован, сразу открываем
+         меню карточной игры, а не ленту — это единственная причина существования этого
+         скрипта, вся остальная логика игры не изменилась и живёт в decks.js/cards.js/
+         story.js/battle.js как раньше. -->
+    <script type="module">
+        (function () {
+            let tries = 0;
+            const timer = setInterval(function () {
+                tries++;
+                const authOverlay = document.getElementById('auth-overlay');
+                const notLoggedIn = authOverlay && getComputedStyle(authOverlay).display !== 'none';
+                if (notLoggedIn) { clearInterval(timer); return; } // покажется форма входа как обычно
+                const splashGone = !document.getElementById('app-splash');
+                if ((splashGone && typeof window.openCardGameMenu === 'function') || tries > 25) {
+                    clearInterval(timer);
+                    if (typeof window.openCardGameMenu === 'function') window.openCardGameMenu();
+                }
+            }, 300);
+        })();
+    </script>
 </body>
 </html>
