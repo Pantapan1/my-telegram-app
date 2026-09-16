@@ -26,6 +26,27 @@ function createFallbackWebApp() {
 
 export const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : createFallbackWebApp();
 
+// showPopup/showAlert/showConfirm требуют Bot API 6.1+. В клиентах со старой версией (или при
+// открытии вне настоящего Telegram) реальный tg.WebApp не игнорирует вызов, а кидает исключение —
+// это ломало, например, успешную публикацию поста: запись в базу уже проходила, но следующий же
+// tg.showPopup('Опубликовано!') падал с ошибкой, а обработчик catch, пытаясь показать tg.showAlert
+// с текстом ошибки, падал точно так же. Подстраховываем эти три метода: если родной вызов
+// выбрасывает исключение — тихо показываем обычный alert/confirm браузера вместо падения скрипта.
+[['showPopup', (params, callback) => {
+    const text = params && (params.message || params.title) ? [params.title, params.message].filter(Boolean).join('\n') : '';
+    window.alert(text);
+    if (callback) callback('');
+}], ['showAlert', (message, callback) => { window.alert(message); if (callback) callback(); }],
+  ['showConfirm', (message, callback) => { const ok = window.confirm(message); if (callback) callback(ok); }]
+].forEach(([method, fallback]) => {
+    const original = tg[method];
+    if (typeof original !== 'function') return;
+    tg[method] = function (...args) {
+        try { return original.apply(tg, args); }
+        catch (e) { return fallback(...args); }
+    };
+});
+
 const _tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
 const _authUser = JSON.parse(localStorage.getItem('sr_auth_user') || 'null');
 // Тот же id, что станет state.currentUser.id в core.js — нужен уже здесь, чтобы личные данные
