@@ -363,7 +363,25 @@ export function colorFor(str) {
 
             flushAll();
 
-            return restoreSafeHtml(htmlParts.join(''), htmlStash);
+            return closeDanglingTags(restoreSafeHtml(htmlParts.join(''), htmlStash));
+        }
+
+        // Один незакрытый тег из "сырого" HTML пользователя (см. пояснение про поддержку HTML-тегов
+        // в начале файла) — это не только XSS-риск, но и риск сломать вёрстку СРАЗУ, без злого
+        // умысла: сообщения/посты/комментарии обычно склеиваются в ОДНУ строку и вставляются одним
+        // innerHTML разом (например, список сообщений чата) — незакрытый <div>/<b>/и т.п. в ЛЮБОМ
+        // (в т.ч. старом) сообщении "проглатывает" внутрь себя всё, что идёт после него в общей
+        // строке, — визуально это выглядит как "всё ниже пропало". Прогоняем результат через
+        // временный DOM-элемент: браузер сам достраивает/закрывает висячие теги В ГРАНИЦАХ этого
+        // элемента, поэтому поломка остаётся внутри одного сообщения и не утекает в соседние.
+        function closeDanglingTags(html) {
+            try {
+                const scratch = document.createElement('div');
+                scratch.innerHTML = html;
+                return scratch.innerHTML;
+            } catch (e) {
+                return html;
+            }
         }
 
         // Простая версия для мест, где не нужны блочные элементы (заголовки/списки/цитаты),
@@ -372,7 +390,7 @@ export function colorFor(str) {
             if (!rawText) return '';
             const { text: withHtmlStash, stash: htmlStash } = extractSafeHtml(String(rawText));
             const text = escapeHtml(withHtmlStash).replace(/\r\n/g, '\n');
-            return restoreSafeHtml(text.split('\n').map(applyInlineMarkdown).join('<br>'), htmlStash);
+            return closeDanglingTags(restoreSafeHtml(text.split('\n').map(applyInlineMarkdown).join('<br>'), htmlStash));
         }
 
 

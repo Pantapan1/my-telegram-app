@@ -349,7 +349,20 @@
             paraBuffer.push(line);
         });
         flushAll();
-        return restoreSafeHtml(htmlParts.join(''), htmlStash);
+        return closeDanglingTags(restoreSafeHtml(htmlParts.join(''), htmlStash));
+    }
+    // Один незакрытый тег из "сырого" HTML пользователя проглатывает внутрь себя всё, что идёт
+    // после него в общей склеенной строке ("всё ниже пропало") — см. подробное пояснение в utils.js
+    // рядом с этой же функцией. Прогоняем через временный DOM-элемент, чтобы браузер сам закрыл
+    // висячие теги В ГРАНИЦАХ этого фрагмента.
+    function closeDanglingTags(html) {
+        try {
+            const scratch = document.createElement('div');
+            scratch.innerHTML = html;
+            return scratch.innerHTML;
+        } catch (e) {
+            return html;
+        }
     }
     function compressImage(file, maxDim = 1600, quality = 0.82) {
         return new Promise((resolve) => {
