@@ -89,6 +89,9 @@ export const state = {
   booksData: [],
   usersData: [],
   chatsData: [],
+  // Индикатор "печатает..." — отдельно от chatsData/chats-в-базе (см. пояснение в core.js рядом
+  // с onValue(ref(db,'chatsTyping'))): { [chatId]: { [uid]: timestamp } }
+  typingData: {},
   stickersData: [],
   stickerPacksData: [],
   myStickersData: [],

@@ -1231,17 +1231,35 @@ document.getElementById('chat-message-input').addEventListener('keydown', (e) =>
     }
 });
 
+// Ресайз через rAF, а не синхронно в обработчике 'input': set height='auto' + чтение scrollHeight
+// заставляет браузер немедленно пересчитать layout (forced reflow) прямо в момент нажатия клавиши.
+// На длинной истории чата (много DOM-узлов сообщений) это добавляет заметную задержку перед тем,
+// как введённый символ вообще отрисуется. rAF откладывает пересчёт на кадр позже отрисовки символа,
+// не убирая сам reflow, но убирая его с "горячего" пути ввода — символ появляется сразу.
+let _resizeChatInputRaf = null;
 export function autoResizeChatInput() {
-    const el = document.getElementById('chat-message-input');
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    if (_resizeChatInputRaf) cancelAnimationFrame(_resizeChatInputRaf);
+    _resizeChatInputRaf = requestAnimationFrame(() => {
+        _resizeChatInputRaf = null;
+        const el = document.getElementById('chat-message-input');
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    });
 }
 
 // === Индикатор "печатает..." ===
-
+// Раньше статус печати писался в chats/{id}/typing/{uid} — в ТОТ ЖЕ узел базы, на который подписан
+// один общий onValue(ref(db,'chats')) (см. core.js), отвечающий сразу за весь список чатов, ленту
+// сообщений открытого чата, счётчики профиля и уведомления. Любая запись где угодно внутри chats/
+// (в том числе наш же пинг "печатает") заново доставляла ВЕСЬ узел chats всем, кто на него подписан,
+// и заново прогоняла весь этот тяжёлый рендер-каскад — а пинг уходит на каждый чих раз в 1.5с, пока
+// человек печатает. Это и был источник подтормаживания при наборе текста: не сам ввод, а то, что
+// раз в 1.5 секунды на главном потоке разворачивался полный пересчёт списка чатов/сообщений.
+// Теперь статус печати живёт в отдельном узле chatsTyping/{id}/{uid} со своим лёгким слушателем
+// (core.js), который трогает только индикатор "печатает", а не весь чат целиком.
 export function clearTypingStatus() {
     if (state.typingClearTimer) { clearTimeout(state.typingClearTimer); state.typingClearTimer = null; }
-    if (state.currentChatId && state.db) remove(ref(state.db, 'chats/' + state.currentChatId + '/typing/' + state.currentUser.id)).catch(() => {});
+    if (state.currentChatId && state.db) remove(ref(state.db, 'chatsTyping/' + state.currentChatId + '/' + state.currentUser.id)).catch(() => {});
 }
 
 document.getElementById('chat-message-input').addEventListener('input', function() {
@@ -1250,7 +1268,7 @@ document.getElementById('chat-message-input').addEventListener('input', function
     const now = Date.now();
     if (now - state.lastTypingSent > 1500) {
         state.lastTypingSent = now;
-        update(ref(state.db, 'chats/' + state.currentChatId + '/typing'), { [state.currentUser.id]: now }).catch(() => {});
+        update(ref(state.db, 'chatsTyping/' + state.currentChatId), { [state.currentUser.id]: now }).catch(() => {});
     }
     if (state.typingClearTimer) clearTimeout(state.typingClearTimer);
     state.typingClearTimer = setTimeout(clearTypingStatus, 3000);
@@ -1260,7 +1278,8 @@ export function updateTypingIndicator(chat) {
     const el = document.getElementById('chat-typing-indicator');
     if (!el || !chat) return;
     const now = Date.now();
-    const typerIds = chat.typing ? Object.entries(chat.typing).filter(([uid, ts]) => uid !== state.currentUser.id && (now - ts) < 5000).map(([uid]) => uid) : [];
+    const typing = state.typingData[chat.id];
+    const typerIds = typing ? Object.entries(typing).filter(([uid, ts]) => uid !== state.currentUser.id && (now - ts) < 5000).map(([uid]) => uid) : [];
 
     if (!typerIds.length) { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');

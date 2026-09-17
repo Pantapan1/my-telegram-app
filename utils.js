@@ -132,7 +132,18 @@ export function colorFor(str) {
         // Markdown-lite для постов/комментариев/чатов/описаний: экранирует ввод (XSS), затем
         // разметку, затем переносы строк. Синтаксис: **жирный** *курсив*/_курсив_ ***жирный курсив***
         // ~~зачёркнутый~~ __подчёркнутый__/++подчёркнутый++ ||спойлер|| `код` ```блок кода```
-        // > цитата  [текст](url)  # ## ###  ---(hr)  * пункт/- пункт
+        // > цитата  [текст](url)  ![alt](url)  # ## ###  ---(hr)  * пункт/- пункт (вложенные — отступом)
+        // {color:red}текст{/color}
+        //
+        // Поддержка "сырых" HTML-тегов внутри markdown (по просьбе продукта — 2026-09):
+        // обычные HTML-теги из текста пользователя пропускаются как есть, БЕЗ санитайзера тегов/
+        // атрибутов, кроме одного жёсткого минимума ниже (см. extractSafeHtml/DANGEROUS_*), который
+        // не подлежит отключению даже по запросу продукта — это не "фильтр по вкусу", а защита
+        // от полного захвата чужой сессии/аккаунта через <script>, поэтому его нельзя убирать
+        // "чтобы совсем без ограничений". Всё остальное (span/div/style-атрибуты и т.п.) проходит
+        // без проверки — это осознанный риск stored-XSS, принятый продуктом; рендерится в постах,
+        // комментариях, ЛИЧНЫХ ЧАТАХ и вики других пользователей, так что при повторном обсуждении
+        // безопасности напомнить об этом.
 
         // Разрешаем только http(s) и относительные ссылки в [текст](url), чтобы
         // исключить javascript: и другие опасные схемы после экранирования.
@@ -142,9 +153,37 @@ export function colorFor(str) {
             return '#';
         }
 
+        // Жёсткий минимум, который вырезается всегда, вместе с содержимым — исполняемый код
+        // и подгрузка стороннего документа в текущий контекст (кража сессии/токенов авторизации).
+        // Это не "уровень строгости", который можно подкрутить — без этого HTML в пользовательском
+        // контенте открывает полный захват чужого аккаунта, поэтому эти теги трогать нельзя.
+        const DANGEROUS_HTML_BLOCK = /<(script|style|iframe|object|embed|noscript|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+        const DANGEROUS_HTML_SELFCLOSING = /<(script|style|iframe|object|embed|noscript|form|link|meta|base)\b[^>]*\/?>/gi;
+
+        // Вырезает script/iframe/style и т.п. вместе с содержимым (см. DANGEROUS_HTML_* выше),
+        // остальные HTML-теги пользователя пропускает как есть — без проверки набора тегов
+        // или атрибутов. Теги прячутся в стэш, чтобы дальше по пайплайну их не покалечила
+        // markdown-разметка (**text** внутри style="..." и т.д.) и чтобы escapeHtml их не съел.
+        function extractSafeHtml(text) {
+            text = text.replace(DANGEROUS_HTML_BLOCK, '').replace(DANGEROUS_HTML_SELFCLOSING, '');
+
+            const stash = [];
+            text = text.replace(/<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s+[^<>]*)?\/?>/g, (tag) => {
+                stash.push(tag);
+                return `\u0000HTAG${stash.length - 1}\u0000`;
+            });
+
+            return { text, stash };
+        }
+
+        function restoreSafeHtml(html, stash) {
+            return html.replace(/\u0000HTAG(\d+)\u0000/g, (m, i) => stash[Number(i)]);
+        }
+
         // Инлайновая разметка внутри одной строки (жирный/курсив/код/ссылки и т.д.)
-        // Работает уже на экранированном тексте (< и > заменены на сущности),
-        // поэтому регулярки безопасны и не могут "открыть" новый тег из ввода.
+        // Работает уже на экранированном тексте (< и > заменены на сущности, кроме
+        // спрятанных в стэш "сырых" HTML-тегов пользователя — см. extractSafeHtml),
+        // поэтому регулярки безопасны и не могут "открыть" новый тег из текстового ввода.
         function applyInlineMarkdown(line) {
             // Блоки-заглушки для кода, чтобы внутри них не применялась остальная разметка
             const codeStash = [];
@@ -155,6 +194,14 @@ export function colorFor(str) {
 
             // Спойлер ||текст||
             line = line.replace(/\|\|([\s\S]+?)\|\|/g, '<span class="md-spoiler" onclick="this.classList.add(\'revealed\')">$1</span>');
+
+            // Цвет текста {color:red}текст{/color} или {color:#ff0000}текст{/color}.
+            // Значение цвета валидируем отдельной регуляркой (не пускаем в style как есть),
+            // иначе через {color:...} можно было бы протащить произвольный CSS/url().
+            line = line.replace(/\{color:([^{}]+?)\}([\s\S]+?)\{\/color\}/gi, (m, color, inner) => {
+                const safeColor = /^#[0-9a-fA-F]{3,8}$|^[a-zA-Z]{3,20}$/.test(color.trim()) ? color.trim() : null;
+                return safeColor ? `<span style="color:${safeColor}">${inner}</span>` : inner;
+            });
 
             // Жирный курсив ***текст***
             line = line.replace(/\*\*\*([^\*]+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -173,6 +220,13 @@ export function colorFor(str) {
             line = line.replace(/(^|[^\*])\*([^\*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
             line = line.replace(/(^|[^_])_([^_\n]+?)_(?!_)/g, '$1<em>$2</em>');
 
+            // Изображения ![alt](url) — проверяем ДО ссылок [текст](url), иначе "!" достанется
+            // обычной ссылке. URL проходит через тот же sanitizeMdUrl, что и ссылки.
+            line = line.replace(/!\[([^\]]*?)\]\(([^)\s]+?)\)/g, (m, alt, url) => {
+                const safeUrl = sanitizeMdUrl(url);
+                return `<img src="${safeUrl}" alt="${alt}" loading="lazy" style="max-width:100%;border-radius:8px;">`;
+            });
+
             // Ссылки [текст](url)
             line = line.replace(/\[([^\]]+?)\]\(([^)\s]+?)\)/g, (m, text, url) => {
                 const safeUrl = sanitizeMdUrl(url);
@@ -185,11 +239,36 @@ export function colorFor(str) {
             return line;
         }
 
+        // Строит вложенный <ul> по уровню отступа каждого пункта (2 пробела = 1 уровень).
+        // items: [{ level, content }]
+        function buildNestedList(items) {
+            let i = 0;
+            function parse(minLevel) {
+                let html = '<ul>';
+                while (i < items.length && items[i].level >= minLevel) {
+                    const level = items[i].level;
+                    const content = items[i].content;
+                    i++;
+                    html += `<li>${applyInlineMarkdown(content)}`;
+                    if (i < items.length && items[i].level > level) {
+                        html += parse(level + 1);
+                    }
+                    html += '</li>';
+                }
+                html += '</ul>';
+                return html;
+            }
+            return items.length ? parse(items[0].level) : '';
+        }
+
         export function renderMarkdown(rawText) {
             if (!rawText) return '';
 
+            // 0) Достаём "сырые" HTML-теги пользователя в стэш, прежде чем экранировать текст
+            const { text: withHtmlStash, stash: htmlStash } = extractSafeHtml(String(rawText));
+
             // 1) Экранирование — обязательно до любых регулярок разметки
-            let text = escapeHtml(String(rawText));
+            let text = escapeHtml(withHtmlStash);
 
             // Нормализуем переносы строк
             text = text.replace(/\r\n/g, '\n');
@@ -209,7 +288,7 @@ export function colorFor(str) {
 
             function flushList() {
                 if (listBuffer.length) {
-                    htmlParts.push('<ul>' + listBuffer.map(li => `<li>${applyInlineMarkdown(li)}</li>`).join('') + '</ul>');
+                    htmlParts.push(buildNestedList(listBuffer));
                     listBuffer = [];
                 }
             }
@@ -267,11 +346,13 @@ export function colorFor(str) {
                     return;
                 }
 
-                // Маркированный список
-                const listMatch = trimmed.match(/^[\*\-]\s+(.*)$/);
+                // Маркированный список, с вложенностью: считаем отступ по ИСХОДНОЙ строке
+                // (не trimmed), 2 пробела = 1 уровень вложенности.
+                const listMatch = line.match(/^(\s*)[\*\-]\s+(.*)$/);
                 if (listMatch) {
                     flushQuote(); flushPara();
-                    listBuffer.push(listMatch[1]);
+                    const level = Math.floor(listMatch[1].replace(/\t/g, '  ').length / 2);
+                    listBuffer.push({ level, content: listMatch[2] });
                     return;
                 }
 
@@ -282,15 +363,16 @@ export function colorFor(str) {
 
             flushAll();
 
-            return htmlParts.join('');
+            return restoreSafeHtml(htmlParts.join(''), htmlStash);
         }
 
         // Простая версия для мест, где не нужны блочные элементы (заголовки/списки/цитаты),
         // а нужно только выделение текста + переносы строк (например, однострочные превью).
         export function renderMarkdownInline(rawText) {
             if (!rawText) return '';
-            const text = escapeHtml(String(rawText)).replace(/\r\n/g, '\n');
-            return text.split('\n').map(applyInlineMarkdown).join('<br>');
+            const { text: withHtmlStash, stash: htmlStash } = extractSafeHtml(String(rawText));
+            const text = escapeHtml(withHtmlStash).replace(/\r\n/g, '\n');
+            return restoreSafeHtml(text.split('\n').map(applyInlineMarkdown).join('<br>'), htmlStash);
         }
 
 

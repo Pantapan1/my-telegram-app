@@ -7,7 +7,7 @@ import { currentSeasonId, ensurePassSeason, renderPassButton, renderPassPetWidge
 import { distributeBossRewards, populateBossAdminForm, renderBanners, renderBossCard, renderBossParticipantsList, renderEventMultiplierBanner, renderFeed, renderPostOverlay, updateBannerCountdowns } from './feed.js';
 import { getChapters, maybeShowMangaAnnouncement, renderBooks, renderChapterListView, renderGenreFilterRow, updateStreak } from './books.js';
 import { checkDailyCoinReward, renderOwnProfileHeader, renderProfileStats, renderQuestsList, renderUserProfileOverlay } from './profile.js';
-import { populateStickerPackSelect, renderCharacterInventory, renderChatOverlay, renderChatsList, renderCommunityDiscover, renderGroupWiki, renderRpPanel, renderStickerPicker, renderUserPickList, renderWikiCategory, renderWikiPost } from './chats.js';
+import { populateStickerPackSelect, renderCharacterInventory, renderChatOverlay, renderChatsList, renderCommunityDiscover, renderGroupWiki, renderRpPanel, renderStickerPicker, renderUserPickList, renderWikiCategory, renderWikiPost, updateTypingIndicator } from './chats.js';
 import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBannersList, renderAdminBooksList, renderAdminEventsList, renderAdminPostsList, renderAdminQuestsList, renderAdminStickersList, renderAdminUsersList } from './admin.js';
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
@@ -740,6 +740,19 @@ export function startFirebaseListeners() {
         if (state.activeOverlay === 'wikicategory') renderWikiCategory();
         if (state.activeOverlay === 'wikipost') renderWikiPost();
         markSplashStep('chats');
+    });
+
+    // Статус "печатает..." — отдельный лёгкий узел chatsTyping/, НЕ внутри chats/ (см. подробное
+    // пояснение в chats.js рядом с clearTypingStatus). Раньше пинг "печатает" писался прямо в
+    // chats/{id}/typing и заново доставлял ВЕСЬ узел chats всем подписчикам — а значит, раз в 1.5с,
+    // пока человек печатает, отрабатывал полный каскад выше (renderChatsList/renderChatOverlay и
+    // т.д.), из-за чего набор текста ощутимо подлагивал. Здесь трогаем только индикатор, не весь чат.
+    onValue(ref(state.db, 'chatsTyping'), (snapshot) => {
+        state.typingData = snapshot.val() || {};
+        if (state.activeOverlay === 'chat' && state.currentChatId) {
+            const chat = state.chatsData.find(c => c.id === state.currentChatId);
+            if (chat) updateTypingIndicator(chat);
+        }
     });
 
     onValue(ref(state.db, 'stickers'), (snapshot) => {
