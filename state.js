@@ -177,6 +177,10 @@ export const state = {
   typingClearTimer: null,
   editingQuestId: null,
   arenasData: [],
+  // Покупные "Герои" (свой портрет/ХП/пассивка поверх обычного класса) — см. cards.js/battle.js
+  customHeroesData: [],
+  heroSkinsData: [],
+  battleReactionsData: [],
   cardStatsData: {},
   storyChapters: [],
   storyCleared: {},

@@ -201,6 +201,37 @@
     @keyframes confettiFall {
         to { left: var(--end-x); top: 110%; transform: translate(-50%,-50%) rotate(var(--rotate)); opacity: 0; }
     }
+.hero-detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500;
+    display: flex; align-items: flex-end; justify-content: center;
+}
+.hero-detail-overlay.hidden { display: none; }
+.hero-detail-sheet {
+    background: #12151c; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+    max-height: 88vh; overflow-y: auto; padding: 18px; color: #fff; position: relative;
+}
+.hero-detail-close {
+    position: absolute; top: 10px; right: 14px; font-size: 22px; background: none; border: none;
+    color: #94a3b8; cursor: pointer; line-height: 1;
+}
+.hero-detail-stage {
+    width: 100%; height: 220px; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(237,143,3,0.15), transparent 70%);
+    border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+}
+.hero-detail-stage img, .hero-detail-stage video { max-height: 100%; max-width: 100%; object-fit: contain; }
+.hero-detail-name { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
+.hero-detail-stats { font-size: 13px; color: #ed8f03; font-weight: 700; margin-bottom: 10px; }
+.hero-detail-bio { font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin-bottom: 16px; white-space: pre-wrap; }
+.hero-detail-skins-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.hero-skin-row {
+    display: flex; align-items: center; gap: 10px; background: #1a1e28; border-radius: 12px;
+    padding: 8px 10px; margin-bottom: 8px;
+}
+.hero-skin-row img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #0e1015; }
+.hero-skin-info { flex: 1; min-width: 0; }
+.hero-skin-name { font-size: 13px; font-weight: 700; }
+.hero-skin-price { font-size: 11.5px; color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -230,6 +261,8 @@
         <div class="filter-chips-row" id="shop-category-filters">
             <button class="filter-chip active" data-cat="all">🌟 Всё</button>
             <button class="filter-chip" data-cat="packs">🃏 Карты</button>
+            <button class="filter-chip" data-cat="heroes">🦸 Герои</button>
+            <button class="filter-chip" data-cat="reactions">😊 Реакции</button>
             <button class="filter-chip" data-cat="frame">🖼 Рамки</button>
             <button class="filter-chip" data-cat="decoration">🎀 Декор</button>
             <button class="filter-chip" data-cat="badge">🏅 Значки</button>
@@ -255,6 +288,18 @@
         <div class="shop-section" data-section="packs">
             <div class="section-title"><span>🃏 Наборы карточек</span></div>
             <div class="grid" id="packs-grid"></div>
+        </div>
+
+        <!-- ПОКУПНЫЕ ГЕРОИ -->
+        <div class="shop-section" data-section="heroes">
+            <div class="section-title"><span>🦸 Герои Cardverse</span></div>
+            <div class="grid" id="heroes-grid"></div>
+        </div>
+
+        <!-- РЕАКЦИИ В БОЮ -->
+        <div class="shop-section" data-section="reactions">
+            <div class="section-title"><span>😊 Реакции для боя</span></div>
+            <div class="grid" id="reactions-grid"></div>
         </div>
 
         <!-- РАМКИ -->
@@ -392,6 +437,19 @@
     </div>
 </div>
 
+<!-- КАРТОЧКА ГЕРОЯ: анимация, статы, история + скины -->
+<div id="hero-detail-overlay" class="hero-detail-overlay hidden">
+    <div class="hero-detail-sheet">
+        <button class="hero-detail-close" onclick="closeHeroDetail()">✕</button>
+        <div class="hero-detail-stage" id="hero-detail-stage"></div>
+        <div class="hero-detail-name" id="hero-detail-name"></div>
+        <div class="hero-detail-stats" id="hero-detail-stats"></div>
+        <div class="hero-detail-bio" id="hero-detail-bio"></div>
+        <div class="hero-detail-skins-title">🎭 Скины</div>
+        <div id="hero-detail-skins"></div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -409,8 +467,21 @@
 
     const IMGBB_API_KEY = 'ac1c48b003ee1441183cef03cce5a0a4';
 
-    const tg = window.Telegram.WebApp;
+    // window.Telegram.WebApp может отсутствовать (открыто не из Telegram, скрипт заблокирован) —
+    // тогда обращение к .WebApp тут же уронит всю страницу.
+    const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
+        initData: '', initDataUnsafe: {}, expand: function () {}, ready: function () {},
+        openLink: function (url) { window.open(url, '_blank'); },
+        BackButton: { show: function () {}, hide: function () {}, onClick: function () {}, offClick: function () {} }
+    };
     try { tg.expand(); tg.ready(); } catch (e) {}
+
+    // Покупки/магазин намеренно НЕ используют tg.showAlert/showConfirm/showPopup — эти методы вне
+    // настоящего Telegram либо кидают исключение, либо (что хуже — без исключения) молча ничего не
+    // делают, и человек жмёт «Купить», а в ответ тишина. Раз тут крутятся монеты игрока, используем
+    // только штатные диалоги браузера — они работают всегда и везде, без зависимости от Telegram.
+    function notify(message) { window.alert(message); }
+    function confirmBuy(message) { return window.confirm(message); }
 
     const params = new URLSearchParams(window.location.search);
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
@@ -490,6 +561,8 @@
             requestAnimationFrame(() => {
                 packsRenderPending = false;
                 renderPacksGrid();
+                renderHeroesGrid();
+                renderReactionsGrid();
             });
         }
 
@@ -630,6 +703,27 @@
             scheduleRenderPacks();
         });
 
+        // Покупные герои
+        let customHeroesData = [];
+        onValue(ref(db, 'customHeroes'), (snap) => {
+            const data = snap.val();
+            customHeroesData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderHeroesGrid();
+        });
+
+        let heroSkinsData = [];
+        onValue(ref(db, 'heroSkins'), (snap) => {
+            const data = snap.val();
+            heroSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        });
+
+        let battleReactionsData = [];
+        onValue(ref(db, 'battleReactions'), (snap) => {
+            const data = snap.val();
+            battleReactionsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderReactionsGrid();
+        });
+
         const RARITY_LABELS_SHOP = { common: 'Обычная', rare: 'Редкая', epic: 'Эпическая', legendary: 'Легендарная' };
         const RARITY_WEIGHTS_SHOP = { common: 60, rare: 25, epic: 12, legendary: 3 };
         const RARITY_ORDER_SHOP = ['common', 'rare', 'epic', 'legendary'];
@@ -664,11 +758,14 @@
             });
         }
 
-        function weightedRandomCard(pool) {
-            const total = pool.reduce((s, c) => s + (RARITY_WEIGHTS_SHOP[c.rarity] || RARITY_WEIGHTS_SHOP.common), 0);
+        function weightedRandomCard(pool, pack) {
+            const rarityWeights = (pack && pack.rarityWeights) || {};
+            const rw = (c) => rarityWeights[c.rarity] ?? RARITY_WEIGHTS_SHOP[c.rarity] ?? RARITY_WEIGHTS_SHOP.common;
+            const dw = (c) => (c.dropWeight === undefined || c.dropWeight === null || c.dropWeight <= 0) ? 1 : c.dropWeight;
+            const total = pool.reduce((s, c) => s + rw(c) * dw(c), 0);
             let r = Math.random() * total;
             for (const c of pool) {
-                r -= (RARITY_WEIGHTS_SHOP[c.rarity] || RARITY_WEIGHTS_SHOP.common);
+                r -= rw(c) * dw(c);
                 if (r <= 0) return c;
             }
             return pool[pool.length - 1];
@@ -676,7 +773,7 @@
 
         function openPackCards(pack, pool) {
             const results = [];
-            for (let i = 0; i < (pack.count || 1); i++) results.push(weightedRandomCard(pool));
+            for (let i = 0; i < (pack.count || 1); i++) results.push(weightedRandomCard(pool, pack));
             if (pack.minRarity) {
                 const minIdx = RARITY_ORDER_SHOP.indexOf(pack.minRarity);
                 const hasGuaranteed = results.some(c => RARITY_ORDER_SHOP.indexOf(c.rarity) >= minIdx);
@@ -692,8 +789,8 @@
             const pack = cardPacksData.find(p => p.id === packId);
             if (!pack) return;
             const price = pack.price || 0;
-            if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
-            if (!cardsData.length) { tg.showAlert ? tg.showAlert('Карточки ещё не добавлены в игру') : alert('Карточки ещё не добавлены'); return; }
+            if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
+            if (!cardsData.length) { notify('Карточки ещё не добавлены в игру'); return; }
 
             const received = openPackCards(pack, cardsData);
             const counts = {};
@@ -720,8 +817,196 @@
                 playSound('coin'); confettiBurst();
                 const list = received.map(c => `${RARITY_LABELS_SHOP[c.rarity] || ''}: ${c.name}`).join('\n');
                 const dustLine = dustGained > 0 ? `\n\n✨ +${dustGained} пыли за лишние копии` : '';
-                if (tg.showPopup) tg.showPopup({ title: '🃏 Набор открыт!', message: list + dustLine, buttons: [{ type: 'ok' }] });
-                else alert('Получено:\n' + list + dustLine);
+                notify('🃏 Набор открыт!\n\n' + list + dustLine);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function renderHeroesGrid() {
+            const el = document.getElementById('heroes-grid');
+            if (!el) return;
+            if (!customHeroesData.length) { el.innerHTML = '<div class="empty-state">Героев пока нет — играете стандартным</div>'; return; }
+
+            const owned = myUser.ownedHeroes || {};
+            const equipped = myUser.equippedHero || '';
+
+            el.innerHTML = customHeroesData.map(h => {
+                const isOwned = !!owned[h.id];
+                const isEquipped = equipped === h.id;
+                const price = h.price || 0;
+                const canAfford = (myUser.coins || 0) >= price;
+                const imageBlock = h.image
+                    ? `<img src="${h.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`
+                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f1f5f9;border-radius:14px;">🦸</div>`;
+                let btn;
+                if (isEquipped) {
+                    btn = `<button class="item-btn btn-disabled" data-unequip-hero-id="${h.id}">Надет — снять</button>`;
+                } else if (isOwned) {
+                    btn = `<button class="item-btn btn-buy" data-equip-hero-id="${h.id}">Надеть</button>`;
+                } else {
+                    btn = `<button class="item-btn ${canAfford ? 'btn-buy' : 'btn-disabled'}" data-buy-hero-id="${h.id}">${canAfford ? 'Купить' : 'Мало монет'}</button>`;
+                }
+                return `
+                <div class="item-card">
+                    ${imageBlock}
+                    <div class="item-name">${escapeHtml(h.name || '')}</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-bottom:4px;font-weight:600;">❤️ ${h.maxHealth || 30}${h.passiveType ? ' · есть пассивка' : ''}</div>
+                    ${isOwned ? '' : `<div class="item-price">${price} 🪙</div>`}
+                    ${btn}
+                    <button class="item-btn" style="margin-top:6px;background:transparent;border:1px solid #d99b26;color:#d99b26;" data-view-hero-id="${h.id}">👁 Просмотр</button>
+                </div>`;
+            }).join('');
+
+            el.querySelectorAll('[data-buy-hero-id]').forEach(btn => { btn.onclick = () => buyHero(btn.getAttribute('data-buy-hero-id')); });
+            el.querySelectorAll('[data-equip-hero-id]').forEach(btn => { btn.onclick = () => equipHero(btn.getAttribute('data-equip-hero-id')); });
+            el.querySelectorAll('[data-unequip-hero-id]').forEach(btn => { btn.onclick = () => equipHero(''); });
+            el.querySelectorAll('[data-view-hero-id]').forEach(btn => { btn.onclick = () => openHeroDetail(btn.getAttribute('data-view-hero-id')); });
+        }
+
+        function buyHero(heroId) {
+            const hero = customHeroesData.find(h => h.id === heroId);
+            if (!hero) return;
+            if (myUser.ownedHeroes && myUser.ownedHeroes[heroId]) return;
+            const price = hero.price || 0;
+            if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
+            if (!confirmBuy(`Купить героя «${hero.name}» за ${price}🪙?`)) return;
+
+            update(ref(db, 'users/' + myId), {
+                coins: increment(-price),
+                ['ownedHeroes/' + heroId]: true
+            }).then(() => {
+                playSound('coin'); confettiBurst();
+                notify(`Герой «${hero.name}» куплен! Наденьте его в списке героев, чтобы играть им.`);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function equipHero(heroId) {
+            update(ref(db, 'users/' + myId), { equippedHero: heroId }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        // Определяем, чем показывать анимацию — видео (webm/mp4) или картинку (gif/apng/png) —
+        // по расширению ссылки, раз загрузчик через imgbb сюда не годится (см. пояснение в
+        // cardverse.html у поля hero-animation) и ссылку админ вставляет вручную.
+        function mediaTag(url, fallbackEmoji) {
+            if (!url) return `<div style="font-size:64px;">${fallbackEmoji || '🦸'}</div>`;
+            const isVideo = /\.(webm|mp4)(\?|$)/i.test(url);
+            return isVideo
+                ? `<video src="${url}" autoplay loop muted playsinline></video>`
+                : `<img src="${url}" onerror="this.style.display='none'">`;
+        }
+
+        function openHeroDetail(heroId) {
+            const hero = customHeroesData.find(h => h.id === heroId);
+            if (!hero) return;
+            const owned = myUser.ownedHeroes || {};
+            const isOwned = !!owned[heroId];
+
+            document.getElementById('hero-detail-stage').innerHTML = mediaTag(hero.animationUrl || hero.image, '🦸');
+            document.getElementById('hero-detail-name').textContent = hero.name || 'Герой';
+            const passiveLabel = { battlecry_draw: 'Добор карт в начале боя', battlecry_shield_hero: 'Щит в начале боя', battlecry_gain_max_mana_perm: '+макс. мана навсегда', battlecry_heal: 'Доп. лечение в начале боя' }[hero.passiveType] || '';
+            document.getElementById('hero-detail-stats').textContent = [`❤️ ${hero.maxHealth || 30}`, hero.statsText, passiveLabel].filter(Boolean).join(' · ');
+            document.getElementById('hero-detail-bio').textContent = hero.bio || '';
+
+            const skins = heroSkinsData.filter(s => s.heroId === heroId);
+            const skinsEl = document.getElementById('hero-detail-skins');
+            if (!skins.length) {
+                skinsEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;">Скинов для этого героя пока нет.</div>';
+            } else if (!isOwned) {
+                skinsEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;">Сначала купите героя, чтобы покупать и надевать скины для него.</div>';
+            } else {
+                const ownedSkins = myUser.ownedSkins || {};
+                const equippedSkinId = (myUser.equippedSkins || {})[heroId] || '';
+                skinsEl.innerHTML = skins.map(s => {
+                    const sOwned = !!ownedSkins[s.id];
+                    const sEquipped = equippedSkinId === s.id;
+                    let btn;
+                    if (sEquipped) btn = `<button class="item-btn btn-disabled" data-unequip-skin="${heroId}">Снять</button>`;
+                    else if (sOwned) btn = `<button class="item-btn btn-buy" data-equip-skin="${s.id}" data-equip-skin-hero="${heroId}">Надеть</button>`;
+                    else btn = `<button class="item-btn ${(myUser.coins || 0) >= (s.price || 0) ? 'btn-buy' : 'btn-disabled'}" data-buy-skin="${s.id}">${s.price || 0}🪙</button>`;
+                    return `
+                    <div class="hero-skin-row">
+                        <img src="${s.image || ''}" onerror="this.style.opacity=0.2">
+                        <div class="hero-skin-info">
+                            <div class="hero-skin-name">${escapeHtml(s.name || 'Скин')}</div>
+                            ${sOwned ? '' : `<div class="hero-skin-price">${s.price || 0} 🪙</div>`}
+                        </div>
+                        ${btn}
+                    </div>`;
+                }).join('');
+
+                skinsEl.querySelectorAll('[data-buy-skin]').forEach(btn => { btn.onclick = () => buySkin(btn.getAttribute('data-buy-skin')); });
+                skinsEl.querySelectorAll('[data-equip-skin]').forEach(btn => { btn.onclick = () => equipSkin(btn.getAttribute('data-equip-skin-hero'), btn.getAttribute('data-equip-skin')); });
+                skinsEl.querySelectorAll('[data-unequip-skin]').forEach(btn => { btn.onclick = () => equipSkin(btn.getAttribute('data-unequip-skin'), ''); });
+            }
+
+            document.getElementById('hero-detail-overlay').classList.remove('hidden');
+        }
+        window.openHeroDetail = openHeroDetail;
+
+        window.closeHeroDetail = function() {
+            document.getElementById('hero-detail-overlay').classList.add('hidden');
+        };
+
+        function buySkin(skinId) {
+            const skin = heroSkinsData.find(s => s.id === skinId);
+            if (!skin) return;
+            if (!(myUser.ownedHeroes || {})[skin.heroId]) { notify('Сначала купите самого героя'); return; }
+            const price = skin.price || 0;
+            if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
+            if (!confirmBuy(`Купить скин «${skin.name}» за ${price}🪙?`)) return;
+
+            update(ref(db, 'users/' + myId), {
+                coins: increment(-price),
+                ['ownedSkins/' + skinId]: true
+            }).then(() => {
+                playSound('coin'); confettiBurst();
+                openHeroDetail(skin.heroId);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function equipSkin(heroId, skinId) {
+            update(ref(db, 'users/' + myId), { ['equippedSkins/' + heroId]: skinId }).then(() => {
+                openHeroDetail(heroId);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function renderReactionsGrid() {
+            const el = document.getElementById('reactions-grid');
+            if (!el) return;
+            if (!battleReactionsData.length) { el.innerHTML = '<div class="empty-state">Покупных реакций пока нет</div>'; return; }
+
+            const owned = myUser.ownedReactions || {};
+            el.innerHTML = battleReactionsData.map(r => {
+                const isOwned = !!owned[r.id];
+                const price = r.price || 0;
+                const canAfford = (myUser.coins || 0) >= price;
+                return `
+                <div class="item-card">
+                    <div style="font-size:40px;text-align:center;">${escapeHtml(r.emoji || '❓')}</div>
+                    <div class="item-name">${escapeHtml(r.name || '')}</div>
+                    ${isOwned ? `<div class="item-price">Куплено ✅</div>` : `
+                        <div class="item-price">${price} 🪙</div>
+                        <button class="item-btn ${canAfford ? 'btn-buy' : 'btn-disabled'}" data-buy-reaction-id="${r.id}">${canAfford ? 'Купить' : 'Мало монет'}</button>
+                    `}
+                </div>`;
+            }).join('');
+
+            el.querySelectorAll('[data-buy-reaction-id]').forEach(btn => { btn.onclick = () => buyReaction(btn.getAttribute('data-buy-reaction-id')); });
+        }
+
+        function buyReaction(reactionId) {
+            const reaction = battleReactionsData.find(r => r.id === reactionId);
+            if (!reaction) return;
+            if (myUser.ownedReactions && myUser.ownedReactions[reactionId]) return;
+            const price = reaction.price || 0;
+            if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
+            if (!confirmBuy(`Купить реакцию «${reaction.name}» ${reaction.emoji} за ${price}🪙?`)) return;
+
+            update(ref(db, 'users/' + myId), {
+                coins: increment(-price),
+                ['ownedReactions/' + reactionId]: true
+            }).then(() => {
+                playSound('coin'); confettiBurst();
+                notify(`Реакция ${reaction.emoji} куплена! Она появится в списке реакций во время боя.`);
             }).catch(err => alert('Ошибка: ' + err.message));
         }
 
@@ -930,23 +1215,23 @@
             const price = effectivePrice(item);
 
             if (category === 'buff_daily') {
-                if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+                if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
                 update(ref(db, 'users/' + myId), {
                     coins: increment(-price),
                     buffUntil: Date.now() + item.buffHours * 3600000,
                     buffMultiplier: item.buffMultiplier,
                     buffItemId: item.id
                 }).then(() => {
-                    tg.showPopup ? tg.showPopup({ title: '⚡ Бафф активирован!', message: `x${item.buffMultiplier} монет на ${item.buffHours}ч`, buttons: [{ type: 'ok' }] }) : alert('Бафф активирован');
+                    notify(`⚡ Бафф активирован!\n\nx${item.buffMultiplier} монет на ${item.buffHours}ч`);
                     playSound('coin'); confettiBurst();
                 }).catch(err => alert('Ошибка: ' + err.message));
                 return;
             }
 
             if (!owned) {
-                if ((myUser.coins || 0) < price) { tg.showAlert ? tg.showAlert('Недостаточно монет 🪙') : alert('Недостаточно монет'); return; }
+                if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
                 const hasStock = item.stock === undefined || item.stock === null || item.stock > 0;
-                if (!hasStock) { tg.showAlert ? tg.showAlert('Товар раскуплен') : alert('Товар раскуплен'); return; }
+                if (!hasStock) { notify('Товар раскуплен'); return; }
 
                 const updates = {
                     coins: increment(-price),
@@ -977,7 +1262,7 @@
             if (isEquipped) {
                 delete decorations[itemId];
             } else {
-                if (Object.keys(decorations).length >= 5) { tg.showAlert ? tg.showAlert('Можно надеть не больше 5 украшений одновременно') : alert('Максимум 5 украшений'); return; }
+                if (Object.keys(decorations).length >= 5) { notify('Можно надеть не больше 5 украшений одновременно'); return; }
                 decorations[itemId] = true;
             }
             update(ref(db, 'users/' + myId + '/equipped'), { decorations }).catch(err => alert('Ошибка: ' + err.message));
@@ -1333,7 +1618,7 @@
 
             document.getElementById(cfg.spinBtnId).onclick = function() {
                 if (spinning) return;
-                if ((myUser.coins || 0) < cost) { tg.showAlert ? tg.showAlert('Недостаточно монет для вращения (нужно ' + cost + ' 🪙)') : alert('Недостаточно монет'); return; }
+                if ((myUser.coins || 0) < cost) { notify('Недостаточно монет для вращения (нужно ' + cost + ' 🪙)'); return; }
 
                 spinning = true;
                 document.getElementById(cfg.resultElId).textContent = '';
@@ -1444,7 +1729,7 @@
         window.giftItem = async function(itemId) {
             const item = itemsData.find(i => i.id === itemId);
             if (!item) return;
-            if ((myUser.coins || 0) < item.price) { tg.showAlert ? tg.showAlert('Недостаточно монет, чтобы подарить этот предмет') : alert('Недостаточно монет'); return; }
+            if ((myUser.coins || 0) < item.price) { notify('Недостаточно монет, чтобы подарить этот предмет'); return; }
 
             const friendName = prompt('Точное имя друга в приложении (как в профиле):');
             if (!friendName) return;
@@ -1453,18 +1738,18 @@
                 const snap = await get(ref(db, 'users'));
                 const users = snap.val() || {};
                 const entry = Object.entries(users).find(([uid, u]) => u.name && u.name.trim().toLowerCase() === friendName.trim().toLowerCase());
-                if (!entry) { tg.showAlert ? tg.showAlert('Пользователь с таким именем не найден') : alert('Не найден'); return; }
+                if (!entry) { notify('Пользователь с таким именем не найден'); return; }
                 const [friendUid, friendData] = entry;
-                if (friendUid === myId) { tg.showAlert ? tg.showAlert('Себе дарить не обязательно — просто купи 🙂') : alert('Это ты'); return; }
-                if (friendData.inventory && friendData.inventory[itemId]) { tg.showAlert ? tg.showAlert('У друга уже есть этот предмет') : alert('Уже есть'); return; }
+                if (friendUid === myId) { notify('Себе дарить не обязательно — просто купи 🙂'); return; }
+                if (friendData.inventory && friendData.inventory[itemId]) { notify('У друга уже есть этот предмет'); return; }
 
-                if (!confirm(`Подарить «${item.name}» пользователю ${friendData.name} за ${item.price}🪙?`)) return;
+                if (!confirmBuy(`Подарить «${item.name}» пользователю ${friendData.name} за ${item.price}🪙?`)) return;
 
                 await update(ref(db, 'users'), {
                     [myId + '/coins']: increment(-item.price),
                     [friendUid + '/inventory/' + itemId]: true
                 });
-                tg.showPopup ? tg.showPopup({ title: 'Подарок отправлен! 🎁', message: `${friendData.name} получит «${item.name}»`, buttons: [{ type: 'ok' }] }) : alert('Подарок отправлен!');
+                notify(`Подарок отправлен! 🎁\n\n${friendData.name} получит «${item.name}»`);
                 playSound('coin'); confettiBurst();
             } catch (err) {
                 alert('Ошибка: ' + (err.message || err));

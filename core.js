@@ -526,6 +526,28 @@ export function startFirebaseListeners() {
         if (state.isAdmin && window.renderAdminArenasList) window.renderAdminArenasList();
     });
 
+    onValue(ref(state.db, 'customHeroes'), (snapshot) => {
+        const data = snapshot.val();
+        state.customHeroesData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin && window.renderAdminHeroesList) window.renderAdminHeroesList();
+        if (state.isAdmin && window.populateSkinHeroSelect) window.populateSkinHeroSelect();
+        if (window.renderHeroShop) window.renderHeroShop();
+    });
+
+    onValue(ref(state.db, 'heroSkins'), (snapshot) => {
+        const data = snapshot.val();
+        state.heroSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin && window.renderAdminSkinsList) window.renderAdminSkinsList();
+        if (window.renderHeroShop) window.renderHeroShop();
+    });
+
+    onValue(ref(state.db, 'battleReactions'), (snapshot) => {
+        const data = snapshot.val();
+        state.battleReactionsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin && window.renderAdminReactionsList) window.renderAdminReactionsList();
+        if (window.renderReactionShop) window.renderReactionShop();
+    });
+
     onValue(ref(state.db, 'cardStats'), (snapshot) => {
         state.cardStatsData = snapshot.val() || {};
         if (state.isAdmin) renderAdminCardsList();

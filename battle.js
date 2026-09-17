@@ -6,6 +6,24 @@ import { cardLevelStatBonus } from './decks.js';
 
 const BOT_NAMES = ['Артём', 'Максим', 'Соня', 'Данил', 'Егор', 'Полина', 'Тимур', 'Вика'];
 
+// ===================== ЭФФЕКТЫ АРЕН (полей боя) =====================
+
+function currentArena(data) {
+    return (state.arenasData || []).find(a => a.id === data.arenaId) || null;
+}
+
+// Скидка на первую карту, разыгранную игроком в этом ходу (эффект арены first_card_discount).
+// Используется и в проверке "могу ли я сыграть карту" (рендер руки, клик, бот), и при самом
+// списании маны — чтобы карта не выглядела недоступной из-за полной цены, а потом вдруг
+// разыгрывалась по скидке (или наоборот).
+function effectiveCardMana(card, data, player) {
+    const arena = currentArena(data);
+    if (arena && arena.effectType === 'first_card_discount' && !player.firstCardPlayedThisTurn) {
+        return Math.max(0, card.mana - (arena.effectValue || 1));
+    }
+    return card.mana;
+}
+
 // ===================== АНИМАЦИИ И МУЗЫКА =====================
 
 // Короткая вспышка частиц вокруг элемента — используется для боевых кличей/эффектов
@@ -117,6 +135,23 @@ function buildRandomBotDeck() {
     return cards;
 }
 
+function getEquippedHero(uid) {
+    if (!uid) return null;
+    const user = (state.usersData || []).find(u => u.id === uid);
+    if (!user || !user.equippedHero || !user.ownedHeroes || !user.ownedHeroes[user.equippedHero]) return null;
+    const hero = (state.customHeroesData || []).find(h => h.id === user.equippedHero);
+    if (!hero) return null;
+    // Надетый скин поверх героя — подменяет портрет/анимацию, если куплен и надет именно для него
+    const skinId = user.equippedSkins && user.equippedSkins[hero.id];
+    const skin = skinId && user.ownedSkins && user.ownedSkins[skinId]
+        ? (state.heroSkinsData || []).find(s => s.id === skinId && s.heroId === hero.id)
+        : null;
+    if (skin) {
+        return { ...hero, image: skin.image || hero.image, animationUrl: skin.animationUrl || hero.animationUrl };
+    }
+    return hero;
+}
+
 function initPlayerState(uid, name, isBot, deckCards) {
     const pile = expandDeck(deckCards);
     const hand = {};
@@ -124,14 +159,21 @@ function initPlayerState(uid, name, isBot, deckCards) {
         const cardId = pile.shift();
         if (cardId) hand[randId()] = cardId;
     }
+    // Купленный герой (см. cards.js "Покупные герои") — своё здоровье и портрет поверх стандартных;
+    // боты и незалогиненные противники всегда играют стандартным героем.
+    const hero = isBot ? null : getEquippedHero(uid);
+    const maxHealth = (hero && hero.maxHealth) || 30;
     return {
         uid, name, isBot: !!isBot,
-        heroHealth: 30, maxHealth: 30,
+        heroHealth: maxHealth, maxHealth: maxHealth,
         mana: 1, maxMana: 1,
         deck: pile,
         hand, board: {},
         fatigue: 0,
         firedCombos: {},
+        heroImage: (hero && hero.image) || '',
+        heroDisplayName: (hero && hero.name) || '',
+        heroPassiveApplied: false,
     };
 }
 
@@ -860,6 +902,16 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
             p1.mana += v; p2.mana += v;
         }
 
+        // Пассивка купленного героя (см. getEquippedHero/initPlayerState) — применяется один раз,
+        // сразу при создании боя, тем же механизмом, что и боевые кличи карт.
+        [[p1, p2, p1info.uid], [p2, p1, p2info.uid]].forEach(([owner, opp, uid]) => {
+            const hero = owner.isBot ? null : getEquippedHero(uid);
+            if (hero && hero.passiveType && !owner.heroPassiveApplied) {
+                applyEffect(owner, opp, hero.passiveType, hero.passiveValue || 0, []);
+                owner.heroPassiveApplied = true;
+            }
+        });
+
         const battle = {
             status: 'active',
             createdAt: Date.now(),
@@ -1132,6 +1184,18 @@ let lastShownReactionAt = 0;
 let emojiPickerOpen = false; // хранится отдельно от DOM, чтобы попап не закрывался при каждом ре-рендере поля боя
 const BATTLE_REACTION_EMOJIS = ['😂', '🔥', '😭', '👍', '💀', '❤️', '😡', '🤔'];
 
+// Базовые + купленные игроком реакции (см. cards.js "Реакции в бою" / shop.html). Один и тот же
+// эмодзи не дублируем, если он вдруг совпал с базовым.
+function myBattleReactionEmojis() {
+    const user = (state.usersData || []).find(u => u.id === state.currentUser.id);
+    const owned = (user && user.ownedReactions) || {};
+    const bought = (state.battleReactionsData || [])
+        .filter(r => owned[r.id])
+        .map(r => r.emoji)
+        .filter(e => e && !BATTLE_REACTION_EMOJIS.includes(e));
+    return BATTLE_REACTION_EMOJIS.concat(bought);
+}
+
 function showBattleReaction(reaction) {
     const anchorId = reaction.by === state.mySlot ? 'battle-hero-mine' : 'battle-hero-opp';
     const anchor = document.getElementById(anchorId);
@@ -1321,7 +1385,7 @@ function renderBattleView() {
         || '<div class="battle-empty-zone">Твой стол пуст</div>';
     const myHandHtml = Object.entries(me.hand || {}).map(([iid, cardId]) => {
         const card = cardById(cardId);
-        const playable = myTurn && card && card.mana <= me.mana;
+        const playable = myTurn && card && effectiveCardMana(card, state.battleData, me) <= me.mana;
         const comboReady = cardCompletesCombo(cardId, me);
         return renderHandCard(iid, cardId, playable, comboReady);
     }).join('') || '<div class="battle-empty-zone">Рука пуста</div>';
@@ -1335,7 +1399,8 @@ function renderBattleView() {
         <div class="battle-hand-strip opp">
             <div class="battle-hand-row">${oppHandBacksHtml}</div>
             <div class="battle-name-tab" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
-                <span class="bnt-name">${escapeHtml(opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
+                ${opp.heroImage ? `<img src="${opp.heroImage}" class="bnt-hero-portrait" onerror="this.style.display='none'">` : ''}
+                <span class="bnt-name">${escapeHtml(opp.heroDisplayName || opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
                 <span class="bnt-stats">${opp.heroShielded ? "🔵 " : ""}❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
             </div>
         </div>
@@ -1347,7 +1412,8 @@ function renderBattleView() {
         </div>
         <div class="battle-hand-strip mine">
             <div class="battle-name-tab" id="battle-hero-mine">
-                <span class="bnt-name">Ты</span>
+                ${me.heroImage ? `<img src="${me.heroImage}" class="bnt-hero-portrait" onerror="this.style.display='none'">` : ''}
+                <span class="bnt-name">${escapeHtml(me.heroDisplayName || 'Ты')}</span>
                 <span class="bnt-stats">${me.heroShielded ? "🔵 " : ""}❤️${me.heroHealth} · 💧${me.mana}/${me.maxMana}</span>
             </div>
             <div class="battle-hand-row">${myHandHtml}</div>
@@ -1356,7 +1422,7 @@ function renderBattleView() {
             <button class="btn btn-secondary" onclick="surrenderBattle()">Сдаться</button>
             <div class="battle-emoji-wrap">
                 <button class="btn btn-secondary" style="padding:10px 14px;" onclick="toggleBattleEmojiPicker()">😊</button>
-                <div class="battle-emoji-picker ${emojiPickerOpen ? 'active' : ''}" id="battle-emoji-picker">${BATTLE_REACTION_EMOJIS.map(e => `<span onclick="sendBattleReaction('${e}')">${e}</span>`).join('')}</div>
+                <div class="battle-emoji-picker ${emojiPickerOpen ? 'active' : ''}" id="battle-emoji-picker">${myBattleReactionEmojis().map(e => `<span onclick="sendBattleReaction('${e}')">${e}</span>`).join('')}</div>
             </div>
             <button class="btn ${myTurn ? 'battle-pulse' : ''}" id="battle-end-turn-btn" onclick="battleEndTurn()" ${myTurn ? '' : 'disabled style="opacity:.4;"'}>Закончить ход</button>
         </div>
@@ -1465,7 +1531,8 @@ window.battlePlayCard = function (iid) {
     const cardId = (me.hand || {})[iid];
     const card = cardById(cardId);
     if (!card) { tg.showAlert('Эта карта больше не существует в игре (удалена из админки)'); return; }
-    if (card.mana > me.mana) { tg.showAlert(`Не хватает маны: нужно 💧${card.mana}, у тебя 💧${me.mana}`); return; }
+    const neededMana = effectiveCardMana(card, data, me);
+    if (neededMana > me.mana) { tg.showAlert(`Не хватает маны: нужно 💧${neededMana}, у тебя 💧${me.mana}`); return; }
 
     playCardInternal(state.activeBattleId, data, mySlot, oppSlot, iid, card);
 };
@@ -1475,7 +1542,11 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
     const opponent = normalizePlayerState(JSON.parse(JSON.stringify(data[opponentSlot])));
     const log = [`${actor.name} играет «${card.name}»`];
 
-    actor.mana -= card.mana;
+    actor.mana -= effectiveCardMana(card, data, actor);
+    if (currentArena(data) && currentArena(data).effectType === 'first_card_discount' && !actor.firstCardPlayedThisTurn) {
+        log.push(`🎴 Арена: первая карта дешевле на ${currentArena(data).effectValue || 1} маны`);
+    }
+    actor.firstCardPlayedThisTurn = true;
     delete actor.hand[iid];
     actor.playedCardIds = actor.playedCardIds || {};
     actor.playedCardIds[card.id] = (actor.playedCardIds[card.id] || 0) + 1;
@@ -1505,7 +1576,14 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
     }
 
     if (card.effectType && card.effectType.startsWith('battlecry_')) {
-        applyEffect(actor, opponent, card.effectType, card.effectValue, log, newIid);
+        let effectValue = card.effectValue;
+        const arenaForSpell = currentArena(data);
+        const SPELL_DAMAGE_EFFECTS = ['battlecry_damage', 'battlecry_damage_all_enemy', 'battlecry_damage_minion', 'battlecry_damage_trade'];
+        if (card.type === 'spell' && arenaForSpell && arenaForSpell.effectType === 'spell_damage_boost' && SPELL_DAMAGE_EFFECTS.includes(card.effectType)) {
+            effectValue = (effectValue || 0) + (arenaForSpell.effectValue || 1);
+            log.push(`✨ Арена: заклинание наносит +${arenaForSpell.effectValue || 1} урона`);
+        }
+        applyEffect(actor, opponent, card.effectType, effectValue, log, newIid);
         const heroElId = actorSlot === state.mySlot ? 'battle-hero-mine' : 'battle-hero-opp';
         setTimeout(() => window.spawnBattleParticles(heroElId, '#ffd60a'), 60);
     }
@@ -1559,6 +1637,12 @@ window.battleAttackTarget = function (targetIid) {
     if (hasTaunt(opp.board)) {
         const targetIsTaunt = targetIid !== 'hero' && (opp.board || {})[targetIid] && (opp.board || {})[targetIid].taunt;
         if (!targetIsTaunt) { tg.showAlert ? tg.showAlert('Сначала нужно атаковать существо с провокацией') : alert('Провокация мешает'); return; }
+    }
+
+    const arenaNow = currentArena(data);
+    if (targetIid === 'hero' && arenaNow && arenaNow.effectType === 'no_hero_attack_turn1' && (data.turnNumber || 1) <= 1) {
+        tg.showAlert ? tg.showAlert('Арена: в первый ход нельзя атаковать героя, только существ') : alert('В первый ход нельзя атаковать героя');
+        return;
     }
 
     if (state.selectedAttackerIid === 'hero') {
@@ -1843,14 +1927,26 @@ function endTurn(battleId, data, currentSlot) {
     nextPlayer.maxMana = Math.min((nextPlayer.maxMana || 1) + 1, 10);
     nextPlayer.mana = Math.max(0, nextPlayer.maxMana - (nextPlayer.manaDebuff || 0));
     nextPlayer.manaDebuff = 0;
+    nextPlayer.firstCardPlayedThisTurn = false;
 
-    const arena = (state.arenasData || []).find(a => a.id === data.arenaId);
+    const arena = currentArena(data);
     if (arena && arena.effectType === 'turn_damage') {
         const v = arena.effectValue || 1;
         nextPlayer.heroHealth -= v;
         if (nextPlayer.uid === state.currentUser.id) {
             setTimeout(() => window.showBattleFloatingText('battle-hero-mine', `-${v} (Арена)`, '#ff453a'), 500);
         }
+    } else if (arena && arena.effectType === 'turn_heal') {
+        const v = arena.effectValue || 1;
+        nextPlayer.heroHealth = Math.min(nextPlayer.maxHealth || nextPlayer.heroHealth + v, nextPlayer.heroHealth + v);
+        if (nextPlayer.uid === state.currentUser.id) {
+            setTimeout(() => window.showBattleFloatingText('battle-hero-mine', `+${v} (Арена)`, '#32d74b'), 500);
+        }
+    }
+
+    if (arena && arena.effectType === 'turn_extra_card' && nextPlayer.deck && nextPlayer.deck.length) {
+        const extraCardId = nextPlayer.deck.shift();
+        nextPlayer.hand[randId()] = extraCardId;
     }
 
     if (nextPlayer.deck && nextPlayer.deck.length) {
@@ -1867,6 +1963,15 @@ function endTurn(battleId, data, currentSlot) {
         m.attacksThisTurn = 0;
         if (m.cooldownCurrent > 0) m.cooldownCurrent--;
     });
+
+    if (arena && arena.effectType === 'turn_random_freeze') {
+        const ids = Object.keys(nextPlayer.board || {});
+        if (ids.length) {
+            const pick = nextPlayer.board[ids[Math.floor(Math.random() * ids.length)]];
+            pick.frozen = true;
+            pick.canAttack = false;
+        }
+    }
 
     const updates = {};
     updates['battles/' + battleId + '/' + nextSlot] = nextPlayer;
@@ -1907,7 +2012,7 @@ async function runBotTurn(battleId) {
         const bot = data[botSlot];
         const affordable = Object.entries(bot.hand || {})
             .map(([iid, cardId]) => ({ iid, card: cardById(cardId) }))
-            .filter(x => x.card && x.card.mana <= bot.mana);
+            .filter(x => x.card && effectiveCardMana(x.card, data, bot) <= bot.mana);
         if (!affordable.length) break;
         if (Math.random() < 0.22) break;
 
@@ -1936,12 +2041,16 @@ async function runBotTurn(battleId) {
         const oppMinions = Object.entries(opp.board || {}).filter(([, m]) => !m.stealth);
         const tauntMinions = oppMinions.filter(([, m]) => m.taunt);
         const targetPool = tauntMinions.length ? tauntMinions : oppMinions;
-        let targetIid = 'hero';
+        const arenaForBot = currentArena(data);
+        const heroAttackBlocked = arenaForBot && arenaForBot.effectType === 'no_hero_attack_turn1' && (data.turnNumber || 1) <= 1;
+        if (heroAttackBlocked && !targetPool.length) continue; // некого атаковать вместо героя в 1-й ход
+        let targetIid = heroAttackBlocked ? null : 'hero';
         if (tauntMinions.length) {
             targetIid = tauntMinions[Math.floor(Math.random() * tauntMinions.length)][0];
-        } else if (targetPool.length && Math.random() < 0.6) {
+        } else if (targetPool.length && (heroAttackBlocked || Math.random() < 0.6)) {
             targetIid = targetPool[Math.floor(Math.random() * targetPool.length)][0];
         }
+        if (!targetIid) continue;
 
         await delay(rand(500, 1100));
         data = state.battleData;

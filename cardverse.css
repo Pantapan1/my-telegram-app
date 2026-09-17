@@ -406,6 +406,14 @@
 }
 .battle-hand-strip.opp .battle-name-tab { margin-top: -6px !important; cursor: pointer !important; }
 .battle-hand-strip.mine .battle-name-tab { margin-top: -4px !important; margin-bottom: 2px !important; cursor: default !important; }
+.bnt-hero-portrait {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 1px solid #d99b26 !important;
+    flex-shrink: 0 !important;
+}
 .bnt-name { font-weight: 800 !important; color: #f8fafc !important; font-size: 11px !important; }
 .bnt-stats { font-size: 10.5px !important; color: var(--cv-gold) !important; font-weight: 800 !important; }
 

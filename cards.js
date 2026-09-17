@@ -99,6 +99,7 @@ window.editCard = function (id) {
     document.getElementById('card-freeze').checked = !!c.freezeOnHit;
     document.getElementById('card-reborn').checked = !!c.reborn;
     document.getElementById('card-overload').value = c.overload ?? '';
+    document.getElementById('card-drop-weight').value = c.dropWeight ?? '';
     document.getElementById('card-form-heading').textContent = 'Редактировать карточку';
     document.getElementById('btn-add-card').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-card').classList.remove('hidden');
@@ -124,6 +125,7 @@ document.getElementById('btn-cancel-edit-card').onclick = function () {
     document.getElementById('card-freeze').checked = false;
     document.getElementById('card-reborn').checked = false;
     document.getElementById('card-overload').value = '';
+    document.getElementById('card-drop-weight').value = '';
     document.getElementById('card-rarity').value = 'common';
     document.getElementById('card-form-heading').textContent = 'Добавить карточку';
     document.getElementById('btn-add-card').textContent = 'Добавить карточку';
@@ -172,6 +174,7 @@ document.getElementById('btn-add-card').onclick = function () {
     const freezeOnHit = document.getElementById('card-freeze').checked;
     const reborn = document.getElementById('card-reborn').checked;
     const overload = parseInt(document.getElementById('card-overload').value, 10) || 0;
+    const dropWeight = parseFloat(document.getElementById('card-drop-weight').value) || 1;
 
     if (!name) return tg.showAlert('Укажи название карточки');
     if (mana < 0 || mana > 10) return tg.showAlert('Стоимость маны от 0 до 10');
@@ -179,7 +182,7 @@ document.getElementById('btn-add-card').onclick = function () {
     const warning = manaCurveWarning(type, rarity, mana, attack, health);
     if (warning && !confirm(`⚠️ ${warning}\n\nВсё равно сохранить?`)) return;
 
-    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth, shield, freezeOnHit, reborn, overload };
+    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth, shield, freezeOnHit, reborn, overload, dropWeight };
 
     if (state.editingCardId) {
         update(ref(state.db, 'cards/' + state.editingCardId), data).then(() => {
@@ -381,6 +384,11 @@ window.editPack = function (id) {
     document.getElementById('pack-price').value = p.price ?? '';
     document.getElementById('pack-count').value = p.count ?? 3;
     document.getElementById('pack-min-rarity').value = p.minRarity || '';
+    const rw = p.rarityWeights || {};
+    document.getElementById('pack-weight-common').value = rw.common ?? '';
+    document.getElementById('pack-weight-rare').value = rw.rare ?? '';
+    document.getElementById('pack-weight-epic').value = rw.epic ?? '';
+    document.getElementById('pack-weight-legendary').value = rw.legendary ?? '';
     document.getElementById('pack-form-heading').textContent = 'Редактировать набор';
     document.getElementById('btn-add-cardpack').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-cardpack').classList.remove('hidden');
@@ -394,6 +402,9 @@ document.getElementById('btn-cancel-edit-cardpack').onclick = function () {
     document.getElementById('pack-price').value = '';
     document.getElementById('pack-count').value = 3;
     document.getElementById('pack-min-rarity').value = '';
+    ['pack-weight-common', 'pack-weight-rare', 'pack-weight-epic', 'pack-weight-legendary'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
     document.getElementById('pack-form-heading').textContent = 'Добавить набор карточек';
     document.getElementById('btn-add-cardpack').textContent = 'Добавить набор';
     document.getElementById('btn-cancel-edit-cardpack').classList.add('hidden');
@@ -405,11 +416,16 @@ document.getElementById('btn-add-cardpack').onclick = function () {
     const price = parseInt(document.getElementById('pack-price').value, 10) || 0;
     const count = parseInt(document.getElementById('pack-count').value, 10) || 1;
     const minRarity = document.getElementById('pack-min-rarity').value;
+    const rarityWeights = {};
+    [['pack-weight-common', 'common'], ['pack-weight-rare', 'rare'], ['pack-weight-epic', 'epic'], ['pack-weight-legendary', 'legendary']].forEach(([id, key]) => {
+        const v = parseFloat(document.getElementById(id).value);
+        if (!isNaN(v) && v >= 0) rarityWeights[key] = v;
+    });
 
     if (!name) return tg.showAlert('Укажи название набора');
     if (count < 1) return tg.showAlert('В наборе должна быть хотя бы 1 карточка');
 
-    const data = { name, image, price, count, minRarity };
+    const data = { name, image, price, count, minRarity, rarityWeights };
 
     if (state.editingPackId) {
         update(ref(state.db, 'cardPacks/' + state.editingPackId), data).then(() => {
@@ -670,3 +686,288 @@ window.deleteArena = function(id) {
     if (!confirm('Точно удалить эту арену?')) return;
     remove(ref(state.db, 'arenas/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
 };
+
+// ===================== ПОКУПНЫЕ ГЕРОИ =====================
+
+window.renderAdminHeroesList = function() {
+    const el = document.getElementById('admin-heroes-list');
+    if (!el) return;
+
+    if (!state.customHeroesData || !state.customHeroesData.length) {
+        el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Героев пока нет — все играют стандартным героем.</div>';
+        return;
+    }
+
+    el.innerHTML = state.customHeroesData.map(h => `
+        <div class="admin-item">
+            ${h.image ? `<img src="${h.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:#3a2d4e;">🦸</div>`}
+            <div class="admin-item-info">
+                <div class="admin-item-title">${escapeHtml(h.name || 'Герой')}</div>
+                <div class="admin-item-sub">❤️${h.maxHealth || 30} | ${h.price || 0}🪙 | Пассивка: ${h.passiveType || 'нет'}</div>
+            </div>
+            <div class="admin-item-actions">
+                <button class="icon-btn" onclick="window.editHero('${h.id}')">✏️</button>
+                <button class="icon-btn danger" onclick="window.deleteHero('${h.id}')">🗑</button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.editHero = function(id) {
+    const h = state.customHeroesData.find(x => x.id === id);
+    if (!h) return;
+
+    state.editingHeroId = id;
+    document.getElementById('hero-name').value = h.name || '';
+    document.getElementById('hero-image').value = h.image || '';
+    document.getElementById('hero-health').value = h.maxHealth || 30;
+    document.getElementById('hero-price').value = h.price || '';
+    document.getElementById('hero-passive-type').value = h.passiveType || '';
+    document.getElementById('hero-passive-value').value = h.passiveValue || '';
+    document.getElementById('hero-animation').value = h.animationUrl || '';
+    document.getElementById('hero-stats-text').value = h.statsText || '';
+    document.getElementById('hero-bio').value = h.bio || '';
+
+    document.getElementById('hero-form-heading').textContent = 'Редактировать героя';
+    document.getElementById('btn-add-hero').textContent = 'Сохранить';
+    document.getElementById('btn-cancel-edit-hero').classList.remove('hidden');
+    document.getElementById('hero-name').scrollIntoView({ behavior: 'smooth' });
+};
+
+window.cancelEditHero = function() {
+    state.editingHeroId = null;
+    document.getElementById('hero-name').value = '';
+    document.getElementById('hero-image').value = '';
+    document.getElementById('hero-health').value = 30;
+    document.getElementById('hero-price').value = '';
+    document.getElementById('hero-passive-type').value = '';
+    document.getElementById('hero-passive-value').value = '';
+    document.getElementById('hero-animation').value = '';
+    document.getElementById('hero-stats-text').value = '';
+    document.getElementById('hero-bio').value = '';
+
+    document.getElementById('hero-form-heading').textContent = 'Создать героя';
+    document.getElementById('btn-add-hero').textContent = 'Добавить героя';
+    document.getElementById('btn-cancel-edit-hero').classList.add('hidden');
+};
+
+window.saveHero = function() {
+    const name = document.getElementById('hero-name').value.trim();
+    const image = document.getElementById('hero-image').value.trim();
+    const maxHealth = parseInt(document.getElementById('hero-health').value, 10) || 30;
+    const price = parseInt(document.getElementById('hero-price').value, 10) || 0;
+    const passiveType = document.getElementById('hero-passive-type').value;
+    const passiveValue = parseInt(document.getElementById('hero-passive-value').value, 10) || 0;
+    const animationUrl = document.getElementById('hero-animation').value.trim();
+    const statsText = document.getElementById('hero-stats-text').value.trim();
+    const bio = document.getElementById('hero-bio').value.trim();
+
+    if (!name) return tg.showAlert('Укажи имя героя');
+    if (maxHealth < 1) return tg.showAlert('Здоровье должно быть больше 0');
+
+    const data = { name, image, maxHealth, price, passiveType, passiveValue, animationUrl, statsText, bio };
+
+    if (state.editingHeroId) {
+        update(ref(state.db, 'customHeroes/' + state.editingHeroId), data).then(() => {
+            window.cancelEditHero();
+            tg.showPopup({ title: 'Готово', message: 'Герой обновлён', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    } else {
+        push(ref(state.db, 'customHeroes'), { ...data, createdAt: Date.now() }).then(() => {
+            window.cancelEditHero();
+            tg.showPopup({ title: 'Супер!', message: 'Новый герой создан', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    }
+};
+
+window.deleteHero = function(id) {
+    if (!confirm('Точно удалить этого героя? У игроков, которые его купили и надели, бой откатится на стандартного героя.')) return;
+    remove(ref(state.db, 'customHeroes/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+document.getElementById('btn-add-hero') && (document.getElementById('btn-add-hero').onclick = window.saveHero);
+document.getElementById('btn-cancel-edit-hero') && (document.getElementById('btn-cancel-edit-hero').onclick = window.cancelEditHero);
+
+// ===================== СКИНЫ ГЕРОЕВ =====================
+
+window.populateSkinHeroSelect = function() {
+    const sel = document.getElementById('skin-hero-id');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Герой...</option>' + (state.customHeroesData || [])
+        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .map(h => `<option value="${h.id}">${escapeHtml(h.name || '(без имени)')}</option>`).join('');
+    if (current) sel.value = current;
+};
+
+window.renderAdminSkinsList = function() {
+    const el = document.getElementById('admin-skins-list');
+    if (!el) return;
+    window.populateSkinHeroSelect();
+
+    if (!state.heroSkinsData || !state.heroSkinsData.length) {
+        el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Скинов пока нет.</div>';
+        return;
+    }
+
+    el.innerHTML = state.heroSkinsData.map(s => {
+        const hero = (state.customHeroesData || []).find(h => h.id === s.heroId);
+        return `
+        <div class="admin-item">
+            ${s.image ? `<img src="${s.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:#2d3a4e;">🎭</div>`}
+            <div class="admin-item-info">
+                <div class="admin-item-title">${escapeHtml(s.name || 'Скин')}</div>
+                <div class="admin-item-sub">Герой: ${escapeHtml(hero ? hero.name : '❓ удалён')} | ${s.price || 0}🪙</div>
+            </div>
+            <div class="admin-item-actions">
+                <button class="icon-btn" onclick="window.editSkin('${s.id}')">✏️</button>
+                <button class="icon-btn danger" onclick="window.deleteSkin('${s.id}')">🗑</button>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+window.editSkin = function(id) {
+    const s = state.heroSkinsData.find(x => x.id === id);
+    if (!s) return;
+
+    state.editingSkinId = id;
+    document.getElementById('skin-hero-id').value = s.heroId || '';
+    document.getElementById('skin-name').value = s.name || '';
+    document.getElementById('skin-image').value = s.image || '';
+    document.getElementById('skin-animation').value = s.animationUrl || '';
+    document.getElementById('skin-price').value = s.price || '';
+
+    document.getElementById('skin-form-heading').textContent = 'Редактировать скин';
+    document.getElementById('btn-add-skin').textContent = 'Сохранить';
+    document.getElementById('btn-cancel-edit-skin').classList.remove('hidden');
+    document.getElementById('skin-hero-id').scrollIntoView({ behavior: 'smooth' });
+};
+
+window.cancelEditSkin = function() {
+    state.editingSkinId = null;
+    document.getElementById('skin-hero-id').value = '';
+    document.getElementById('skin-name').value = '';
+    document.getElementById('skin-image').value = '';
+    document.getElementById('skin-animation').value = '';
+    document.getElementById('skin-price').value = '';
+
+    document.getElementById('skin-form-heading').textContent = 'Создать скин героя';
+    document.getElementById('btn-add-skin').textContent = 'Добавить скин';
+    document.getElementById('btn-cancel-edit-skin').classList.add('hidden');
+};
+
+window.saveSkin = function() {
+    const heroId = document.getElementById('skin-hero-id').value;
+    const name = document.getElementById('skin-name').value.trim();
+    const image = document.getElementById('skin-image').value.trim();
+    const animationUrl = document.getElementById('skin-animation').value.trim();
+    const price = parseInt(document.getElementById('skin-price').value, 10) || 0;
+
+    if (!heroId) return tg.showAlert('Выбери героя, для которого этот скин');
+    if (!name) return tg.showAlert('Укажи название скина');
+
+    const data = { heroId, name, image, animationUrl, price };
+
+    if (state.editingSkinId) {
+        update(ref(state.db, 'heroSkins/' + state.editingSkinId), data).then(() => {
+            window.cancelEditSkin();
+            tg.showPopup({ title: 'Готово', message: 'Скин обновлён', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    } else {
+        push(ref(state.db, 'heroSkins'), { ...data, createdAt: Date.now() }).then(() => {
+            window.cancelEditSkin();
+            tg.showPopup({ title: 'Супер!', message: 'Новый скин создан', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    }
+};
+
+window.deleteSkin = function(id) {
+    if (!confirm('Точно удалить этот скин?')) return;
+    remove(ref(state.db, 'heroSkins/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+document.getElementById('btn-add-skin') && (document.getElementById('btn-add-skin').onclick = window.saveSkin);
+document.getElementById('btn-cancel-edit-skin') && (document.getElementById('btn-cancel-edit-skin').onclick = window.cancelEditSkin);
+
+// ===================== РЕАКЦИИ В БОЮ =====================
+
+window.renderAdminReactionsList = function() {
+    const el = document.getElementById('admin-reactions-list');
+    if (!el) return;
+
+    if (!state.battleReactionsData || !state.battleReactionsData.length) {
+        el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Покупных реакций пока нет — у всех только стандартный набор.</div>';
+        return;
+    }
+
+    el.innerHTML = state.battleReactionsData.map(r => `
+        <div class="admin-item">
+            <div class="admin-item-thumb cover-fallback small" style="background:#2d3a4e;font-size:22px;">${escapeHtml(r.emoji || '❓')}</div>
+            <div class="admin-item-info">
+                <div class="admin-item-title">${escapeHtml(r.name || 'Реакция')}</div>
+                <div class="admin-item-sub">${r.price || 0}🪙</div>
+            </div>
+            <div class="admin-item-actions">
+                <button class="icon-btn" onclick="window.editReaction('${r.id}')">✏️</button>
+                <button class="icon-btn danger" onclick="window.deleteReaction('${r.id}')">🗑</button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.editReaction = function(id) {
+    const r = state.battleReactionsData.find(x => x.id === id);
+    if (!r) return;
+
+    state.editingReactionId = id;
+    document.getElementById('reaction-emoji').value = r.emoji || '';
+    document.getElementById('reaction-name').value = r.name || '';
+    document.getElementById('reaction-price').value = r.price || '';
+
+    document.getElementById('reaction-form-heading').textContent = 'Редактировать реакцию';
+    document.getElementById('btn-add-reaction').textContent = 'Сохранить';
+    document.getElementById('btn-cancel-edit-reaction').classList.remove('hidden');
+};
+
+window.cancelEditReaction = function() {
+    state.editingReactionId = null;
+    document.getElementById('reaction-emoji').value = '';
+    document.getElementById('reaction-name').value = '';
+    document.getElementById('reaction-price').value = '';
+
+    document.getElementById('reaction-form-heading').textContent = 'Создать реакцию для боя';
+    document.getElementById('btn-add-reaction').textContent = 'Добавить реакцию';
+    document.getElementById('btn-cancel-edit-reaction').classList.add('hidden');
+};
+
+window.saveReaction = function() {
+    const emoji = document.getElementById('reaction-emoji').value.trim();
+    const name = document.getElementById('reaction-name').value.trim();
+    const price = parseInt(document.getElementById('reaction-price').value, 10) || 0;
+
+    if (!emoji) return tg.showAlert('Укажи эмодзи реакции');
+    if (!name) return tg.showAlert('Укажи название реакции');
+
+    const data = { emoji, name, price };
+
+    if (state.editingReactionId) {
+        update(ref(state.db, 'battleReactions/' + state.editingReactionId), data).then(() => {
+            window.cancelEditReaction();
+            tg.showPopup({ title: 'Готово', message: 'Реакция обновлена', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    } else {
+        push(ref(state.db, 'battleReactions'), { ...data, createdAt: Date.now() }).then(() => {
+            window.cancelEditReaction();
+            tg.showPopup({ title: 'Супер!', message: 'Новая реакция создана', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    }
+};
+
+window.deleteReaction = function(id) {
+    if (!confirm('Точно удалить эту реакцию?')) return;
+    remove(ref(state.db, 'battleReactions/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+document.getElementById('btn-add-reaction') && (document.getElementById('btn-add-reaction').onclick = window.saveReaction);
+document.getElementById('btn-cancel-edit-reaction') && (document.getElementById('btn-cancel-edit-reaction').onclick = window.cancelEditReaction);

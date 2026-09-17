@@ -966,6 +966,8 @@ export function colorFor(str) {
         setupImageUpload('wiki-settings-banner-file', 'wiki-settings-banner', 'wiki-settings-banner-upload-btn', 'banners');
         setupImageUpload('character-avatar-file', 'character-avatar', 'character-avatar-upload-btn', 'avatars');
         setupImageUpload('arena-image-file', 'arena-image', 'arena-image-upload-btn', 'arenas');
+        setupImageUpload('hero-image-file', 'hero-image', 'hero-image-upload-btn', 'heroes');
+        setupImageUpload('skin-image-file', 'skin-image', 'skin-image-upload-btn', 'hero-skins');
         setupImageUpload('story-boss-image-file', 'story-boss-image', 'story-boss-image-upload-btn', 'story');
         setupImageUpload('story-global-bg-file', 'story-global-bg', 'story-global-bg-upload-btn', 'story');
 
