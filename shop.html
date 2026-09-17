@@ -1339,7 +1339,10 @@
             `).join('');
             el.querySelectorAll('[data-del-banner]').forEach(btn => {
                 btn.onclick = () => {
-                    if (confirm('Удалить баннер?')) remove(ref(db, 'shopBanners/' + btn.dataset.delBanner));
+                    if (confirm('Удалить баннер?')) {
+                        remove(ref(db, 'shopBanners/' + btn.dataset.delBanner))
+                            .catch(err => notify('Не удалилось: ' + err.message));
+                    }
                 };
             });
         }
@@ -1417,7 +1420,10 @@
                 b.onclick = () => {
                     const item = itemsData.find(i => i.id === b.dataset.id);
                     if (b.dataset.action === 'delete') {
-                        if (confirm('Удалить товар?')) remove(ref(db, 'shopItems/' + b.dataset.id));
+                        if (confirm('Удалить товар?')) {
+                            remove(ref(db, 'shopItems/' + b.dataset.id))
+                                .catch(err => notify('Не удалилось: ' + err.message));
+                        }
                     } else if (b.dataset.action === 'stock') {
                         const current = (item.stock === undefined || item.stock === null) ? '' : item.stock;
                         const val = prompt('Новое количество (пусто = без ограничений):', current);
