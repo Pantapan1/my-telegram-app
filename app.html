@@ -331,6 +331,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-events" onclick="switchAdminTab('events')">📅 События</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-cards" onclick="switchAdminTab('cards')">🃏 Карточки</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-arenas" onclick="switchAdminTab('arenas')">🗺️ Арены</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-heroes" onclick="switchAdminTab('heroes')">🦸 Герои</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-story" onclick="switchAdminTab('story')">📖 Сюжет</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-users" onclick="switchAdminTab('users')">👥 Пользователи</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-novels" style="background:linear-gradient(135deg,#c98fff,#6a1fb8);color:#fff;">🖋️ Новеллы (редактор) ↗</button>
@@ -872,6 +873,7 @@
                         <input type="checkbox" id="card-reborn" style="width:18px;height:18px;"> 🔁 Перерождение (1 раз воскресает с 1 ❤️)
                     </label>
                     <input type="number" id="card-overload" class="input" placeholder="Перегрузка: -N маны в след. ход (0 = нет)" min="0">
+                    <input type="number" id="card-drop-weight" class="input" placeholder="Вес выпадения из наборов внутри своей редкости (по умолчанию 1)" min="0" step="0.1">
                     <button class="btn" id="btn-add-card">Добавить карточку</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
 
@@ -952,6 +954,13 @@
                         <option value="epic">Гарантирована эпическая+</option>
                         <option value="legendary">Гарантирована легендарная</option>
                     </select>
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin:8px 0 4px;">Шансы выпадения по редкости для ЭТОГО набора — необязательно, оставьте пустыми для стандартных (60/25/12/3). Это относительные веса, не обязаны давать в сумме 100.</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <input type="number" id="pack-weight-common" class="input" placeholder="Вес: обычная (60)" min="0" style="margin-bottom:0;">
+                        <input type="number" id="pack-weight-rare" class="input" placeholder="Вес: редкая (25)" min="0" style="margin-bottom:0;">
+                        <input type="number" id="pack-weight-epic" class="input" placeholder="Вес: эпическая (12)" min="0" style="margin-bottom:0;">
+                        <input type="number" id="pack-weight-legendary" class="input" placeholder="Вес: легендарная (3)" min="0" style="margin-bottom:0;">
+                    </div>
                     <button class="btn" id="btn-add-cardpack">Добавить набор</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-cardpack">Отменить редактирование</button>
 
@@ -983,6 +992,12 @@
                         <option value="start_hp_boost">Всем игрокам +ХП в начале боя</option>
                         <option value="start_mana">Всем игрокам +мана в начале боя</option>
                         <option value="turn_damage">Игроки теряют ХП каждый ход</option>
+                        <option value="turn_heal">Игроки восстанавливают ХП каждый ход</option>
+                        <option value="turn_extra_card">Все берут доп. карту каждый ход</option>
+                        <option value="turn_random_freeze">Случайное существо на столе замораживается в начале хода</option>
+                        <option value="first_card_discount">Первая карта в ходу дешевле на N маны</option>
+                        <option value="no_hero_attack_turn1">В 1-й ход нельзя атаковать героя (только существ)</option>
+                        <option value="spell_damage_boost">Заклинания наносят на N больше урона</option>
                     </select>
                     <input type="number" id="arena-effect-value" class="input" placeholder="Значение эффекта (число)" min="0">
 
@@ -992,6 +1007,70 @@
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Все арены</h3>
                     <div id="admin-arenas-list"></div>
+                </div>
+
+                <div id="admin-tab-heroes" class="hidden">
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="hero-form-heading">Создать героя</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Игрок покупает героя в магазине и надевает его — портрет, здоровье и пассивка (если задана) применяются в бою вместо стандартных, поверх любой его колоды.</div>
+
+                    <input type="text" id="hero-name" class="input" placeholder="Имя героя">
+
+                    <div class="image-field-row">
+                        <input type="text" id="hero-image" class="input" placeholder="Портрет героя (URL картинки)">
+                        <label class="upload-btn" for="hero-image-file" id="hero-image-upload-btn">📁</label>
+                        <input type="file" id="hero-image-file" accept="image/*" class="hidden">
+                    </div>
+
+                    <input type="number" id="hero-health" class="input" placeholder="Максимальное здоровье (по умолчанию 30)" min="1" value="30">
+                    <input type="number" id="hero-price" class="input" placeholder="Цена в монетах" min="0">
+
+                    <select id="hero-passive-type" class="input">
+                        <option value="">Без пассивки</option>
+                        <option value="battlecry_draw">В начале боя: добрать N карт</option>
+                        <option value="battlecry_shield_hero">В начале боя: щит герою</option>
+                        <option value="battlecry_gain_max_mana_perm">В начале боя: +N макс. маны навсегда</option>
+                        <option value="battlecry_heal">В начале боя: +N здоровья сверху</option>
+                    </select>
+                    <input type="number" id="hero-passive-value" class="input" placeholder="Значение пассивки (число, если нужно)" min="0">
+
+                    <input type="text" id="hero-animation" class="input" placeholder="Анимация персонажа на прозрачном фоне — ссылка на .webm/.gif/.apng, уже где-то захостить самим">
+                    <div style="font-size:11px;color:var(--text-secondary);margin:-6px 0 8px;">Автозагрузчик картинок сюда не годится — он сжимает через canvas и уничтожит анимацию, а видео вообще не примет. Залейте .webm/.gif на любой свой хостинг и вставьте прямую ссылку.</div>
+                    <input type="text" id="hero-stats-text" class="input" placeholder="Доп. статы для карточки героя (свободный текст, напр. «Атака: 5 · Защита: 3»)">
+                    <textarea id="hero-bio" class="input" placeholder="Короткая история персонажа" rows="3" style="resize:vertical;"></textarea>
+
+                    <button class="btn" id="btn-add-hero">Добавить героя</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-hero">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все герои</h3>
+                    <div id="admin-heroes-list"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="skin-form-heading">Создать скин героя</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Скин — альтернативный вид уже существующего героя. Игрок должен сначала владеть самим героем.</div>
+
+                    <select id="skin-hero-id" class="input"></select>
+                    <input type="text" id="skin-name" class="input" placeholder="Название скина">
+                    <div class="image-field-row">
+                        <input type="text" id="skin-image" class="input" placeholder="Превью скина (URL картинки)">
+                        <label class="upload-btn" for="skin-image-file" id="skin-image-upload-btn">📁</label>
+                        <input type="file" id="skin-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <input type="text" id="skin-animation" class="input" placeholder="Анимация скина на прозрачном фоне — ссылка на .webm/.gif/.apng (свой хостинг, не автозагрузчик)">
+                    <input type="number" id="skin-price" class="input" placeholder="Цена в монетах" min="0">
+
+                    <button class="btn" id="btn-add-skin">Добавить скин</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-skin">Отменить редактирование</button>
+                    <div id="admin-skins-list" style="margin-top:10px;"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="reaction-form-heading">Создать реакцию для боя</h3>
+                    <input type="text" id="reaction-emoji" class="input" placeholder="Эмодзи (напр. 🐉)">
+                    <input type="text" id="reaction-name" class="input" placeholder="Название реакции">
+                    <input type="number" id="reaction-price" class="input" placeholder="Цена в монетах" min="0">
+                    <button class="btn" id="btn-add-reaction">Добавить реакцию</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-reaction">Отменить редактирование</button>
+                    <div id="admin-reactions-list" style="margin-top:10px;"></div>
                 </div>
 
                 <!-- ВКЛАДКА: СЮЖЕТНЫЙ РЕЖИМ (главы/боссы карточной игры) -->
