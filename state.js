@@ -180,6 +180,8 @@ export const state = {
   // Покупные "Герои" (свой портрет/ХП/пассивка поверх обычного класса) — см. cards.js/battle.js
   customHeroesData: [],
   heroSkinsData: [],
+  // Скины для существ (карт типа minion) — см. cards.js/battle.js/shop.html
+  cardSkinsData: [],
   battleReactionsData: [],
   cardStatsData: {},
   storyChapters: [],

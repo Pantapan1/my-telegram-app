@@ -262,6 +262,7 @@
             <button class="filter-chip active" data-cat="all">🌟 Всё</button>
             <button class="filter-chip" data-cat="packs">🃏 Карты</button>
             <button class="filter-chip" data-cat="heroes">🦸 Герои</button>
+            <button class="filter-chip" data-cat="creatures">🐲 Существа</button>
             <button class="filter-chip" data-cat="reactions">😊 Реакции</button>
             <button class="filter-chip" data-cat="frame">🖼 Рамки</button>
             <button class="filter-chip" data-cat="decoration">🎀 Декор</button>
@@ -294,6 +295,13 @@
         <div class="shop-section" data-section="heroes">
             <div class="section-title"><span>🦸 Герои Cardverse</span></div>
             <div class="grid" id="heroes-grid"></div>
+        </div>
+
+        <!-- СКИНЫ ДЛЯ СУЩЕСТВ -->
+        <div class="shop-section" data-section="creatures">
+            <div class="section-title"><span>🐲 Скины существ</span></div>
+            <div style="font-size:11.5px;color:#94a3b8;margin:-6px 0 10px;">Скин можно купить и надеть только для существа, которое уже есть в твоей коллекции.</div>
+            <div class="grid" id="creature-skins-grid"></div>
         </div>
 
         <!-- РЕАКЦИИ В БОЮ -->
@@ -450,6 +458,20 @@
     </div>
 </div>
 
+<!-- КАРТОЧКА СУЩЕСТВА: портрет, мана/атака/здоровье/навык, лор + скины -->
+<div id="creature-detail-overlay" class="hero-detail-overlay hidden">
+    <div class="hero-detail-sheet">
+        <button class="hero-detail-close" onclick="closeCreatureDetail()">✕</button>
+        <div class="hero-detail-stage" id="creature-detail-stage"></div>
+        <div class="hero-detail-name" id="creature-detail-name"></div>
+        <div class="hero-detail-stats" id="creature-detail-stats"></div>
+        <div class="hero-detail-bio" id="creature-detail-skill"></div>
+        <div class="hero-detail-bio" id="creature-detail-bio"></div>
+        <div class="hero-detail-skins-title">🎭 Скины</div>
+        <div id="creature-detail-skins"></div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import { getDatabase, ref, onValue, push, update, remove, set, get, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
@@ -563,6 +585,7 @@
                 renderPacksGrid();
                 renderHeroesGrid();
                 renderReactionsGrid();
+                renderCreatureSkinsGrid();
             });
         }
 
@@ -696,6 +719,7 @@
             const data = snap.val();
             cardsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
             scheduleRenderPacks();
+            renderCreatureSkinsGrid();
         });
         onValue(ref(db, 'cardPacks'), (snap) => {
             const data = snap.val();
@@ -715,6 +739,14 @@
         onValue(ref(db, 'heroSkins'), (snap) => {
             const data = snap.val();
             heroSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        });
+
+        // Скины для существ (карт типа minion) — полный аналог heroSkinsData выше
+        let cardSkinsData = [];
+        onValue(ref(db, 'cardSkins'), (snap) => {
+            const data = snap.val();
+            cardSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+            renderCreatureSkinsGrid();
         });
 
         let battleReactionsData = [];
@@ -968,6 +1000,121 @@
                 openHeroDetail(heroId);
             }).catch(err => alert('Ошибка: ' + err.message));
         }
+
+        // ===================== СКИНЫ СУЩЕСТВ (карт типа minion) =====================
+        // Полный аналог блока скинов героев выше: своя карточка "описания" (портрет, мана/атака/
+        // здоровье/навык/лор) + список скинов купить/надеть. Владение скином требует владения
+        // самим существом (карта должна быть в cardCollection игрока, count > 0).
+
+        function renderCreatureSkinsGrid() {
+            const el = document.getElementById('creature-skins-grid');
+            if (!el) return;
+
+            // Показываем только существ, для которых админ уже создал хотя бы один скин —
+            // иначе список раздувается всеми картами игры без смысла (скины для них покупать негде).
+            const skinnedCardIds = [...new Set(cardSkinsData.map(s => s.cardId))];
+            const creatures = skinnedCardIds
+                .map(id => cardsData.find(c => c.id === id && c.type === 'minion'))
+                .filter(Boolean);
+
+            if (!creatures.length) { el.innerHTML = '<div class="empty-state">Скинов для существ пока нет</div>'; return; }
+
+            const collection = myUser.cardCollection || {};
+            el.innerHTML = creatures.map(c => {
+                const isOwned = (collection[c.id] || 0) > 0;
+                const skinCount = cardSkinsData.filter(s => s.cardId === c.id).length;
+                const imageBlock = c.image
+                    ? `<img src="${c.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`
+                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f1f5f9;border-radius:14px;">🐲</div>`;
+                return `
+                <div class="item-card">
+                    ${imageBlock}
+                    <div class="item-name">${escapeHtml(c.name || '')}</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-bottom:4px;font-weight:600;">💧${c.mana || 0} · ⚔️${c.attack || 0} · ❤️${c.health || 0}</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">${skinCount} скин${skinCount === 1 ? '' : 'а'} доступно</div>
+                    ${isOwned ? '' : `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:6px;">Сначала получи карту в коллекцию</div>`}
+                    <button class="item-btn" style="background:transparent;border:1px solid #d99b26;color:#d99b26;" data-view-creature-id="${c.id}">👁 Открыть</button>
+                </div>`;
+            }).join('');
+
+            el.querySelectorAll('[data-view-creature-id]').forEach(btn => { btn.onclick = () => openCreatureDetail(btn.getAttribute('data-view-creature-id')); });
+        }
+
+        function openCreatureDetail(cardId) {
+            const card = cardsData.find(c => c.id === cardId);
+            if (!card) return;
+            const collection = myUser.cardCollection || {};
+            const isOwned = (collection[cardId] || 0) > 0;
+
+            document.getElementById('creature-detail-stage').innerHTML = mediaTag(card.image, '🐲');
+            document.getElementById('creature-detail-name').textContent = card.name || 'Существо';
+            document.getElementById('creature-detail-stats').textContent = `💧 ${card.mana || 0} · ⚔️ ${card.attack || 0} · ❤️ ${card.health || 0}`;
+            document.getElementById('creature-detail-skill').textContent = card.effect ? `✨ ${card.effect}` : '';
+            document.getElementById('creature-detail-bio').textContent = card.lore || '';
+
+            const skins = cardSkinsData.filter(s => s.cardId === cardId);
+            const skinsEl = document.getElementById('creature-detail-skins');
+            if (!skins.length) {
+                skinsEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;">Скинов для этого существа пока нет.</div>';
+            } else if (!isOwned) {
+                skinsEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;">Сначала получи эту карту в коллекцию (из набора или пасса), чтобы покупать и надевать скины для неё.</div>';
+            } else {
+                const ownedSkins = myUser.ownedCardSkins || {};
+                const equippedSkinId = (myUser.equippedCardSkins || {})[cardId] || '';
+                skinsEl.innerHTML = skins.map(s => {
+                    const sOwned = !!ownedSkins[s.id];
+                    const sEquipped = equippedSkinId === s.id;
+                    let btn;
+                    if (sEquipped) btn = `<button class="item-btn btn-disabled" data-unequip-cskin="${cardId}">Снять</button>`;
+                    else if (sOwned) btn = `<button class="item-btn btn-buy" data-equip-cskin="${s.id}" data-equip-cskin-card="${cardId}">Надеть</button>`;
+                    else btn = `<button class="item-btn ${(myUser.coins || 0) >= (s.price || 0) ? 'btn-buy' : 'btn-disabled'}" data-buy-cskin="${s.id}">${s.price || 0}🪙</button>`;
+                    return `
+                    <div class="hero-skin-row">
+                        <img src="${s.image || ''}" onerror="this.style.opacity=0.2">
+                        <div class="hero-skin-info">
+                            <div class="hero-skin-name">${escapeHtml(s.name || 'Скин')}</div>
+                            ${sOwned ? '' : `<div class="hero-skin-price">${s.price || 0} 🪙</div>`}
+                        </div>
+                        ${btn}
+                    </div>`;
+                }).join('');
+
+                skinsEl.querySelectorAll('[data-buy-cskin]').forEach(btn => { btn.onclick = () => buyCreatureSkin(btn.getAttribute('data-buy-cskin')); });
+                skinsEl.querySelectorAll('[data-equip-cskin]').forEach(btn => { btn.onclick = () => equipCreatureSkin(btn.getAttribute('data-equip-cskin-card'), btn.getAttribute('data-equip-cskin')); });
+                skinsEl.querySelectorAll('[data-unequip-cskin]').forEach(btn => { btn.onclick = () => equipCreatureSkin(btn.getAttribute('data-unequip-cskin'), ''); });
+            }
+
+            document.getElementById('creature-detail-overlay').classList.remove('hidden');
+        }
+        window.openCreatureDetail = openCreatureDetail;
+
+        window.closeCreatureDetail = function() {
+            document.getElementById('creature-detail-overlay').classList.add('hidden');
+        };
+
+        function buyCreatureSkin(skinId) {
+            const skin = cardSkinsData.find(s => s.id === skinId);
+            if (!skin) return;
+            if (!((myUser.cardCollection || {})[skin.cardId] > 0)) { notify('Сначала получи это существо в коллекцию'); return; }
+            const price = skin.price || 0;
+            if ((myUser.coins || 0) < price) { notify('Недостаточно монет 🪙'); return; }
+            if (!confirmBuy(`Купить скин «${skin.name}» за ${price}🪙?`)) return;
+
+            update(ref(db, 'users/' + myId), {
+                coins: increment(-price),
+                ['ownedCardSkins/' + skinId]: true
+            }).then(() => {
+                playSound('coin'); confettiBurst();
+                openCreatureDetail(skin.cardId);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+
+        function equipCreatureSkin(cardId, skinId) {
+            update(ref(db, 'users/' + myId), { ['equippedCardSkins/' + cardId]: skinId }).then(() => {
+                openCreatureDetail(cardId);
+            }).catch(err => alert('Ошибка: ' + err.message));
+        }
+        window.renderCreatureShop = renderCreatureSkinsGrid;
 
         function renderReactionsGrid() {
             const el = document.getElementById('reactions-grid');

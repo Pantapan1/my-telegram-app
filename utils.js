@@ -968,6 +968,7 @@ export function colorFor(str) {
         setupImageUpload('arena-image-file', 'arena-image', 'arena-image-upload-btn', 'arenas');
         setupImageUpload('hero-image-file', 'hero-image', 'hero-image-upload-btn', 'heroes');
         setupImageUpload('skin-image-file', 'skin-image', 'skin-image-upload-btn', 'hero-skins');
+        setupImageUpload('cskin-image-file', 'cskin-image', 'cskin-image-upload-btn', 'card-skins');
         setupImageUpload('story-boss-image-file', 'story-boss-image', 'story-boss-image-upload-btn', 'story');
         setupImageUpload('story-global-bg-file', 'story-global-bg', 'story-global-bg-upload-btn', 'story');
 

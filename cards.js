@@ -56,6 +56,7 @@ export function renderAdminCardsList() {
 
     populateComboCardSelects();
     populateGrantCardSelect();
+    if (window.populateSkinCardSelect) window.populateSkinCardSelect();
 }
 
 function populateComboCardSelects() {
@@ -100,6 +101,8 @@ window.editCard = function (id) {
     document.getElementById('card-reborn').checked = !!c.reborn;
     document.getElementById('card-overload').value = c.overload ?? '';
     document.getElementById('card-drop-weight').value = c.dropWeight ?? '';
+    const cardLoreEl = document.getElementById('card-lore');
+    if (cardLoreEl) cardLoreEl.value = c.lore || '';
     document.getElementById('card-form-heading').textContent = 'Редактировать карточку';
     document.getElementById('btn-add-card').textContent = 'Сохранить изменения';
     document.getElementById('btn-cancel-edit-card').classList.remove('hidden');
@@ -126,6 +129,8 @@ document.getElementById('btn-cancel-edit-card').onclick = function () {
     document.getElementById('card-reborn').checked = false;
     document.getElementById('card-overload').value = '';
     document.getElementById('card-drop-weight').value = '';
+    const cardLoreResetEl = document.getElementById('card-lore');
+    if (cardLoreResetEl) cardLoreResetEl.value = '';
     document.getElementById('card-rarity').value = 'common';
     document.getElementById('card-form-heading').textContent = 'Добавить карточку';
     document.getElementById('btn-add-card').textContent = 'Добавить карточку';
@@ -175,6 +180,8 @@ document.getElementById('btn-add-card').onclick = function () {
     const reborn = document.getElementById('card-reborn').checked;
     const overload = parseInt(document.getElementById('card-overload').value, 10) || 0;
     const dropWeight = parseFloat(document.getElementById('card-drop-weight').value) || 1;
+    const loreEl = document.getElementById('card-lore');
+    const lore = loreEl ? loreEl.value.trim() : '';
 
     if (!name) return tg.showAlert('Укажи название карточки');
     if (mana < 0 || mana > 10) return tg.showAlert('Стоимость маны от 0 до 10');
@@ -182,7 +189,7 @@ document.getElementById('btn-add-card').onclick = function () {
     const warning = manaCurveWarning(type, rarity, mana, attack, health);
     if (warning && !confirm(`⚠️ ${warning}\n\nВсё равно сохранить?`)) return;
 
-    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth, shield, freezeOnHit, reborn, overload, dropWeight };
+    const data = { name, image, classId, type, rarity, mana, attack, health, effect, effectType, effectValue, cooldown, taunt, lifesteal, charge, windfury, poison, stealth, shield, freezeOnHit, reborn, overload, dropWeight, lore };
 
     if (state.editingCardId) {
         update(ref(state.db, 'cards/' + state.editingCardId), data).then(() => {
@@ -889,6 +896,111 @@ window.deleteSkin = function(id) {
 
 document.getElementById('btn-add-skin') && (document.getElementById('btn-add-skin').onclick = window.saveSkin);
 document.getElementById('btn-cancel-edit-skin') && (document.getElementById('btn-cancel-edit-skin').onclick = window.cancelEditSkin);
+
+// ===================== СКИНЫ СУЩЕСТВ (карт типа minion) =====================
+// Полный аналог скинов героев выше, только привязка идёт к cardId вместо heroId
+// и хранится отдельно в узле cardSkins, чтобы не путаться с heroSkins.
+
+window.populateSkinCardSelect = function() {
+    const sel = document.getElementById('cskin-card-id');
+    if (!sel) return;
+    const current = sel.value;
+    const minions = (state.cardsData || []).filter(c => c.type === 'minion');
+    sel.innerHTML = '<option value="">Существо...</option>' + minions
+        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .map(c => `<option value="${c.id}">${escapeHtml(c.name || '(без имени)')}</option>`).join('');
+    if (current) sel.value = current;
+};
+
+window.renderAdminCardSkinsList = function() {
+    const el = document.getElementById('admin-cskins-list');
+    if (!el) return;
+    window.populateSkinCardSelect();
+
+    if (!state.cardSkinsData || !state.cardSkinsData.length) {
+        el.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Скинов для существ пока нет.</div>';
+        return;
+    }
+
+    el.innerHTML = state.cardSkinsData.map(s => {
+        const card = (state.cardsData || []).find(c => c.id === s.cardId);
+        return `
+        <div class="admin-item">
+            ${s.image ? `<img src="${s.image}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:#2d3a4e;">🎭</div>`}
+            <div class="admin-item-info">
+                <div class="admin-item-title">${escapeHtml(s.name || 'Скин')}</div>
+                <div class="admin-item-sub">Существо: ${escapeHtml(card ? card.name : '❓ удалено')} | ${s.price || 0}🪙</div>
+            </div>
+            <div class="admin-item-actions">
+                <button class="icon-btn" onclick="window.editCardSkin('${s.id}')">✏️</button>
+                <button class="icon-btn danger" onclick="window.deleteCardSkin('${s.id}')">🗑</button>
+            </div>
+        </div>`;
+    }).join('');
+};
+
+window.editCardSkin = function(id) {
+    const s = state.cardSkinsData.find(x => x.id === id);
+    if (!s) return;
+
+    state.editingCardSkinId = id;
+    document.getElementById('cskin-card-id').value = s.cardId || '';
+    document.getElementById('cskin-name').value = s.name || '';
+    document.getElementById('cskin-image').value = s.image || '';
+    document.getElementById('cskin-animation').value = s.animationUrl || '';
+    document.getElementById('cskin-price').value = s.price || '';
+
+    document.getElementById('cskin-form-heading').textContent = 'Редактировать скин существа';
+    document.getElementById('btn-add-cskin').textContent = 'Сохранить';
+    document.getElementById('btn-cancel-edit-cskin').classList.remove('hidden');
+    document.getElementById('cskin-card-id').scrollIntoView({ behavior: 'smooth' });
+};
+
+window.cancelEditCardSkin = function() {
+    state.editingCardSkinId = null;
+    document.getElementById('cskin-card-id').value = '';
+    document.getElementById('cskin-name').value = '';
+    document.getElementById('cskin-image').value = '';
+    document.getElementById('cskin-animation').value = '';
+    document.getElementById('cskin-price').value = '';
+
+    document.getElementById('cskin-form-heading').textContent = 'Создать скин существа';
+    document.getElementById('btn-add-cskin').textContent = 'Добавить скин';
+    document.getElementById('btn-cancel-edit-cskin').classList.add('hidden');
+};
+
+window.saveCardSkin = function() {
+    const cardId = document.getElementById('cskin-card-id').value;
+    const name = document.getElementById('cskin-name').value.trim();
+    const image = document.getElementById('cskin-image').value.trim();
+    const animationUrl = document.getElementById('cskin-animation').value.trim();
+    const price = parseInt(document.getElementById('cskin-price').value, 10) || 0;
+
+    if (!cardId) return tg.showAlert('Выбери существо, для которого этот скин');
+    if (!name) return tg.showAlert('Укажи название скина');
+
+    const data = { cardId, name, image, animationUrl, price };
+
+    if (state.editingCardSkinId) {
+        update(ref(state.db, 'cardSkins/' + state.editingCardSkinId), data).then(() => {
+            window.cancelEditCardSkin();
+            tg.showPopup({ title: 'Готово', message: 'Скин обновлён', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    } else {
+        push(ref(state.db, 'cardSkins'), { ...data, createdAt: Date.now() }).then(() => {
+            window.cancelEditCardSkin();
+            tg.showPopup({ title: 'Супер!', message: 'Новый скин создан', buttons: [{ type: 'ok' }] });
+        }).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+    }
+};
+
+window.deleteCardSkin = function(id) {
+    if (!confirm('Точно удалить этот скин?')) return;
+    remove(ref(state.db, 'cardSkins/' + id)).catch(err => tg.showAlert('Ошибка: ' + friendlyDbError(err)));
+};
+
+document.getElementById('btn-add-cskin') && (document.getElementById('btn-add-cskin').onclick = window.saveCardSkin);
+document.getElementById('btn-cancel-edit-cskin') && (document.getElementById('btn-cancel-edit-cskin').onclick = window.cancelEditCardSkin);
 
 // ===================== РЕАКЦИИ В БОЮ =====================
 

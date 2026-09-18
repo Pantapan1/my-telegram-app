@@ -874,6 +874,7 @@
                     </label>
                     <input type="number" id="card-overload" class="input" placeholder="Перегрузка: -N маны в след. ход (0 = нет)" min="0">
                     <input type="number" id="card-drop-weight" class="input" placeholder="Вес выпадения из наборов внутри своей редкости (по умолчанию 1)" min="0" step="0.1">
+                    <textarea id="card-lore" class="input" placeholder="Лор существа (история персонажа — показывается во вкладке «Описание» вместе с портретом/статами)" style="min-height:70px;"></textarea>
                     <button class="btn" id="btn-add-card">Добавить карточку</button>
                     <button class="btn btn-secondary hidden" id="btn-cancel-edit-card">Отменить редактирование</button>
 
@@ -885,6 +886,24 @@
                         <input type="file" id="import-cards-file" accept="application/json" class="hidden">
                     </div>
                     <div id="admin-cards-list"></div>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="cskin-form-heading">Создать скин существа</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Скин — альтернативный вид уже существующего существа (карты). Игрок должен сначала владеть самой картой (иметь её в коллекции), чтобы купить и надеть скин для неё. Скины видны на поле боя.</div>
+
+                    <select id="cskin-card-id" class="input"></select>
+                    <input type="text" id="cskin-name" class="input" placeholder="Название скина">
+                    <div class="image-field-row">
+                        <input type="text" id="cskin-image" class="input" placeholder="Превью скина (URL картинки)">
+                        <label class="upload-btn" for="cskin-image-file" id="cskin-image-upload-btn">📁</label>
+                        <input type="file" id="cskin-image-file" accept="image/*" class="hidden">
+                    </div>
+                    <input type="text" id="cskin-animation" class="input" placeholder="Анимация скина на прозрачном фоне — ссылка на .webm/.gif/.apng (свой хостинг, не автозагрузчик)">
+                    <input type="number" id="cskin-price" class="input" placeholder="Цена в монетах" min="0">
+
+                    <button class="btn" id="btn-add-cskin">Добавить скин</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-cskin">Отменить редактирование</button>
+                    <div id="admin-cskins-list" style="margin-top:10px;"></div>
 
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Выдать карточку игроку</h3>

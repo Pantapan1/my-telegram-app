@@ -952,6 +952,63 @@
     cursor: pointer !important;
 }
 
+/* Всплывающий эмодзи-реакция над героем при отправке/получении (см. battle.js showBattleReaction) —
+   элемент создаётся в JS через document.createElement и позиционируется через style.left/top,
+   поэтому без position:fixed эти координаты ни на что не влияли и попап был невидим. */
+.battle-reaction-popup {
+    position: fixed !important;
+    transform: translate(-50%, -100%) !important;
+    font-size: 34px !important;
+    line-height: 1 !important;
+    z-index: 100000 !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)) !important;
+    animation: cvReactionFloat 3s ease-out forwards !important;
+}
+@keyframes cvReactionFloat {
+    0% { opacity: 0; transform: translate(-50%, -80%) scale(0.6); }
+    12% { opacity: 1; transform: translate(-50%, -110%) scale(1.15); }
+    20% { transform: translate(-50%, -100%) scale(1); }
+    75% { opacity: 1; transform: translate(-50%, -160%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -200%) scale(0.9); }
+}
+
+/* Всплывающий текст урона/лечения над героем (см. battle.js showBattleFloatingText) — та же
+   проблема: класс использовался без единого правила CSS. */
+.battle-floating-text {
+    position: fixed !important;
+    transform: translate(-50%, -100%) !important;
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    z-index: 100000 !important;
+    pointer-events: none !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6) !important;
+    animation: cvFloatingTextRise 1s ease-out forwards !important;
+}
+@keyframes cvFloatingTextRise {
+    0% { opacity: 0; transform: translate(-50%, -90%) scale(0.8); }
+    15% { opacity: 1; transform: translate(-50%, -100%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+}
+
+/* Частицы вспышки вокруг существа/героя при эффекте (см. battle.js spawnBattleParticles) —
+   тоже создавались в JS без соответствующего правила CSS. */
+.battle-effect-particle {
+    position: fixed !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    z-index: 99998 !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -50%) !important;
+    animation: cvEffectParticleFly 0.65s ease-out forwards !important;
+}
+@keyframes cvEffectParticleFly {
+    0% { opacity: 1; transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--dx, 0), var(--dy, 0)) scale(0.3); }
+}
+
 /* Кнопка "Закончить ход" */
 .battle-actions-row > button:last-child,
 .battle-actions-row #battle-end-turn-btn,

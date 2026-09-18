@@ -541,6 +541,14 @@ export function startFirebaseListeners() {
         if (window.renderHeroShop) window.renderHeroShop();
     });
 
+    // Скины для существ (карт типа minion) — см. cards.js (админка), battle.js (отображение в бою), shop.html (магазин)
+    onValue(ref(state.db, 'cardSkins'), (snapshot) => {
+        const data = snapshot.val();
+        state.cardSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin && window.renderAdminCardSkinsList) window.renderAdminCardSkinsList();
+        if (window.renderCreatureShop) window.renderCreatureShop();
+    });
+
     onValue(ref(state.db, 'battleReactions'), (snapshot) => {
         const data = snapshot.val();
         state.battleReactionsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];

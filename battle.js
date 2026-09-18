@@ -651,11 +651,24 @@ function hasTaunt(boardObj) {
     return Object.values(boardObj || {}).some(m => m.taunt);
 }
 
-function makeBoardEntry(card) {
+// Надетый игроком скин для конкретного существа (карты) — подменяет портрет так же,
+// как getEquippedHero делает это для героя выше. Требует, чтобы скин был куплен
+// (ownedCardSkins) и надет именно на этот cardId (equippedCardSkins).
+function getEquippedCardSkin(ownerUid, cardId) {
+    if (!ownerUid) return null;
+    const user = (state.usersData || []).find(u => u.id === ownerUid);
+    if (!user) return null;
+    const skinId = user.equippedCardSkins && user.equippedCardSkins[cardId];
+    if (!skinId || !user.ownedCardSkins || !user.ownedCardSkins[skinId]) return null;
+    return (state.cardSkinsData || []).find(s => s.id === skinId && s.cardId === cardId) || null;
+}
+
+function makeBoardEntry(card, ownerUid) {
     const isActive = card.effectType && card.effectType.startsWith('active_');
     const lvlBonus = cardLevelStatBonus(card.id); // бонус атаки/здоровья от уровня карты (по копиям в коллекции)
+    const skin = getEquippedCardSkin(ownerUid, card.id);
     return {
-        cardId: card.id, name: card.name, image: card.image || '', rarity: card.rarity || 'common',
+        cardId: card.id, name: card.name, image: (skin && skin.image) || card.image || '', animationUrl: (skin && skin.animationUrl) || '', rarity: card.rarity || 'common',
         attack: (card.attack || 0) + lvlBonus, health: (card.health || 1) + lvlBonus, maxHealth: (card.health || 1) + lvlBonus,
         canAttack: !!card.charge, taunt: !!card.taunt, lifesteal: !!card.lifesteal, shielded: !!card.shield,
         windfury: !!card.windfury, poison: !!card.poison, stealth: !!card.stealth, attacksThisTurn: 0,
@@ -1554,7 +1567,7 @@ function playCardInternal(battleId, data, actorSlot, opponentSlot, iid, card) {
     let newIid = null;
     if (card.type === 'minion') {
         newIid = randId();
-        actor.board[newIid] = makeBoardEntry(card);
+        actor.board[newIid] = makeBoardEntry(card, actor.uid);
         recentlyPlayedIid = newIid;
         recentlyPlayedAt = Date.now();
     } else if (card.type === 'weapon') {
