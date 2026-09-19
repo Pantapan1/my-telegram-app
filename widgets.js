@@ -58,6 +58,31 @@ api.onCleanup(() => clearInterval(timer));`,
         html: `<div style="font-size:14px;font-weight:700;padding:6px 2px;"></div>`,
         js: `el.querySelector('div').textContent = api.user ? \`Привет, \${api.user.name}! 👋\` : 'Привет!';`,
     },
+    navtab: {
+        label: '🧭 Новая вкладка приложения',
+        html: `<!-- Этот HTML не используется — тело новой вкладки задаётся в JS ниже -->`,
+        js: `// Добавляет полноценную вкладку в нижнюю навигацию (рядом с "Лента"/"Профиль").
+// Ставь этот виджет в слот feed_top или profile_top — не важно, где именно, главное чтобы
+// виджет был включён, тогда вкладка появится при загрузке приложения.
+api.addNavTab({
+  id: 'my_tab',                 // латиницей, без пробелов — используется как id элементов
+  icon: '🎉',
+  label: 'Ивент',
+  html: '<h1>Привет из новой вкладки!</h1><p>Здесь можно разместить что угодно.</p>',
+});`,
+    },
+    admintab: {
+        label: '🛠 Новая вкладка в админке',
+        html: `<!-- Этот HTML не используется — тело новой вкладки задаётся в JS ниже -->`,
+        js: `// Добавляет вкладку в саму панель администратора (рядом с "Карточки"/"Герои" и т.п.).
+// Появится только у того, кто открывает эту панель как админ (т.е. у самих админов).
+api.addAdminTab({
+  id: 'my_admin_tab',
+  icon: '🛠',
+  label: 'Моя вкладка',
+  html: '<h3>Тут может быть своя мини-админка</h3>',
+});`,
+    },
 };
 
 // Регистр функций очистки на слот — чтобы таймеры/подписки предыдущей версии виджета не текли
@@ -71,6 +96,79 @@ function runCleanup(slotName) {
 }
 
 function buildWidgetApi(widget, slotName) {
+    const onCleanup = (fn) => { if (typeof fn === 'function') (cleanupsBySlot[slotName] = cleanupsBySlot[slotName] || []).push(fn); };
+
+    // Добавляет полноценную новую вкладку в нижнюю навигацию приложения (рядом с "Лента",
+    // "Профиль" и т.д.) — создаёт свой <div class="section"> и кнопку в .bottom-nav, дальше
+    // всё работает через штатный window.switchTab, потому что он написан универсально (ищет
+    // элементы по id/data-tab, а не по жёстко заданному списку). Если виджет выключат/удалят —
+    // вкладка уберётся сама (регистрируется через onCleanup).
+    function addNavTab({ id, icon, label, html } = {}) {
+        if (!id) return null;
+        if (document.getElementById('section-' + id)) return document.getElementById('section-' + id);
+        const nav = document.querySelector('.bottom-nav');
+        if (!nav) return null;
+
+        const section = document.createElement('div');
+        section.className = 'section';
+        section.id = 'section-' + id;
+        section.innerHTML = `<div class="container">${html || ''}</div>`;
+        document.body.insertBefore(section, nav);
+
+        const btn = document.createElement('button');
+        btn.className = 'nav-btn';
+        btn.dataset.tab = id;
+        btn.innerHTML = `<span class="icon">${icon || '✨'}</span><span>${label || ''}</span>`;
+        btn.onclick = () => window.switchTab && window.switchTab(id);
+        nav.appendChild(btn);
+
+        onCleanup(() => { section.remove(); btn.remove(); });
+        return section;
+    }
+
+    // То же самое, но для панели администратора (.tab-mini рядом с "Новости"/"Карточки"/...).
+    // switchAdminTab в admin.js написан по жёстко заданному списку вкладок и не знает про новые —
+    // поэтому здесь он один раз аккуратно "оборачивается", чтобы заодно показывать/прятать и
+    // вкладки, добавленные через виджеты. Работает вместе со стандартными вкладками в обе
+    // стороны: клик по родной вкладке спрячет вкладку виджета и наоборот.
+    function addAdminTab({ id, icon, label, html } = {}) {
+        if (!id) return null;
+        const tabBar = document.querySelector('#admin-panel .tab-mini');
+        const panelHost = document.getElementById('admin-panel');
+        if (!tabBar || !panelHost) return null; // панель админа не найдена на этой странице/у этого пользователя
+        if (document.getElementById('admin-tab-' + id)) return document.getElementById('admin-tab-' + id);
+
+        if (!window.__widgetAdminTabPatched) {
+            const nativeSwitch = window.switchAdminTab;
+            window.__widgetCustomAdminTabs = {};
+            window.switchAdminTab = function (tab) {
+                nativeSwitch(tab);
+                Object.entries(window.__widgetCustomAdminTabs).forEach(([tid, t]) => {
+                    t.panel.classList.toggle('hidden', tab !== tid);
+                    t.btn.classList.toggle('active', tab === tid);
+                });
+            };
+            window.__widgetAdminTabPatched = true;
+        }
+
+        const panel = document.createElement('div');
+        panel.id = 'admin-tab-' + id;
+        panel.className = 'hidden';
+        panel.innerHTML = html || '';
+        panelHost.appendChild(panel);
+
+        const btn = document.createElement('button');
+        btn.className = 'tab-mini-btn';
+        btn.id = 'admin-tab-btn-' + id;
+        btn.textContent = `${icon || '🧩'} ${label || ''}`.trim();
+        btn.onclick = () => window.switchAdminTab(id);
+        tabBar.appendChild(btn);
+
+        window.__widgetCustomAdminTabs[id] = { panel, btn };
+        onCleanup(() => { panel.remove(); btn.remove(); delete window.__widgetCustomAdminTabs[id]; });
+        return panel;
+    }
+
     return {
         state, tg,
         db: state.db, ref, get, set, update, remove, push, increment,
@@ -79,7 +177,9 @@ function buildWidgetApi(widget, slotName) {
         toast: (text, emoji) => showAppToast(text || '', emoji || '✨'),
         popup: (title, message) => tg.showPopup({ title: title || '', message: message || '', buttons: [{ type: 'ok' }] }),
         switchTab: (name) => { if (window.switchTab) window.switchTab(name); },
-        onCleanup: (fn) => { if (typeof fn === 'function') (cleanupsBySlot[slotName] = cleanupsBySlot[slotName] || []).push(fn); },
+        onCleanup,
+        addNavTab,
+        addAdminTab,
         widget: { id: widget.id, name: widget.name, slot: widget.slot },
     };
 }

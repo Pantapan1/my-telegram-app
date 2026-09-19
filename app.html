@@ -1219,7 +1219,7 @@
                         <code>api.db</code>, <code>api.ref/get/set/update/remove/push/increment</code> — прямой доступ к базе,<br>
                         <code>api.toast('Текст','✨')</code>, <code>api.popup('Заголовок','Текст')</code> — обратная связь игроку,<br>
                         <code>api.switchTab('profile')</code> — переключить вкладку приложения,<br>
-                        <code>api.onCleanup(fn)</code> — <u>обязательно</u> вызывай для любых <code>setInterval</code>/подписок, иначе они будут плодиться заново при каждом обновлении списка виджетов.<br>
+                        <code>api.onCleanup(fn)</code> — <u>обязательно</u> вызывай для любых <code>setInterval</code>/подписок, иначе они будут плодиться заново при каждом обновлении списка виджетов.<br><code>api.addNavTab({id,icon,label,html})</code> — добавить целую новую вкладку в нижнюю навигацию приложения,<br><code>api.addAdminTab({id,icon,label,html})</code> — то же самое, но вкладкой в самой панели администратора.<br>
                         Ошибка в коде ловится и не ломает остальное приложение — но <b>только у админов</b> под виджетом появится текст ошибки, обычным игрокам сломанная часть просто не покажется.
                     </div>
 
@@ -1227,6 +1227,8 @@
                         <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('banner')">🖼 Пример: баннер</button>
                         <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('countdown')">⏱ Пример: таймер</button>
                         <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('greeting')">👋 Пример: приветствие</button>
+                        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('navtab')">🧭 Пример: новая вкладка</button>
+                        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('admintab')">🛠 Пример: вкладка в админке</button>
                     </div>
 
                     <input type="text" id="widget-name" class="input" placeholder="Название виджета (для себя, в списке)">
