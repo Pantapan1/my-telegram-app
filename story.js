@@ -1,6 +1,6 @@
-import { ref, push, update, remove, get, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+import { ref, push, update, remove, get, set, increment } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
-import { colorFor, escapeHtml, friendlyDbError, initialOf, showStoryDialogue, showTerrariaToast } from './utils.js';
+import { colorFor, escapeHtml, friendlyDbError, initialOf, showStoryDialogue, showAppToast } from './utils.js';
 import { startStoryBattle } from './battle.js';
 
 // ===================== ОБЩЕЕ =====================
@@ -9,7 +9,28 @@ function sortedStoryChapters() {
     return (state.storyChapters || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
 }
 
+// Вычисляет условие открытия главы (необязательное JS-выражение вроде "rep >= 3 && morale < 10"),
+// заданное в админке — переменные сюжета подставляются туда просто по именам. Пустое условие
+// значит "без доп. условия". Ошибка в выражении (опечатка у админа) не должна прятать главу от
+// всех игроков — в этом случае просто не ограничиваем ей доступ и пишем ошибку в консоль.
+function evalStoryCondition(expr) {
+    if (!expr || !expr.trim()) return true;
+    const vars = state.storyVars || {};
+    const keys = Object.keys(vars);
+    try {
+        const fn = new Function(...keys, 'return (' + expr + ');');
+        return !!fn(...keys.map(k => vars[k]));
+    } catch (err) {
+        console.error('Ошибка в условии открытия главы «' + expr + '»:', err);
+        return true;
+    }
+}
+
 function isChapterUnlocked(chapters, idx) {
+    return baseChapterUnlocked(chapters, idx) && evalStoryCondition(chapters[idx] && chapters[idx].unlockCondition);
+}
+
+function baseChapterUnlocked(chapters, idx) {
     if (idx <= 0) return true;
     const cleared = state.storyCleared || {};
     const lost = state.storyLost || {};
@@ -54,9 +75,14 @@ function isEndingChapter(chapters, chapter) {
     return !chapters[idx + 1];
 }
 
-// Простая оценка сложности главы по колоде босса: считаем суммарную ману карт —
-// чем она больше, тем сильнее соперник. Порогов три — от 1 до 3 звёзд.
+const DIFFICULTY_STARS = { easy: 1, medium: 2, hard: 3 };
+const DIFFICULTY_LABELS = { easy: '😊 Лёгкий', medium: '😐 Средний', hard: '😈 Сложный' };
+
+// Сложность главы теперь задаётся в админке явно (chapter.difficulty — она же определяет,
+// насколько умно играет бот-босс, см. BOT_DIFFICULTY в battle.js) и определяет звёзды напрямую.
+// Для старых глав, созданных до этого поля, сложность по-прежнему прикидывается по колоде.
 function chapterDifficultyStars(chapter) {
+    if (chapter.difficulty && DIFFICULTY_STARS[chapter.difficulty]) return DIFFICULTY_STARS[chapter.difficulty];
     const deck = chapter.bossDeck || {};
     let totalMana = 0, totalCards = 0;
     Object.entries(deck).forEach(([cardId, count]) => {
@@ -74,6 +100,83 @@ function chapterDifficultyStars(chapter) {
 function difficultyStarsHtml(n) {
     return '⭐'.repeat(n) + '<span style="opacity:.25;">' + '⭐'.repeat(3 - n) + '</span>';
 }
+
+// ===================== ПЕРЕМЕННЫЕ СЮЖЕТА И КАСТОМНЫЕ СКРИПТЫ =====================
+// Для каждой главы можно задать произвольный JS-код на три события: старт главы, победа,
+// поражение (см. админку — story-script-start/win/lose). Внутри него доступен объект `api`
+// (см. buildStoryScriptApi) — через него читаются/пишутся числовые переменные сюжета на игрока
+// (репутация, очки морали и т.п.), можно выдавать монеты/карточки, показывать тосты и попапы.
+// Ограничений на то, что можно писать внутри — нет: обычный `fetch(...)`, динамический
+// `import('https://...')` любой библиотеки и т.д. работают как в обычном JS-модуле. Именно
+// поэтому код оборачивается в try/catch — ошибка в чьём-то скрипте не должна ронять всю игру
+// другим игрокам, поэтому важно тестировать новые скрипты на себе перед тем как их публиковать.
+
+function buildStoryScriptApi(ctx) {
+    const writeVar = (name, value) => {
+        if (!name) return value;
+        state.storyVars = { ...(state.storyVars || {}), [name]: value };
+        if (state.currentUser) {
+            update(ref(state.db, 'users/' + state.currentUser.id + '/storyVars'), { [name]: value }).catch(() => {});
+        }
+        return value;
+    };
+    return {
+        // Переменные сюжета (числа). Несуществующая переменная считается за 0.
+        getVar: (name) => {
+            const v = (state.storyVars || {})[name];
+            return typeof v === 'number' ? v : 0;
+        },
+        setVar: (name, value) => writeVar(name, Number(value) || 0),
+        addVar: (name, delta) => {
+            const cur = (state.storyVars || {})[name];
+            return writeVar(name, (typeof cur === 'number' ? cur : 0) + (Number(delta) || 0));
+        },
+        vars: { ...(state.storyVars || {}) }, // снимок на момент запуска, для удобного чтения нескольких сразу
+
+        // Мелкие удобные действия — по аналогии с обычными наградами главы
+        grantCoins: (amount) => {
+            if (!state.currentUser || !amount) return;
+            update(ref(state.db, 'users/' + state.currentUser.id), { coins: increment(Math.round(amount)) }).catch(() => {});
+        },
+        grantCard: (cardId, count) => {
+            if (!state.currentUser || !cardId) return;
+            update(ref(state.db, 'users/' + state.currentUser.id + '/cardCollection'), { [cardId]: increment(Math.max(1, count || 1)) }).catch(() => {});
+        },
+        toast: (text, emoji) => showAppToast(text || '', emoji || '✨'),
+        popup: (title, message) => tg.showPopup({ title: title || '', message: message || '', buttons: [{ type: 'ok' }] }),
+
+        // Прямой доступ к базе — для по-настоящему новых механик, которые не укладываются в
+        // готовые getVar/setVar/grantCoins/grantCard: свои узлы в Firebase, кросс-игровое
+        // состояние, свои коллекции предметов и т.д. Работает как обычный Firebase SDK.
+        // db — корень базы, ref(db, 'путь') — построить ссылку, дальше get/set/update/remove/push.
+        db: state.db,
+        ref, get, set, update, remove, push, increment,
+        userId: state.currentUser ? state.currentUser.id : null,
+
+        // Контекст события
+        won: !!ctx.won,
+        isFirstTime: !!ctx.isFirstTime,
+        hook: ctx.hook,
+        chapter: ctx.chapter ? { id: ctx.chapter.id, name: ctx.chapter.name, bossName: ctx.chapter.bossName } : null,
+        user: state.currentUser ? { id: state.currentUser.id, name: state.currentUser.name || '' } : null,
+    };
+}
+
+// Выполняет код главы для события hook ('onStartScript' | 'onWinScript' | 'onLoseScript').
+// Код может быть асинхронным (await работает сразу, без обёртки). Ошибки ловятся и просто
+// пишутся в консоль — сломанный скрипт не должен обрывать показ диалогов/наград игроку.
+export async function runStoryChapterScript(chapter, hook, ctx) {
+    const code = chapter && chapter[hook];
+    if (!code || !code.trim()) return;
+    const api = buildStoryScriptApi({ ...ctx, chapter, hook });
+    try {
+        const fn = new Function('api', `return (async () => {\n${code}\n})();`);
+        await fn(api);
+    } catch (err) {
+        console.error(`Ошибка в скрипте главы «${chapter.name || chapter.id}» (${hook}):`, err);
+    }
+}
+
 
 // Показывает тост «Новая глава открыта!» или экран концовки после боя, который продвинул
 // сюжет (победа, либо «сюжетное» поражение с заданной веткой). isFirstTime=false для
@@ -101,7 +204,7 @@ export function handleStoryChapterOutcome(chapterId, won, isFirstTime) {
     if (!isFirstTime) return;
     const next = resolveNextChapter(chapters, chapter, won);
     if (!next) return;
-    setTimeout(() => showTerrariaToast('Новая глава открыта!', next.name || '', '🔓'), 400);
+    setTimeout(() => showAppToast(next.name ? `🔓 Новая глава: ${next.name}` : 'Новая глава открыта!', '🔓'), 400);
 }
 
 // ===================== ИГРОК: СПИСОК ГЛАВ =====================
@@ -300,6 +403,7 @@ function renderStoryChapterPreview(chapter, idx) {
             <div style="font-size:14px;">${stars}</div>
         </div>
         ${chapter.phase2Threshold ? `<div style="font-size:12px;font-weight:700;color:#ff9f0a;margin:-4px 0 10px;">⚡ У этого босса есть вторая фаза — при ${chapter.phase2Threshold}% HP он станет сильнее</div>` : ''}
+        ${chapter.arenaId ? (() => { const a = (state.arenasData || []).find(x => x.id === chapter.arenaId); return a ? `<div style="font-size:12px;font-weight:700;color:#0a84ff;margin:-4px 0 10px;">🗺️ Арена: ${escapeHtml(a.name || '')}</div>` : ''; })() : ''}
         ${chapter.nextChapterOnLose ? `<div style="font-size:12px;font-weight:700;color:#a970ff;margin:-4px 0 10px;">🔀 Кажется, исход этого боя может повернуть сюжет по-разному...</div>` : ''}
         ${chapter.description ? `<div class="story-preview-lore">${escapeHtml(chapter.description)}</div>` : ''}
         ${deckPreview ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin:12px 0 6px;">Колода соперника</div><div class="story-deck-preview-row">${deckPreview}${extraCount ? `<div class="story-deck-chip" style="opacity:.6;">+${extraCount}</div>` : ''}</div>` : ''}
@@ -347,6 +451,10 @@ window.pickStoryDeck = function (deckId) {
 function beginStoryDialogueAndBattle(chapter, deckId) {
     const overlay = document.getElementById('story-mode-overlay');
     if (overlay) overlay.classList.remove('active');
+
+    // Скрипт "при старте главы" — выполняется один раз, до вступительного диалога, ещё до
+    // самого боя. Не блокируем начало боя, если скрипт асинхронный/долгий — запускаем и не ждём.
+    runStoryChapterScript(chapter, 'onStartScript', { hook: 'onStartScript' });
 
     const intro = (chapter.introDialogue && chapter.introDialogue.length)
         ? chapter.introDialogue
@@ -439,6 +547,17 @@ window.changeStoryBossCardCount = function (cardId, delta) {
     renderStoryBossDeckPicker();
 };
 
+// Заполняет выпадающий список арен для главы — "Случайная" (как было раньше) + все арены
+export function populateStoryArenaSelect() {
+    const sel = document.getElementById('story-chapter-arena');
+    if (!sel) return;
+    const prevVal = sel.value;
+    const options = (state.arenasData || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .map(a => `<option value="${a.id}">${escapeHtml(a.name || '')}</option>`).join('');
+    sel.innerHTML = '<option value="">🎲 Случайная (как раньше)</option>' + options;
+    if ((state.arenasData || []).some(a => a.id === prevVal)) sel.value = prevVal;
+}
+
 // Заполняет выпадающий список карточек для награды за прохождение главы
 export function populateStoryRewardCardSelect() {
     const sel = document.getElementById('story-reward-card');
@@ -485,12 +604,16 @@ export function renderAdminStoryList() {
             branchBits.push(`поражение → «${escapeHtml(t ? t.name : '?')}»`);
         }
         const ending = isEndingChapter(chapters, c);
+        const arena = c.arenaId ? (state.arenasData || []).find(a => a.id === c.arenaId) : null;
+        const arenaLabel = arena ? `🗺️ ${escapeHtml(arena.name || '')}` : '🎲 Случайная арена';
+        const diffLabel = DIFFICULTY_LABELS[c.difficulty] || DIFFICULTY_LABELS.medium;
+        const hasScript = c.onStartScript || c.onWinScript || c.onLoseScript || c.unlockCondition;
         return `
         <div class="admin-item">
             ${c.bossAvatar ? `<img src="${c.bossAvatar}" class="admin-item-thumb" onerror="this.style.display='none'">` : `<div class="admin-item-thumb cover-fallback small" style="background:${colorFor(c.bossName || '')};">${initialOf(c.bossName || '?')}</div>`}
             <div class="admin-item-info">
                 <div class="admin-item-title">#${c.order ?? 0} · ${escapeHtml(c.name || 'Глава')}${ending ? ' · 🏁' : ''}</div>
-                <div class="admin-item-sub">Босс: ${escapeHtml(c.bossName || '—')} · Карт в колоде: ${Object.values(c.bossDeck || {}).reduce((s, n) => s + n, 0)} · 🔁 ${c.replayCoins || 0}🪙 за повтор${c.phase2Threshold ? ` · ⚡ Фаза 2 при ${c.phase2Threshold}% HP` : ''}${branchBits.length ? ' · 🔀 ' + branchBits.join(', ') : ''}</div>
+                <div class="admin-item-sub">Босс: ${escapeHtml(c.bossName || '—')} · ${diffLabel} · ${arenaLabel} · 🔁 ${c.replayCoins || 0}🪙 за повтор${c.phase2Threshold ? ` · ⚡ Фаза 2 при ${c.phase2Threshold}% HP` : ''}${hasScript ? ' · 🧪 скрипт' : ''}${branchBits.length ? ' · 🔀 ' + branchBits.join(', ') : ''}</div>
             </div>
             <div class="admin-item-actions">
                 <button class="icon-btn" onclick="window.editStoryChapter('${c.id}')">✏️</button>
@@ -523,6 +646,9 @@ window.editStoryChapter = function (id) {
     document.getElementById('story-boss-name').value = c.bossName || '';
     document.getElementById('story-boss-image').value = c.bossAvatar || '';
     document.getElementById('story-chapter-description').value = c.description || '';
+    populateStoryArenaSelect();
+    document.getElementById('story-chapter-arena').value = c.arenaId || '';
+    document.getElementById('story-chapter-difficulty').value = c.difficulty || 'medium';
     document.getElementById('story-dialogue-intro').value = serializeDialogueLines(c.introDialogue);
     document.getElementById('story-dialogue-during').value = serializeDuringDialogue(c.duringDialogue);
     document.getElementById('story-dialogue-hp').value = serializeDuringDialogue(c.hpDialogue);
@@ -540,6 +666,10 @@ window.editStoryChapter = function (id) {
     document.getElementById('story-next-on-lose').value = c.nextChapterOnLose || '';
     document.getElementById('story-lose-reward-coins').value = c.loseRewardCoins || 0;
     document.getElementById('story-ending-name').value = c.endingName || '';
+    document.getElementById('story-unlock-condition').value = c.unlockCondition || '';
+    document.getElementById('story-script-start').value = c.onStartScript || '';
+    document.getElementById('story-script-win').value = c.onWinScript || '';
+    document.getElementById('story-script-lose').value = c.onLoseScript || '';
     renderStoryBossDeckPicker();
 
     document.getElementById('story-chapter-form-heading').textContent = 'Редактировать главу';
@@ -552,11 +682,15 @@ window.cancelEditStoryChapter = function () {
     state.editingStoryChapterId = null;
     state.storyBossDeckDraft = {};
 
-    ['story-chapter-name', 'story-boss-name', 'story-boss-image', 'story-chapter-description', 'story-dialogue-intro', 'story-dialogue-during', 'story-dialogue-hp', 'story-dialogue-win', 'story-dialogue-lose', 'story-ending-name'].forEach(id => {
+    ['story-chapter-name', 'story-boss-name', 'story-boss-image', 'story-chapter-description', 'story-dialogue-intro', 'story-dialogue-during', 'story-dialogue-hp', 'story-dialogue-win', 'story-dialogue-lose', 'story-ending-name', 'story-unlock-condition', 'story-script-start', 'story-script-win', 'story-script-lose'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
     document.getElementById('story-chapter-order').value = '';
+    const arenaSel = document.getElementById('story-chapter-arena');
+    if (arenaSel) { populateStoryArenaSelect(); arenaSel.value = ''; }
+    const diffSel = document.getElementById('story-chapter-difficulty');
+    if (diffSel) diffSel.value = 'medium';
     document.getElementById('story-reward-coins').value = '';
     document.getElementById('story-reward-card-count').value = 1;
     document.getElementById('story-reward-replay-coins').value = 0;
@@ -579,6 +713,8 @@ window.saveStoryChapter = function () {
     const bossName = document.getElementById('story-boss-name').value.trim();
     const bossAvatar = document.getElementById('story-boss-image').value.trim();
     const description = document.getElementById('story-chapter-description').value.trim();
+    const arenaId = document.getElementById('story-chapter-arena').value || null;
+    const difficulty = document.getElementById('story-chapter-difficulty').value || 'medium';
     const rewardCoins = parseInt(document.getElementById('story-reward-coins').value, 10) || 0;
     const rewardCardId = document.getElementById('story-reward-card').value || null;
     const rewardCardCount = parseInt(document.getElementById('story-reward-card-count').value, 10) || 1;
@@ -589,15 +725,31 @@ window.saveStoryChapter = function () {
     const nextChapterOnLose = document.getElementById('story-next-on-lose').value || null;
     const loseRewardCoins = parseInt(document.getElementById('story-lose-reward-coins').value, 10) || 0;
     const endingName = document.getElementById('story-ending-name').value.trim();
+    const unlockCondition = document.getElementById('story-unlock-condition').value.trim();
+    const onStartScript = document.getElementById('story-script-start').value;
+    const onWinScript = document.getElementById('story-script-win').value;
+    const onLoseScript = document.getElementById('story-script-lose').value;
 
     if (!name) return tg.showAlert('Укажи название главы');
     if (!bossName) return tg.showAlert('Укажи имя соперника');
+
+    // Проверяем скрипты на синтаксические ошибки прямо при сохранении — лучше поймать
+    // опечатку здесь, чем когда игрок дойдёт до этой главы в бою.
+    for (const [label, code] of [['старте главы', onStartScript], ['победе', onWinScript], ['поражении', onLoseScript]]) {
+        if (!code || !code.trim()) continue;
+        try { new Function('api', `return (async () => {\n${code}\n})();`); }
+        catch (err) { return tg.showAlert(`Ошибка в скрипте «при ${label}»: ${err.message}`); }
+    }
+    if (unlockCondition) {
+        try { new Function('return (' + unlockCondition + ');'); }
+        catch (err) { return tg.showAlert('Ошибка в условии открытия главы: ' + err.message); }
+    }
 
     const bossDeck = state.storyBossDeckDraft || {};
     if (!Object.keys(bossDeck).length) return tg.showAlert('Собери колоду соперника — выбери хотя бы одну карту');
 
     const data = {
-        name, order, bossName, bossAvatar, description, bossDeck,
+        name, order, bossName, bossAvatar, description, bossDeck, arenaId, difficulty,
         introDialogue: parseDialogueLines(document.getElementById('story-dialogue-intro').value),
         duringDialogue: parseDuringDialogueLines(document.getElementById('story-dialogue-during').value),
         winDialogue: parseDialogueLines(document.getElementById('story-dialogue-win').value),
@@ -605,6 +757,7 @@ window.saveStoryChapter = function () {
         hpDialogue: parseDuringDialogueLines(document.getElementById('story-dialogue-hp').value),
         rewardCoins, rewardCardId, rewardCardCount, replayCoins, phase2Threshold, phase2ManaBonus,
         nextChapterOnWin, nextChapterOnLose, loseRewardCoins, endingName,
+        unlockCondition, onStartScript, onWinScript, onLoseScript,
     };
 
     if (state.editingStoryChapterId) {

@@ -12,7 +12,8 @@ import { populateChapterBookSelect, populateEconomyAdminForm, renderAdminBanners
 import { renderAdminCardsList, renderAdminClassesList, renderAdminCombosList, renderAdminPacksList, populateDeckSettingsForm, populateFramesForm } from './cards.js';
 import { renderDecksView, renderCardCollectionView } from './decks.js';
 import { renderEventsCalendar } from './events.js';
-import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, renderStoryListView, populateStoryAdminSettingsForm } from './story.js';
+import { renderAdminStoryList, renderStoryBossDeckPicker, populateStoryRewardCardSelect, renderStoryListView, populateStoryAdminSettingsForm, populateStoryArenaSelect } from './story.js';
+import { renderAllWidgetSlots } from './widgets.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAfrRE3nCFmodNEPac_plnoBuc_NvJbIgQ",
@@ -524,6 +525,7 @@ export function startFirebaseListeners() {
         const data = snapshot.val();
         state.arenasData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
         if (state.isAdmin && window.renderAdminArenasList) window.renderAdminArenasList();
+        if (state.isAdmin) populateStoryArenaSelect();
     });
 
     onValue(ref(state.db, 'customHeroes'), (snapshot) => {
@@ -547,6 +549,16 @@ export function startFirebaseListeners() {
         state.cardSkinsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
         if (state.isAdmin && window.renderAdminCardSkinsList) window.renderAdminCardSkinsList();
         if (window.renderCreatureShop) window.renderCreatureShop();
+    });
+
+    // Виджеты/плагины, которые админ встраивает в разные места приложения — см. widgets.js.
+    // renderAllWidgetSlots перерисовывает их во всех уже существующих на странице слотах разом
+    // (слот, которого сейчас нет в DOM — например, экран ещё не открывали — просто пропускается).
+    onValue(ref(state.db, 'widgets'), (snapshot) => {
+        const data = snapshot.val();
+        state.widgetsData = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
+        if (state.isAdmin && window.renderAdminWidgetsList) window.renderAdminWidgetsList();
+        renderAllWidgetSlots();
     });
 
     onValue(ref(state.db, 'battleReactions'), (snapshot) => {
@@ -617,6 +629,14 @@ export function startFirebaseListeners() {
 
         onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyLost'), (snapshot) => {
             state.storyLost = snapshot.val() || {};
+            if (state.activeOverlay === 'storyMode') renderStoryListView();
+        });
+
+        // Числовые переменные сюжета (репутация и т.п.) — читаются/пишутся кастомным JS-кодом
+        // главы (см. story.js). Держим их живыми в state, чтобы скрипт всегда видел актуальное
+        // значение, даже если менялось на другом устройстве.
+        onValue(ref(state.db, 'users/' + state.currentUser.id + '/storyVars'), (snapshot) => {
+            state.storyVars = snapshot.val() || {};
             if (state.activeOverlay === 'storyMode') renderStoryListView();
         });
 

@@ -7,7 +7,7 @@ import { questTypeLabel } from './profile.js';
 window.switchAdminTab = function(tab) {
             // guard: не на каждой странице есть все вкладки (например, "Герои" есть только в
             // cardverse.html) — без проверки на null .classList уронит переключение ЛЮБОЙ вкладки
-            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas', 'heroes', 'story', 'users'].forEach(t => { 
+            ['posts', 'banners', 'books', 'stickers', 'theme', 'boss', 'economy', 'quests', 'events', 'cards', 'arenas', 'heroes', 'story', 'widgets', 'users'].forEach(t => { 
                 const panel = document.getElementById('admin-tab-' + t);
                 const btn = document.getElementById('admin-tab-btn-' + t);
                 if (panel) panel.classList.toggle('hidden', tab !== t); 

@@ -2,6 +2,7 @@ import { ref, push, set, update, remove, increment } from "https://www.gstatic.c
 import { state, tg } from './state.js';
 import { escapeHtml, colorFor, initialOf, cardFrameStyle } from './utils.js';
 import { startMatchmaking } from './battle.js';
+import { renderWidgetSlot } from './widgets.js';
 import { CARD_LEVEL_THRESHOLDS, CARD_MAX_LEVEL, DUST_VALUES, CRAFT_COSTS } from './constants.js';
 
 // ===================== УРОВНИ КАРТ =====================
@@ -185,6 +186,7 @@ function renderCardGameMenu() {
     const hasDeck = deckCount > 0;
 
     body.innerHTML = `
+        <div id="widget-slot-cardverse_menu_top"></div>
         <div class="cg-menu-header">
             <div class="cg-rank-badge">${rank.icon}</div>
             <div class="cg-title">Врата Бездны</div>
@@ -229,6 +231,7 @@ function renderCardGameMenu() {
             </div>
         </div>
     `;
+    renderWidgetSlot('cardverse_menu_top');
 }
 
 window.openCardGameMenu = function () {
@@ -246,7 +249,20 @@ window.startCardBattle = function () {
     if (!state.myDecks.length) {
         return tg.showPopup({ title: 'Нет колод', message: 'Сначала собери колоду из своей коллекции', buttons: [{ type: 'ok' }] });
     }
-    startMatchmaking();
+    // Сложность соперника выбираем заранее — она пригодится, только если реального игрока не
+    // найдётся и бой пойдёт с ботом (см. beginQueue/startBotBattle в battle.js), но спрашиваем
+    // всегда, чтобы игрок сам решал, насколько сильного противника хочет получить в любом случае.
+    tg.showPopup({
+        title: '⚔️ Выбери соперника',
+        message: 'Насколько сильным должен быть противник?',
+        buttons: [
+            { id: 'easy', type: 'default', text: '😊 Лёгкий' },
+            { id: 'medium', type: 'default', text: '😐 Средний' },
+            { id: 'hard', type: 'destructive', text: '😈 Сложный' },
+        ],
+    }, (buttonId) => {
+        startMatchmaking(buttonId || 'medium');
+    });
 };
 
 // ===================== КОЛЛЕКЦИЯ =====================

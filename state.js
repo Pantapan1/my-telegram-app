@@ -187,6 +187,13 @@ export const state = {
   storyChapters: [],
   storyCleared: {},
   storyLost: {},
+  // Числовые переменные сюжета на игрока (репутация, очки морали и т.п.) — читаются/пишутся
+  // из кастомного JS-кода главы, см. story.js runStoryChapterScript.
+  storyVars: {},
+  // Виджеты/плагины, которые админ встраивает в разные места приложения через свой HTML/JS-код,
+  // см. widgets.js.
+  widgetsData: [],
+  editingWidgetId: null,
   editingStoryChapterId: null,
   storyBossDeckDraft: {},
   storyPendingChapterId: null,

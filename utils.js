@@ -1314,6 +1314,20 @@ export function colorFor(str) {
             }, 3800);
         }
 
+        // Простой тост общего назначения (не завязан на тему оформления, в отличие от
+        // showTerrariaToast выше) — используется, например, скриптами сюжета и виджетами админки.
+        export function showAppToast(text, emoji) {
+            const el = document.createElement('div');
+            el.className = 'app-toast';
+            el.innerHTML = `<span class="app-toast-icon">${emoji || '✨'}</span><span class="app-toast-text">${escapeHtml(text || '')}</span>`;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 300);
+            }, 2600);
+        }
+
 
 
         // Обновляет подпись Boss HP над прогресс-баром читалки (вызывается из openChapter/renderChapterListView)

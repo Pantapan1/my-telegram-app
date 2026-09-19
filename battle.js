@@ -1,10 +1,51 @@
 import { ref, onValue, off, update, remove, set, get, push, increment, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 import { state, tg } from './state.js';
 import { escapeHtml, colorFor, initialOf, cardFrameStyle, showStoryDialogue, showTerrariaToast } from './utils.js';
-import { handleStoryChapterOutcome } from './story.js';
+import { handleStoryChapterOutcome, runStoryChapterScript } from './story.js';
 import { cardLevelStatBonus } from './decks.js';
 
 const BOT_NAMES = ['Артём', 'Максим', 'Соня', 'Данил', 'Егор', 'Полина', 'Тимур', 'Вика'];
+
+// ===================== СЛОЖНОСТЬ БОТА (обычные бои с фолбэком на бота) =====================
+// Бот выдаёт себя за живого соперника (см. window.startCardBattle в decks.js — игрок выбирает
+// сложность перед поиском игры), поэтому ничего в интерфейсе не должно намекать, что это бот:
+// ни бейджа, ни фразы "бой с ботом" в статусе поиска (см. beginQueue) — только разное поведение
+// в игре, которое зависит от выбранной сложности.
+const BOT_DIFFICULTY = {
+    easy: {
+        // Раздумывает дольше и не всегда идёт "чистым" планом — как новичок
+        thinkMin: 900, thinkMax: 2200,
+        skipCardChance: 0.40,       // шанс остановиться и не доиграть ещё одну карту, хотя может
+        skipAttackChance: 0.35,     // шанс "постесняться" и не пойти в атаку существом
+        attackFaceChance: 0.45,     // при прочих равных бьёт в лицо реже — держит существ на защите
+        mistakeChance: 0.55,        // высокий шанс сыграть случайную карту вместо самой выгодной
+        rarityWeights: { common: 6, rare: 2, epic: 1, legendary: 0.5 },
+        smartTrades: false, lethalCheck: false,
+    },
+    medium: {
+        thinkMin: 600, thinkMax: 1500,
+        skipCardChance: 0.20,
+        skipAttackChance: 0.15,
+        attackFaceChance: 0.6,
+        mistakeChance: 0.30,
+        rarityWeights: { common: 3, rare: 3, epic: 2, legendary: 1 },
+        smartTrades: false, lethalCheck: true,
+    },
+    hard: {
+        thinkMin: 350, thinkMax: 900,
+        skipCardChance: 0.05,
+        skipAttackChance: 0.03,
+        attackFaceChance: 0.6,
+        mistakeChance: 0.05,
+        rarityWeights: { common: 1, rare: 2, epic: 3, legendary: 3 },
+        smartTrades: true, lethalCheck: true,
+    },
+};
+function botDifficultyConfig(data, botSlot) {
+    const key = (data && data[botSlot] && data[botSlot].botDifficulty) || 'medium';
+    return BOT_DIFFICULTY[key] || BOT_DIFFICULTY.medium;
+}
+
 
 // ===================== ЭФФЕКТЫ АРЕН (полей боя) =====================
 
@@ -118,15 +159,26 @@ function expandDeck(cards) {
     return shuffle(pile);
 }
 
-function buildRandomBotDeck() {
+function buildRandomBotDeck(difficulty) {
     const { deckSize, maxCopies } = state.deckSettings;
     const pool = state.cardsData;
+    const weights = (BOT_DIFFICULTY[difficulty] || BOT_DIFFICULTY.medium).rarityWeights;
     const cards = {};
     let total = 0;
     let guard = 0;
-    while (total < deckSize && pool.length && guard < deckSize * 20) {
+    // Взвешенный выбор по редкости: у лёгкого бота колода в основном из обычных карт,
+    // у сложного — упор на редкие/эпик/легендарки (они сильнее по статам на ту же ману,
+    // см. RARITY_STAT_BONUS в cards.js), так что противник ощутимо крепче именно за счёт
+    // качества колоды, а не только "читерских" бонусов в бою.
+    const totalWeight = pool.reduce((s, c) => s + (weights[c.rarity] ?? 1), 0) || 1;
+    while (total < deckSize && pool.length && guard < deckSize * 40) {
         guard++;
-        const card = pool[Math.floor(Math.random() * pool.length)];
+        let r = Math.random() * totalWeight;
+        let card = pool[pool.length - 1];
+        for (const c of pool) {
+            r -= (weights[c.rarity] ?? 1);
+            if (r <= 0) { card = c; break; }
+        }
         const current = cards[card.id] || 0;
         if (current >= maxCopies) continue;
         cards[card.id] = current + 1;
@@ -702,7 +754,8 @@ function effectiveAttack(iid, m, board) {
 let queueListenerRef = null;
 let assignmentListenerRef = null;
 
-export function startMatchmaking() {
+export function startMatchmaking(difficulty) {
+    state.pendingBotDifficulty = difficulty || 'medium';
     if (state.myDecks.length === 1) {
         beginQueue(state.myDecks[0].id);
     } else {
@@ -734,7 +787,7 @@ function beginQueue(deckId) {
         <div class="empty-state">
             <span class="icon">⚔️</span>
             <div class="title">Ищем соперника...</div>
-            <div class="sub">Если за 5 секунд никого не найдём — бой с ботом</div>
+            <div class="sub">Подбираем достойного противника</div>
         </div>`;
 
     state.inQueue = true;
@@ -784,7 +837,7 @@ function beginQueue(deckId) {
         if (!state.inQueue) return;
         finishQueueing();
         remove(ref(state.db, 'matchmakingQueue/' + myUid)).catch(() => {});
-        startBotBattle(deckId);
+        startBotBattle(deckId, state.pendingBotDifficulty);
     }, 5000);
 }
 
@@ -795,14 +848,20 @@ function finishQueueing() {
     if (assignmentListenerRef) { off(assignmentListenerRef); assignmentListenerRef = null; }
 }
 
-function startBotBattle(deckId) {
+function startBotBattle(deckId, difficulty) {
     const myUid = state.currentUser.id;
     const botUid = 'BOT_' + randId();
     const botName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+    // Портрет героя "для вида" — просто случайная картинка из уже существующих в игре героев,
+    // чтобы у бота тоже была своя аватарка на поле боя, как у живого игрока, а не пустая
+    // заглушка с инициалом. На геймплей никак не влияет.
+    const heroPool = (state.customHeroesData || []).filter(h => h.image);
+    const fakeHeroImage = heroPool.length ? heroPool[Math.floor(Math.random() * heroPool.length)].image : '';
     createBattle(
         { uid: myUid, name: state.currentUser.name || 'Игрок', deckId },
         { uid: botUid, name: botName, deckId: null, isBot: true },
-        true
+        true,
+        { botDifficulty: difficulty || 'medium', fakeHeroImage }
     ).then(battleId => enterBattle(battleId));
 }
 
@@ -830,6 +889,8 @@ export function startStoryBattle(chapter, deckId) {
             storyChapterId: chapter.id,
             bossAvatar: chapter.bossAvatar || '',
             fixedP2Deck: chapter.bossDeck || {},
+            arenaId: chapter.arenaId || null,
+            botDifficulty: chapter.difficulty || 'medium',
             storyDuring: chapter.duringDialogue || {},
             storyHpDialogue: chapter.hpDialogue || {},
             storyPhase2Threshold: chapter.phase2Threshold || 0,
@@ -892,7 +953,7 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
     const p2DeckPromise = overrides.fixedP2Deck
         ? Promise.resolve(overrides.fixedP2Deck)
         : isBot
-            ? Promise.resolve(buildRandomBotDeck())
+            ? Promise.resolve(buildRandomBotDeck(overrides.botDifficulty))
             : get(ref(state.db, 'users/' + p2info.uid + '/decks/' + p2info.deckId))
                 .then(snap => (snap.val() || {}).cards || {})
                 .catch(() => ({}));
@@ -901,10 +962,19 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
         const goesFirst = Math.random() < 0.5 ? 'p1' : 'p2';
 
         const arenas = state.arenasData || [];
-        const arena = arenas.length > 0 ? arenas[Math.floor(Math.random() * arenas.length)] : null;
+        // Сюжетная глава может задавать конкретную арену (см. admin в story.js) — иначе,
+        // как и раньше, арена выбирается случайно из всех существующих.
+        const forcedArena = overrides.arenaId ? arenas.find(a => a.id === overrides.arenaId) : null;
+        const arena = forcedArena || (arenas.length > 0 ? arenas[Math.floor(Math.random() * arenas.length)] : null);
 
         const p1 = initPlayerState(p1info.uid, p1info.name, false, p1Deck);
         const p2 = initPlayerState(p2info.uid, p2info.name, !!isBot, p2Deck);
+
+        // Сложность и "внешность" бота — см. startBotBattle. Пишем прямо в состояние игрока,
+        // чтобы runBotTurn мог читать их из живых данных боя (state.battleData), не полагаясь
+        // на замыкание, которое не переживёт перезагрузку/пересоздание вкладки.
+        if (isBot && overrides.botDifficulty) p2.botDifficulty = overrides.botDifficulty;
+        if (isBot && overrides.fakeHeroImage) p2.heroImage = overrides.fakeHeroImage;
 
         if (arena && arena.effectType === 'start_hp_boost') {
             const v = arena.effectValue || 0;
@@ -963,6 +1033,20 @@ function createBattle(p1info, p2info, isBot, storyOverrides) {
 // Поражение тоже может продвигать сюжет — если для главы задана ветка "при поражении".
 function handleStoryBattleFinish(data, battleId) {
     const iWon = data.winner === 'p1';
+
+    // Скрипты "при победе"/"при поражении" главы — выполняются один раз за просмотр экрана
+    // результата, независимо от того, продвигает ли этот исход сюжет дальше по веткам
+    // (см. runStoryChapterScript / api в story.js).
+    if (data.storyChapterId) {
+        const chapter = (state.storyChapters || []).find(c => c.id === data.storyChapterId);
+        if (chapter) {
+            const isFirstTime = iWon
+                ? !(data.storyReward && data.storyReward.isReplay)
+                : !(data.storyLoseReward && data.storyLoseReward.isReplay);
+            runStoryChapterScript(chapter, iWon ? 'onWinScript' : 'onLoseScript', { won: iWon, isFirstTime });
+        }
+    }
+
     const lines = iWon
         ? (data.storyWin && data.storyWin.length ? data.storyWin : [{ speaker: data.p2.name, text: 'Невозможно... ты сильнее, чем я думал.' }])
         : (data.storyLose && data.storyLose.length ? data.storyLose : [{ speaker: data.p2.name, text: 'Ты ещё не готов к схватке со мной.' }]);
@@ -1413,7 +1497,7 @@ function renderBattleView() {
             <div class="battle-hand-row">${oppHandBacksHtml}</div>
             <div class="battle-name-tab" id="battle-hero-opp" onclick="${myTurn ? `battleAttackTarget('hero')` : ''}">
                 ${opp.heroImage ? `<img src="${opp.heroImage}" class="bnt-hero-portrait" onerror="this.style.display='none'">` : ''}
-                <span class="bnt-name">${escapeHtml(opp.heroDisplayName || opp.name || 'Соперник')} ${opp.isBot ? '🤖' : ''}</span>
+                <span class="bnt-name">${escapeHtml(opp.heroDisplayName || opp.name || 'Соперник')}</span>
                 <span class="bnt-stats">${opp.heroShielded ? "🔵 " : ""}❤️${opp.heroHealth} · 💧${opp.mana}/${opp.maxMana}</span>
             </div>
         </div>
@@ -2009,13 +2093,22 @@ const rand = (min, max) => min + Math.random() * (max - min);
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 async function runBotTurn(battleId) {
-    await delay(rand(700, 1800));
-
     let data = state.battleData;
     if (!data || data.status !== 'active') return;
     const botSlot = data.turnPlayer;
     const oppSlot = botSlot === 'p1' ? 'p2' : 'p1';
     if (!data[botSlot].isBot) return;
+
+    const cfg = botDifficultyConfig(data, botSlot);
+    await delay(rand(cfg.thinkMin, cfg.thinkMax));
+
+    // Грубая оценка "ценности" карты для небольшой руки — чтобы бот на средней/высокой
+    // сложности не разыгрывал карты совсем наугад, а в первую очередь тратил ману с толком
+    // (крупная карта > мелкая) вместо распыления на первую попавшуюся дешёвку.
+    function cardValue(card, manaCost) {
+        const stats = (card.attack || 0) + (card.health || 0);
+        return manaCost * 10 + stats + (card.effect ? 2 : 0);
+    }
 
     let guard = 0;
     while (guard < 10) {
@@ -2024,23 +2117,50 @@ async function runBotTurn(battleId) {
         if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
         const bot = data[botSlot];
         const affordable = Object.entries(bot.hand || {})
-            .map(([iid, cardId]) => ({ iid, card: cardById(cardId) }))
-            .filter(x => x.card && effectiveCardMana(x.card, data, bot) <= bot.mana);
+            .map(([iid, cardId]) => ({ iid, card: cardById(cardId), mana: 0 }))
+            .filter(x => x.card)
+            .map(x => ({ ...x, mana: effectiveCardMana(x.card, data, bot) }))
+            .filter(x => x.mana <= bot.mana);
         if (!affordable.length) break;
-        if (Math.random() < 0.22) break;
+        if (Math.random() < cfg.skipCardChance) break;
 
-        const pick = affordable[Math.floor(Math.random() * affordable.length)];
-        await delay(rand(500, 1300));
+        let pick;
+        if (Math.random() < cfg.mistakeChance) {
+            // "Человеческая" ошибка — берём не лучший, а случайный доступный вариант
+            pick = affordable[Math.floor(Math.random() * affordable.length)];
+        } else {
+            pick = affordable.slice().sort((a, b) => cardValue(b.card, b.mana) - cardValue(a.card, a.mana))[0];
+        }
+
+        await delay(rand(cfg.thinkMin * 0.6, cfg.thinkMax * 0.8));
         data = state.battleData;
         if (!data || data.turnPlayer !== botSlot) return;
         playCardInternal(battleId, data, botSlot, oppSlot, pick.iid, pick.card);
         await delay(rand(200, 500));
     }
 
-    await delay(rand(500, 1200));
+    await delay(rand(cfg.thinkMin * 0.6, cfg.thinkMax * 0.8));
 
     data = state.battleData;
     if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
+
+    // Проверка на лихой финал: если весь доступный урон в лицо валит здоровье соперника,
+    // а щита нет и заслонов (taunt) на столе тоже нет — сложный/средний бот не будет
+    // "стесняться" и разменивать удары по существам, а сразу пойдёт добивать (как реальный
+    // игрок, увидевший летал).
+    let goForLethal = false;
+    if (cfg.lethalCheck) {
+        const oppNow = data[oppSlot];
+        const oppMinionsNow = Object.values(oppNow.board || {}).filter(m => !m.stealth);
+        const hasTauntNow = oppMinionsNow.some(m => m.taunt);
+        if (!hasTauntNow && !oppNow.heroShielded) {
+            const totalDmg = Object.entries(data[botSlot].board || {})
+                .filter(([, m]) => m.canAttack)
+                .reduce((s, [iid, m]) => s + effectiveAttack(iid, m, data[botSlot].board), 0);
+            if (totalDmg >= (oppNow.heroHealth || 0)) goForLethal = true;
+        }
+    }
+
     const attackers = Object.entries(data[botSlot].board || {}).filter(([, m]) => m.canAttack);
     for (const [iid] of attackers) {
         data = state.battleData;
@@ -2048,7 +2168,7 @@ async function runBotTurn(battleId) {
         const bot = data[botSlot];
         const attacker = (bot.board || {})[iid];
         if (!attacker || !attacker.canAttack) continue;
-        if (Math.random() < 0.15) continue;
+        if (!goForLethal && Math.random() < cfg.skipAttackChance) continue;
 
         const opp = data[oppSlot];
         const oppMinions = Object.entries(opp.board || {}).filter(([, m]) => !m.stealth);
@@ -2057,15 +2177,30 @@ async function runBotTurn(battleId) {
         const arenaForBot = currentArena(data);
         const heroAttackBlocked = arenaForBot && arenaForBot.effectType === 'no_hero_attack_turn1' && (data.turnNumber || 1) <= 1;
         if (heroAttackBlocked && !targetPool.length) continue; // некого атаковать вместо героя в 1-й ход
+
         let targetIid = heroAttackBlocked ? null : 'hero';
         if (tauntMinions.length) {
-            targetIid = tauntMinions[Math.floor(Math.random() * tauntMinions.length)][0];
-        } else if (targetPool.length && (heroAttackBlocked || Math.random() < 0.6)) {
+            // Заслон обязателен — но сложный бот бьёт того, кого выгоднее всего разменять
+            // (убивает и сам переживает), а не первого попавшегося.
+            targetIid = cfg.smartTrades
+                ? bestTradeTarget(iid, attacker, tauntMinions, bot.board) || tauntMinions[0][0]
+                : tauntMinions[Math.floor(Math.random() * tauntMinions.length)][0];
+        } else if (goForLethal && !heroAttackBlocked) {
+            targetIid = 'hero';
+        } else if (cfg.smartTrades && targetPool.length) {
+            // Разменивается в первую очередь на карты соперника, которых может убить и при
+            // этом сам не погибнуть — иначе, как и раньше, часть ударов уходит в лицо.
+            const trade = bestTradeTarget(iid, attacker, targetPool, bot.board);
+            if (trade) targetIid = trade;
+            else if (heroAttackBlocked) targetIid = targetPool[Math.floor(Math.random() * targetPool.length)][0];
+            else if (Math.random() < cfg.attackFaceChance) targetIid = 'hero';
+            else targetIid = targetPool[Math.floor(Math.random() * targetPool.length)][0];
+        } else if (targetPool.length && (heroAttackBlocked || Math.random() < (1 - cfg.attackFaceChance))) {
             targetIid = targetPool[Math.floor(Math.random() * targetPool.length)][0];
         }
         if (!targetIid) continue;
 
-        await delay(rand(500, 1100));
+        await delay(rand(goForLethal ? 250 : cfg.thinkMin * 0.6, goForLethal ? 550 : cfg.thinkMax * 0.7));
         data = state.battleData;
         if (!data || data.turnPlayer !== botSlot) return;
         
@@ -2077,6 +2212,20 @@ async function runBotTurn(battleId) {
     data = state.battleData;
     if (!data || data.status !== 'active' || data.turnPlayer !== botSlot) return;
     endTurn(battleId, data, botSlot);
+}
+
+// Существо соперника, которое выгоднее всего разменять данным атакующим: сначала ищем цели,
+// которых атакующий гарантированно убивает, среди них предпочитаем те, после которых атакующий
+// сам остаётся жив, а если таких нет — просто самую сильную из убиваемых (жертвенный размен
+// всё равно выгоднее нескольких ударов впустую по мелочи).
+function bestTradeTarget(attackerIid, attacker, candidates, board) {
+    const atkVal = effectiveAttack(attackerIid, attacker, board);
+    const kills = candidates.filter(([, m]) => atkVal >= (m.health || 0) || m.shielded);
+    if (!kills.length) return null;
+    const survives = kills.filter(([, m]) => (attacker.health || 0) > (m.attack || 0) || m.taunt);
+    const pool = survives.length ? survives : kills;
+    pool.sort((a, b) => ((b[1].attack || 0) + (b[1].health || 0)) - ((a[1].attack || 0) + (a[1].health || 0)));
+    return pool[0][0];
 }
 
 // Упрощенная версия для бота без таймаутов на анимации

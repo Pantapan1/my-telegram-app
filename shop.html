@@ -207,31 +207,64 @@
 }
 .hero-detail-overlay.hidden { display: none; }
 .hero-detail-sheet {
-    background: #12151c; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
-    max-height: 88vh; overflow-y: auto; padding: 18px; color: #fff; position: relative;
+    /* --accent задаётся в JS под конкретного героя/существо (см. openHeroDetail/openCreatureDetail) —
+       вся карточка окрашивается в его "фирменный" цвет, как в Brawl Stars. */
+    --accent: #ed8f03;
+    background: #12151c; border-radius: 22px 22px 0 0; width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto; padding: 0 0 18px; color: #fff; position: relative;
 }
 .hero-detail-close {
-    position: absolute; top: 10px; right: 14px; font-size: 22px; background: none; border: none;
-    color: #94a3b8; cursor: pointer; line-height: 1;
+    position: absolute; top: 12px; right: 14px; font-size: 20px; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    background: rgba(0,0,0,0.35); border: none; color: #fff; cursor: pointer; line-height: 1; z-index: 2;
 }
+/* Полосатая цветная "витрина" за портретом — фирменный приём Brawl Stars: диагональные
+   полосы фонового акцентного цвета персонажа, портрет крупно поверх них с обводкой/тенью. */
 .hero-detail-stage {
-    width: 100%; height: 220px; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, rgba(237,143,3,0.15), transparent 70%);
-    border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+    width: 100%; height: 240px; display: flex; align-items: center; justify-content: center;
+    background:
+        repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, #000 45%) 0px, color-mix(in srgb, var(--accent) 55%, #000 45%) 26px, color-mix(in srgb, var(--accent) 70%, #000 30%) 26px, color-mix(in srgb, var(--accent) 70%, #000 30%) 52px),
+        radial-gradient(ellipse at center 40%, color-mix(in srgb, var(--accent) 60%, #fff 15%), transparent 70%);
+    border-radius: 22px 22px 0 0; margin-bottom: 0; overflow: hidden; position: relative;
 }
-.hero-detail-stage img, .hero-detail-stage video { max-height: 100%; max-width: 100%; object-fit: contain; }
-.hero-detail-name { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
-.hero-detail-stats { font-size: 13px; color: #ed8f03; font-weight: 700; margin-bottom: 10px; }
-.hero-detail-bio { font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin-bottom: 16px; white-space: pre-wrap; }
-.hero-detail-skins-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-.hero-skin-row {
-    display: flex; align-items: center; gap: 10px; background: #1a1e28; border-radius: 12px;
-    padding: 8px 10px; margin-bottom: 8px;
+.hero-detail-stage img, .hero-detail-stage video {
+    max-height: 92%; max-width: 88%; object-fit: contain;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.5));
 }
-.hero-skin-row img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #0e1015; }
-.hero-skin-info { flex: 1; min-width: 0; }
-.hero-skin-name { font-size: 13px; font-weight: 700; }
-.hero-skin-price { font-size: 11.5px; color: #94a3b8; }
+.hero-detail-namebar {
+    margin: -18px 14px 0; position: relative; z-index: 1;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #000 40%));
+    border-radius: 14px; padding: 10px 16px; box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.hero-detail-name { font-size: 19px; font-weight: 900; letter-spacing: 0.2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.hero-detail-stats { display: flex; gap: 6px; flex-wrap: wrap; }
+.hero-detail-stat-pill {
+    background: rgba(0,0,0,0.28); border-radius: 20px; padding: 4px 10px; font-size: 12.5px;
+    font-weight: 800; white-space: nowrap;
+}
+.hero-detail-body { padding: 16px 18px 0; }
+.hero-detail-bio { font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin-bottom: 18px; white-space: pre-wrap; }
+.hero-detail-skins-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+/* Карусель скинов — горизонтальный скролл карточек вместо старого вертикального списка */
+.hero-skins-carousel {
+    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin: 0 -18px 4px; padding-left: 18px; padding-right: 18px;
+    scroll-snap-type: x proximity;
+}
+.hero-skin-card {
+    flex: 0 0 118px; scroll-snap-align: start; background: #1a1e28; border-radius: 14px; padding: 8px;
+    border: 2px solid transparent; text-align: center; transition: border-color .15s;
+}
+.hero-skin-card.equipped { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.hero-skin-card-img {
+    width: 100%; height: 72px; border-radius: 10px; background: #0e1015; object-fit: cover; margin-bottom: 6px;
+}
+.hero-skin-card-name { font-size: 11.5px; font-weight: 700; line-height: 1.25; margin-bottom: 6px; min-height: 28px; display:flex; align-items:center; justify-content:center; }
+.hero-skin-card .item-btn { width: 100%; font-size: 11.5px; padding: 6px 4px; height: auto; min-height: 30px; }
+.hero-skin-card-badge {
+    font-size: 10px; font-weight: 800; color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, #12151c 82%);
+    border-radius: 8px; padding: 3px 6px; display: inline-block; margin-bottom: 6px;
+}
 </style>
 </head>
 <body>
@@ -297,10 +330,10 @@
             <div class="grid" id="heroes-grid"></div>
         </div>
 
-        <!-- СКИНЫ ДЛЯ СУЩЕСТВ -->
+        <!-- СУЩЕСТВА: полный список карт-существ — описание, лор и скины -->
         <div class="shop-section" data-section="creatures">
-            <div class="section-title"><span>🐲 Скины существ</span></div>
-            <div style="font-size:11.5px;color:#94a3b8;margin:-6px 0 10px;">Скин можно купить и надеть только для существа, которое уже есть в твоей коллекции.</div>
+            <div class="section-title"><span>🐲 Существа</span></div>
+            <div style="font-size:11.5px;color:#94a3b8;margin:-6px 0 10px;">Тут собраны все существа игры — можно посмотреть описание и лор любого, даже если его ещё нет в коллекции. Скин можно купить и надеть только для существа, которое уже есть в твоей коллекции.</div>
             <div class="grid" id="creature-skins-grid"></div>
         </div>
 
@@ -447,28 +480,36 @@
 
 <!-- КАРТОЧКА ГЕРОЯ: анимация, статы, история + скины -->
 <div id="hero-detail-overlay" class="hero-detail-overlay hidden">
-    <div class="hero-detail-sheet">
+    <div class="hero-detail-sheet" id="hero-detail-sheet">
         <button class="hero-detail-close" onclick="closeHeroDetail()">✕</button>
         <div class="hero-detail-stage" id="hero-detail-stage"></div>
-        <div class="hero-detail-name" id="hero-detail-name"></div>
-        <div class="hero-detail-stats" id="hero-detail-stats"></div>
-        <div class="hero-detail-bio" id="hero-detail-bio"></div>
-        <div class="hero-detail-skins-title">🎭 Скины</div>
-        <div id="hero-detail-skins"></div>
+        <div class="hero-detail-namebar">
+            <div class="hero-detail-name" id="hero-detail-name"></div>
+            <div class="hero-detail-stats" id="hero-detail-stats"></div>
+        </div>
+        <div class="hero-detail-body">
+            <div class="hero-detail-bio" id="hero-detail-bio"></div>
+            <div class="hero-detail-skins-title">🎭 Скины</div>
+            <div class="hero-skins-carousel" id="hero-detail-skins"></div>
+        </div>
     </div>
 </div>
 
 <!-- КАРТОЧКА СУЩЕСТВА: портрет, мана/атака/здоровье/навык, лор + скины -->
 <div id="creature-detail-overlay" class="hero-detail-overlay hidden">
-    <div class="hero-detail-sheet">
+    <div class="hero-detail-sheet" id="creature-detail-sheet">
         <button class="hero-detail-close" onclick="closeCreatureDetail()">✕</button>
         <div class="hero-detail-stage" id="creature-detail-stage"></div>
-        <div class="hero-detail-name" id="creature-detail-name"></div>
-        <div class="hero-detail-stats" id="creature-detail-stats"></div>
-        <div class="hero-detail-bio" id="creature-detail-skill"></div>
-        <div class="hero-detail-bio" id="creature-detail-bio"></div>
-        <div class="hero-detail-skins-title">🎭 Скины</div>
-        <div id="creature-detail-skins"></div>
+        <div class="hero-detail-namebar">
+            <div class="hero-detail-name" id="creature-detail-name"></div>
+            <div class="hero-detail-stats" id="creature-detail-stats"></div>
+        </div>
+        <div class="hero-detail-body">
+            <div class="hero-detail-bio" id="creature-detail-skill"></div>
+            <div class="hero-detail-bio" id="creature-detail-bio"></div>
+            <div class="hero-detail-skins-title">🎭 Скины</div>
+            <div class="hero-skins-carousel" id="creature-detail-skins"></div>
+        </div>
     </div>
 </div>
 
@@ -530,6 +571,17 @@
     function escapeHtml(str) {
         const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
     }
+
+    // Детерминированный "фирменный" цвет по имени — как у каждого бойца в Brawl Stars всегда
+    // один и тот же акцентный цвет. Используется для подсветки карточки героя/существа.
+    function colorFor(str) {
+        let hash = 0;
+        const s = str || '?';
+        for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+        const hue = Math.abs(hash) % 360;
+        return `hsl(${hue}, 72%, 46%)`;
+    }
+    const RARITY_ACCENT = { common: 'hsl(210, 12%, 55%)', rare: 'hsl(206, 90%, 52%)', epic: 'hsl(280, 75%, 58%)', legendary: 'hsl(36, 95%, 52%)' };
 
     function startShop() {
         let itemsData = [];
@@ -932,10 +984,12 @@
             const owned = myUser.ownedHeroes || {};
             const isOwned = !!owned[heroId];
 
+            document.getElementById('hero-detail-sheet').style.setProperty('--accent', colorFor(hero.name || heroId));
             document.getElementById('hero-detail-stage').innerHTML = mediaTag(hero.animationUrl || hero.image, '🦸');
             document.getElementById('hero-detail-name').textContent = hero.name || 'Герой';
             const passiveLabel = { battlecry_draw: 'Добор карт в начале боя', battlecry_shield_hero: 'Щит в начале боя', battlecry_gain_max_mana_perm: '+макс. мана навсегда', battlecry_heal: 'Доп. лечение в начале боя' }[hero.passiveType] || '';
-            document.getElementById('hero-detail-stats').textContent = [`❤️ ${hero.maxHealth || 30}`, hero.statsText, passiveLabel].filter(Boolean).join(' · ');
+            const pills = [`❤️ ${hero.maxHealth || 30}`, ...String(hero.statsText || '').split('·').map(s => s.trim()).filter(Boolean), passiveLabel].filter(Boolean);
+            document.getElementById('hero-detail-stats').innerHTML = pills.map(p => `<span class="hero-detail-stat-pill">${escapeHtml(p)}</span>`).join('');
             document.getElementById('hero-detail-bio').textContent = hero.bio || '';
 
             const skins = heroSkinsData.filter(s => s.heroId === heroId);
@@ -955,12 +1009,10 @@
                     else if (sOwned) btn = `<button class="item-btn btn-buy" data-equip-skin="${s.id}" data-equip-skin-hero="${heroId}">Надеть</button>`;
                     else btn = `<button class="item-btn ${(myUser.coins || 0) >= (s.price || 0) ? 'btn-buy' : 'btn-disabled'}" data-buy-skin="${s.id}">${s.price || 0}🪙</button>`;
                     return `
-                    <div class="hero-skin-row">
-                        <img src="${s.image || ''}" onerror="this.style.opacity=0.2">
-                        <div class="hero-skin-info">
-                            <div class="hero-skin-name">${escapeHtml(s.name || 'Скин')}</div>
-                            ${sOwned ? '' : `<div class="hero-skin-price">${s.price || 0} 🪙</div>`}
-                        </div>
+                    <div class="hero-skin-card ${sEquipped ? 'equipped' : ''}">
+                        ${sEquipped ? '<div class="hero-skin-card-badge">✓ Надет</div>' : ''}
+                        <img class="hero-skin-card-img" src="${s.image || ''}" onerror="this.style.opacity=0.2">
+                        <div class="hero-skin-card-name">${escapeHtml(s.name || 'Скин')}</div>
                         ${btn}
                     </div>`;
                 }).join('');
@@ -1010,29 +1062,28 @@
             const el = document.getElementById('creature-skins-grid');
             if (!el) return;
 
-            // Показываем только существ, для которых админ уже создал хотя бы один скин —
-            // иначе список раздувается всеми картами игры без смысла (скины для них покупать негде).
-            const skinnedCardIds = [...new Set(cardSkinsData.map(s => s.cardId))];
-            const creatures = skinnedCardIds
-                .map(id => cardsData.find(c => c.id === id && c.type === 'minion'))
-                .filter(Boolean);
+            // Показываем ВСЕ существующие в игре карты-существа (не только те, у кого есть
+            // скины) — так игрок может открыть описание/лор любой карты, даже ещё не полученной.
+            const creatures = (cardsData || []).filter(c => c.type === 'minion')
+                .slice().sort((a, b) => (a.mana || 0) - (b.mana || 0) || (a.name || '').localeCompare(b.name || ''));
 
-            if (!creatures.length) { el.innerHTML = '<div class="empty-state">Скинов для существ пока нет</div>'; return; }
+            if (!creatures.length) { el.innerHTML = '<div class="empty-state">Существ пока нет</div>'; return; }
 
             const collection = myUser.cardCollection || {};
             el.innerHTML = creatures.map(c => {
                 const isOwned = (collection[c.id] || 0) > 0;
                 const skinCount = cardSkinsData.filter(s => s.cardId === c.id).length;
+                const accent = RARITY_ACCENT[c.rarity] || colorFor(c.name || c.id);
                 const imageBlock = c.image
-                    ? `<img src="${c.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2">`
-                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:#f1f5f9;border-radius:14px;">🐲</div>`;
+                    ? `<img src="${c.image}" class="item-img" loading="lazy" decoding="async" onerror="this.style.opacity=0.2" style="${isOwned ? '' : 'filter:grayscale(1) brightness(0.6);'}">`
+                    : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;background:${accent};border-radius:14px;">🐲</div>`;
                 return `
                 <div class="item-card">
                     ${imageBlock}
                     <div class="item-name">${escapeHtml(c.name || '')}</div>
                     <div style="font-size:11.5px;color:#94a3b8;margin-bottom:4px;font-weight:600;">💧${c.mana || 0} · ⚔️${c.attack || 0} · ❤️${c.health || 0}</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-bottom:6px;">${skinCount} скин${skinCount === 1 ? '' : 'а'} доступно</div>
-                    ${isOwned ? '' : `<div style="font-size:11px;color:#ed8f03;font-weight:700;margin-bottom:6px;">Сначала получи карту в коллекцию</div>`}
+                    <div style="font-size:11px;color:${skinCount ? '#ed8f03' : '#94a3b8'};margin-bottom:6px;">${skinCount ? `🎭 ${skinCount} скин${skinCount === 1 ? '' : 'а'}` : 'Пока без скинов'}</div>
+                    ${isOwned ? '' : `<div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px;">🔒 Ещё нет в коллекции</div>`}
                     <button class="item-btn" style="background:transparent;border:1px solid #d99b26;color:#d99b26;" data-view-creature-id="${c.id}">👁 Открыть</button>
                 </div>`;
             }).join('');
@@ -1046,9 +1097,11 @@
             const collection = myUser.cardCollection || {};
             const isOwned = (collection[cardId] || 0) > 0;
 
+            document.getElementById('creature-detail-sheet').style.setProperty('--accent', RARITY_ACCENT[card.rarity] || colorFor(card.name || cardId));
             document.getElementById('creature-detail-stage').innerHTML = mediaTag(card.image, '🐲');
             document.getElementById('creature-detail-name').textContent = card.name || 'Существо';
-            document.getElementById('creature-detail-stats').textContent = `💧 ${card.mana || 0} · ⚔️ ${card.attack || 0} · ❤️ ${card.health || 0}`;
+            document.getElementById('creature-detail-stats').innerHTML = [`💧 ${card.mana || 0}`, `⚔️ ${card.attack || 0}`, `❤️ ${card.health || 0}`]
+                .map(p => `<span class="hero-detail-stat-pill">${p}</span>`).join('');
             document.getElementById('creature-detail-skill').textContent = card.effect ? `✨ ${card.effect}` : '';
             document.getElementById('creature-detail-bio').textContent = card.lore || '';
 
@@ -1069,12 +1122,10 @@
                     else if (sOwned) btn = `<button class="item-btn btn-buy" data-equip-cskin="${s.id}" data-equip-cskin-card="${cardId}">Надеть</button>`;
                     else btn = `<button class="item-btn ${(myUser.coins || 0) >= (s.price || 0) ? 'btn-buy' : 'btn-disabled'}" data-buy-cskin="${s.id}">${s.price || 0}🪙</button>`;
                     return `
-                    <div class="hero-skin-row">
-                        <img src="${s.image || ''}" onerror="this.style.opacity=0.2">
-                        <div class="hero-skin-info">
-                            <div class="hero-skin-name">${escapeHtml(s.name || 'Скин')}</div>
-                            ${sOwned ? '' : `<div class="hero-skin-price">${s.price || 0} 🪙</div>`}
-                        </div>
+                    <div class="hero-skin-card ${sEquipped ? 'equipped' : ''}">
+                        ${sEquipped ? '<div class="hero-skin-card-badge">✓ Надет</div>' : ''}
+                        <img class="hero-skin-card-img" src="${s.image || ''}" onerror="this.style.opacity=0.2">
+                        <div class="hero-skin-card-name">${escapeHtml(s.name || 'Скин')}</div>
                         ${btn}
                     </div>`;
                 }).join('');

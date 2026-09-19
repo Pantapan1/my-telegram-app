@@ -127,9 +127,11 @@
             <div class="top-search">
                 <input type="text" class="input search-input" id="feed-search" placeholder="🔍 Поиск по новостям и статьям...">
             </div>
+            <div id="widget-slot-feed_top"></div>
             <div id="boss-container"></div>
             <div id="banners-container"></div>
             <div id="feed-container"><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div id="widget-slot-feed_bottom"></div>
         </div>
     </div>
 
@@ -220,6 +222,7 @@
     <!-- ПРОФИЛЬ -->
     <div id="section-profile" class="section">
         <div class="container">
+            <div id="widget-slot-profile_top"></div>
             <div class="header">
                 <div>
                     <h1>Профиль</h1>
@@ -335,6 +338,7 @@
                     <button class="tab-mini-btn" id="admin-tab-btn-arenas" onclick="switchAdminTab('arenas')">🗺️ Арены</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-heroes" onclick="switchAdminTab('heroes')">🦸 Герои</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-story" onclick="switchAdminTab('story')">📖 Сюжет</button>
+                    <button class="tab-mini-btn" id="admin-tab-btn-widgets" onclick="switchAdminTab('widgets')">🧩 Виджеты</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-users" onclick="switchAdminTab('users')">👥 Пользователи</button>
                     <button class="tab-mini-btn" id="admin-tab-btn-novels" style="background:linear-gradient(135deg,#c98fff,#6a1fb8);color:#fff;">🖋️ Новеллы (редактор) ↗</button>
                 </div>
@@ -1126,6 +1130,16 @@
                     <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Описание / лор главы (показывается на экране перед боем)</label>
                     <textarea id="story-chapter-description" class="input" rows="3" placeholder="Например: Глубоко в подземельях замка скрывается древнее зло..."></textarea>
 
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Арена боя</label>
+                    <select id="story-chapter-arena" class="input"><option value="">🎲 Случайная (как раньше)</option></select>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Сложность главы (влияет и на звёзды в списке, и на то, насколько умно играет босс — размены, добивание и т.д.)</label>
+                    <select id="story-chapter-difficulty" class="input">
+                        <option value="easy">😊 Лёгкий</option>
+                        <option value="medium" selected>😐 Средний</option>
+                        <option value="hard">😈 Сложный</option>
+                    </select>
+
                     <div class="divider"></div>
                     <h3 style="margin-bottom:6px; color:var(--text-primary);">💬 Диалоги (визуальная новелла)</h3>
                     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Формат — по одной реплике на строку: <b>Имя: текст</b>. Например: <br><code>Ты: Наконец я тебя нашёл!</code><br><code>Тёмный Рыцарь: Ты пожалеешь, что пришёл сюда.</code></div>
@@ -1164,6 +1178,22 @@
                     <input type="text" id="story-ending-name" class="input" placeholder="Например: Путь искупления">
 
                     <div class="divider"></div>
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);">🧪 Переменные сюжета и скрипты (продвинутое)</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Числовые переменные на игрока (репутация, очки морали и т.п.) — читаются и пишутся прямо из своего JS-кода на трёх событиях главы. Внутри кода доступен объект <b>api</b>: <code>api.getVar('rep')</code>, <code>api.setVar('rep', 5)</code>, <code>api.addVar('rep', 1)</code>, <code>api.grantCoins(50)</code>, <code>api.grantCard('cardId', 1)</code>, <code>api.toast('Текст', '✨')</code>, <code>api.popup('Заголовок', 'Текст')</code>, а также <code>api.won</code>, <code>api.isFirstTime</code>, <code>api.chapter</code>, <code>api.user</code>. Для по-настоящему новых механик есть прямой доступ к базе: <code>api.db</code>, <code>api.ref/get/set/update/remove/push</code> — можно читать/писать что угодно, не только переменные. Код можно писать с <code>await</code> и без ограничений — обычный <code>fetch(...)</code> или динамический <code>import('https://...')</code> сработают как в любом JS-модуле. Ошибка в коде ловится и не ломает игру другим, но лучше проверить на себе перед публикацией.</div>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Условие открытия главы (необязательно, JS-выражение, например: rep >= 3 && morale < 10)</label>
+                    <input type="text" id="story-unlock-condition" class="input" placeholder="Оставь пустым, если условия не нужны">
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Код при старте главы (до вступительного диалога)</label>
+                    <textarea id="story-script-start" class="input" rows="3" style="font-family:monospace;font-size:12px;" placeholder="Например: api.toast('Глава началась', '📖');"></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Код при победе</label>
+                    <textarea id="story-script-win" class="input" rows="3" style="font-family:monospace;font-size:12px;" placeholder="Например: api.addVar('rep', 1);"></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">Код при поражении</label>
+                    <textarea id="story-script-lose" class="input" rows="3" style="font-family:monospace;font-size:12px;" placeholder="Например: api.addVar('rep', -1);"></textarea>
+
+                    <div class="divider"></div>
                     <div id="story-boss-deck-picker"></div>
 
                     <div class="divider"></div>
@@ -1181,6 +1211,46 @@
                     <div class="divider"></div>
                     <h3 style="margin-bottom:12px; color:var(--text-primary);">Все главы</h3>
                     <div id="admin-story-list"></div>
+                </div>
+
+                <!-- ВКЛАДКА: ВИДЖЕТЫ/ПЛАГИНЫ -->
+                <div id="admin-tab-widgets" class="hidden">
+                    <h3 style="margin-bottom:4px; color:var(--text-primary);" id="widget-form-heading">Создать виджет</h3>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">
+                        Свой HTML + JS, который встраивается прямо в приложение — без ограничений (как и в скриптах сюжета): обычный <code>fetch(...)</code> или динамический <code>import('https://...')</code> работают как в любом JS. Внутри JS-кода доступны переменные <b>el</b> (DOM-элемент этого виджета — можно менять его содержимое, вешать обработчики) и <b>api</b>:<br>
+                        <code>api.state</code>, <code>api.tg</code>, <code>api.user</code> — текущий игрок,<br>
+                        <code>api.db</code>, <code>api.ref/get/set/update/remove/push/increment</code> — прямой доступ к базе,<br>
+                        <code>api.toast('Текст','✨')</code>, <code>api.popup('Заголовок','Текст')</code> — обратная связь игроку,<br>
+                        <code>api.switchTab('profile')</code> — переключить вкладку приложения,<br>
+                        <code>api.onCleanup(fn)</code> — <u>обязательно</u> вызывай для любых <code>setInterval</code>/подписок, иначе они будут плодиться заново при каждом обновлении списка виджетов.<br>
+                        Ошибка в коде ловится и не ломает остальное приложение — но <b>только у админов</b> под виджетом появится текст ошибки, обычным игрокам сломанная часть просто не покажется.
+                    </div>
+
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('banner')">🖼 Пример: баннер</button>
+                        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('countdown')">⏱ Пример: таймер</button>
+                        <button class="btn btn-secondary" style="width:auto;padding:8px 12px;font-size:12px;" onclick="window.insertWidgetExample('greeting')">👋 Пример: приветствие</button>
+                    </div>
+
+                    <input type="text" id="widget-name" class="input" placeholder="Название виджета (для себя, в списке)">
+                    <select id="widget-slot" class="input"></select>
+                    <input type="number" id="widget-order" class="input" placeholder="Порядок внутри слота (меньше — выше)" value="0">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text-secondary);margin:6px 0;">
+                        <input type="checkbox" id="widget-enabled" checked style="width:auto;"> Виджет включён
+                    </label>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">HTML-разметка виджета</label>
+                    <textarea id="widget-html" class="input" rows="5" style="font-family:monospace;font-size:12px;" placeholder="<div>Привет!</div>"></textarea>
+
+                    <label style="font-size:13px;font-weight:700;color:var(--text-secondary);">JS-код виджета (необязательно)</label>
+                    <textarea id="widget-js" class="input" rows="5" style="font-family:monospace;font-size:12px;" placeholder="el.onclick = () => api.toast('Клик!');"></textarea>
+
+                    <button class="btn" id="btn-add-widget">Добавить виджет</button>
+                    <button class="btn btn-secondary hidden" id="btn-cancel-edit-widget">Отменить редактирование</button>
+
+                    <div class="divider"></div>
+                    <h3 style="margin-bottom:12px; color:var(--text-primary);">Все виджеты</h3>
+                    <div id="admin-widgets-list"></div>
                 </div>
 
                 <!-- ВКЛАДКА: ПОЛЬЗОВАТЕЛИ -->
